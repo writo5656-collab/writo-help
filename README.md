@@ -108,7 +108,7 @@ We're reachable however's easiest for you:
 ## 🎥 Tutorial Video
 
 <!-- 🎬 Replace the link and thumbnail below once your video is ready:
-[![Watch the tutorial](video-thumbnail.png)](https://your-video-link-here.com)
+[![Watch the tutorial](video-thumbnail.png)](https://youtu.be/4MKMbFxFofU?si=ND9qU5bJFZAgb7I6)
 -->
 
 *A full walkthrough of placing an order, paying, and tracking delivery — coming soon.*
