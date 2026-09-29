@@ -1,3 +1,47 @@
+Featherlight Optimizer — 1.3.0
+==============================
+
+ADDED — far-away mob animation culling (Low and Ultra Low only)
+---------------------------------------------------------------
+
+Mobs further than 32 blocks (Low) or 24 blocks (Ultra Low) stop playing
+their walking, head-turning and idle animations. They still render and
+still move across the ground; they just stop swinging their legs. Every
+animated bone costs CPU on every frame, so this helps most in crowded
+places: farms, lobbies, mob grinders.
+
+Covered: cow, pig, sheep, chicken, creeper, drowned, iron golem, squid,
+glow squid.
+
+Never culled, at any distance: attacking, charging, holding items,
+riding, and the creeper's swelling flash. Those tell you what a mob is
+about to do.
+
+Zombies, husks, skeletons and villagers are not covered yet. Their
+vanilla files use a newer format that would stop loading on older game
+versions.
+
+
+FIXED — Ultra Low showed wrong textures on some blocks
+------------------------------------------------------
+
+The Ultra Low flipbook file had dropped "atlas_index" from 22 entries.
+Blocks with several texture variants then all animated into slot 0:
+respawn anchors could show a charged top while empty, and firefly
+bushes, sculk catalysts, sculk shriekers and bubble columns could show
+the wrong texture. The file is now regenerated from vanilla with every
+field kept, and only the animation clock stopped.
+
+
+REQUIREMENT CHANGE
+------------------
+
+min_engine_version is now 1.26.0. The mob files are copied from
+Minecraft 1.26.50 and reference textures that older versions do not
+have. After each Minecraft update, run tools/sync_vanilla.py to
+refresh them, then rebuild the pack.
+
+
 Featherlight Optimizer — 1.2.0
 ==============================
 

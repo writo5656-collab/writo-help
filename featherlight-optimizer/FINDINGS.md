@@ -1,6 +1,6 @@
 # Featherlight Optimizer: what was wrong, and what's next
 
-Fixed build: `dist/Featherlight_Optimizer_v1.2.0.mcpack` (source in `pack/`).
+Latest build: `dist/Featherlight_Optimizer_v1.3.0.mcpack` (source in `pack/`, vanilla sync script in `tools/`).
 
 ## The short version
 
@@ -20,7 +20,7 @@ The pack spends its effort on **particles and fog**. On a weak phone playing on 
 ### 1. The fog didn't apply in most biomes
 Mojang's vanilla `biomes_client.json` gives **70 biomes their own fog** (`minecraft:plains` → `minecraft:fog_plains`, and so on). The pack only overrode `"default"` plus six nether/end names without the `minecraft:` prefix. A biome with its own entry never falls back to `default`, so in plains, forest, ocean, desert, jungle, taiga and so on, **vanilla fog was used and your profile fog never applied**. That's probably why the profiles felt the same.
 
-**Fix:** every vanilla biome is now listed by its full name and pointed at the pack's fog. Vanilla water colours are kept, so swamps don't turn blue.
+**Fix:** every vanilla biome is now listed by its full name and pointed at the pack's fog. Vanilla water colours are kept, so swamps don't turn blue. Microsoft's [fog docs](https://learn.microsoft.com/en-us/minecraft/creator/documents/foginresourcepacks) confirm the order: biome fog sits above `default`, so a biome's own entry always wins over it.
 
 ### 2. The totem counter was running three counters every frame
 `"visible": false` only hides a control. It still exists and its bindings still update. One scanner computed totem, arrow **and** pot counts over 36 slots, which comes to about **330 UI bindings evaluated every frame, all game**, even with arrow and pot turned off. JSON UI runs on the CPU, the part a cheap phone is shortest on.
@@ -42,23 +42,21 @@ I can't run Minecraft here, so **test it** on a real phone:
 
 Whatever the result, tell players to **match Render Distance to their profile** (High 16, Mid 10, Low 8, Ultra 4–6). That's the biggest single FPS lever on Bedrock, and it's the "fewer chunks" idea you described.
 
-## Going further (still a resource pack, no client needed)
+## Added in 1.3.0 (after researching other FPS packs)
 
-**Entity culling by distance.** This is the closest Bedrock equivalent to Java's *EntityCulling* mod. A resource pack can override a mob's client entity file and use `q.distance_from_camera` to skip animations or hide parts beyond N blocks:
+- **Far-away mob animation culling** (Low and Ultra Low). Beyond 32 or 24 blocks, cows, pigs, sheep, chickens, creepers, drowned, iron golems and squids stop animating their legs and heads. They still render and move. Attacks, charging, riding and the creeper's swelling flash are never culled. This uses `q.distance_from_camera` in the mob's `scripts.animate`, so it's a plain resource pack and works on servers.
+- **Ultra Low texture bug fixed.** 22 animated textures had lost `atlas_index`, so blocks with several variants (respawn anchor, firefly bush, sculk catalyst, bubble columns) could show the wrong texture.
+- **`tools/sync_vanilla.py`** regenerates every vanilla-derived file from Mojang's bedrock-samples. Run it after each Minecraft update so the pack never goes stale.
 
-```json
-"scripts": {
-  "should_update_bones_and_effects_offscreen": false,
-  "animate": [
-    { "look_at_target": "q.distance_from_camera < 24" },
-    { "move": "q.distance_from_camera < 32" }
-  ]
-}
-```
+### Ideas from other packs I checked and did NOT add
 
-Animation (Molang per bone per frame) is a real CPU cost when a server hub has 50+ entities in view. It needs care: vanilla entity files change between versions and each override must be kept in sync. It's worth prototyping on the 5–10 most common entities first and measuring before and after.
-
-**Cheaper textures.** The food textures are 24×24 on a 16×16 pack. Mixed sizes can force the game to scale the whole item atlas up to the biggest texture. Test with 16×16 versions; if FPS or memory improves, the "small food" look isn't worth it.
+| Idea | Why not |
+|---|---|
+| Custom shaders / `.material.bin` (point filtering, FP16) | RenderDragon ignores custom materials in normal packs; they need a patched game |
+| Behavior-pack mob despawn, item merging, spawn limits | Behavior packs only run in your own worlds, never on servers |
+| "Render distance limiter" packs | No documented way to do it; most likely it's fog, which hides chunks without skipping them |
+| Silencing rain audio | The saving is too small to be worth losing the sound |
+| Culling zombies, skeletons, villagers, players | Their vanilla files need the very latest game version, or they're too complex to override safely. They're next after in-game testing |
 
 ## About building a "Fabric-like client"
 

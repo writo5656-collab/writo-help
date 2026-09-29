@@ -2,16 +2,16 @@
   "format_version": 2,
   "header": {
     "name": "Featherlight Optimizer | by noxeelmc",
-    "description": "Performance-focused resource pack that keeps the vanilla look. Strips decorative particles, applies a per-profile fog distance to every biome, slows or freezes fire/water animation, adds armour durability and an optional totem counter. Pick the profile that matches your device, and set Render Distance to match it (see CHANGELOG).",
+    "description": "Performance-focused resource pack that keeps the vanilla look. Strips decorative particles, applies a per-profile fog distance to every biome, slows or freezes fire/water animation, Low/Ultra Low also freeze far-away mob animations, adds armour durability and an optional totem counter. Pick the profile that matches your device, and set Render Distance to match it (see CHANGELOG).",
     "uuid": "a4fb8025-2fe9-462d-9e9f-0aa450f2d514",
     "version": [
       1,
-      2,
+      3,
       0
     ],
     "min_engine_version": [
       1,
-      21,
+      26,
       0
     ]
   },
@@ -21,7 +21,7 @@
       "uuid": "bbbedc30-bfb4-4ec6-9632-c5736fe37c9d",
       "version": [
         1,
-        2,
+        3,
         0
       ]
     }
