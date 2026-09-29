@@ -15,6 +15,7 @@ import { pickSkin, setSkin, skinPlainName, npcHead } from "./skins.js";
 import { openAnimator, playAllTimelines, stopAllTimelines, getTimeline } from "./animator.js";
 import { openShotsMenu } from "./shots.js";
 import { openRideMenu, isMounted } from "./mount.js";
+import { openHandbook } from "./handbook.js";
 import { openCameraToolMenu, flyCam } from "./camera.js";
 
 // ---------- spawning ----------
@@ -388,7 +389,7 @@ function openMoveMenu(player, npc, back, stepIdx = 1) {
 // =====================================================================================
 export function openMainMenu(player) {
   const self = () => openMainMenu(player);
-  menu("NPC Studio", "§7v3.0 — tip: right-click an NPC with the wand to edit it, left-click it to cycle quick poses.")
+  menu("§lNPC Studio")
     .btn("Spawn NPC", ICON("spawn"), () => openSpawnMenu(player, self))
     .btn("Edit An NPC", ICON("manage"), () => {
       const npc = getLookedAtNPC(player);
@@ -408,7 +409,7 @@ export function openMainMenu(player) {
     .btn("Presets", ICON("preset"), () => openPresetsMenu(player, self))
     .btn("Bulk Tools (many NPCs)", ICON("bulkequip"), () => openBulkMenu(player, self))
     .btn("World Controls", ICON("world"), () => openWorldMenu(player, self))
-    .btn("Help & What's New", ICON("debug"), () => openHelp(player, self))
+    .btn("Handbook", ICON("debug"), () => openHandbook(player, self))
     .show(player);
 }
 

@@ -37,6 +37,9 @@
     },
     "npcstudio_tool_done": {
       "textures": "textures/items/npcstudio_tool_done"
+    },
+    "npcstudio_handbook": {
+      "textures": "textures/items/npcstudio_handbook"
     }
   }
 }

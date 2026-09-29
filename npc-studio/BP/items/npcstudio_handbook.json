@@ -2,19 +2,18 @@
   "format_version": "1.20.60",
   "minecraft:item": {
     "description": {
-      "identifier": "npcstudio:camera_tool",
+      "identifier": "npcstudio:handbook",
       "menu_category": {
         "category": "equipment"
       }
     },
     "components": {
       "minecraft:max_stack_size": 1,
-      "minecraft:hand_equipped": false,
-      "minecraft:glint": false,
-      "minecraft:icon": "npcstudio_camera_tool",
+      "minecraft:icon": "npcstudio_handbook",
       "minecraft:display_name": {
-        "value": "\u00a7bCine Camera"
-      }
+        "value": "\u00a7bNPC Studio Handbook"
+      },
+      "minecraft:glint": false
     }
   }
 }

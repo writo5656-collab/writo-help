@@ -3,14 +3,18 @@
   "minecraft:item": {
     "description": {
       "identifier": "npcstudio:mob_tool",
-      "menu_category": { "category": "equipment" }
+      "menu_category": {
+        "category": "equipment"
+      }
     },
     "components": {
       "minecraft:max_stack_size": 1,
-      "minecraft:hand_equipped": true,
-      "minecraft:glint": true,
+      "minecraft:hand_equipped": false,
+      "minecraft:glint": false,
       "minecraft:icon": "npcstudio_mob_tool",
-      "minecraft:display_name": { "value": "NPC Studio Mob Tool" }
+      "minecraft:display_name": {
+        "value": "\u00a7bBeast Whistle"
+      }
     }
   }
 }

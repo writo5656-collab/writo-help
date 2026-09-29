@@ -226,6 +226,15 @@ export function lockCinema(player) {
   if (!st) return;
   st.freeMove = false;
   st.hint = 0;
+  // put your body back where you started so it isn't inside the camera (that shows as dots)
+  const saved = getJson(player, STATE_KEY, undefined);
+  if (saved?.loc) {
+    try {
+      player.teleport(saved.loc, { dimension: world.getDimension(saved.dim ?? "overworld"), rotation: saved.rot });
+    } catch {
+      /* ignore */
+    }
+  }
   st.sel = player.selectedSlotIndex;
   setCinemaHandItem(player, "npcstudio:cam_exit");
   try {

@@ -12,7 +12,8 @@ export const CAMERA_ID = "npcstudio:camera_marker";
 export const CAMERA_TOOL_ID = "npcstudio:camera_tool";
 export const MOB_TOOL_ID = "npcstudio:mob_tool";
 export const MOB_TAG = "npcstudio_mob";
-export const TOOL_IDS = [WAND_ID, CAMERA_TOOL_ID, MOB_TOOL_ID];
+export const HANDBOOK_ID = "npcstudio:handbook";
+export const TOOL_IDS = [WAND_ID, CAMERA_TOOL_ID, MOB_TOOL_ID, HANDBOOK_ID];
 export const CAM_PRESET = "npcstudio:cam_free";
 
 // Every feature button uses NPC Studio's own drawn icon set (tools/make_icons.py).
@@ -161,6 +162,20 @@ function showWithRetry(form, player, tries = 0) {
  * Button menu where each button carries its own callback — no fragile index math.
  * menu(title, body).btn(text, icon, fn).back(fn).show(player)
  */
+// Button labels: just the name, in a strong colour that reads well on grey buttons.
+// Descriptions ("\n..." lines, "§8(...)" hints, trailing "(...)") are removed — the Handbook explains features.
+const CONTRAST = { a: "2", b: "3", c: "4", e: "6", d: "5", f: "0", "7": "8" };
+export function cleanLabel(text) {
+  if (typeof text !== "string") return text; // translated/raw labels (skin names)
+  let t = text.split("\n")[0].replace(/§r/g, "");
+  t = t.replace(/\s+(§[0-9a-fl])*§8.*$/, ""); // "Name §8(hint)"
+  t = t.replace(/\s*\([^)]*\)\s*$/, ""); // "Name (hint)"
+  t = t.replace(/§([abcdef7])/g, (_, c) => `§${CONTRAST[c]}`);
+  if (!/^(§[0-9a-fl])+/.test(t)) t = `§3${t}`;
+  else if (/^§l/.test(t)) t = `§3${t}`;
+  return t.trim();
+}
+
 export function menu(title, body) {
   const form = new ActionFormData().title(title);
   if (body) form.body(body);
@@ -168,14 +183,15 @@ export function menu(title, body) {
   let onBack;
   const api = {
     btn(text, icon, fn) {
-      if (icon) form.button(text, icon);
-      else form.button(text);
+      const label = cleanLabel(text);
+      if (icon) form.button(label, icon);
+      else form.button(label);
       actions.push(fn);
       return api;
     },
     back(fn) {
       onBack = fn;
-      form.button("< Back", ICON("back"));
+      form.button("§8Back", ICON("back"));
       actions.push(fn);
       return api;
     },
@@ -267,6 +283,31 @@ export function msg(player, text) {
 export function actionbar(player, text) {
   try {
     player.onScreenDisplay.setActionBar(text);
+  } catch {
+    /* ignore */
+  }
+}
+
+/**
+ * Small readout in the top-right corner (transparent, no background). Uses a title that starts
+ * with "npcs:" — RP/ui/hud_screen.json hides those from the middle of the screen and shows them
+ * in the corner instead.
+ */
+const cornerCache = new Map();
+export function corner(player, text) {
+  if (cornerCache.get(player.id) === text) return;
+  cornerCache.set(player.id, text);
+  try {
+    player.onScreenDisplay.setTitle(`npcs:${text}`, { fadeInDuration: 0, stayDuration: 2000000, fadeOutDuration: 0 });
+  } catch {
+    /* ignore */
+  }
+}
+export function clearCorner(player) {
+  cornerCache.delete(player.id);
+  try {
+    player.onScreenDisplay.setTitle("npcs:", { fadeInDuration: 0, stayDuration: 1, fadeOutDuration: 0 });
+    player.onScreenDisplay.clearTitle();
   } catch {
     /* ignore */
   }

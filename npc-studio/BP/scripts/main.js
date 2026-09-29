@@ -9,7 +9,8 @@
  * See LICENSE.md in this pack for full terms.
  */
 import { ItemStack, EquipmentSlot, EntityComponentTypes, CommandPermissionLevel, CustomCommandStatus } from "@minecraft/server";
-import { world, system, safeOn, msg, sfx, actionbar, NPC_ID, CAMERA_ID, WAND_ID, CAMERA_TOOL_ID, MOB_TOOL_ID, MOB_TAG, TOOL_IDS, isLocked } from "./core.js";
+import { world, system, safeOn, msg, sfx, actionbar, NPC_ID, CAMERA_ID, WAND_ID, CAMERA_TOOL_ID, MOB_TOOL_ID, HANDBOOK_ID, MOB_TAG, TOOL_IDS, isLocked } from "./core.js";
+import { openHandbook } from "./handbook.js";
 import { openMainMenu, openManageMenu, getLookedAtNPC, startLookLoop } from "./npc.js";
 import { openCameraToolMenu, openCameraPanel, camState, viewThrough, exitView, isViewing } from "./camera.js";
 import { openMobToolMenu, openMobManageMenu, tryRide, tryDismount } from "./mobs.js";
@@ -22,7 +23,7 @@ import { inFlyCam, flyCamLock, flyCamZoom } from "./flycam.js";
 import { applyPose, expandPreset, pushUndo } from "./rig.js";
 import { ALL_POSES, QUICK_CYCLE } from "./poses.js";
 
-const STARTER_ITEMS = [WAND_ID, CAMERA_TOOL_ID, MOB_TOOL_ID];
+const STARTER_ITEMS = [WAND_ID, CAMERA_TOOL_ID, MOB_TOOL_ID, HANDBOOK_ID];
 
 system.run(() => {
   world.sendMessage("§8[§bNPC Studio§8] §7Studio loaded — grab your wand and roll camera. §8by NoxeelMC");
@@ -61,6 +62,7 @@ safeOn(() => system.beforeEvents.startup, (ev) => {
   });
   add("exit", "Leave NPC Studio camera view", (p) => exitCinema(p, { fade: inCinema(p) }));
   add("npc", "Open the NPC Studio menu", (p) => openMainMenu(p));
+  add("handbook", "Open the NPC Studio Handbook", (p) => openHandbook(p));
   add("cameras", "Open the NPC Studio camera menu", (p) => openCameraToolMenu(p));
 }, "startup");
 
@@ -80,7 +82,7 @@ safeOn(() => world.afterEvents.playerSpawn, (ev) => {
       /* ignore */
     }
     msg(player, "§b§l» WELCOME TO NPC STUDIO MODE");
-    msg(player, "§fYou're the director now. §7Right-click air with the §bWand§7 to start, or type §e/npc§7.");
+    msg(player, "§fYou're the director now. §7Tap the air with the §bDirector's Baton§7 to start. New here? Open the §bHandbook§7.");
     const inv = player.getComponent("minecraft:inventory")?.container;
     if (!inv) return;
     for (const itemId of STARTER_ITEMS) {
@@ -130,6 +132,8 @@ safeOn(() => world.beforeEvents.itemUse, (ev) => {
       openCameraToolMenu(player);
     } else if (itemId === MOB_TOOL_ID) {
       openMobToolMenu(player);
+    } else if (itemId === HANDBOOK_ID) {
+      openHandbook(player);
     }
   });
 }, "itemUse");

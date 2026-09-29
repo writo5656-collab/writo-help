@@ -13,7 +13,7 @@
       "minecraft:glint": true,
       "minecraft:icon": "npcstudio_wand",
       "minecraft:display_name": {
-        "value": "NPC Studio Wand"
+        "value": "\u00a7bDirector's Baton"
       }
     }
   }

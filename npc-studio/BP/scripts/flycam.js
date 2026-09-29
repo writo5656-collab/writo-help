@@ -36,8 +36,8 @@ export function startFlyCam(player, mode, hooks, marker) {
 
 function tick(player, s) {
   if (!player.isValid) return stopLoop(player);
-  const head = player.getHeadLocation();
   const r = player.getRotation();
+  const head = lensPos(player, r);
   try {
     player.camera.setCamera(CAM_PRESET, { location: head, rotation: { x: r.x, y: r.y }, easeOptions: { easeTime: s.smooth, easeType: EasingType.Linear } });
     if (s.fovApplied !== s.fovIdx) {
@@ -47,6 +47,16 @@ function tick(player, s) {
   } catch {
     /* ignore */
   }
+}
+
+/**
+ * The lens sits 0.6 blocks in front of your eyes. If it were inside your own (invisible) body,
+ * Minecraft draws that body as a dotted see-through ghost across the whole screen.
+ */
+function lensPos(player, r = player.getRotation()) {
+  const h = player.getHeadLocation();
+  const yaw = (r.y * Math.PI) / 180;
+  return { x: h.x - Math.sin(yaw) * 0.6, y: h.y, z: h.z + Math.cos(yaw) * 0.6 };
 }
 
 function stopLoop(player) {
@@ -81,8 +91,8 @@ export function flyCamLock(player, fromCommand) {
   if (!fromCommand && gap < 3) return true; // one tap can fire twice
   s.lastSwing = now;
   const doubleTap = !fromCommand && gap < 10;
-  const head = player.getHeadLocation();
   const r = player.getRotation();
+  const head = lensPos(player, r);
   const fov = FOVS[s.fovIdx];
 
   if (s.mode === "path") {

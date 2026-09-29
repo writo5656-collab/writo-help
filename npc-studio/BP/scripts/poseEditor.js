@@ -8,7 +8,7 @@
  * Copyright (c) 2026 NoxeelMC. All rights reserved. See LICENSE.md.
  */
 import { InputPermissionCategory } from "@minecraft/server";
-import { world, system, menu, modal, msg, sfx, actionbar, ICON, clamp, wrapDeg, round, getJson, setJson, forward, right } from "./core.js";
+import { world, system, menu, modal, msg, sfx, actionbar, corner, clearCorner, ICON, clamp, wrapDeg, round, getJson, setJson, forward, right } from "./core.js";
 import { BONES, getRot, setRot, getPos, setPos, getScale, setScale, readPose, applyPose, mirrorPose, expandPreset, pushUndo, undo, redo, historySize, snapPos, POS_LIMIT, getAnim, setAnim } from "./rig.js";
 import { POSE_CATEGORIES, LOOP_ANIMS } from "./poses.js";
 import { swapHotbar, restoreHotbar } from "./hotbar.js";
@@ -429,11 +429,6 @@ export function startGizmo(player, npc, back) {
   highlight(npc);
   spawnGizmo(s);
   sfx(player, "start");
-  try {
-    player.onScreenDisplay.setTitle("§bPOSE MODE", { subtitle: "§flook at a body part, then pick §bRotate§f or §6Move", fadeInDuration: 2, stayDuration: 40, fadeOutDuration: 10 });
-  } catch {
-    /* ignore */
-  }
   s.run = system.runInterval(() => tickGizmo(player, s), 1);
 }
 
@@ -462,6 +457,18 @@ function backToModeSlot(player, s) {
 function refreshValues(s) {
   s.rot = getRot(s.npc, s.bone.key);
   s.pos = getPos(s.npc, s.bone.key);
+}
+
+function gizmoReadout(s) {
+  const mode = s.mode === "select" ? "§eSELECT" : s.mode === "rot" ? "§bROTATE" : "§6MOVE";
+  const lines = [`§f§l${s.bone.label.toUpperCase()}`, `${mode}${s.mode === "select" ? "" : ` §7· axis ${AXES[s.axis]}`}`];
+  if (s.mode === "select") lines.push("§7look at a body part");
+  else {
+    const v = s.mode === "rot" ? s.rot.map((n) => `${Math.round(n)}°`) : s.pos.map((n) => n.toFixed(1));
+    lines.push(`§cX §f${v[0]}  §aY §f${v[1]}  §9Z §f${v[2]}`);
+  }
+  lines.push("§7sneak §fdone §7· jump §fcancel");
+  return lines.join("\n");
 }
 
 /** Tapping a hotbar slot. */
@@ -563,9 +570,7 @@ function tickGizmo(player, s) {
   }
 
   syncGizmo(s);
-  const what = s.mode === "select" ? "§eSELECT§f — look at a body part" : s.mode === "rot" ? "§bROTATE§f — look around" : "§6MOVE§f — look around";
-  const axis = s.mode === "select" ? "" : `  §7axis ${AXES[s.axis]}`;
-  actionbar(player, `§l${s.bone.label}§r  ${what}${axis}\n§7hotbar: Select · Rotate · Move · Axis · Undo · Reset · Done   §aSneak§7 done  §cJump§7 cancel`);
+  if (system.currentTick % 2 === 0) corner(player, gizmoReadout(s));
 }
 
 export function endGizmo(player, apply) {
@@ -583,6 +588,7 @@ export function endGizmo(player, apply) {
     setScale(s.npc, s.start.scale);
   }
   if (player.isValid) {
+    clearCorner(player);
     restoreHotbar(player);
     setWalk(player, true);
     player.setDynamicProperty("npcstudio:gizmo", undefined);
