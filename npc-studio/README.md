@@ -1,9 +1,18 @@
-# NPC Studio v3.4 (Minecraft Bedrock add-on by NoxeelMC)
+# NPC Studio V2 (Minecraft Bedrock add-on by NoxeelMC)
 
 Spawn, pose, dress, animate and film custom NPCs for thumbnails and cinematics.
-Download: `dist/NPCStudio-v3.4.0.mcaddon` (open it on your device and Minecraft imports both packs).
+Download: `dist/NPCStudio-V2.mcaddon`
 
-## What's new in v3.4
+"V2" is the public name of this update. The pack manifests keep counting up internally
+(currently 3.5.0) so Minecraft always treats it as newer than the 2.9.0 release players have. (open it on your device and Minecraft imports both packs).
+
+## Latest changes
+- Renamed to **NPC Studio V2** (pack names, welcome, menus, Handbook, file name).
+- Pose Mode corner readout: smaller, fully on screen, above the attack button, 3 lines.
+- The "how to get out" line is back in chat whenever you enter camera view, lock a Fly Cam shot
+  or start Fly Cam.
+
+## v3.4 changes
 - **New tools:** Director's Baton (wand), Cine Camera (camera tool), Beast Whistle (mob tool).
 - **NPC Studio Handbook:** a book every new player gets. Chapters for every feature, each with
   its icon; tap one to read what it does. Also in the main menu and `/npcstudio:handbook`.

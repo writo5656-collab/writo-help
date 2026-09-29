@@ -167,7 +167,7 @@ export const CHAPTERS = [
 
 export function openHandbook(player, back) {
   sfx(player, "open");
-  const m = menu("§lNPC Studio Handbook", "§7Tap a chapter to see what each feature does.");
+  const m = menu("§lNPC Studio V2 Handbook", "§7Tap a chapter to see what each feature does.");
   for (const ch of CHAPTERS) m.btn(ch.name, ICON(ch.icon), () => openChapter(player, ch, () => openHandbook(player, back)));
   if (back) m.back(back);
   m.show(player);

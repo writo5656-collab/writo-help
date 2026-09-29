@@ -31,6 +31,9 @@ export function startFlyCam(player, mode, hooks, marker) {
   enterCinema(player, () => stopLoop(player), { freeMove: true, creative: true, quiet: true });
   freeCinema(player); // also covers starting from inside another camera view
   sfx(player, "start");
+  msg(player, mode === "path"
+    ? "§b§l» Fly Cam Path §r§7— §ftap§7 to drop a point, §fdouble-tap§7 to finish, §e/exitcam§7 to leave"
+    : "§b§l» Fly Cam §r§7— §ftap the screen§7 to lock the shot, §e/exitcam§7 to leave");
   s.run = system.runInterval(() => tick(player, s), 1);
 }
 

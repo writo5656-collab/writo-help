@@ -116,6 +116,8 @@ export function enterCinema(player, onExit, opts = {}) {
     /* ignore */
   }
   if (opts.hideNames !== false) setNames(player, true);
+  // one short line in chat (it fades by itself): how to get back out
+  if (!opts.freeMove) msg(player, "§b§l» Camera view §r§7— §ftap the screen§7 or type §e/exitcam§7 to get out");
 }
 
 /** Keep the invisible exit item in hand: scrolling the hotbar would show your other items. */
@@ -237,6 +239,7 @@ export function lockCinema(player) {
   }
   st.sel = player.selectedSlotIndex;
   setCinemaHandItem(player, "npcstudio:cam_exit");
+  msg(player, "§b§l» Shot locked §r§7— §ftap the screen§7 or type §e/exitcam§7 to get out");
   try {
     player.inputPermissions.setPermissionCategory(InputPermissionCategory.LateralMovement, false);
   } catch {

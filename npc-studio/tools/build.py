@@ -87,7 +87,7 @@ def main():
         sys.exit("validation failed")
     ver = ".".join(map(str, json.load(open(os.path.join(bp, "manifest.json")))["header"]["version"]))
     os.makedirs(DIST, exist_ok=True)
-    out = os.path.abspath(os.path.join(DIST, f"NPCStudio-v{ver}.mcaddon"))
+    out = os.path.abspath(os.path.join(DIST, "NPCStudio-V2.mcaddon"))  # public name; manifest keeps counting ({ver})
     with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED, compresslevel=9) as z:
         for folder in (bp, rp):
             for dp, _, files in os.walk(folder):

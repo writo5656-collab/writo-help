@@ -389,7 +389,7 @@ function openMoveMenu(player, npc, back, stepIdx = 1) {
 // =====================================================================================
 export function openMainMenu(player) {
   const self = () => openMainMenu(player);
-  menu("§lNPC Studio")
+  menu("§lNPC Studio V2")
     .btn("Spawn NPC", ICON("spawn"), () => openSpawnMenu(player, self))
     .btn("Edit An NPC", ICON("manage"), () => {
       const npc = getLookedAtNPC(player);
@@ -540,30 +540,3 @@ function openWorldMenu(player, back) {
     .show(player);
 }
 
-function openHelp(player, back) {
-  menu(
-    "NPC Studio v3.0",
-    [
-      "§b§lWHAT'S NEW",
-      "§f- §dArmor trims & enchant glint§f: Wardrobe > Trim Studio, or trim/enchant your own armor and use Copy My Outfit.",
-      "§f- §bPose Editor§f with a Blender-style Live Gizmo (look to rotate/move bones), position offsets, whole-body rotate, mirror, copy/paste, undo/redo.",
-      "§f- §a45+ poses§f incl. sitting on the ground, lying, flying, kneeling.",
-      "§f- §eSize / height§f (Player Size makes NPCs as tall as you).",
-      "§f- §619 looping animations§f (walk, run, jump, dance, talk, wave...) + keyframe Animator + Record My Movement.",
-      "§f- §cLook At Players§f: head follows the nearest player.",
-      "§f- §d30 Cinematic Shots§f + shot sequences, smooth camera paths, working FOV.",
-      "§f- §b20 custom skin slots§f + slim arms + Skin Pack Builder.",
-      "",
-      "§b§lCONTROLS",
-      "§fWand: right-click NPC = edit, right-click air = this menu, left-click NPC = quick pose.",
-      "§fShift + right-click an NPC holding any item = give it (exact copy).",
-      "§fCamera tool: place/manage cameras. Mob tool: spawn mob props.",
-      "§fSneak stops any shot or camera path.",
-      "§fLeave camera view: §e/exitcam§f or double-tap sneak. Menu: §e/npc§f. Cameras: §e/cameras§f.",
-      "§fFly Cam: fly with the joystick, §etap§f or §e/lockcam§f to lock the shot, hotbar = zoom.",
-      "§fRide: NPC menu > Ride a Mob. Mob Tool > a mob > Mob Poses (horse rearing, sitting...)."
-    ].join("\n")
-  )
-    .back(back)
-    .show(player);
-}

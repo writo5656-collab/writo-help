@@ -30,12 +30,12 @@
     "anchor_from": "top_right",
     "anchor_to": "top_right",
     "size": [
-      220,
-      90
+      190,
+      40
     ],
     "offset": [
-      -6,
-      40
+      -3,
+      3
     ],
     "layer": 30,
     "controls": [
@@ -45,7 +45,7 @@
           "anchor_from": "top_right",
           "anchor_to": "top_right",
           "size": [
-            "default",
+            "100%",
             "default"
           ],
           "text": "#text",
@@ -71,7 +71,8 @@
               "source_property_name": "(not ((#hud_title_text_string - 'npcs:') = #hud_title_text_string))",
               "target_property_name": "#visible"
             }
-          ]
+          ],
+          "font_scale_factor": 0.75
         }
       }
     ]

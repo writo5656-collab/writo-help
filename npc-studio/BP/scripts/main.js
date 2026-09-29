@@ -26,7 +26,7 @@ import { ALL_POSES, QUICK_CYCLE } from "./poses.js";
 const STARTER_ITEMS = [WAND_ID, CAMERA_TOOL_ID, MOB_TOOL_ID, HANDBOOK_ID];
 
 system.run(() => {
-  world.sendMessage("§8[§bNPC Studio§8] §7Studio loaded — grab your wand and roll camera. §8by NoxeelMC");
+  world.sendMessage("§8[§bNPC Studio V2§8] §7Studio loaded — grab your baton and roll camera. §8by NoxeelMC");
 });
 
 startLookLoop();
@@ -76,12 +76,12 @@ safeOn(() => world.afterEvents.playerSpawn, (ev) => {
   system.runTimeout(() => {
     if (!player.isValid) return;
     try {
-      player.onScreenDisplay.setTitle("§l§bNPC STUDIO", { subtitle: "§fwelcome to §bStudio Mode", fadeInDuration: 10, stayDuration: 60, fadeOutDuration: 20 });
+      player.onScreenDisplay.setTitle("§l§bNPC STUDIO §fV2", { subtitle: "§fwelcome to §bStudio Mode", fadeInDuration: 10, stayDuration: 60, fadeOutDuration: 20 });
       player.playSound("random.levelup", { pitch: 0.8, volume: 0.6 });
     } catch {
       /* ignore */
     }
-    msg(player, "§b§l» WELCOME TO NPC STUDIO MODE");
+    msg(player, "§b§l» WELCOME TO NPC STUDIO V2");
     msg(player, "§fYou're the director now. §7Tap the air with the §bDirector's Baton§7 to start. New here? Open the §bHandbook§7.");
     const inv = player.getComponent("minecraft:inventory")?.container;
     if (!inv) return;

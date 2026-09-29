@@ -461,14 +461,14 @@ function refreshValues(s) {
 
 function gizmoReadout(s) {
   const mode = s.mode === "select" ? "§eSELECT" : s.mode === "rot" ? "§bROTATE" : "§6MOVE";
-  const lines = [`§f§l${s.bone.label.toUpperCase()}`, `${mode}${s.mode === "select" ? "" : ` §7· axis ${AXES[s.axis]}`}`];
-  if (s.mode === "select") lines.push("§7look at a body part");
+  const head = `§f§l${s.bone.label.toUpperCase()}§r ${mode}${s.mode === "select" ? "" : ` §7${AXES[s.axis]}`}`;
+  let vals;
+  if (s.mode === "select") vals = "§7look at a body part";
   else {
-    const v = s.mode === "rot" ? s.rot.map((n) => `${Math.round(n)}°`) : s.pos.map((n) => n.toFixed(1));
-    lines.push(`§cX §f${v[0]}  §aY §f${v[1]}  §9Z §f${v[2]}`);
+    const v = s.mode === "rot" ? s.rot.map((n) => `${Math.round(n)}`) : s.pos.map((n) => n.toFixed(1));
+    vals = `§cX§f${v[0]} §aY§f${v[1]} §9Z§f${v[2]}`;
   }
-  lines.push("§7sneak §fdone §7· jump §fcancel");
-  return lines.join("\n");
+  return `${head}\n${vals}\n§7sneak done · jump cancel`;
 }
 
 /** Tapping a hotbar slot. */
