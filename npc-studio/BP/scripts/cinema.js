@@ -12,6 +12,7 @@
  */
 import { GameMode, HudVisibility, InputPermissionCategory, EquipmentSlot } from "@minecraft/server";
 import { world, system, msg, actionbar, NPC_FAMILY, getJson, setJson } from "./core.js";
+import { holdTempItem, purgeTempItems } from "./hotbar.js";
 
 const STATE_KEY = "npcstudio:cinema";
 const active = new Map(); // player.id -> { onExit, sneakTaps, lastSneak, hint }
@@ -84,9 +85,10 @@ export function enterCinema(player, onExit, opts = {}) {
     if (mode === GameMode.Spectator) mode = undefined; // never "restore" someone into spectator
     const gear = stashGear(player);
     setJson(player, STATE_KEY, { mode, loc: { ...player.location }, rot: { x: r.x, y: r.y }, dim: player.dimension.id, gear, sel: player.selectedSlotIndex });
-    if (gear.some((g) => g.skipped)) msg(player, "§eYour inventory is full, so some gear couldn't be hidden and may show in the shot.");
   }
-  active.set(player.id, { sneakTaps: 0, lastSneak: false, lastTapTick: 0, freeMove: !!opts.freeMove });
+  active.set(player.id, { sneakTaps: 0, lastSneak: false, lastTapTick: 0, freeMove: !!opts.freeMove, sel: player.selectedSlotIndex });
+  // an invisible item in your (now empty) hand: tap the screen / right-click = leave camera view
+  holdTempItem(player, opts.freeMove ? "npcstudio:cam_lock" : "npcstudio:cam_exit");
 
   if (opts.fade !== false) fadeBlack(player);
   try {
@@ -114,7 +116,26 @@ export function enterCinema(player, onExit, opts = {}) {
     /* ignore */
   }
   if (opts.hideNames !== false) setNames(player, true);
-  if (!opts.quiet) msg(player, "§b§l» Camera view §r§7— type §e/exitcam§7 or §edouble-tap sneak§7 to get out.");
+}
+
+/** Keep the invisible exit item in hand: scrolling the hotbar would show your other items. */
+export function cinemaHotbar(player, newSlot) {
+  const st = active.get(player.id);
+  if (!st || st.freeMove) return false;
+  if (newSlot !== st.sel) {
+    try {
+      player.selectedSlotIndex = st.sel;
+    } catch {
+      /* ignore */
+    }
+  }
+  return true;
+}
+
+/** Swap the in-hand item between "lock shot" (fly cam) and "leave view". */
+export function setCinemaHandItem(player, id) {
+  purgeTempItems(player);
+  holdTempItem(player, id);
 }
 
 // ---------- hiding your gear: armor + hands go into your inventory while filming ----------
@@ -190,6 +211,7 @@ export function freeCinema(player) {
   const st = active.get(player.id);
   if (!st) return;
   st.freeMove = true;
+  setCinemaHandItem(player, "npcstudio:cam_lock");
   try {
     player.inputPermissions.setPermissionCategory(InputPermissionCategory.LateralMovement, true);
     player.setGameMode(GameMode.Creative);
@@ -204,6 +226,8 @@ export function lockCinema(player) {
   if (!st) return;
   st.freeMove = false;
   st.hint = 0;
+  st.sel = player.selectedSlotIndex;
+  setCinemaHandItem(player, "npcstudio:cam_exit");
   try {
     player.inputPermissions.setPermissionCategory(InputPermissionCategory.LateralMovement, false);
   } catch {
@@ -272,6 +296,7 @@ function restoreState(player) {
   } catch {
     /* ignore */
   }
+  purgeTempItems(player);
   unstashGear(player, s.gear, s.sel);
   try {
     player.teleport(s.loc, { dimension: world.getDimension(s.dim ?? "overworld"), rotation: s.rot });
@@ -280,6 +305,25 @@ function restoreState(player) {
   }
   player.setDynamicProperty(STATE_KEY, undefined);
 }
+
+/** After a script reload (/reload, crash), nobody is "active" any more: free anyone still stuck. */
+system.runTimeout(() => {
+  for (const p of world.getAllPlayers()) {
+    if (active.has(p.id)) continue;
+    if (p.getDynamicProperty(STATE_KEY) !== undefined) restoreCinemaAfterRejoin(p);
+    else {
+      // no saved state (e.g. stuck from an older version): just hand the normal view back
+      try {
+        p.camera.clear();
+        p.onScreenDisplay.setHudVisibility(HudVisibility.Reset);
+        p.inputPermissions.setPermissionCategory(InputPermissionCategory.LateralMovement, true);
+      } catch {
+        /* ignore */
+      }
+      purgeTempItems(p);
+    }
+  }
+}, 20);
 
 /** Called on join: if they left mid-shot, give them their game mode, walking and HUD back. */
 export function restoreCinemaAfterRejoin(player) {
@@ -312,6 +356,6 @@ system.runInterval(() => {
     }
     st.lastSneak = sn;
     st.hint = (st.hint ?? 0) + 1;
-    if (!st.freeMove && st.hint % 40 === 1 && st.hint < 200) actionbar(player, "§7/exitcam  or  double-tap sneak  to leave camera view");
+
   }
 }, 1);

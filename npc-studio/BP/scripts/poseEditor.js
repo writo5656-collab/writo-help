@@ -11,6 +11,7 @@ import { InputPermissionCategory } from "@minecraft/server";
 import { world, system, menu, modal, msg, sfx, actionbar, ICON, clamp, wrapDeg, round, getJson, setJson, forward, right } from "./core.js";
 import { BONES, getRot, setRot, getPos, setPos, getScale, setScale, readPose, applyPose, mirrorPose, expandPreset, pushUndo, undo, redo, historySize, snapPos, POS_LIMIT, getAnim, setAnim } from "./rig.js";
 import { POSE_CATEGORIES, LOOP_ANIMS } from "./poses.js";
+import { swapHotbar, restoreHotbar } from "./hotbar.js";
 
 const editorState = new Map(); // player.id -> { bone, sens, snap }
 const clipboard = new Map(); // player.id -> pose
@@ -40,23 +41,20 @@ export function openPoseEditor(player, npc, back) {
   if (!npc.isValid) return;
   highlight(npc);
   const self = () => openPoseEditor(player, npc, back);
-  const st = stateFor(player);
-  const bone = BONES[st.bone];
   const h = historySize(npc);
-  const body = [
-    `§fSelected bone: §b${bone.label}`,
-    `§7Rotation: §f${fmt(getRot(npc, bone.key))}`,
-    `§7Position: §f${fmt(getPos(npc, bone.key))} px`,
-    `§7Size: §f${Math.round(getScale(npc) * 100)}%   §7Undo: §f${h.undo}  §7Redo: §f${h.redo}`
-  ].join("\n");
-  menu("Pose Editor", body)
-    .btn("§lLive Gizmo §r— look to pose\n§8Blender-style, rotate or move", ICON("gizmo"), () => openGizmoStart(player, npc, self))
-    .btn(`Bone: ${bone.label} §8(tap to change)`, ICON("pose_manual"), () => pickBone(player, self))
-    .btn("Precise Sliders", ICON("sliders"), () => openSliders(player, npc, self))
-    .btn("Nudge Pad (buttons)", ICON("move"), () => openNudge(player, npc, self))
-    .btn("Pose Library (45+ poses)", ICON("pose_preset"), () => openPoseLibrary(player, npc, self))
+  menu("Pose Editor", "§7Tip: §fPose Mode§7 is the fastest way — look at an arm, tap Rotate, look around, sneak when it looks right.")
+    .btn("§lPose Mode (Gizmo)\n§r§8look at a body part, tap Rotate or Move", ICON("gizmo"), () => startGizmo(player, npc, self))
+    .btn("Pose Library §8(45+ poses)", ICON("pose_preset"), () => openPoseLibrary(player, npc, self))
     .btn("My Saved Poses", ICON("save"), () => openMyPoses(player, npc, self))
-    .btn("Mirror Pose (Left <-> Right)", ICON("mirror"), () => {
+    .btn(`Undo §8(${h.undo})`, ICON("undo"), () => {
+      if (!undo(npc)) msg(player, "§cNothing to undo.");
+      self();
+    })
+    .btn(`Redo §8(${h.redo})`, ICON("redo"), () => {
+      if (!redo(npc)) msg(player, "§cNothing to redo.");
+      self();
+    })
+    .btn("Mirror Pose §8(left <-> right)", ICON("mirror"), () => {
       pushUndo(npc);
       applyPose(npc, mirrorPose(readPose(npc)));
       self();
@@ -74,20 +72,6 @@ export function openPoseEditor(player, npc, back) {
       }
       self();
     })
-    .btn(`Undo §8(${h.undo})`, ICON("undo"), () => {
-      if (!undo(npc)) msg(player, "§7Nothing to undo.");
-      self();
-    })
-    .btn(`Redo §8(${h.redo})`, ICON("redo"), () => {
-      if (!redo(npc)) msg(player, "§7Nothing to redo.");
-      self();
-    })
-    .btn(`Reset ${bone.label}`, ICON("clear"), () => {
-      pushUndo(npc);
-      setRot(npc, bone.key, [0, 0, 0]);
-      setPos(npc, bone.key, [0, 0, 0]);
-      self();
-    })
     .btn("Reset Whole Pose", ICON("clear_x"), () => {
       pushUndo(npc);
       applyPose(npc, {});
@@ -95,9 +79,28 @@ export function openPoseEditor(player, npc, back) {
     })
     .btn("Size / Height", ICON("scale"), () => openScaleMenu(player, npc, self))
     .btn(`Looping Animation: §b${getAnim(npc) ? LOOP_ANIMS[getAnim(npc) - 1] : "None"}`, ICON("animate"), () => openLoopAnims(player, npc, self))
-    .btn(`Gizmo sensitivity: ${st.sens}x  Snap: ${st.snap ? "ON" : "off"}`, ICON("fov"), () => {
+    .btn("Advanced §8(exact numbers, nudge, settings)", ICON("sliders"), () => openAdvanced(player, npc, self))
+    .back(back)
+    .show(player);
+}
+
+function openAdvanced(player, npc, back) {
+  const self = () => openAdvanced(player, npc, back);
+  const st = stateFor(player);
+  const bone = BONES[st.bone];
+  menu("Advanced Posing", `§fBody part: §b${bone.label}\n§7Rotation: §f${fmt(getRot(npc, bone.key))}\n§7Position: §f${fmt(getPos(npc, bone.key))} px`)
+    .btn(`Body part: ${bone.label} §8(change)`, ICON("pose_manual"), () => pickBone(player, self))
+    .btn("Exact Sliders", ICON("sliders"), () => openSliders(player, npc, self))
+    .btn("Nudge Pad (buttons)", ICON("move"), () => openNudge(player, npc, self))
+    .btn(`Reset ${bone.label}`, ICON("clear"), () => {
+      pushUndo(npc);
+      setRot(npc, bone.key, [0, 0, 0]);
+      setPos(npc, bone.key, [0, 0, 0]);
+      self();
+    })
+    .btn(`Gizmo speed: ${st.sens}x  Snap: ${st.snap ? "ON" : "off"}`, ICON("fov"), () => {
       modal("Gizmo Settings")
-        .slider("sens", "Sensitivity (x0.1)", 2, 30, 1, Math.round(st.sens * 10))
+        .slider("sens", "Speed (x0.1)", 2, 30, 1, Math.round(st.sens * 10))
         .toggle("snap", "Snap (5 degrees / 1 pixel)", st.snap)
         .show(player, (v) => {
           st.sens = v.sens / 10;
@@ -286,37 +289,11 @@ export function openLoopAnims(player, npc, back) {
 // =====================================================================================
 // LIVE GIZMO
 // =====================================================================================
-const AXES = ["§fFree §7(§cX§7+§aY§7)", "§cX only (red)", "§aY only (green)", "§9Z only (blue)"];
+const AXES = ["§fFree", "§cX", "§aY", "§9Z"];
 const gizmos = new Map(); // player.id -> session
 
 export function isInGizmo(player) {
   return gizmos.has(player.id);
-}
-
-function openGizmoStart(player, npc, back) {
-  const st = stateFor(player);
-  const b = BONES[st.bone].label;
-  menu(
-    "Live Gizmo",
-    [
-      `§fBody part: §b§l${b}`,
-      "",
-      "§e1.§f A 3D gizmo appears on the NPC's §b" + b + "§f:",
-      "   §frings = ROTATE, arrows = MOVE",
-      "   §cred = X§f, §agreen = Y§f, §9blue = Z§f. §eYellow§f = the axis you control.",
-      "§e2.§f Turn your head (or drag the screen). The body part follows you.",
-      "§e3.§a Sneak§f to keep it. §cJump§f to undo.",
-      "",
-      "§7Change axis: scroll the hotbar or tap another slot.",
-      "§7Switch rotate/move: swing your arm (hit / tap).",
-      "§7Walking is paused while the gizmo is on."
-    ].join("\n")
-  )
-    .btn(`§lRotate ${b}`, ICON("gizmo"), () => startGizmo(player, npc, "rot", back))
-    .btn(`§lMove ${b}`, ICON("move"), () => startGizmo(player, npc, "pos", back))
-    .btn("Pick another body part", ICON("pose_manual"), () => pickBone(player, () => openGizmoStart(player, npc, back)))
-    .back(back)
-    .show(player);
 }
 
 function setWalk(player, allowed) {
@@ -349,7 +326,7 @@ function spawnGizmo(s) {
   try {
     const g = s.npc.dimension.spawnEntity(GIZMO_ID, gizmoWorldPos(s.npc, s.bone.key, s.pos));
     g.setRotation({ x: 0, y: s.npc.getRotation().y });
-    g.setProperty("npcstudio:gscale", clamp(getScale(s.npc) * (s.bone.key === "root" ? 1.8 : 1), 0.1, 4));
+    g.setProperty("npcstudio:gscale", gizmoScale(s));
     s.gizmo = g;
     syncGizmo(s);
   } catch (e) {
@@ -361,9 +338,11 @@ function syncGizmo(s) {
   const g = s.gizmo;
   if (!g?.isValid) return;
   try {
-    const mode = s.mode === "rot" ? 1 : 0;
+    const mode = s.mode === "rot" ? 1 : s.mode === "pos" ? 0 : 2;
     if (g.getProperty("npcstudio:gmode") !== mode) g.setProperty("npcstudio:gmode", mode);
     if (g.getProperty("npcstudio:gaxis") !== s.axis) g.setProperty("npcstudio:gaxis", s.axis);
+    const sc = gizmoScale(s);
+    if (Math.abs((g.getProperty("npcstudio:gscale") ?? 1) - sc) > 0.01) g.setProperty("npcstudio:gscale", sc);
     const p = gizmoWorldPos(s.npc, s.bone.key, s.pos);
     const o = g.location;
     if (Math.abs(p.x - o.x) + Math.abs(p.y - o.y) + Math.abs(p.z - o.z) > 0.005) g.teleport(p, { rotation: { x: 0, y: s.npc.getRotation().y } });
@@ -385,38 +364,151 @@ export function cleanupGizmos() {
   }
 }
 
-export function startGizmo(player, npc, mode, back) {
+const gizmoScale = (s) => clamp(getScale(s.npc) * (s.bone.key === "root" ? 1.8 : s.bone.key === "body" ? 1.1 : 0.8), 0.1, 4);
+
+// =====================================================================================
+// POSE MODE: a Blender-style toolbar on your hotbar
+//   1 Select (look at a body part)   2 Rotate   3 Move   4 Axis   5 Undo   6 Reset part   9 Done
+//   While rotating / moving: just look around. Sneak = done, Jump = cancel everything.
+// =====================================================================================
+const TOOLS = ["npcstudio:tool_select", "npcstudio:tool_rotate", "npcstudio:tool_move", "npcstudio:tool_axis", "npcstudio:tool_undo", "npcstudio:tool_reset", undefined, undefined, "npcstudio:tool_done"];
+const MODE_SLOT = { select: 0, rot: 1, pos: 2 };
+// where each part "is" when you look at it (model pixels)
+const CENTERS = { head: [0, 28, 0], body: [0, 18, 0], right_arm: [-6, 16, 0], left_arm: [6, 16, 0], right_leg: [-2, 6, 0], left_leg: [2, 6, 0], root: [0, 0.5, 0] };
+
+function partUnderCrosshair(player, npc) {
+  const eye = player.getHeadLocation();
+  const dir = player.getViewDirection();
+  let best, bestAng = 16;
+  BONES.forEach((b, i) => {
+    const c = CENTERS[b.key];
+    const p = gizmoWorldPos(npc, "root", [c[0] + getPos(npc, b.key)[0], c[1] + getPos(npc, b.key)[1], c[2]]);
+    const v = { x: p.x - eye.x, y: p.y - eye.y, z: p.z - eye.z };
+    const len = Math.hypot(v.x, v.y, v.z) || 1;
+    const ang = (Math.acos(clamp((v.x * dir.x + v.y * dir.y + v.z * dir.z) / len, -1, 1)) * 180) / Math.PI;
+    if (ang < bestAng) {
+      bestAng = ang;
+      best = i;
+    }
+  });
+  return best;
+}
+
+export function startGizmo(player, npc, back) {
   if (gizmos.has(player.id)) return;
+  if (!swapHotbar(player, TOOLS)) {
+    msg(player, "§cPose Mode needs your hotbar for its tools. Free up some inventory space (up to 9 slots) and try again.");
+    return;
+  }
   const st = stateFor(player);
-  const bone = BONES[st.bone];
-  pushUndo(npc);
   const r0 = player.getRotation();
-  const session = {
+  const s = {
     npc,
-    bone,
-    mode,
+    bone: BONES[st.bone],
+    mode: "select",
     axis: 0,
-    rot: getRot(npc, bone.key),
-    pos: getPos(npc, bone.key),
+    rot: [0, 0, 0],
+    pos: [0, 0, 0],
     last: { x: r0.x, y: r0.y },
     sneak: player.isSneaking,
     jump: player.isJumping,
-    slot: player.selectedSlotIndex,
     back,
-    grace: 6
+    grace: 4,
+    start: { pose: readPose(npc), scale: getScale(npc) }
   };
-  gizmos.set(player.id, session);
-  setWalk(player, false);
-  player.setDynamicProperty("npcstudio:gizmo", true);
-  highlight(npc);
-  spawnGizmo(session);
+  s.rot = getRot(npc, s.bone.key);
+  s.pos = getPos(npc, s.bone.key);
+  gizmos.set(player.id, s);
   try {
-    player.onScreenDisplay.setTitle(`§b${bone.label}`, { subtitle: "§fLook around to pose it", fadeInDuration: 2, stayDuration: 30, fadeOutDuration: 8 });
+    player.selectedSlotIndex = 0;
   } catch {
     /* ignore */
   }
+  setWalk(player, false);
+  player.setDynamicProperty("npcstudio:gizmo", true);
+  highlight(npc);
+  spawnGizmo(s);
   sfx(player, "start");
-  session.run = system.runInterval(() => tickGizmo(player, session), 1);
+  try {
+    player.onScreenDisplay.setTitle("§bPOSE MODE", { subtitle: "§flook at a body part, then pick §bRotate§f or §6Move", fadeInDuration: 2, stayDuration: 40, fadeOutDuration: 10 });
+  } catch {
+    /* ignore */
+  }
+  s.run = system.runInterval(() => tickGizmo(player, s), 1);
+}
+
+function setMode(player, s, mode) {
+  if (s.mode === mode) return;
+  s.mode = mode;
+  if (mode !== "select") {
+    s.pushed = false; // the first movement of this grab saves an undo step
+    s.rot = getRot(s.npc, s.bone.key);
+    s.pos = getPos(s.npc, s.bone.key);
+    const r = player.getRotation();
+    s.last = { x: r.x, y: r.y };
+    s.grace = 3;
+  }
+  sfx(player, "click");
+}
+
+function backToModeSlot(player, s) {
+  try {
+    player.selectedSlotIndex = MODE_SLOT[s.mode];
+  } catch {
+    /* ignore */
+  }
+}
+
+function refreshValues(s) {
+  s.rot = getRot(s.npc, s.bone.key);
+  s.pos = getPos(s.npc, s.bone.key);
+}
+
+/** Tapping a hotbar slot. */
+export function gizmoHotbar(player, slot) {
+  const s = gizmos.get(player.id);
+  if (!s) return false;
+  if (slot === MODE_SLOT[s.mode]) return true;
+  switch (slot) {
+    case 0: setMode(player, s, "select"); break;
+    case 1: setMode(player, s, "rot"); break;
+    case 2: setMode(player, s, "pos"); break;
+    case 3: gizmoToolUse(player, "npcstudio:tool_axis"); backToModeSlot(player, s); break;
+    case 4: gizmoToolUse(player, "npcstudio:tool_undo"); backToModeSlot(player, s); break;
+    case 5: gizmoToolUse(player, "npcstudio:tool_reset"); backToModeSlot(player, s); break;
+    case 8: endGizmo(player, true); break;
+    default: backToModeSlot(player, s);
+  }
+  return true;
+}
+
+/** Tapping the screen while holding a tool (handy on mobile). */
+export function gizmoToolUse(player, itemId) {
+  const s = gizmos.get(player.id);
+  if (!s) return;
+  switch (itemId) {
+    case "npcstudio:tool_axis":
+      s.axis = (s.axis + 1) % AXES.length;
+      sfx(player, "click");
+      break;
+    case "npcstudio:tool_undo":
+      if (undo(s.npc)) sfx(player, "pose");
+      else sfx(player, "error");
+      refreshValues(s);
+      s.pushed = false;
+      break;
+    case "npcstudio:tool_reset":
+      pushUndo(s.npc);
+      setRot(s.npc, s.bone.key, [0, 0, 0]);
+      setPos(s.npc, s.bone.key, [0, 0, 0]);
+      refreshValues(s);
+      s.pushed = false;
+      sfx(player, "pose");
+      break;
+    case "npcstudio:tool_done":
+      endGizmo(player, true);
+      break;
+  }
 }
 
 function tickGizmo(player, s) {
@@ -429,13 +521,26 @@ function tickGizmo(player, s) {
   const k = st.sens;
 
   if (s.grace > 0) s.grace--;
-  else {
+  else if (s.mode === "select") {
+    const i = partUnderCrosshair(player, s.npc);
+    if (i !== undefined && BONES[i] !== s.bone) {
+      s.bone = BONES[i];
+      st.bone = i;
+      refreshValues(s);
+      sfx(player, "click");
+    }
+  } else if (dPitch !== 0 || dYaw !== 0) {
+    if (!s.pushed) {
+      pushUndo(s.npc);
+      s.pushed = true;
+    }
     if (s.mode === "rot") {
       if (s.axis === 0) {
         s.rot[0] += dPitch * k;
         s.rot[1] += dYaw * k;
       } else s.rot[s.axis - 1] += (dPitch + dYaw) * k;
       s.rot = s.rot.map((v) => clamp(v, -180, 180));
+      setRot(s.npc, s.bone.key, st.snap ? s.rot.map((v) => round(v, 5)) : s.rot);
     } else {
       const m = 0.12 * k;
       if (s.axis === 0) {
@@ -443,15 +548,12 @@ function tickGizmo(player, s) {
         s.pos[1] -= dPitch * m;
       } else s.pos[s.axis - 1] += (dPitch + dYaw) * m;
       s.pos = s.pos.map((v) => clamp(v, -POS_LIMIT, POS_LIMIT));
+      setPos(s.npc, s.bone.key, (st.snap ? s.pos.map((v) => round(v, 1)) : s.pos).map(snapPos));
     }
-    if (dPitch !== 0 || dYaw !== 0) {
-      const r = st.snap ? s.rot.map((v) => round(v, 5)) : s.rot;
-      const p = st.snap ? s.pos.map((v) => round(v, 1)) : s.pos;
-      if (s.mode === "rot") setRot(s.npc, s.bone.key, r);
-      else setPos(s.npc, s.bone.key, p.map(snapPos));
-    }
+  }
 
-    // controls (rising edges)
+  // Sneak = done, Jump = cancel (rising edges)
+  if (s.grace === 0) {
     const sneaking = player.isSneaking;
     const jumping = player.isJumping;
     if (sneaking && !s.sneak) return endGizmo(player, true);
@@ -461,29 +563,9 @@ function tickGizmo(player, s) {
   }
 
   syncGizmo(s);
-  const c = (i, v) => `${["§c", "§a", "§9"][i]}${"XYZ"[i]} ${v}`;
-  const vals = s.mode === "rot" ? s.rot.map((v, i) => c(i, v.toFixed(0) + "°")).join("  ") : s.pos.map((v, i) => c(i, v.toFixed(2))).join("  ");
-  actionbar(player, `${s.mode === "rot" ? "§b§lROTATE (rings)" : "§6§lMOVE (arrows)"}§r §f${s.bone.label}  §7Axis: ${AXES[s.axis]}\n${vals}\n§7Look around to pose · §aSneak§7 apply · §cJump§7 cancel · §eHotbar§7 axis · §dSwing§7 rotate/move`);
-}
-
-export function gizmoCycleAxis(player, newSlot) {
-  const s = gizmos.get(player.id);
-  if (!s) return false;
-  if (newSlot === s.slot) return true; // this is our own "put the slot back" change
-  s.axis = (s.axis + 1) % AXES.length;
-  try {
-    if (newSlot !== s.slot) player.selectedSlotIndex = s.slot;
-  } catch {
-    /* ignore */
-  }
-  return true;
-}
-
-export function gizmoToggleMode(player) {
-  const s = gizmos.get(player.id);
-  if (!s) return false;
-  s.mode = s.mode === "rot" ? "pos" : "rot";
-  return true;
+  const what = s.mode === "select" ? "§eSELECT§f — look at a body part" : s.mode === "rot" ? "§bROTATE§f — look around" : "§6MOVE§f — look around";
+  const axis = s.mode === "select" ? "" : `  §7axis ${AXES[s.axis]}`;
+  actionbar(player, `§l${s.bone.label}§r  ${what}${axis}\n§7hotbar: Select · Rotate · Move · Axis · Undo · Reset · Done   §aSneak§7 done  §cJump§7 cancel`);
 }
 
 export function endGizmo(player, apply) {
@@ -496,20 +578,26 @@ export function endGizmo(player, apply) {
   } catch {
     /* ignore */
   }
+  if (!apply && s.npc.isValid) {
+    applyPose(s.npc, s.start.pose);
+    setScale(s.npc, s.start.scale);
+  }
   if (player.isValid) {
+    restoreHotbar(player);
     setWalk(player, true);
     player.setDynamicProperty("npcstudio:gizmo", undefined);
-    actionbar(player, apply ? "§aApplied." : "§cCancelled.");
+    actionbar(player, apply ? "§aPose saved." : "§cPose Mode cancelled — changes undone.");
     sfx(player, apply ? "ok" : "click");
   }
-  if (!apply && s.npc.isValid) undo(s.npc);
-  if (player.isValid && s.npc.isValid) system.runTimeout(() => openPoseEditor(player, s.npc, s.back), 4);
+  if (player.isValid && s.npc.isValid) system.runTimeout(() => openPoseEditor(player, s.npc, s.back), 6);
 }
 
-/** Safety net: if someone left the world mid-gizmo, give walking back when they return. */
+/** Safety net: if someone left the world mid-edit, give walking and their hotbar back. */
 export function restoreAfterRejoin(player) {
+  if (gizmos.has(player.id)) return;
   if (player.getDynamicProperty("npcstudio:gizmo")) {
     setWalk(player, true);
     player.setDynamicProperty("npcstudio:gizmo", undefined);
   }
+  restoreHotbar(player);
 }

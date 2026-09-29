@@ -15,45 +15,8 @@ export const MOB_TAG = "npcstudio_mob";
 export const TOOL_IDS = [WAND_ID, CAMERA_TOOL_ID, MOB_TOOL_ID];
 export const CAM_PRESET = "npcstudio:cam_free";
 
-// Real Minecraft item art where an item fits the action; our own drawn icons for the rest.
-const VANILLA_ICONS = {
-  equip: "textures/items/diamond_chestplate",
-  armor_set: "textures/items/netherite_chestplate",
-  trim: "textures/items/coast_armor_trim_smithing_template",
-  copy_outfit: "textures/items/armor_stand",
-  pose_manual: "textures/items/armor_stand",
-  custom: "textures/items/name_tag",
-  rename: "textures/items/name_tag",
-  enchant: "textures/items/book_enchanted",
-  pose_preset: "textures/items/book_writable",
-  save: "textures/items/book_written",
-  paste: "textures/items/paper",
-  animate: "textures/items/clock_item",
-  fov: "textures/items/spyglass",
-  spawn: "textures/items/totem",
-  manage: "textures/items/nether_star",
-  waypoint: "textures/items/ender_pearl",
-  shake: "textures/items/gunpowder",
-  ride: "textures/items/saddle",
-  dismount: "textures/items/lead",
-  freeze: "textures/blocks/ice_packed",
-  skin: "textures/items/dye_powder_pink",
-  debug: "textures/items/book_normal",
-  preset: "textures/blocks/chest_front",
-  bulkequip: "textures/items/bundle",
-  world: "textures/blocks/grass_side_carried",
-  day: "textures/items/glowstone_dust",
-  sun: "textures/blocks/double_plant_sunflower_front",
-  sunset: "textures/items/blaze_powder",
-  night: "textures/items/phantom_membrane",
-  midnight: "textures/items/echo_shard",
-  rain: "textures/items/bucket_water",
-  thunder: "textures/blocks/lightning_rod",
-  eye: "textures/items/ender_eye",
-  exit: "textures/items/door_wood",
-  flycam: "textures/items/phantom_membrane"
-};
-export const ICON = (name) => VANILLA_ICONS[name] ?? `textures/ui/npcstudio/icon_${name}`;
+// Every feature button uses NPC Studio's own drawn icon set (tools/make_icons.py).
+export const ICON = (name) => `textures/ui/npcstudio/icon_${name}`;
 
 // ---------- sound effects ----------
 const SOUNDS = {

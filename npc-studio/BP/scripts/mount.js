@@ -300,7 +300,7 @@ export function openPutNpcOn(player, mob, back) {
     return back?.();
   }
   const m = menu(`Who rides the ${mobName(mob)}?`);
-  npcs.forEach((n) => m.btn(npcLabel(n), ICON("spawn"), () => {
+  npcs.forEach((n) => m.btn(npcLabel(n), `textures/ui/npcstudio/heads/skin${n.getProperty("npcstudio:skin_index") ?? 0}`, () => {
     mountNpc(player, n, mob);
     back?.();
   }));

@@ -1,9 +1,23 @@
-# NPC Studio v3.2 (Minecraft Bedrock add-on by NoxeelMC)
+# NPC Studio v3.3 (Minecraft Bedrock add-on by NoxeelMC)
 
 Spawn, pose, dress, animate and film custom NPCs for thumbnails and cinematics.
-Download: `dist/NPCStudio-v3.2.0.mcaddon` (open it on your device and Minecraft imports both packs).
+Download: `dist/NPCStudio-v3.3.0.mcaddon` (open it on your device and Minecraft imports both packs).
 
-## What's new in v3.2
+## What's new in v3.3
+- **Clean camera view:** no chat messages or hint bars while filming. Instructions live in the
+  menus (Fly Cam explains itself once before it starts).
+- **Tap the screen to leave camera view.** An invisible item sits in your hand while filming, so
+  tapping (or right-clicking) always gets you out. Fly Cam: tap = lock the shot, tap again = leave;
+  path mode: tap = add point, double-tap = finish. Backups: `/exitcam`, `/npcstudio:exit`,
+  double-tap sneak. After a script reload, anyone stuck in a camera is released automatically.
+- **Pose Mode (new gizmo UX):** a Blender-style toolbar on your hotbar — Select (just look at a
+  body part), Rotate, Move, Axis, Undo, Reset, Done. Sneak = done, Jump = cancel everything.
+  Your hotbar items are put away and returned. The 3D gizmo shows a yellow frame on the selected part.
+- **Skin heads:** every skin button shows that skin's face; NPC lists show each NPC's head.
+  The Skin Pack Builder now makes heads for custom skins too.
+- **All-new icon set** for every feature (Minecraft item art is only used for real items).
+
+## v3.2
 - **Fly Cam:** fly the camera with your normal joystick / WASD; the view follows with smooth
   drone lag. **Tap (swing) or `/lockcam`** locks the shot as a camera. Hotbar scroll = zoom.
   Fly Cam Path: every tap drops a path point, `/lockcam` saves the path. "Re-frame With Fly Cam"

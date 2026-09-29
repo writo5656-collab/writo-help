@@ -2,11 +2,11 @@
  * NPC Studio — flycam.js : fly the camera with your normal controls (joystick / WASD).
  *
  * You fly invisibly (creative flight), and the view follows you with a smooth drone-like lag.
- * Tap / hit (swing) or /lockcam locks the shot:
+ * Tap the screen (right-click) or /lockcam locks the shot:
  *  - "camera" mode: places a camera right there and keeps looking through it
  *  - "reframe" mode: moves an existing camera there
- *  - "path" mode: every tap adds a point to a camera path; /lockcam finishes it
- * Zoom: scroll or tap the hotbar. Leave any time: /exitcam.
+ *  - "path" mode: every tap adds a point; double-tap (or /lockcam) finishes the path
+ * Zoom: scroll or tap the hotbar. No text is ever shown on screen while filming.
  * Copyright (c) 2026 NoxeelMC. All rights reserved. See LICENSE.md.
  */
 import { EasingType } from "@minecraft/server";
@@ -30,16 +30,7 @@ export function startFlyCam(player, mode, hooks, marker) {
   sessions.set(player.id, s);
   enterCinema(player, () => stopLoop(player), { freeMove: true, creative: true, quiet: true });
   freeCinema(player); // also covers starting from inside another camera view
-  try {
-    player.onScreenDisplay.setTitle("§l§bFLY CAM", { subtitle: "§ffly with your joystick · §etap§f to lock the shot", fadeInDuration: 5, stayDuration: 50, fadeOutDuration: 15 });
-  } catch {
-    /* ignore */
-  }
   sfx(player, "start");
-  msg(player, "§b§l» Fly Cam");
-  msg(player, "§fFly: §7joystick / WASD, double-tap jump to take off, jump & sneak for up/down.");
-  msg(player, `§fZoom: §7scroll or tap the hotbar.  §fLock: §etap / hit§7 or §e/lockcam§7.  §fLeave: §e/exitcam`);
-  if (mode === "path") msg(player, "§fPath mode: §7each tap adds a point. §e/lockcam§7 when you're done.");
   s.run = system.runInterval(() => tick(player, s), 1);
 }
 
@@ -56,8 +47,6 @@ function tick(player, s) {
   } catch {
     /* ignore */
   }
-  const extra = s.mode === "path" ? `§7Points: §f${s.path.length}  §etap§7 = add point, §e/lockcam§7 = finish` : "§etap§7 or §e/lockcam§7 = lock this shot";
-  actionbar(player, `§b§lFLY CAM§r  §7Zoom §f${FOVS[s.fovIdx]}°  §8|  ${extra}  §8|  §7/exitcam`);
 }
 
 function stopLoop(player) {
@@ -88,21 +77,22 @@ export function flyCamLock(player, fromCommand) {
   const s = sessions.get(player.id);
   if (!s) return false;
   const now = system.currentTick;
-  if (!fromCommand && now - s.lastSwing < 6) return true; // one tap can fire twice
+  const gap = now - s.lastSwing;
+  if (!fromCommand && gap < 3) return true; // one tap can fire twice
   s.lastSwing = now;
+  const doubleTap = !fromCommand && gap < 10;
   const head = player.getHeadLocation();
   const r = player.getRotation();
   const fov = FOVS[s.fovIdx];
 
   if (s.mode === "path") {
-    if (!fromCommand) {
+    if (!fromCommand && !doubleTap) {
       s.path.push({ l: { x: head.x, y: head.y - 0.15, z: head.z }, rx: r.x, ry: r.y, fov, secs: 2 });
       sfx(player, "bell");
-      actionbar(player, `§aPoint ${s.path.length} added.`);
       return true;
     }
     if (s.path.length < 2) {
-      msg(player, "§cAdd at least 2 points first (tap in different spots).");
+      sfx(player, "error");
       return true;
     }
     stopLoop(player);
@@ -125,8 +115,6 @@ export function flyCamLock(player, fromCommand) {
 function finish(player, marker, text, hooks) {
   sfx(player, "shutter");
   lockCinema(player);
-  msg(player, text);
-  msg(player, "§7Still looking through it. §e/exitcam§7 to leave, §e/cameras§7 for the camera menu.");
   system.runTimeout(() => {
     if (player.isValid && marker?.isValid) hooks.openPanel(player, marker);
   }, 8);

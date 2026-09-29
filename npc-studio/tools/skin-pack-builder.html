@@ -82,7 +82,7 @@ code { font: 13px var(--mono); background: var(--slot); border: 1px solid var(--
     <h2 id="how">How it works</h2>
     <ol class="steps">
       <li><b>Pick skins</b> for the slots below. Standard Minecraft skins: 64×64 PNG (128×128 HD also works).</li>
-      <li><b>Name each one.</b> The name shows in NPC Studio's skin picker.</li>
+      <li><b>Name each one.</b> The name and the skin's face show in NPC Studio's skin picker.</li>
       <li><b>Download</b> the pack and open it with Minecraft. If your device saved it as <code>.zip</code>, rename it to <code>.mcpack</code> first.</li>
       <li>In your world: <b>Settings → Resource Packs</b>, activate it and move it <b>above</b> NPC Studio.</li>
       <li>In game: <b>Spawn NPC → Custom skin slots</b>. For Alex-style skins set <b>Skin &amp; Size → Arm Model → Slim</b>.</li>
@@ -191,6 +191,18 @@ function uuid() {
   });
 }
 
+// the skin-picker button icon: face + hat, dark outline, soft shadow (matches NPC Studio's own heads)
+function headIcon(img) {
+  const c = document.createElement("canvas"); c.width = c.height = 64;
+  const ctx = c.getContext("2d"); ctx.imageSmoothingEnabled = false;
+  ctx.fillStyle = "rgba(0,0,0,0.35)"; ctx.fillRect(6, 8, 56, 56);
+  ctx.fillStyle = "#14181e"; ctx.fillRect(4, 4, 56, 56);
+  ctx.fillStyle = "#000"; ctx.fillRect(8, 8, 48, 48);
+  const f = document.createElement("canvas"); f.width = f.height = 64; drawFace(f, img);
+  ctx.drawImage(f, 8, 8, 48, 48);
+  return c;
+}
+
 function canvasBlob(canvas) { return new Promise((res) => canvas.toBlob(res, "image/png")); }
 
 async function buildPack() {
@@ -205,6 +217,7 @@ async function buildPack() {
   for (const s of slots) {
     if (!s.img) continue;
     zip.file(`textures/entity/npcstudio/custom_slot${s.n}.png`, s.file);
+    zip.file(`textures/ui/npcstudio/heads/skin${FIRST_INDEX + s.n - 1}.png`, await canvasBlob(headIcon(s.img)));
     const clean = (s.name || `Custom ${s.n}`).replace(/[\r\n=]/g, " ").trim();
     lang.push(`npcstudio.skin.${FIRST_INDEX + s.n - 1}=${clean}`);
   }

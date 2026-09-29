@@ -11,7 +11,7 @@ import { readPose, applyPose, pushUndo, getScale, setScale, getAnim, setAnim, ge
 import { ALL_POSES, LOOP_ANIMS } from "./poses.js";
 import { openPoseEditor, openPoseLibrary, openScaleMenu, openLoopAnims } from "./poseEditor.js";
 import { openWardrobe, openBulkWardrobe, readAllEquip, applyEquipInfo, SLOTS } from "./wardrobe.js";
-import { pickSkin, setSkin, skinPlainName } from "./skins.js";
+import { pickSkin, setSkin, skinPlainName, npcHead } from "./skins.js";
 import { openAnimator, playAllTimelines, stopAllTimelines, getTimeline } from "./animator.js";
 import { openShotsMenu } from "./shots.js";
 import { openRideMenu, isMounted } from "./mount.js";
@@ -235,7 +235,7 @@ function pickNpc(player, title, onPick, back) {
   const npcs = npcsNear(player, 64).sort((a, b) => a.location.x - b.location.x);
   if (npcs.length === 0) return msg(player, "§cNo NPCs within 64 blocks.");
   const m = menu(title);
-  npcs.forEach((n) => m.btn(`${npcLabel(n)}${isLocked(n) ? " §c(locked)" : ""}\n§8${Math.round(Math.hypot(n.location.x - player.location.x, n.location.z - player.location.z))} blocks away`, ICON("spawn"), () => onPick(n)));
+  npcs.forEach((n) => m.btn(`${npcLabel(n)}${isLocked(n) ? " §c(locked)" : ""}\n§8${Math.round(Math.hypot(n.location.x - player.location.x, n.location.z - player.location.z))} blocks away`, npcHead(n), () => onPick(n)));
   if (back) m.back(back);
   m.show(player);
 }
@@ -270,7 +270,7 @@ export function openManageMenu(player, npc, back) {
     .btn("§lPose Editor §r§8(Blender-style)", ICON("pose_manual"), () => openPoseEditor(player, npc, self))
     .btn("Pose Library (45+ poses)", ICON("pose_preset"), () => openPoseLibrary(player, npc, self))
     .btn("§lWardrobe §r§8(armor, enchants, trims)", ICON("equip"), () => openWardrobe(player, npc, self))
-    .btn("Skin & Size", ICON("skin"), () => openSkinSize(player, npc, self))
+    .btn("Skin & Size", npcHead(npc), () => openSkinSize(player, npc, self))
     .btn("Animation §8(loops + keyframes)", ICON("animate"), () =>
       menu("Animation")
         .btn(`Looping Animation: ${anim ? LOOP_ANIMS[anim - 1] : "none"}`, ICON("animate"), () => openLoopAnims(player, npc, self))

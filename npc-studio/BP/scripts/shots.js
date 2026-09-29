@@ -199,7 +199,6 @@ export function runShot(player, cfg, onEnd) {
     // sneak = stop
     const sn = player.isSneaking;
     if (sn && !sneakWas) {
-      msg(player, "§7Shot stopped.");
       return finish(false);
     }
     sneakWas = sn;

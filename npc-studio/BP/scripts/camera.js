@@ -96,7 +96,27 @@ const FLY_HOOKS = {
 };
 
 export function flyCam(player, mode, marker) {
-  startFlyCam(player, mode, FLY_HOOKS, marker);
+  if (player.getDynamicProperty("npcstudio:flycam_seen")) return startFlyCam(player, mode, FLY_HOOKS, marker);
+  // explain once, BEFORE filming starts, so nothing covers the view later
+  menu(
+    "Fly Cam",
+    [
+      "§fYou become an invisible flying camera.",
+      "",
+      "§b• Fly§f with your joystick / WASD (double-tap jump to take off).",
+      "§b• Zoom§f: scroll or tap the hotbar.",
+      mode === "path" ? "§b• Tap the screen§f to drop a path point. §bDouble-tap§f to finish." : "§b• Tap the screen§f (right-click) to lock the shot.",
+      "§b• After locking, tap again§f to leave camera view.",
+      "",
+      "§7No text is shown while filming. Stuck? Type /exitcam."
+    ].join("\n")
+  )
+    .btn("§lStart", ICON("flycam"), () => startFlyCam(player, mode, FLY_HOOKS, marker))
+    .btn("Start & don't show this again", ICON("done"), () => {
+      player.setDynamicProperty("npcstudio:flycam_seen", true);
+      startFlyCam(player, mode, FLY_HOOKS, marker);
+    })
+    .show(player);
 }
 
 export function openCameraToolMenu(player, back) {
@@ -145,7 +165,7 @@ export function openCameraPanel(player, marker, skipView) {
         self();
       }, self)
     )
-    .btn("§aDone (keep looking through it)", ICON("done"), () => msg(player, "§7Camera view stays on. §e/exitcam§7 or double-tap sneak to leave, §e/cameras§7 to reopen this menu."))
+    .btn("§aDone §r§8(keep looking — tap the screen to leave)", ICON("done"), () => {})
     .btn("Exit Camera View", ICON("exit"), () => exitView(player))
     .btn("§cDelete Camera", ICON("delete"), () => {
       stopFollow(marker);
@@ -321,7 +341,6 @@ function playPath(player, marker, path, loop) {
     const sn = player.isSneaking;
     if (sn && !sneakWas) {
       stop();
-      msg(player, "§7Path stopped. You're still in camera view (/exitcam to leave).");
       return;
     }
     sneakWas = sn;

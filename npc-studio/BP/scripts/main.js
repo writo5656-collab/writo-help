@@ -14,8 +14,9 @@ import { openMainMenu, openManageMenu, getLookedAtNPC, startLookLoop } from "./n
 import { openCameraToolMenu, openCameraPanel, camState, viewThrough, exitView, isViewing } from "./camera.js";
 import { openMobToolMenu, openMobManageMenu, tryRide, tryDismount } from "./mobs.js";
 import { quickEquip } from "./wardrobe.js";
-import { isInGizmo, endGizmo, gizmoCycleAxis, gizmoToggleMode, restoreAfterRejoin, cleanupGizmos } from "./poseEditor.js";
-import { inCinema, exitCinema, restoreCinemaAfterRejoin } from "./cinema.js";
+import { isInGizmo, endGizmo, gizmoHotbar, gizmoToolUse, restoreAfterRejoin, cleanupGizmos } from "./poseEditor.js";
+import { inCinema, exitCinema, restoreCinemaAfterRejoin, cinemaHotbar } from "./cinema.js";
+import { isStudioTempItem, purgeTempItems } from "./hotbar.js";
 import { startMountLoop, reapplyMobPoses } from "./mount.js";
 import { inFlyCam, flyCamLock, flyCamZoom } from "./flycam.js";
 import { applyPose, expandPreset, pushUndo } from "./rig.js";
@@ -30,6 +31,8 @@ system.run(() => {
 startLookLoop();
 startMountLoop();
 system.runTimeout(cleanupGizmos, 20);
+// after a /reload nobody is mid-edit any more: give everyone their hotbar back
+system.runTimeout(() => world.getAllPlayers().forEach((p) => restoreAfterRejoin(p)), 25);
 
 // ---------- slash commands: /exitcam  /npc  /cameras ----------
 safeOn(() => system.beforeEvents.startup, (ev) => {
@@ -56,6 +59,7 @@ safeOn(() => system.beforeEvents.startup, (ev) => {
   add("lockcam", "Fly Cam: lock the shot / finish the path", (p) => {
     if (!flyCamLock(p, true)) msg(p, "§cYou're not flying a Fly Cam. Open the Camera tool > Fly Cam.");
   });
+  add("exit", "Leave NPC Studio camera view", (p) => exitCinema(p, { fade: inCinema(p) }));
   add("npc", "Open the NPC Studio menu", (p) => openMainMenu(p));
   add("cameras", "Open the NPC Studio camera menu", (p) => openCameraToolMenu(p));
 }, "startup");
@@ -96,6 +100,23 @@ safeOn(() => world.afterEvents.playerSpawn, (ev) => {
 // ---------- right-click with a tool ----------
 safeOn(() => world.beforeEvents.itemUse, (ev) => {
   const itemId = ev.itemStack?.typeId;
+  if (isStudioTempItem(itemId)) {
+    // tap the screen while filming / posing
+    ev.cancel = true;
+    const player = ev.source;
+    system.run(() => {
+      if (itemId === "npcstudio:cam_lock") {
+        if (!flyCamLock(player, false)) exitCinema(player);
+      } else if (itemId === "npcstudio:cam_exit") {
+        exitCinema(player);
+      } else if (isInGizmo(player)) {
+        gizmoToolUse(player, itemId);
+      } else {
+        purgeTempItems(player); // leftover tool item from an old session
+      }
+    });
+    return;
+  }
   if (!TOOL_IDS.includes(itemId)) return;
   ev.cancel = true;
   const player = ev.source;
@@ -184,12 +205,12 @@ safeOn(() => world.afterEvents.entityHitEntity, (ev) => {
 // ---------- gizmo controls ----------
 safeOn(() => world.afterEvents.playerHotbarSelectedSlotChange, (ev) => {
   if (flyCamZoom(ev.player, ev.newSlotSelected)) return;
-  if (isInGizmo(ev.player)) gizmoCycleAxis(ev.player, ev.newSlotSelected);
+  if (cinemaHotbar(ev.player, ev.newSlotSelected)) return;
+  if (isInGizmo(ev.player)) gizmoHotbar(ev.player, ev.newSlotSelected);
 }, "playerHotbarSelectedSlotChange");
 
 safeOn(() => world.afterEvents.playerSwingStart, (ev) => {
-  if (inFlyCam(ev.player)) return void flyCamLock(ev.player, false);
-  if (isInGizmo(ev.player)) gizmoToggleMode(ev.player);
+  // (Fly Cam and the gizmo toolbar use tapping with their items instead of swings)
 }, "playerSwingStart");
 
 // ---------- chat fallback ----------

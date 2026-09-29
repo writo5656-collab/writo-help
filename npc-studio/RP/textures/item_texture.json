@@ -10,6 +10,33 @@
     },
     "npcstudio_mob_tool": {
       "textures": "textures/items/npcstudio_mob_tool"
+    },
+    "npcstudio_cam_exit": {
+      "textures": "textures/items/npcstudio_cam_exit"
+    },
+    "npcstudio_cam_lock": {
+      "textures": "textures/items/npcstudio_cam_lock"
+    },
+    "npcstudio_tool_select": {
+      "textures": "textures/items/npcstudio_tool_select"
+    },
+    "npcstudio_tool_rotate": {
+      "textures": "textures/items/npcstudio_tool_rotate"
+    },
+    "npcstudio_tool_move": {
+      "textures": "textures/items/npcstudio_tool_move"
+    },
+    "npcstudio_tool_axis": {
+      "textures": "textures/items/npcstudio_tool_axis"
+    },
+    "npcstudio_tool_undo": {
+      "textures": "textures/items/npcstudio_tool_undo"
+    },
+    "npcstudio_tool_reset": {
+      "textures": "textures/items/npcstudio_tool_reset"
+    },
+    "npcstudio_tool_done": {
+      "textures": "textures/items/npcstudio_tool_done"
     }
   }
 }

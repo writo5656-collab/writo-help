@@ -11,6 +11,9 @@ import { world, menu, modal, msg, ICON } from "./core.js";
 
 export const PREMADE = ["Steve", "Alex", "Dream", "Technoblade", "Warden", "Soldier", "Knight", "Mage", "Assassin", "NoxeelMC", "Mercenary", "Scientist"];
 export const CUSTOM_COUNT = 20;
+/** Head icon made from the skin itself (tools/make_icons.py; skin packs can override it). */
+export const headIcon = (i) => `textures/ui/npcstudio/heads/skin${i}`;
+export const npcHead = (npc) => headIcon(npc.getProperty("npcstudio:skin_index") ?? 0);
 export const SKIN_COUNT = PREMADE.length + CUSTOM_COUNT; // must match RP texture count (32)
 const SLIM_BY_DEFAULT = new Set([1]); // Alex
 
@@ -40,14 +43,14 @@ export function setSkin(npc, i, autoSlim = true) {
 /** Pick a skin; calls onPick(index). */
 export function pickSkin(player, title, onPick, back) {
   const m = menu(title, "§7Want your own skins? See §fCustom Skin Slots§7 below.");
-  m.btn("§lPremade skins", ICON("skin"), () => {
+  m.btn("§lPremade skins", headIcon(0), () => {
     const mm = menu("Premade Skins");
-    PREMADE.forEach((_, i) => mm.btn(skinLabel(i), ICON("skin"), () => onPick(i)));
+    PREMADE.forEach((_, i) => mm.btn(skinLabel(i), headIcon(i), () => onPick(i)));
     mm.back(() => pickSkin(player, title, onPick, back)).show(player);
   });
-  m.btn("§lCustom skin slots (1-20)", ICON("custom"), () => {
+  m.btn("§lCustom skin slots (1-20)", headIcon(PREMADE.length), () => {
     const mm = menu("Custom Skin Slots");
-    for (let i = PREMADE.length; i < SKIN_COUNT; i++) mm.btn(skinLabel(i), ICON("custom"), () => onPick(i));
+    for (let i = PREMADE.length; i < SKIN_COUNT; i++) mm.btn(skinLabel(i), headIcon(i), () => onPick(i));
     mm.back(() => pickSkin(player, title, onPick, back)).show(player);
   });
   m.btn("How to add my own skins", ICON("debug"), () => showSkinHelp(player, () => pickSkin(player, title, onPick, back)));
