@@ -1,0 +1,23 @@
+{
+  "$fl_counter:totem_offset": [
+    0,
+    -40
+  ],
+  "$fl_counter:totem_anchor_from": "bottom_middle",
+  "$fl_counter:totem_anchor_to": "bottom_middle",
+  "$fl_counter:totem_visible": false,
+  "$fl_counter:arrow_offset": [
+    150,
+    -10
+  ],
+  "$fl_counter:arrow_anchor_from": "bottom_middle",
+  "$fl_counter:arrow_anchor_to": "bottom_middle",
+  "$fl_counter:arrow_visible": false,
+  "$fl_counter:pot_offset": [
+    -150,
+    -10
+  ],
+  "$fl_counter:pot_anchor_from": "bottom_middle",
+  "$fl_counter:pot_anchor_to": "bottom_middle",
+  "$fl_counter:pot_visible": false
+}

@@ -1,0 +1,51 @@
+{
+  "format_version": 2,
+  "header": {
+    "name": "Featherlight Optimizer | by noxeelmc",
+    "description": "Performance-focused resource pack that keeps the vanilla look. Strips decorative particles, applies a per-profile fog distance to every biome, slows or freezes fire/water animation, adds armour durability and an optional totem counter. Pick the profile that matches your device, and set Render Distance to match it (see CHANGELOG).",
+    "uuid": "a4fb8025-2fe9-462d-9e9f-0aa450f2d514",
+    "version": [
+      1,
+      2,
+      0
+    ],
+    "min_engine_version": [
+      1,
+      21,
+      0
+    ]
+  },
+  "modules": [
+    {
+      "type": "resources",
+      "uuid": "bbbedc30-bfb4-4ec6-9632-c5736fe37c9d",
+      "version": [
+        1,
+        2,
+        0
+      ]
+    }
+  ],
+  "subpacks": [
+    {
+      "folder_name": "highend",
+      "name": "1 - High RAM (8GB+) - Quality Profile",
+      "memory_tier": 4
+    },
+    {
+      "folder_name": "midrange",
+      "name": "2 - Mid RAM (6-8GB) - Balanced Profile",
+      "memory_tier": 2
+    },
+    {
+      "folder_name": "lowend",
+      "name": "3 - Low RAM Mobile (2-4GB) - Performance Profile",
+      "memory_tier": 1
+    },
+    {
+      "folder_name": "ultralow",
+      "name": "4 - Ultra Low (Static Animations, Shortest Fog)",
+      "memory_tier": 0
+    }
+  ]
+}

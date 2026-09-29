@@ -1,0 +1,28 @@
+{
+  "format_version": "1.16.100",
+  "minecraft:fog_settings": {
+    "description": {
+      "identifier": "noxeelmc:fog_warped_forest"
+    },
+    "distance": {
+      "air": {
+        "fog_start": 147.2,
+        "fog_end": 160,
+        "fog_color": "#1a051A",
+        "render_distance_type": "fixed"
+      },
+      "water": {
+        "fog_start": 0.0,
+        "fog_end": 15.0,
+        "fog_color": "#905957",
+        "render_distance_type": "fixed"
+      },
+      "weather": {
+        "fog_start": 36.8,
+        "fog_end": 112,
+        "fog_color": "#1a051A",
+        "render_distance_type": "fixed"
+      }
+    }
+  }
+}

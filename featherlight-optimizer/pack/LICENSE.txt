@@ -1,0 +1,70 @@
+Featherlight Optimizer
+Compiled and maintained by: noxeelmc
+YouTube: @noxeelmc
+
+-----------------------------------------------------------
+LICENSE
+-----------------------------------------------------------
+
+Copyright (c) 2026 noxeelmc
+
+This resource pack ("Featherlight Optimizer") is the original
+compilation, configuration, and packaging work of noxeelmc. You may:
+
+  - Use this pack freely for personal or server use
+  - Redistribute unmodified copies with this credit intact
+  - Not re-upload this pack claiming original authorship
+
+If you modify and redistribute this pack, please keep credit to
+noxeelmc as the original compiler and note what you changed.
+
+-----------------------------------------------------------
+THIRD-PARTY COMPONENTS USED WITH CREDIT
+-----------------------------------------------------------
+
+This pack incorporates a small number of individual components
+adapted from other creators, each used with attribution below.
+Ownership of these specific pieces remains with their original
+authors; noxeelmc's license above covers the pack's compilation
+and original configuration work, not these third-party pieces.
+
+- Item counter HUD panel — the counting technique originates with
+  onlysofun's item counter (YouTube: onlysofun, Discord: only.sofun).
+  The implementation shipped in 1.0.0 was broken; the working rewrite
+  in 1.1.0 is modelled on "Totem Counter V2" by yan, which is itself
+  credited by its author as inspired by onlysofun's counter. Credit to
+  both.
+
+- Low Fire textures — from the "Low Fire" pack (public release,
+  v1.0.4)
+
+- Hover Text Fix (item name display) — from the "Hover Text Fix"
+  pack (base "Name" variant)
+
+- Small Food Item textures — adapted from "Better Small Items"
+  (food-only subset used, per project decision to keep tools/
+  armor/blocks at vanilla scale)
+
+- Two particle definitions (vibration_signal, warden_dig) carried an
+  embedded "Created by Legendary Creeper" comment in the original
+  files. The comment is credited here instead, since it made the JSON
+  unparseable where it was.
+
+- Extended particle optimization set (Guardian, Warden, Dragon,
+  Evoker, Mace ground-slam, redstone dust, and many more) —
+  additional identifiers sourced from "Sodium Mod v7", created
+  by @GAMERJOTXT and @SDKILLINGGOP
+
+None of the above were modified beyond selecting/filtering which
+files to include; original file contents are used as provided.
+
+-----------------------------------------------------------
+NOTE ON EXCLUDED THIRD-PARTY CONTENT
+-----------------------------------------------------------
+
+Some material submitted during development (a shader pack
+distributed under an "All Rights Reserved" license on its
+official CurseForge listing) was deliberately NOT included in
+this pack, as no verifiable permission for redistribution or
+modification existed. This pack contains no code, assets, or
+derivatives from that shader.

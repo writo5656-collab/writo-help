@@ -1,0 +1,238 @@
+Featherlight Optimizer — 1.2.0
+==============================
+
+FIXED — the fog only reached a few biomes
+-----------------------------------------
+
+Mojang's own biomes_client.json gives 70 biomes their own fog
+(minecraft:plains -> minecraft:fog_plains, minecraft:ocean ->
+minecraft:fog_ocean, and so on). Our file only set "default" plus six
+un-prefixed nether/end names. A biome that has its own entry does not
+fall back to "default", so in plains, forests, oceans, deserts,
+jungles, taigas and most other overworld biomes, vanilla fog was used
+and the profile fog never applied.
+
+biomes_client.json now lists every vanilla biome by its full
+minecraft: name and points it at our fog. Each biome keeps vanilla's
+water colour and transparency, so swamp water is still swamp green.
+The old un-prefixed nether/end keys are kept too.
+
+
+FIXED — the HUD counter cost more than it showed
+------------------------------------------------
+
+One scanner computed totem, arrow AND pot counts on every frame, even
+when arrow and pot were hidden with "visible": false. "visible" hides
+a control but it still exists and its bindings still update. That was
+about 330 bindings evaluated every frame, all game, on every profile.
+
+Each counter now has its own scanner inside its own widget, and the
+widget uses "ignored" instead of "visible". "ignored" means the control
+is never created, so a counter that is switched off costs nothing. With
+only the totem counter on, the work per frame is roughly halved.
+
+The totem counter is now OFF by default on the Low and Ultra Low
+profiles (their own ui/_global_variables.json). Turn it back on with
+"$fl_counter:totem_visible": true in that subpack's file.
+
+
+CLEANUP
+-------
+
+- Removed 263 files from the subpacks that were byte-identical to the
+  base pack. A subpack is layered on top of the base pack, so these
+  copies changed nothing and only made the pack slower to load.
+- Manifest description no longer says "fog culling" (see below).
+
+
+READ THIS — about the fog
+-------------------------
+
+Fog is a colour blend applied to pixels. As far as we can tell the game
+still loads, builds and draws every chunk inside your Render Distance
+setting, even the ones hidden behind fog. So short fog most likely
+hides the world without making it cheaper to draw.
+
+Test it on your own phone (2 minutes):
+  1. Same world, same spot, same Render Distance (say 12 chunks).
+  2. Note FPS with the Ultra Low profile, then with the pack disabled.
+  3. If FPS is about the same, the fog is not saving anything.
+
+What actually saves work is the Render Distance slider. Match it to the
+profile:
+    High        16 chunks
+    Mid         10 chunks
+    Low          8 chunks
+    Ultra Low    4-6 chunks
+
+
+Featherlight Optimizer — 1.1.0
+==============================
+
+Every particle identifier in this pack is now checked against Mojang's
+official bedrock-samples resource pack (189 vanilla particle IDs), not
+against assumption. The checks are automated and rerun on every build.
+
+
+FIXED — things that were silently not working
+---------------------------------------------
+
+1. particles/vibration_signal.json was not valid JSON. A "//" comment
+   sat before the opening brace, so the whole file was rejected on load
+   and the sculk vibration particle was never actually disabled.
+
+2. particles/warden_dig.particle.json had the same problem, with the
+   comment after the closing brace.
+
+3. particles/water_spash_manual.json (note the typo) declared the same
+   identifier as water_splash_manual.json. Two files claiming one
+   particle means load order decides which wins. Removed the typo file.
+
+4. The midrange profile contained four identifiers that do not exist in
+   Bedrock at all, so those four files did nothing:
+       minecraft:enderman_teleport   -> covered by minecraft:mob_portal
+       minecraft:portal_particle     -> real name is portal_reverse_particle
+       minecraft:bubble_particle     -> real name is basic_bubble_particle
+       minecraft:end_crystal_beam    -> not a particle; it is a rendered
+                                        entity and cannot be removed by
+                                        a resource pack
+   The first three now point at the correct identifiers.
+
+5. Removed 22 further files across the profiles that re-declared a
+   particle the base pack already disables. They were parsed on every
+   world load and changed nothing.
+
+6. textures/items/apple.png was a 20x20 canvas while all 44 other food
+   textures are 24x24. Because the small-food effect works by centring
+   the 16x16 art in a larger transparent canvas, the apple was rendering
+   noticeably bigger than every other food item. Rebuilt from the
+   vanilla 16x16 source using the same centring as the rest. All 45
+   food textures are now verified pixel-identical to vanilla art on a
+   24x24 canvas.
+
+
+ADDED — particles that were being missed
+----------------------------------------
+
+The pack covered 164 of 189 vanilla particles. It now covers all 189.
+
+Added to every profile (purely decorative, safe to remove):
+    magic_critical_hit_emitter    enchanted-weapon crit sparks. Fires on
+                                  every hit with an enchanted sword, so
+                                  this is the heaviest single omission
+                                  in combat.
+    mobspell_ambient              the swirl around any entity holding a
+                                  potion effect. In a fight where
+                                  everyone is buffed this is constant.
+    witchspell_emitter            sneeze
+    pause_mob_growth              reset_mob_growth
+    biome_tinted_leaves           pale_oak_leaves          candle_flame
+    green_flame                   firefly                  dust_plume
+    eyeblossom_open               eyeblossom_close         nautilus_bubbles
+    creaking_crumble_body         creaking_crumble_head
+    creaking_heart_trail          geyser_base
+    geyser_plume                  geyser_poof
+    sulfur_bubble                 sulfur_cube_goo
+
+Added to the low and ultra-low profiles ONLY:
+    mobspell_lingering            the lingering-potion cloud
+    noxious_gas_particle
+
+    These two are deliberately left on in the higher profiles. They show
+    you where a harmful area actually is. Deleting them is a real frame
+    gain but you lose the ability to see a cloud you are standing in,
+    which matters more than the frames unless the device genuinely
+    cannot cope.
+
+
+ADDED — the missing profile
+---------------------------
+
+The profile list started at "2 - Mid RAM". Because Bedrock only offers
+the subpacks you declare, there was no way to select the base tier, so
+an 8GB device was forced down to a 10-chunk fog cull. Added:
+
+    1 - High RAM (8GB+) - Quality Profile
+
+which culls at 256 blocks (16 chunks) instead. Fog now steps cleanly:
+
+    high      256 blocks   16 chunks
+    mid       160 blocks   10 chunks
+    low       128 blocks    8 chunks
+    ultra      64 blocks    4 chunks
+
+memory_tier values corrected to 4 / 2 / 1 / 0 so Bedrock's automatic
+profile selection picks sensibly when the player does not choose.
+
+
+HOUSEKEEPING
+------------
+
+- All 598 JSON files re-encoded as UTF-8 without BOM, LF line endings,
+  consistent 2-space indent. biomes_client.json had roughly 300 bytes
+  of trailing space padding; removed.
+- LICENSE.txt now credits Legendary Creeper, whose name was embedded as
+  a comment inside the two broken particle files.
+
+
+FIXED — the totem counter never worked at all
+----------------------------------------------
+
+The 1.0.0 HUD inserted a panel written as:
+
+    "hs@hs.hs": { ... }
+
+That asks for a control called `hs` inside a namespace called `hs`.
+Nothing in the pack declares that namespace. `ui/hud_screen.json`
+declares `hud`, and there is no second UI file — no `ui/_ui_defs.json`
+either, which is what would have registered one.
+
+So the reference resolved to nothing and the whole panel was dropped on
+load. The totem counter, the arrow counter and the pot counter were all
+children of that panel, which is why nothing ever appeared on screen.
+This is the usual result of merging a multi-file UI pack into another
+pack and bringing across `hud_screen.json` but not the companion file
+it depends on.
+
+The counter is now rebuilt as a single self-contained control tree,
+modelled on Totem Counter V2 by yan, with no cross-namespace references
+at all. `item_filter`, `filtered_items` and `label_txt` were only ever
+reachable through the dead panel and have been removed.
+
+Arrow and pot counters are wired up again alongside the totem, each
+with its own icon. Totem is on by default; arrow and pot are off, as
+they were before. All six positions and the three on/off switches live
+in `ui/_global_variables.json`:
+
+    "$fl_counter:totem_visible": true
+    "$fl_counter:arrow_visible": false
+    "$fl_counter:pot_visible":   false
+
+Flip a value to true and the counter appears. `_offset` is [x, y] in
+pixels from the bottom centre of the screen.
+
+
+KNOWN LIMITS OF THE COUNTER
+---------------------------
+
+It reads the `hotbar_items` collection across 36 slots, so it counts
+your hotbar and main inventory. It does not read the offhand slot, so a
+totem sitting in your offhand is not included in the number.
+
+Item matching uses `#item_id_aux`, which is a runtime number Mojang
+reassigns when the item registry changes between versions. The totem
+value is 39780352. If a future update renumbers items, the counter will
+read 0 and that number is what needs changing — search
+`ui/hud_screen.json` for it. This is a limitation of resource-pack UI,
+not of this pack; every counter of this kind has it.
+
+
+WHAT THIS PACK CANNOT DO
+------------------------
+
+A resource pack cannot change tick rate, entity AI, hit registration,
+chunk loading or netcode. It cannot reduce input delay and it cannot
+fix server-side lag. What it does is cut the number of things the GPU
+is asked to draw. That is real, and on a weak phone in a crowded fight
+it is worth a lot, but it is not a client mod and it will not make a
+bad connection good.
