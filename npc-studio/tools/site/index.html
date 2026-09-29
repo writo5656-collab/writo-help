@@ -6,6 +6,7 @@
 <meta name="description" content="Put your own skins on NPC Studio V2 NPCs: drop in PNG skins, preview them in 3D, and download a Minecraft resource pack.">
 <meta property="og:title" content="NPC Studio V2 Skin Pack Builder">
 <meta property="og:description" content="Drop in skins, preview them in 3D, download a .mcpack for NPC Studio V2.">
+<meta name="theme-color" content="#0c121c">
 <title>NPC Studio Skin Pack Builder</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@500;700&family=Manrope:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
@@ -44,6 +45,7 @@
   color-scheme: dark;
 }
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }
 body { background: var(--bg); color: var(--ink); font: 15px/1.55 var(--body); margin: 0; padding: 20px 16px 130px; }
 .wrap { max-width: 1120px; margin: 0 auto; display: grid; gap: 20px; }
 
@@ -116,12 +118,56 @@ code { font: 13px var(--mono); background: var(--panel-2); border: 1px solid var
 .status { color: var(--muted); font-size: 14px; min-width: 0; }
 .status.ok { color: var(--good); }
 .status.no { color: var(--bad); }
+
+/* top bar + links */
+.topbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; padding-block: 2px 6px; }
+.logo { display: flex; align-items: center; gap: 10px; font: 700 18px var(--display); color: var(--ink); text-decoration: none; }
+.logo i { width: 26px; height: 26px; border-radius: 6px; background: conic-gradient(from 45deg, var(--accent), #7a5cff, var(--accent)); box-shadow: inset 0 0 0 3px rgba(0,0,0,.25); }
+.links { display: flex; flex-wrap: wrap; gap: 8px; }
+.pill { display: inline-flex; align-items: center; gap: 8px; font: 700 13px var(--body); text-decoration: none; padding: 8px 14px; border-radius: 999px; color: #fff; border: 0; }
+.pill svg { width: 16px; height: 16px; fill: currentColor; flex: none; }
+.pill.discord { background: #5865f2; }
+.pill.curse { background: #f16436; }
+.pill.yt { background: #e62117; }
+.pill:hover { filter: brightness(1.08); }
+.pill:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* changelog */
+.section-title { font: 700 clamp(22px, 3.4vw, 30px) var(--display); margin: 0; text-wrap: balance; }
+.log { display: grid; gap: 14px; }
+.release { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 18px; display: grid; gap: 12px; }
+.release header { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: flex-start; gap: 8px 12px; }
+.ver { font: 700 13px var(--mono); padding: 3px 9px; border-radius: 5px; background: var(--accent); color: var(--accent-ink); }
+.ver.old { background: var(--line); color: var(--ink); }
+.release h3 { font: 700 20px var(--display); margin: 0; }
+.release .when { font: 500 12px var(--mono); color: var(--muted); }
+.features { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 10px; margin: 0; padding: 0; list-style: none; }
+.features li { border: 1px solid var(--line); border-radius: 8px; padding: 12px; background: var(--panel-2); display: grid; gap: 4px; min-width: 0; }
+.features b { font: 700 14px var(--body); display: flex; align-items: center; gap: 8px; }
+.features span { color: var(--muted); font-size: 13px; }
+.tag { font: 700 10px var(--mono); letter-spacing: .06em; text-transform: uppercase; padding: 2px 6px; border-radius: 4px; }
+.tag.new { background: color-mix(in srgb, var(--good) 18%, transparent); color: var(--good); }
+.tag.fix { background: color-mix(in srgb, var(--rec) 18%, transparent); color: var(--rec); }
+.faq { display: grid; gap: 8px; }
+.faq details { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; }
+.faq summary { cursor: pointer; font-weight: 700; }
+.faq p { color: var(--muted); margin: 8px 0 0; }
+footer.site { border-top: 1px solid var(--line); padding-block: 18px 0; display: flex; flex-wrap: wrap; gap: 10px 20px; justify-content: space-between; color: var(--muted); font-size: 13px; }
+footer.site a { color: var(--accent); }
 </style>
 </head>
 <body>
 
 
-<div class="wrap">
+<div class="wrap" id="top">
+  <nav class="topbar" aria-label="NoxeelMC links">
+    <a class="logo" href="#top"><i aria-hidden="true"></i>NoxeelMC</a>
+    <div class="links">
+      <a class="pill discord" id="lnkDiscord" href="#" target="_blank" rel="noopener" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.3 4.4A19.8 19.8 0 0 0 15.4 3l-.6 1.2a18.3 18.3 0 0 0-5.6 0L8.6 3a19.7 19.7 0 0 0-4.9 1.4C.6 9 .0 13.5.3 18a19.9 19.9 0 0 0 6 3l1.3-2.1a12.9 12.9 0 0 1-2-1l.5-.4a14.2 14.2 0 0 0 12 0l.5.4c-.6.4-1.3.7-2 1L18 21a19.8 19.8 0 0 0 6-3c.4-5.2-.8-9.7-3.7-13.6ZM8.5 15.3c-1.2 0-2.1-1.1-2.1-2.4s.9-2.4 2.1-2.4 2.2 1.1 2.1 2.4c0 1.3-.9 2.4-2.1 2.4Zm7 0c-1.2 0-2.1-1.1-2.1-2.4s.9-2.4 2.1-2.4 2.2 1.1 2.1 2.4c0 1.3-.9 2.4-2.1 2.4Z"/></svg>Discord</a>
+      <a class="pill curse" id="lnkCurse" href="#" target="_blank" rel="noopener" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7h6.5L8 5h9l-1 2h5l-1.6 3.4c-1 2-2.9 3.3-5.1 3.5l-1.1 2.1H15l1 3H8l1-3h1.8L9.6 14C6 13.7 3.5 10.8 3 7Z"/></svg>CurseForge</a>
+      <a class="pill yt" id="lnkYt" href="#" target="_blank" rel="noopener" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M23.5 6.2a3 3 0 0 0-2.1-2.1C19.5 3.6 12 3.6 12 3.6s-7.5 0-9.4.5A3 3 0 0 0 .5 6.2 31 31 0 0 0 0 12a31 31 0 0 0 .5 5.8 3 3 0 0 0 2.1 2.1c1.9.5 9.4.5 9.4.5s7.5 0 9.4-.5a3 3 0 0 0 2.1-2.1A31 31 0 0 0 24 12a31 31 0 0 0-.5-5.8ZM9.6 15.6V8.4l6.2 3.6-6.2 3.6Z"/></svg>YouTube</a>
+    </div>
+  </nav>
   <header>
     <div class="brand">
       <span class="eyebrow"><span class="rec-dot" aria-hidden="true"></span>NPC Studio V2 · resource pack tool</span>
@@ -194,6 +240,44 @@ code { font: 13px var(--mono); background: var(--panel-2); border: 1px solid var
       </div>
     </section>
   </div>
+  <section class="log" aria-labelledby="whatsnew">
+    <h2 class="section-title" id="whatsnew">What's new in NPC Studio V2</h2>
+    <article class="release">
+      <header><span class="ver">V2</span><h3>The director update</h3><span class="when">latest</span></header>
+      <ul class="features">
+        <li><b><span class="tag new">new</span>Armor trims &amp; glint</b><span>Trim Studio menu, or copy your own trimmed and enchanted armor onto an NPC.</span></li>
+        <li><b><span class="tag new">new</span>Pose Mode gizmo</b><span>Look at a body part, rotate or move it, sneak when done. Live X/Y/Z in the corner.</span></li>
+        <li><b><span class="tag new">new</span>45+ poses</b><span>Sitting, lying, flying, kneeling, fighting, emotes, riding poses.</span></li>
+        <li><b><span class="tag new">new</span>Animations</b><span>19 loops, a keyframe animator, and NPCs that replay a path you walk.</span></li>
+        <li><b><span class="tag new">new</span>Ride mobs</b><span>Seat NPCs on horses, camels, wolves. Horses can rear up.</span></li>
+        <li><b><span class="tag new">new</span>Fly Cam &amp; 30 shots</b><span>Fly the camera with your joystick, tap to lock. Orbits, dolly zoom, drone fly-bys.</span></li>
+        <li><b><span class="tag new">new</span>Custom skins</b><span>20 custom slots, slim arms, and this builder with head icons.</span></li>
+        <li><b><span class="tag new">new</span>Handbook &amp; new tools</b><span>Director's Baton, Cine Camera, Beast Whistle and an in-game manual.</span></li>
+        <li><b><span class="tag fix">fixed</span>Equipping &amp; camera</b><span>Enchants and trims no longer vanish; nothing of yours shows in camera view.</span></li>
+      </ul>
+    </article>
+    <article class="release">
+      <header><span class="ver old">V1</span><h3>First release</h3><span class="when">earlier</span></header>
+      <ul class="features">
+        <li><b>Spawn &amp; pose NPCs</b><span>Skins, preset poses, equipment, presets, clones.</span></li>
+        <li><b>Cameras &amp; mob props</b><span>Placeable cameras, paths and rideable mob props.</span></li>
+      </ul>
+    </article>
+  </section>
+
+  <section class="faq" aria-labelledby="faqtitle">
+    <h2 class="section-title" id="faqtitle">Questions</h2>
+    <details><summary>Do I need NPC Studio V2 installed?</summary><p>Yes. This page only makes a skin pack; the NPCs come from the NPC Studio V2 add-on on CurseForge.</p></details>
+    <details><summary>My download is a .zip, not .mcpack</summary><p>Rename the file so it ends in .mcpack, then open it. Minecraft imports it.</p></details>
+    <details><summary>My skins don't show in game</summary><p>In your world's Resource Packs, make sure the skin pack is active and sits above NPC Studio in the list.</p></details>
+    <details><summary>Are my skins uploaded anywhere?</summary><p>No. Everything happens on your device; the pack is built right in your browser.</p></details>
+    <details><summary>Can I add more skins later?</summary><p>Yes. Build a new pack with all your skins and replace the old one. NPCs keep their slot numbers.</p></details>
+  </section>
+
+  <footer class="site">
+    <span>NPC Studio V2 by <b>NoxeelMC</b></span>
+    <span id="footLinks"></span>
+  </footer>
 </div>
 
 <div class="bar">
@@ -203,6 +287,23 @@ code { font: 13px var(--mono); background: var(--panel-2); border: 1px solid var
   </div>
 </div>
 
+<script>
+// ===== YOUR LINKS: paste them between the quotes. Leave "" to hide a button. =====
+const LINKS = {
+  discord: "",                                  // e.g. "https://discord.gg/yourcode"
+  curseforge: "",                               // e.g. "https://www.curseforge.com/minecraft-bedrock/addons/npc-studio"
+  youtube: "https://youtube.com/@NoxeelMC"
+};
+[["lnkDiscord", LINKS.discord], ["lnkCurse", LINKS.curseforge], ["lnkYt", LINKS.youtube]].forEach(([id, url]) => {
+  const a = document.getElementById(id);
+  if (url) { a.href = url; a.hidden = false; }
+});
+const fl = document.getElementById("footLinks");
+[["Discord", LINKS.discord], ["CurseForge", LINKS.curseforge], ["YouTube", LINKS.youtube]].filter(([, u]) => u).forEach(([n, u], i) => {
+  if (i) fl.append(" · ");
+  const a = document.createElement("a"); a.href = u; a.target = "_blank"; a.rel = "noopener"; a.textContent = n; fl.append(a);
+});
+</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
