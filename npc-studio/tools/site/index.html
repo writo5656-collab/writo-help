@@ -1,0 +1,461 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="description" content="Put your own skins on NPC Studio V2 NPCs: drop in PNG skins, preview them in 3D, and download a Minecraft resource pack.">
+<meta property="og:title" content="NPC Studio V2 Skin Pack Builder">
+<meta property="og:description" content="Drop in skins, preview them in 3D, download a .mcpack for NPC Studio V2.">
+<title>NPC Studio Skin Pack Builder</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@500;700&family=Manrope:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: a film-set "stage" (live 3D preview of the selected skin) beside a contact sheet of 20 numbered slots; a sticky slate bar builds the pack. */
+:root {
+  --bg: #eef2f6;
+  --panel: #ffffff;
+  --panel-2: #f5f8fb;
+  --ink: #111a26;
+  --muted: #5a6778;
+  --line: #d6dde6;
+  --accent: #0b8ea8;
+  --accent-ink: #ffffff;
+  --rec: #d9480f;
+  --good: #1e7a46;
+  --bad: #b3261e;
+  --stage-top: #dfe8f1;
+  --stage-bottom: #c5d3e1;
+  --display: "Pixelify Sans", "Courier New", monospace;
+  --body: "Manrope", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0c121c; --panel: #131c29; --panel-2: #0f1722; --ink: #e8eef5; --muted: #8e9bab; --line: #243244;
+    --accent: #3fd0e8; --accent-ink: #06222a; --rec: #ff8a4c; --good: #5fd08c; --bad: #ff8a80;
+    --stage-top: #1b2a3d; --stage-bottom: #0e1623;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0c121c; --panel: #131c29; --panel-2: #0f1722; --ink: #e8eef5; --muted: #8e9bab; --line: #243244;
+  --accent: #3fd0e8; --accent-ink: #06222a; --rec: #ff8a4c; --good: #5fd08c; --bad: #ff8a80;
+  --stage-top: #1b2a3d; --stage-bottom: #0e1623;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font: 15px/1.55 var(--body); margin: 0; padding: 20px 16px 130px; }
+.wrap { max-width: 1120px; margin: 0 auto; display: grid; gap: 20px; }
+
+header { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 12px 24px; }
+.brand { display: grid; gap: 4px; min-width: 0; }
+.eyebrow { font: 600 12px var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--accent); display: flex; align-items: center; gap: 8px; }
+.rec-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--rec); box-shadow: 0 0 0 3px color-mix(in srgb, var(--rec) 25%, transparent); }
+@media (prefers-reduced-motion: no-preference) { .rec-dot { animation: blink 1.6s steps(2, jump-none) infinite; } @keyframes blink { 50% { opacity: .25; } } }
+h1 { font: 700 clamp(30px, 6vw, 52px)/1 var(--display); margin: 0; letter-spacing: .01em; text-wrap: balance; }
+.lede { color: var(--muted); max-width: 60ch; margin: 0; }
+.steps { display: flex; flex-wrap: wrap; gap: 8px; list-style: none; margin: 0; padding: 0; }
+.steps li { font: 600 12px var(--mono); padding: 6px 10px; border: 1px solid var(--line); border-radius: 999px; color: var(--muted); background: var(--panel); }
+.steps b { color: var(--ink); }
+
+.studio { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: 20px; align-items: start; }
+@media (max-width: 860px) { .studio { grid-template-columns: 1fr; } }
+
+/* stage */
+.stage { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; display: grid; position: sticky; top: calc(12px + env(safe-area-inset-top, 0px)); }
+@media (max-width: 860px) { .stage { position: static; } }
+.viewport { position: relative; aspect-ratio: 4 / 3.4; max-width: 100%; background: linear-gradient(var(--stage-top), var(--stage-bottom)); cursor: grab; touch-action: none; }
+.viewport:active { cursor: grabbing; }
+.viewport canvas { display: block; width: 100%; height: 100%; }
+.slate { position: absolute; left: 12px; top: 12px; font: 600 11px var(--mono); letter-spacing: .08em; text-transform: uppercase; color: #fff; background: rgba(8, 14, 22, .72); padding: 5px 9px; border-radius: 4px; display: flex; gap: 10px; }
+.slate span:first-child { color: #ffcf6e; }
+.hint { position: absolute; right: 12px; bottom: 10px; font: 500 11px var(--mono); color: rgba(255,255,255,.8); text-shadow: 0 1px 2px rgba(0,0,0,.6); }
+.example-tag { position: absolute; right: 12px; top: 12px; font: 700 11px var(--mono); letter-spacing: .08em; text-transform: uppercase; color: #06222a; background: #ffcf6e; padding: 4px 8px; border-radius: 4px; }
+.stage-controls { display: grid; gap: 12px; padding: 16px; border-top: 1px solid var(--line); }
+.row { display: flex; flex-wrap: wrap; gap: 10px; align-items: end; }
+.field { display: grid; gap: 5px; flex: 1 1 200px; min-width: 0; }
+label, .lbl { font: 600 11px var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+input[type=text] { width: 100%; font: 15px var(--body); padding: 10px 12px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel-2); color: var(--ink); }
+input[type=text]:focus-visible, button:focus-visible, .drop:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+.seg button { font: 600 13px var(--body); padding: 9px 14px; background: var(--panel-2); color: var(--muted); border: 0; cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
+.btn { font: 700 15px var(--display); letter-spacing: .03em; background: var(--accent); color: var(--accent-ink); border: 0; border-radius: 6px; padding: 12px 20px; cursor: pointer; }
+.btn.ghost { background: transparent; color: var(--ink); border: 1px solid var(--line); font: 600 13px var(--body); padding: 9px 14px; }
+.btn[disabled] { opacity: .45; cursor: not-allowed; }
+.err { color: var(--bad); font-size: 13px; margin: 0; }
+.note { color: var(--muted); font-size: 13px; margin: 0; }
+
+/* contact sheet */
+.sheet { display: grid; gap: 14px; }
+.drop { text-transform: none; letter-spacing: normal; font: 14px var(--body); color: var(--ink); position: relative; border: 2px dashed var(--line); border-radius: 10px; padding: 18px; text-align: center; background: var(--panel); display: grid; gap: 4px; transition: border-color .15s, background .15s; }
+.drop.over { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 8%, var(--panel)); }
+.drop input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.drop strong { font: 700 17px var(--display); }
+.grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; }
+@media (max-width: 460px) { .grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+.tile { position: relative; aspect-ratio: 1; max-width: 100%; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); padding: 0; cursor: pointer; display: grid; place-items: center; overflow: hidden; color: var(--muted); }
+.tile canvas { width: 62%; height: 62%; image-rendering: pixelated; }
+.tile .n { position: absolute; left: 6px; top: 4px; font: 600 11px var(--mono); font-variant-numeric: tabular-nums; }
+.tile .plus { font: 700 22px var(--display); opacity: .5; }
+.tile.filled { border-color: color-mix(in srgb, var(--accent) 55%, var(--line)); }
+.tile.sel { outline: 2px solid var(--accent); outline-offset: 2px; }
+.tile .nm { position: absolute; left: 0; right: 0; bottom: 0; font: 600 10px var(--body); background: rgba(8,14,22,.7); color: #fff; padding: 2px 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; display: grid; gap: 12px; }
+.panel h2 { font: 700 18px var(--display); margin: 0; }
+details summary { cursor: pointer; font-weight: 700; }
+details ol { margin: 10px 0 0; padding-left: 20px; color: var(--muted); display: grid; gap: 4px; }
+details b { color: var(--ink); }
+code { font: 13px var(--mono); background: var(--panel-2); border: 1px solid var(--line); border-radius: 4px; padding: 0 5px; }
+
+.bar { position: fixed; left: 0; right: 0; bottom: 0; background: color-mix(in srgb, var(--panel) 92%, transparent); backdrop-filter: blur(8px); border-top: 1px solid var(--line); padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px)); }
+.bar .in { max-width: 1120px; margin: 0 auto; display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; justify-content: space-between; }
+.meter { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.meter .count { font: 700 22px var(--display); font-variant-numeric: tabular-nums; }
+.status { color: var(--muted); font-size: 14px; min-width: 0; }
+.status.ok { color: var(--good); }
+.status.no { color: var(--bad); }
+</style>
+</head>
+<body>
+
+
+<div class="wrap">
+  <header>
+    <div class="brand">
+      <span class="eyebrow"><span class="rec-dot" aria-hidden="true"></span>NPC Studio V2 · resource pack tool</span>
+      <h1>Skin Pack Builder</h1>
+      <p class="lede">Put your own skins on NPC Studio NPCs. Drop in PNG skins, check them on the live model, name them, and download one small pack. Everything stays in your browser.</p>
+    </div>
+    <ol class="steps" aria-label="How it works">
+      <li><b>1</b> Drop skins</li>
+      <li><b>2</b> Name them</li>
+      <li><b>3</b> Download pack</li>
+      <li><b>4</b> Activate above NPC Studio</li>
+    </ol>
+  </header>
+
+  <div class="studio">
+    <section class="stage" aria-label="Live preview">
+      <div class="viewport" id="viewport">
+        <canvas id="three"></canvas>
+        <div class="slate"><span id="slateSlot">Slot 01</span><span id="slateName">Example</span></div>
+        <div class="example-tag" id="exampleTag">Example</div>
+        <div class="hint">Drag to turn</div>
+      </div>
+      <div class="stage-controls">
+        <div class="row">
+          <div class="field">
+            <label for="slotName">Name shown in the skin picker</label>
+            <input type="text" id="slotName" maxlength="32" placeholder="e.g. Ninja" disabled>
+          </div>
+          <div class="field" style="flex:0 0 auto">
+            <span class="lbl">Arms (preview)</span>
+            <div class="seg" role="group" aria-label="Arm model">
+              <button type="button" id="armClassic" aria-pressed="true">Classic</button>
+              <button type="button" id="armSlim" aria-pressed="false">Slim</button>
+            </div>
+          </div>
+        </div>
+        <div class="row">
+          <button class="btn ghost" id="replaceBtn" type="button">Choose PNG for this slot</button>
+          <button class="btn ghost" id="removeBtn" type="button" hidden>Remove</button>
+          <input type="file" id="singleFile" accept="image/png" hidden>
+        </div>
+        <p class="err" id="slotErr" hidden></p>
+        <p class="note">For Alex-style skins, set <b>Skin &amp; Size → Arm Model → Slim</b> on the NPC in game.</p>
+      </div>
+    </section>
+
+    <section class="sheet" aria-label="Skin slots">
+      <label class="drop" id="drop">
+        <input type="file" id="multiFile" accept="image/png" multiple>
+        <strong>Drop skins here</strong>
+        <span class="note">or tap to choose · up to 20 PNGs at once · 64×64 or 128×128</span>
+      </label>
+      <div class="grid" id="grid"></div>
+
+      <div class="panel">
+        <h2>Pack</h2>
+        <div class="row">
+          <div class="field"><label for="packName">Pack name</label><input type="text" id="packName" value="My NPC Skins" maxlength="40"></div>
+          <div class="field"><label for="packDesc">Description</label><input type="text" id="packDesc" value="Custom skins for NPC Studio V2" maxlength="80"></div>
+        </div>
+        <details>
+          <summary>After downloading</summary>
+          <ol>
+            <li>If the file saved as <code>.zip</code>, rename it to <code>.mcpack</code>.</li>
+            <li>Open it: Minecraft imports the pack.</li>
+            <li>World <b>Settings → Resource Packs</b>: activate it and move it <b>above</b> NPC Studio.</li>
+            <li>In game: <b>Spawn NPC → Custom skin slots</b>. Your skins show with their faces and names.</li>
+          </ol>
+        </details>
+      </div>
+    </section>
+  </div>
+</div>
+
+<div class="bar">
+  <div class="in">
+    <div class="meter"><span class="count" id="count">0</span><span class="status" id="status">of 20 slots filled. Drop skins to start.</span></div>
+    <button class="btn" id="build" disabled>Download pack</button>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script>
+const SLOTS = 20, FIRST_INDEX = 12;
+const slots = Array.from({ length: SLOTS }, (_, i) => ({ n: i + 1, file: null, img: null, name: "", error: "" }));
+let sel = 0, slim = false;
+const $ = (id) => document.getElementById(id);
+
+// ---------- example skin (drawn, so the stage is never empty) ----------
+function exampleSkin() {
+  const c = document.createElement("canvas"); c.width = c.height = 64; const g = c.getContext("2d");
+  const R = (x, y, w, h, col) => { g.fillStyle = col; g.fillRect(x, y, w, h); };
+  R(0, 0, 32, 16, "#c68863"); R(8, 0, 16, 8, "#2b1b12"); R(0, 8, 32, 3, "#2b1b12");           // head + hair
+  R(9, 12, 2, 1, "#ffffff"); R(10, 12, 1, 1, "#2f6fd8"); R(13, 12, 2, 1, "#ffffff"); R(13, 12, 1, 1, "#2f6fd8");
+  R(11, 14, 2, 1, "#8a4b36");
+  R(16, 16, 24, 16, "#16a5c1"); R(20, 20, 8, 12, "#16a5c1"); R(20, 26, 8, 2, "#0d6f84");      // shirt
+  R(40, 16, 16, 16, "#16a5c1"); R(44, 27, 4, 5, "#c68863"); R(40, 28, 16, 4, "#c68863");      // right arm
+  R(32, 48, 16, 16, "#16a5c1"); R(32, 60, 16, 4, "#c68863");                                   // left arm
+  R(0, 16, 16, 16, "#2f3a7a"); R(0, 28, 16, 4, "#2a2a2a");                                     // right leg
+  R(16, 48, 16, 16, "#2f3a7a"); R(16, 60, 16, 4, "#2a2a2a");                                   // left leg
+  const im = new Image(); im.src = c.toDataURL(); return im;
+}
+const EXAMPLE = exampleSkin();
+
+// ---------- 3D player model ----------
+const canvas = $("three");
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, alpha: true });
+renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(30, 1, 1, 400);
+camera.position.set(0, 17, 96); camera.lookAt(0, 15.5, 0);
+scene.add(new THREE.AmbientLight(0xffffff, 0.75));
+const sun = new THREE.DirectionalLight(0xffffff, 0.55); sun.position.set(30, 60, 50); scene.add(sun);
+const shadow = new THREE.Mesh(new THREE.CircleGeometry(9, 32), new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.22 }));
+shadow.rotation.x = -Math.PI / 2; shadow.position.y = 0.05; scene.add(shadow);
+const rig = new THREE.Group(); scene.add(rig);
+let parts = {}, texture = null;
+
+function faceUV(geo, u, v, w, h, d, inflate) {
+  const S = 64, uv = geo.attributes.uv;
+  const R = (x, y, ww, hh) => [x / S, 1 - y / S, (x + ww) / S, 1 - (y + hh) / S];
+  // BoxGeometry faces: +x, -x, +y, -y, +z, -z  ->  left, right, top, bottom, front, back
+  const f = [R(u + d + w, v + d, d, h), R(u, v + d, d, h), R(u + d, v, w, d), R(u + d + w, v, w, d), R(u + d, v + d, w, h), R(u + 2 * d + w, v + d, w, h)];
+  for (let i = 0; i < 6; i++) {
+    const [x0, y0, x1, y1] = f[i];
+    const flip = i === 3; // bottom faces are stored upside down
+    const q = flip ? [[x0, y1], [x1, y1], [x0, y0], [x1, y0]] : [[x0, y0], [x1, y0], [x0, y1], [x1, y1]];
+    q.forEach(([a, b], k) => uv.setXY(i * 4 + k, a, b));
+  }
+  uv.needsUpdate = true;
+}
+function box(w, h, d, u, v, overlay) {
+  const k = overlay ? 0.5 : 0;
+  const g = new THREE.BoxGeometry(w + k, h + k, d + k);
+  faceUV(g, u, v, w, h, d);
+  const m = new THREE.MeshLambertMaterial({ map: texture, transparent: true, alphaTest: 0.5, side: overlay ? THREE.DoubleSide : THREE.FrontSide });
+  return new THREE.Mesh(g, m);
+}
+function limb(name, x, y, w, h, d, uv, ov, pivotY) {
+  const pivot = new THREE.Group(); pivot.position.set(x, pivotY, 0);
+  const a = box(w, h, d, uv[0], uv[1]); const b = box(w, h, d, ov[0], ov[1], true);
+  a.position.y = b.position.y = y - pivotY; pivot.add(a, b); rig.add(pivot); parts[name] = pivot;
+}
+function buildModel(img) {
+  rig.clear(); parts = {};
+  if (texture) texture.dispose();
+  const c = document.createElement("canvas"); c.width = c.height = 64;
+  const g = c.getContext("2d"); g.imageSmoothingEnabled = false; g.drawImage(img, 0, 0, 64, 64);
+  texture = new THREE.CanvasTexture(c); texture.magFilter = texture.minFilter = THREE.NearestFilter;
+  const aw = slim ? 3 : 4, ax = slim ? 5.5 : 6;
+  limb("head", 0, 28, 8, 8, 8, [0, 0], [32, 0], 24);
+  limb("body", 0, 18, 8, 12, 4, [16, 16], [16, 32], 18);
+  limb("rarm", -ax, 18, aw, 12, 4, [40, 16], [40, 32], 22);
+  limb("larm", ax, 18, aw, 12, 4, [32, 48], [48, 48], 22);
+  limb("rleg", -2, 6, 4, 12, 4, [0, 16], [0, 32], 12);
+  limb("lleg", 2, 6, 4, 12, 4, [16, 48], [0, 48], 12);
+}
+
+let yaw = -0.5, dragging = false, lastX = 0, auto = true, t0 = performance.now();
+const vp = $("viewport");
+vp.addEventListener("pointerdown", (e) => { dragging = true; auto = false; lastX = e.clientX; vp.setPointerCapture(e.pointerId); });
+vp.addEventListener("pointermove", (e) => { if (!dragging) return; yaw += (e.clientX - lastX) * 0.012; lastX = e.clientX; });
+vp.addEventListener("pointerup", () => { dragging = false; setTimeout(() => (auto = true), 2500); });
+const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+function resize() {
+  const r = vp.getBoundingClientRect();
+  renderer.setSize(r.width, r.height, false); camera.aspect = r.width / r.height; camera.updateProjectionMatrix();
+}
+new ResizeObserver(resize).observe(vp);
+function frame(now) {
+  const t = (now - t0) / 1000;
+  if (auto && !reduce) yaw += 0.006;
+  rig.rotation.y = yaw;
+  const s = reduce ? 0 : Math.sin(t * 3.2) * 0.45;
+  if (parts.rarm) { parts.rarm.rotation.x = s; parts.larm.rotation.x = -s; parts.rleg.rotation.x = -s; parts.lleg.rotation.x = s; parts.head.rotation.y = reduce ? 0 : Math.sin(t * 0.9) * 0.25; }
+  renderer.render(scene, camera);
+  requestAnimationFrame(frame);
+}
+
+// ---------- faces for tiles / head icons ----------
+function drawFace(cv, img) {
+  const g = cv.getContext("2d"); g.imageSmoothingEnabled = false; g.clearRect(0, 0, cv.width, cv.height);
+  if (!img) return;
+  const s = img.width / 64;
+  g.drawImage(img, 8 * s, 8 * s, 8 * s, 8 * s, 0, 0, cv.width, cv.height);
+  g.drawImage(img, 40 * s, 8 * s, 8 * s, 8 * s, 0, 0, cv.width, cv.height);
+}
+function headIcon(img) {
+  const c = document.createElement("canvas"); c.width = c.height = 64;
+  const g = c.getContext("2d"); g.imageSmoothingEnabled = false;
+  g.fillStyle = "rgba(0,0,0,0.35)"; g.fillRect(6, 8, 56, 56);
+  g.fillStyle = "#14181e"; g.fillRect(4, 4, 56, 56);
+  g.fillStyle = "#000"; g.fillRect(8, 8, 48, 48);
+  const f = document.createElement("canvas"); f.width = f.height = 64; drawFace(f, img);
+  g.drawImage(f, 8, 8, 48, 48);
+  return c;
+}
+
+// ---------- UI ----------
+function renderGrid() {
+  const grid = $("grid"); grid.textContent = "";
+  slots.forEach((s, i) => {
+    const b = document.createElement("button"); b.type = "button";
+    b.className = "tile" + (s.img ? " filled" : "") + (i === sel ? " sel" : "");
+    b.setAttribute("aria-label", `Slot ${s.n}${s.name ? ": " + s.name : s.img ? "" : " (empty)"}`);
+    b.innerHTML = `<span class="n">${String(s.n).padStart(2, "0")}</span>`;
+    if (s.img) { const cv = document.createElement("canvas"); cv.width = cv.height = 8; drawFace(cv, s.img); b.appendChild(cv); if (s.name) { const nm = document.createElement("span"); nm.className = "nm"; nm.textContent = s.name; b.appendChild(nm); } }
+    else { const p = document.createElement("span"); p.className = "plus"; p.textContent = "+"; b.appendChild(p); }
+    b.onclick = () => { sel = i; refresh(); };
+    grid.appendChild(b);
+  });
+  const count = slots.filter((s) => s.img).length;
+  $("count").textContent = count;
+  $("build").disabled = count === 0;
+  const st = $("status"); st.className = "status";
+  st.textContent = count ? `of 20 slots filled. Ready to build.` : "of 20 slots filled. Drop skins to start.";
+}
+function refresh() {
+  const s = slots[sel];
+  $("slateSlot").textContent = `Slot ${String(s.n).padStart(2, "0")}`;
+  $("slateName").textContent = s.img ? (s.name || "Unnamed") : "Example";
+  $("exampleTag").hidden = !!s.img;
+  const nm = $("slotName"); nm.disabled = !s.img; nm.value = s.name;
+  $("removeBtn").hidden = !s.img;
+  $("replaceBtn").textContent = s.img ? "Replace PNG" : "Choose PNG for this slot";
+  const e = $("slotErr"); e.hidden = !s.error; e.textContent = s.error;
+  buildModel(s.img || EXAMPLE);
+  renderGrid();
+}
+function loadInto(i, file) {
+  return new Promise((resolve) => {
+    const s = slots[i]; s.error = "";
+    const img = new Image();
+    img.onload = () => {
+      if (img.width === img.height && [64, 128, 256].includes(img.width)) {
+        s.file = file; s.img = img;
+        if (!s.name) s.name = file.name.replace(/\.png$/i, "").replace(/[_-]+/g, " ").slice(0, 32);
+      } else {
+        s.error = img.width === 64 && img.height === 32 ? "That's an old 64×32 skin. Save it as 64×64 in a skin editor first." : `This image is ${img.width}×${img.height}. Skins must be square: 64×64 or 128×128.`;
+      }
+      resolve();
+    };
+    img.onerror = () => { s.error = "Couldn't read that file. Pick a PNG image."; resolve(); };
+    img.src = URL.createObjectURL(file);
+  });
+}
+async function addFiles(list) {
+  const files = [...list].filter((f) => /png$/i.test(f.type) || /\.png$/i.test(f.name));
+  let first = -1;
+  for (const f of files) {
+    let i = slots.findIndex((s) => !s.img);
+    if (i < 0) break;
+    if (!slots[sel].img && first < 0) i = sel;
+    await loadInto(i, f);
+    if (first < 0) first = i;
+  }
+  if (first >= 0) sel = first;
+  refresh();
+}
+$("multiFile").addEventListener("change", (e) => { addFiles(e.target.files); e.target.value = ""; });
+const drop = $("drop");
+["dragenter", "dragover"].forEach((ev) => drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.add("over"); }));
+["dragleave", "drop"].forEach((ev) => drop.addEventListener(ev, () => drop.classList.remove("over")));
+drop.addEventListener("drop", (e) => { e.preventDefault(); addFiles(e.dataTransfer.files); });
+$("replaceBtn").onclick = () => $("singleFile").click();
+$("singleFile").addEventListener("change", async (e) => { if (e.target.files[0]) { await loadInto(sel, e.target.files[0]); refresh(); } e.target.value = ""; });
+$("removeBtn").onclick = () => { Object.assign(slots[sel], { file: null, img: null, name: "", error: "" }); refresh(); };
+$("slotName").addEventListener("input", (e) => { slots[sel].name = e.target.value; $("slateName").textContent = e.target.value || "Unnamed"; renderGrid(); });
+function setArms(v) { slim = v; $("armClassic").setAttribute("aria-pressed", String(!v)); $("armSlim").setAttribute("aria-pressed", String(v)); buildModel(slots[sel].img || EXAMPLE); }
+$("armClassic").onclick = () => setArms(false);
+$("armSlim").onclick = () => setArms(true);
+
+// ---------- pack ----------
+function uuid() {
+  if (crypto.randomUUID) return crypto.randomUUID();
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => { const r = (Math.random() * 16) | 0; return (c === "x" ? r : (r & 3) | 8).toString(16); });
+}
+const toBlob = (c) => new Promise((r) => c.toBlob(r, "image/png"));
+async function buildPack() {
+  const packName = $("packName").value.trim() || "My NPC Skins";
+  const zip = new JSZip();
+  zip.file("manifest.json", JSON.stringify({
+    format_version: 2,
+    header: { name: packName, description: $("packDesc").value.trim(), uuid: uuid(), version: [1, 0, 0], min_engine_version: [1, 21, 90] },
+    modules: [{ type: "resources", uuid: uuid(), version: [1, 0, 0] }]
+  }, null, 2));
+  const lang = [];
+  for (const s of slots) {
+    if (!s.img) continue;
+    const idx = FIRST_INDEX + s.n - 1;
+    zip.file(`textures/entity/npcstudio/custom_slot${s.n}.png`, s.file);
+    zip.file(`textures/ui/npcstudio/heads/skin${idx}.png`, await toBlob(headIcon(s.img)));
+    lang.push(`npcstudio.skin.${idx}=${(s.name || `Custom ${s.n}`).replace(/[\r\n=]/g, " ").trim()}`);
+  }
+  zip.file("texts/en_US.lang", lang.join("\n") + "\n");
+  zip.file("texts/languages.json", JSON.stringify(["en_US"]));
+  const icon = document.createElement("canvas"); icon.width = icon.height = 256;
+  const ig = icon.getContext("2d"); ig.imageSmoothingEnabled = false;
+  ig.drawImage(headIcon(slots.find((s) => s.img).img), 0, 0, 256, 256);
+  zip.file("pack_icon.png", await toBlob(icon));
+  const blob = await zip.generateAsync({ type: "blob", compression: "DEFLATE" });
+  const base = packName.replace(/[^\w\- ]+/g, "").trim().replace(/\s+/g, "_") || "NPC_Skins";
+  return { blob, base };
+}
+$("build").addEventListener("click", async () => {
+  const btn = $("build"), st = $("status");
+  btn.disabled = true; st.className = "status"; st.textContent = "Building your pack…";
+  try {
+    const { blob, base } = await buildPack();
+    const dl = window.claude ? await window.claude.use("downloads") : null;
+    if (dl) {
+      try {
+        await dl.save({ filename: `${base}.zip`, data: blob });
+        st.className = "status ok"; st.textContent = `Saved ${base}.zip — rename it to .mcpack and open it with Minecraft.`;
+      } catch (e) {
+        st.className = "status no";
+        st.textContent = e && e.code === "declined" ? "Download cancelled." : "This view can't save files. Open the builder page directly in your browser.";
+      }
+    } else {
+      const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = `${base}.mcpack`;
+      document.body.append(a); a.click(); a.remove();
+      st.className = "status ok"; st.textContent = `Downloaded ${base}.mcpack — open it with Minecraft.`;
+    }
+  } catch (e) {
+    st.className = "status no"; st.textContent = "Building failed: " + (e && e.message ? e.message : e);
+  }
+  btn.disabled = false;
+});
+
+// start
+const startWhenReady = () => { refresh(); resize(); requestAnimationFrame(frame); };
+if (EXAMPLE.complete) startWhenReady(); else EXAMPLE.onload = startWhenReady;
+</script>
+
+</body>
+</html>
