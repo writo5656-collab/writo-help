@@ -171,8 +171,9 @@ export function cleanLabel(text) {
   t = t.replace(/\s+(§[0-9a-fl])*§8.*$/, ""); // "Name §8(hint)"
   t = t.replace(/\s*\([^)]*\)\s*$/, ""); // "Name (hint)"
   t = t.replace(/§([abcdef7])/g, (_, c) => `§${CONTRAST[c]}`);
-  if (!/^(§[0-9a-fl])+/.test(t)) t = `§3${t}`;
-  else if (/^§l/.test(t)) t = `§3${t}`;
+  if (!/^(§[0-9a-fl])+/.test(t)) t = `§0${t}`;
+  else if (/^§l/.test(t)) t = `§0${t}`;
+  t = t.replace(/§3/g, "§0"); // names are black; only green (active) and red (delete) keep a colour
   return t.trim();
 }
 

@@ -4,9 +4,18 @@ Spawn, pose, dress, animate and film custom NPCs for thumbnails and cinematics.
 Download: `dist/NPCStudio-V2.mcaddon`
 
 "V2" is the public name of this update. The pack manifests keep counting up internally
-(currently 3.5.0) so Minecraft always treats it as newer than the 2.9.0 release players have. (open it on your device and Minecraft imports both packs).
+(currently 3.6.0) so Minecraft always treats it as newer than the 2.9.0 release players have. (open it on your device and Minecraft imports both packs).
 
 ## Latest changes
+- Menu button names are black (dark green = active, dark red = delete).
+- Offhand slot uses the vanilla totem of undying icon.
+- **Search Item** replaces "Type Any Item ID": type a normal name ("totem", "diamond sword") and
+  pick from the matches, including items from other add-ons.
+- Camera props are smaller and turn invisible (name tag too) while anyone is filming.
+- Skin Pack Builder rebuilt: live 3D walking preview of each skin, drag-and-drop up to 20 at
+  once, slot contact sheet with faces, classic/slim preview.
+
+## Earlier in V2
 - Renamed to **NPC Studio V2** (pack names, welcome, menus, Handbook, file name).
 - Pose Mode corner readout: smaller, fully on screen, above the attack button, 3 lines.
 - The "how to get out" line is back in chat whenever you enter camera view, lock a Fly Cam shot

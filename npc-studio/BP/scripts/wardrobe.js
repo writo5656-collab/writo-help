@@ -17,7 +17,7 @@
  *
  * Copyright (c) 2026 NoxeelMC. All rights reserved. See LICENSE.md.
  */
-import { EquipmentSlot, ItemStack, EntityComponentTypes, EnchantmentTypes } from "@minecraft/server";
+import { EquipmentSlot, ItemStack, ItemTypes, EntityComponentTypes, EnchantmentTypes } from "@minecraft/server";
 import { world, system, menu, modal, confirm, msg, sfx, ICON, niceId, isLocked, npcsNear, getJson, TOOL_IDS, NPC_FAMILY } from "./core.js";
 import { TRIM_DATA, MATERIAL_LABELS, isTrimmable, trimTablePath, glintTablePath } from "./trimdata.js";
 
@@ -27,7 +27,7 @@ export const SLOTS = [
   { key: "Legs", slot: EquipmentSlot.Legs, cmd: "slot.armor.legs", icon: "textures/items/diamond_leggings" },
   { key: "Feet", slot: EquipmentSlot.Feet, cmd: "slot.armor.feet", icon: "textures/items/diamond_boots" },
   { key: "Mainhand", slot: EquipmentSlot.Mainhand, cmd: "slot.weapon.mainhand", icon: "textures/items/diamond_sword" },
-  { key: "Offhand", slot: EquipmentSlot.Offhand, cmd: "slot.weapon.offhand", icon: ICON("item_shield") }
+  { key: "Offhand", slot: EquipmentSlot.Offhand, cmd: "slot.weapon.offhand", icon: "textures/items/totem" }
 ];
 const ARMOR_KEYS = ["Head", "Chest", "Legs", "Feet"];
 export const slotDef = (key) => SLOTS.find((s) => s.key === key);
@@ -440,23 +440,7 @@ function openSlotMenu(player, npc, slotKey, back) {
     if (!stack || TOOL_IDS.includes(stack.typeId)) return msg(player, "§cHold an item first.");
     giveExact(player, npc, [{ slotKey, stack, fromHand: true }], self);
   });
-  m.btn("Type Any Item ID...", ICON("custom"), () =>
-    modal(`${slotKey}: any item`)
-      .text("id", "Item ID (e.g. minecraft:nether_star or mymod:gun)", "minecraft:diamond_sword", cur?.id ?? "")
-      .show(player, ({ id }) => {
-        id = String(id ?? "").trim();
-        if (!id) return self();
-        if (!id.includes(":")) id = `minecraft:${id}`;
-        try {
-          new ItemStack(id, 1);
-        } catch {
-          msg(player, `§cUnknown item: ${id}`);
-          return self();
-        }
-        msg(player, equipBasic(npc, slotKey, id) ? `§a${slotKey}: ${niceId(id)}.` : `§cCouldn't equip ${id}.`);
-        self();
-      }, self)
-  );
+  m.btn("Search Item", ICON("fov"), () => openItemSearch(player, npc, slotKey, self));
   if (cur) {
     if (ARMOR_KEYS.includes(slotKey) && isTrimmable(cur.id)) m.btn("Add / Change Trim", ICON("trim"), () => openTrimStudio(player, npc, self, [slotKey]));
     m.btn("Enchant This Item...", ICON("enchant"), () => openEnchantEditor(player, npc, slotKey, self));
@@ -470,6 +454,51 @@ function openSlotMenu(player, npc, slotKey, back) {
     });
   }
   m.back(back).show(player);
+}
+
+// ---------- search any item by its name (vanilla + other add-ons) ----------
+const SLOT_WORDS = { Head: "on the head", Chest: "on the chest", Legs: "on the legs", Feet: "on the feet", Mainhand: "in the main hand", Offhand: "in the offhand" };
+const EXAMPLES = { Head: "pumpkin, zombie head, diamond helmet", Chest: "elytra, netherite chestplate", Legs: "iron leggings", Feet: "golden boots", Mainhand: "diamond sword, bow, torch", Offhand: "totem, shield, torch" };
+
+function searchItems(query) {
+  const words = query.toLowerCase().replace(/[^a-z0-9 _:]/g, " ").split(/[\s_]+/).filter(Boolean);
+  if (!words.length) return [];
+  const hits = [];
+  for (const t of ItemTypes.getAll()) {
+    const id = t.id;
+    if (id.startsWith("npcstudio:")) continue;
+    const name = id.split(":")[1] ?? id;
+    if (!words.every((w) => name.includes(w))) continue;
+    const exact = name === words.join("_") ? 0 : name.startsWith(words[0]) ? 1 : 2;
+    hits.push({ id, name, score: exact * 1000 + name.length });
+  }
+  return hits.sort((a, b) => a.score - b.score).slice(0, 40);
+}
+
+function openItemSearch(player, npc, slotKey, back) {
+  modal(`Search Item`)
+    .text("q", `Type the item you want ${SLOT_WORDS[slotKey]}`, `e.g. ${EXAMPLES[slotKey]}`)
+    .submit("Search")
+    .show(player, ({ q }) => {
+      const hits = searchItems(String(q ?? ""));
+      if (hits.length === 0) {
+        sfx(player, "error");
+        return menu("No Results", `Nothing found for "${q}".\nTry a shorter word, like "sword" or "helmet".`)
+          .btn("Search Again", ICON("fov"), () => openItemSearch(player, npc, slotKey, back))
+          .back(back)
+          .show(player);
+      }
+      const m = menu(`Results: ${q}`);
+      for (const h of hits) {
+        const mod = h.id.startsWith("minecraft:") ? "" : ` §8(${h.id.split(":")[0]})`;
+        m.btn(`${niceId(h.id)}${mod}`, `textures/items/${h.name}`, () => {
+          msg(player, equipBasic(npc, slotKey, h.id) ? `§a${slotKey}: ${niceId(h.id)}.` : `§cThat item can't be worn there.`);
+          back();
+        });
+      }
+      m.btn("Search Again", ICON("fov"), () => openItemSearch(player, npc, slotKey, back));
+      m.back(back).show(player);
+    }, back);
 }
 
 function openCatalog(player, npc, slotKey, cat, back) {

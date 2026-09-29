@@ -32,6 +32,24 @@ export function fadeBlack(player, inT = 0.25, hold = 0.1, outT = 0.35) {
 }
 
 function setNames(player, hidden) {
+  // camera props: invisible (and nameless) while filming, so you never see "Camera 1" in a shot
+  for (const cam of player.dimension.getEntities({ type: "npcstudio:camera_marker" })) {
+    try {
+      cam.setProperty("npcstudio:hidden", hidden);
+      if (hidden) {
+        if (cam.getDynamicProperty("npcstudio:shot_name") === undefined) cam.setDynamicProperty("npcstudio:shot_name", cam.nameTag || "");
+        cam.nameTag = "";
+      } else {
+        const prev = cam.getDynamicProperty("npcstudio:shot_name");
+        if (prev !== undefined) {
+          cam.nameTag = prev;
+          cam.setDynamicProperty("npcstudio:shot_name", undefined);
+        }
+      }
+    } catch {
+      /* ignore */
+    }
+  }
   for (const npc of player.dimension.getEntities({ families: [NPC_FAMILY], location: player.location, maxDistance: 160 })) {
     try {
       if (hidden) {

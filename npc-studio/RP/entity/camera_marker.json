@@ -3,15 +3,22 @@
   "minecraft:client_entity": {
     "description": {
       "identifier": "npcstudio:camera_marker",
-      "materials": { "default": "entity_alphatest" },
+      "materials": {
+        "default": "entity_alphatest"
+      },
       "textures": {
         "default": "textures/entity/npcstudio/camera_marker"
       },
       "geometry": {
         "default": "geometry.npcstudio.camera"
       },
-      "render_controllers": ["controller.render.npcstudio.camera"],
-      "enable_attachables": false
+      "render_controllers": [
+        "controller.render.npcstudio.camera"
+      ],
+      "enable_attachables": false,
+      "scripts": {
+        "scale": "query.property('npcstudio:hidden') ? 0.0 : 0.6"
+      }
     }
   }
 }
