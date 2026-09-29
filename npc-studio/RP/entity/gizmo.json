@@ -1,0 +1,23 @@
+{
+  "format_version": "1.10.0",
+  "minecraft:client_entity": {
+    "description": {
+      "identifier": "npcstudio:gizmo",
+      "materials": {
+        "default": "entity_alphatest"
+      },
+      "textures": {
+        "default": "textures/entity/npcstudio/gizmo"
+      },
+      "geometry": {
+        "default": "geometry.npcstudio.gizmo"
+      },
+      "scripts": {
+        "scale": "query.property('npcstudio:gscale')"
+      },
+      "render_controllers": [
+        "controller.render.npcstudio.gizmo"
+      ]
+    }
+  }
+}

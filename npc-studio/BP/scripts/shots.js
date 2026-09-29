@@ -5,12 +5,13 @@
  * plays a list of shots back-to-back like an edited video. Sneak to stop any time.
  * Copyright (c) 2026 NoxeelMC. All rights reserved. See LICENSE.md.
  */
-import { EasingType, HudVisibility } from "@minecraft/server";
+import { EasingType } from "@minecraft/server";
 import {
   world, system, menu, modal, msg, ICON, CAM_PRESET, NPC_FAMILY, EASE, EASE_KEYS, EASE_LABELS,
   lerp, lerp3, add, sub, scale3, forward, right, orbitPoint, clamp, toRad, getJson, setJson, npcLabel
 } from "./core.js";
 import { playAllTimelines } from "./animator.js";
+import { enterCinema, exitCinema, inCinema, fadeBlack } from "./cinema.js";
 
 const DISTANCES = [
   { label: "Close (2.5 blocks)", r: 2.5 },
@@ -159,49 +160,6 @@ export function isShooting(player) {
   return running.has(player.id);
 }
 
-function hideForShot(player, hidden, subjects, hideNames) {
-  try {
-    player.onScreenDisplay.setHudVisibility(hidden ? HudVisibility.Hide : HudVisibility.Reset);
-  } catch {
-    /* ignore */
-  }
-  const isSubject = subjects.some((s) => s?.id === player.id);
-  if (!isSubject) {
-    try {
-      if (hidden) player.addEffect("invisibility", 20 * 600, { amplifier: 0, showParticles: false });
-      else player.removeEffect("invisibility");
-    } catch {
-      /* ignore */
-    }
-  }
-  if (hideNames) {
-    for (const npc of player.dimension.getEntities({ families: [NPC_FAMILY], location: player.location, maxDistance: 128 })) {
-      try {
-        if (hidden) {
-          if (npc.getDynamicProperty("npcstudio:shot_name") === undefined) npc.setDynamicProperty("npcstudio:shot_name", npc.nameTag || "");
-          npc.nameTag = "";
-        } else {
-          const prev = npc.getDynamicProperty("npcstudio:shot_name");
-          if (prev !== undefined) {
-            npc.nameTag = prev;
-            npc.setDynamicProperty("npcstudio:shot_name", undefined);
-          }
-        }
-      } catch {
-        /* ignore */
-      }
-    }
-  }
-}
-
-export function fade(player, secs = 0.35) {
-  try {
-    player.camera.fade({ fadeTime: { fadeInTime: secs, holdTime: 0.15, fadeOutTime: secs }, fadeColor: { red: 0, green: 0, blue: 0 } });
-  } catch {
-    /* ignore */
-  }
-}
-
 /**
  * cfg: { shot, a, b?, secs, dist, height, ease, sway, fadeIn, keepView, hideNames }
  * a/b are entities. onEnd(completed:boolean)
@@ -222,26 +180,18 @@ export function runShot(player, cfg, onEnd) {
   let sneakWas = player.isSneaking;
   let done = false;
 
-  hideForShot(player, true, [cfg.a, cfg.b], cfg.hideNames !== false);
-  if (cfg.fadeIn) fade(player);
-
-  const finish = (completed) => {
+  const finish = (completed, fromCinema) => {
     if (done) return;
     done = true;
     system.clearRun(h);
     running.delete(player.id);
     if (!player.isValid) return;
-    if (!cfg.keepView || !completed) {
-      try {
-        player.camera.clear();
-        player.camera.setFov();
-      } catch {
-        /* ignore */
-      }
-      hideForShot(player, false, [cfg.a, cfg.b], cfg.hideNames !== false);
-    }
+    if (!fromCinema && (!cfg.keepView || !completed)) exitCinema(player);
     onEnd?.(completed);
   };
+  const already = inCinema(player);
+  enterCinema(player, () => finish(false, true), { fade: cfg.fadeIn !== false, hideNames: cfg.hideNames !== false });
+  if (cfg.fadeIn && already) fadeBlack(player); // cut between shots of a sequence
 
   const h = system.runInterval(() => {
     if (!player.isValid) return finish(false);
@@ -266,7 +216,7 @@ export function runShot(player, cfg, onEnd) {
     }
     try {
       const opts = { location: loc, facingLocation: look };
-      if (tick > 0 && !f.cut) opts.easeOptions = { easeTime: 0.1, easeType: EasingType.Linear };
+      if (tick > 0 && !f.cut) opts.easeOptions = { easeTime: 0.2, easeType: EasingType.Linear };
       player.camera.setCamera(CAM_PRESET, opts);
       const fov = f.fov ?? cfg.fov ?? 70;
       if (Math.abs(fov - lastFov) > 0.4) {
@@ -292,16 +242,10 @@ export function stopShot(player, notify) {
   }
 }
 
-/** Release the camera after a "keep view" shot/sequence. */
+/** Leave camera view after a "hold last frame" shot or sequence. */
 export function releaseView(player) {
   stopShot(player, false);
-  try {
-    player.camera.clear();
-    player.camera.setFov();
-  } catch {
-    /* ignore */
-  }
-  hideForShot(player, false, [], true);
+  exitCinema(player);
 }
 
 // =====================================================================================

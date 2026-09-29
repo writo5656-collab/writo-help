@@ -3,6 +3,7 @@
  * Copyright (c) 2026 NoxeelMC. All rights reserved. See LICENSE.md.
  */
 import { menu, modal, msg, ICON, MOB_TAG } from "./core.js";
+import { openPutNpcOn, openMobPoses } from "./mount.js";
 
 const MOB_TYPES = [
   ["horse", "Horse", true], ["donkey", "Donkey", true], ["mule", "Mule", true], ["camel", "Camel", true],
@@ -81,6 +82,8 @@ export function openMobManageMenu(player, mob) {
       freeze(mob, !frozen);
       self();
     })
+    .btn("Put an NPC on it (ride)", ICON("spawn"), () => openPutNpcOn(player, mob, self))
+    .btn("Mob Poses (rear up, sit...)", ICON("pose_preset"), () => openMobPoses(player, mob, self))
     .btn("Face My Direction", ICON("turn"), () => {
       mob.setRotation({ x: 0, y: player.getRotation().y + 180 });
       self();

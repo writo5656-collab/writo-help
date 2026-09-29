@@ -8,33 +8,71 @@
  * part) in your own add-on/mod without written permission from NoxeelMC.
  * See LICENSE.md in this pack for full terms.
  */
-import { ItemStack, EquipmentSlot, EntityComponentTypes } from "@minecraft/server";
+import { ItemStack, EquipmentSlot, EntityComponentTypes, CommandPermissionLevel, CustomCommandStatus } from "@minecraft/server";
 import { world, system, safeOn, msg, actionbar, NPC_ID, CAMERA_ID, WAND_ID, CAMERA_TOOL_ID, MOB_TOOL_ID, MOB_TAG, TOOL_IDS, isLocked } from "./core.js";
 import { openMainMenu, openManageMenu, getLookedAtNPC, startLookLoop } from "./npc.js";
 import { openCameraToolMenu, openCameraPanel, camState, viewThrough, exitView, isViewing } from "./camera.js";
 import { openMobToolMenu, openMobManageMenu, tryRide, tryDismount } from "./mobs.js";
 import { quickEquip } from "./wardrobe.js";
-import { isInGizmo, endGizmo, gizmoCycleAxis, gizmoToggleMode, restoreAfterRejoin } from "./poseEditor.js";
+import { isInGizmo, endGizmo, gizmoCycleAxis, gizmoToggleMode, restoreAfterRejoin, cleanupGizmos } from "./poseEditor.js";
+import { inCinema, exitCinema, restoreCinemaAfterRejoin } from "./cinema.js";
+import { startMountLoop, reapplyMobPoses } from "./mount.js";
 import { applyPose, expandPreset, pushUndo } from "./rig.js";
 import { ALL_POSES, QUICK_CYCLE } from "./poses.js";
 
 const STARTER_ITEMS = [WAND_ID, CAMERA_TOOL_ID, MOB_TOOL_ID];
 
 system.run(() => {
-  world.sendMessage("§b§lNPC Studio v3.0 §r§7— made by §aNoxeelMC§7. Subscribe: §fyoutube.com/@NoxeelMC");
+  world.sendMessage("§8[§bNPC Studio§8] §7Studio loaded — grab your wand and roll camera. §8by NoxeelMC");
 });
 
 startLookLoop();
+startMountLoop();
+system.runTimeout(cleanupGizmos, 20);
 
-// ---------- first join: tools + welcome ----------
+// ---------- slash commands: /exitcam  /npc  /cameras ----------
+safeOn(() => system.beforeEvents.startup, (ev) => {
+  const reg = ev.customCommandRegistry;
+  const add = (name, description, fn) => {
+    try {
+      reg.registerCommand({ name: `npcstudio:${name}`, description, permissionLevel: CommandPermissionLevel.Any, cheatsRequired: false }, (origin) => {
+        const player = origin.sourceEntity;
+        if (player?.typeId !== "minecraft:player") return { status: CustomCommandStatus.Failure, message: "Only players can use this." };
+        system.run(() => fn(player));
+        return { status: CustomCommandStatus.Success };
+      });
+    } catch (e) {
+      console.warn(`[NPC Studio] couldn't register /${name}: ${e}`);
+    }
+  };
+  add("exitcam", "Leave NPC Studio camera view", (p) => {
+    if (inCinema(p)) exitCinema(p);
+    else {
+      exitCinema(p, { fade: false });
+      msg(p, "§7You're not in a camera view (reset anyway).");
+    }
+  });
+  add("npc", "Open the NPC Studio menu", (p) => openMainMenu(p));
+  add("cameras", "Open the NPC Studio camera menu", (p) => openCameraToolMenu(p));
+}, "startup");
+
+// ---------- join: welcome + tools ----------
 safeOn(() => world.afterEvents.playerSpawn, (ev) => {
   const player = ev.player;
   restoreAfterRejoin(player);
+  restoreCinemaAfterRejoin(player);
+  system.runTimeout(reapplyMobPoses, 60);
   if (!ev.initialSpawn) return;
   system.runTimeout(() => {
     if (!player.isValid) return;
-    msg(player, "§b§lNPC Studio v3.0 §r§7— armor trims, Blender-style posing, 30 cinematic shots, animations & more.");
-    msg(player, "§7Wand: right-click air = menu, right-click an NPC = edit it. Open §fHelp & What's New§7 in the menu.");
+    try {
+      player.onScreenDisplay.setTitle("§l§bNPC STUDIO", { subtitle: "§fwelcome to §bStudio Mode", fadeInDuration: 10, stayDuration: 60, fadeOutDuration: 20 });
+      player.playSound("random.levelup", { pitch: 0.8, volume: 0.6 });
+    } catch {
+      /* ignore */
+    }
+    msg(player, "§b§l» WELCOME TO NPC STUDIO MODE");
+    msg(player, "§fYou're the director now. §7Right-click air with the §bWand§7 to start, or type §e/npc§7.");
     const inv = player.getComponent("minecraft:inventory")?.container;
     if (!inv) return;
     for (const itemId of STARTER_ITEMS) {
@@ -149,7 +187,12 @@ safeOn(() => world.afterEvents.playerSwingStart, (ev) => {
 
 // ---------- chat fallback ----------
 safeOn(() => world.beforeEvents.chatSend, (ev) => {
-  if (ev.message.trim().toLowerCase() !== "!npc") return;
-  ev.cancel = true;
-  system.run(() => openMainMenu(ev.sender));
+  const m = ev.message.trim().toLowerCase();
+  if (m === "!npc") {
+    ev.cancel = true;
+    system.run(() => openMainMenu(ev.sender));
+  } else if (m === "!exitcam" || m === "!exit") {
+    ev.cancel = true;
+    system.run(() => exitCinema(ev.sender));
+  }
 }, "chatSend");

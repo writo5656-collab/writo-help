@@ -8,7 +8,7 @@
  * Copyright (c) 2026 NoxeelMC. All rights reserved. See LICENSE.md.
  */
 import { InputPermissionCategory } from "@minecraft/server";
-import { world, system, menu, modal, msg, actionbar, ICON, clamp, wrapDeg, round, getJson, setJson } from "./core.js";
+import { world, system, menu, modal, msg, actionbar, ICON, clamp, wrapDeg, round, getJson, setJson, forward, right } from "./core.js";
 import { BONES, getRot, setRot, getPos, setPos, getScale, setScale, readPose, applyPose, mirrorPose, expandPreset, pushUndo, undo, redo, historySize, snapPos, POS_LIMIT, getAnim, setAnim } from "./rig.js";
 import { POSE_CATEGORIES, LOOP_ANIMS } from "./poses.js";
 
@@ -285,7 +285,7 @@ export function openLoopAnims(player, npc, back) {
 // =====================================================================================
 // LIVE GIZMO
 // =====================================================================================
-const AXES = ["Free (X+Y)", "X only", "Y only", "Z only"];
+const AXES = ["§fFree §7(§cX§7+§aY§7)", "§cX only (red)", "§aY only (green)", "§9Z only (blue)"];
 const gizmos = new Map(); // player.id -> session
 
 export function isInGizmo(player) {
@@ -294,21 +294,26 @@ export function isInGizmo(player) {
 
 function openGizmoStart(player, npc, back) {
   const st = stateFor(player);
+  const b = BONES[st.bone].label;
   menu(
     "Live Gizmo",
     [
-      `§fBone: §b${BONES[st.bone].label}`,
+      `§fBody part: §b§l${b}`,
       "",
-      "§fAfter you start, just §bLOOK AROUND§f — the bone follows your view.",
-      "§a Sneak§f = apply    §c Jump§f = cancel",
-      "§e Scroll / tap hotbar§f = change axis",
-      "§d Swing (hit/tap)§f = switch Rotate <-> Move",
-      "§7You can't walk while the gizmo is on."
+      "§e1.§f A 3D gizmo appears on the NPC's §b" + b + "§f:",
+      "   §frings = ROTATE, arrows = MOVE",
+      "   §cred = X§f, §agreen = Y§f, §9blue = Z§f. §eYellow§f = the axis you control.",
+      "§e2.§f Turn your head (or drag the screen). The body part follows you.",
+      "§e3.§a Sneak§f to keep it. §cJump§f to undo.",
+      "",
+      "§7Change axis: scroll the hotbar or tap another slot.",
+      "§7Switch rotate/move: swing your arm (hit / tap).",
+      "§7Walking is paused while the gizmo is on."
     ].join("\n")
   )
-    .btn("Start: ROTATE", ICON("turn"), () => startGizmo(player, npc, "rot", back))
-    .btn("Start: MOVE", ICON("move"), () => startGizmo(player, npc, "pos", back))
-    .btn(`Bone: ${BONES[st.bone].label} §8(change)`, ICON("pose_manual"), () => pickBone(player, () => openGizmoStart(player, npc, back)))
+    .btn(`§lRotate ${b}`, ICON("gizmo"), () => startGizmo(player, npc, "rot", back))
+    .btn(`§lMove ${b}`, ICON("move"), () => startGizmo(player, npc, "pos", back))
+    .btn("Pick another body part", ICON("pose_manual"), () => pickBone(player, () => openGizmoStart(player, npc, back)))
     .back(back)
     .show(player);
 }
@@ -318,6 +323,64 @@ function setWalk(player, allowed) {
     player.inputPermissions.setPermissionCategory(InputPermissionCategory.LateralMovement, allowed);
   } catch {
     /* older versions: player can still walk, gizmo still works */
+  }
+}
+
+// ---------- the visible gizmo (red/green/blue arrows = move, rings = rotate) ----------
+const GIZMO_ID = "npcstudio:gizmo";
+// bone pivot in model pixels: [side (+ = NPC's left), up, forward/back]
+const PIVOTS = { head: [0, 24, 0], body: [0, 24, 0], right_arm: [-5, 22, 0], left_arm: [5, 22, 0], right_leg: [-1.9, 12, 0], left_leg: [1.9, 12, 0], root: [0, 0, 0] };
+
+function gizmoWorldPos(npc, boneKey, pos) {
+  const sc = getScale(npc);
+  const yaw = npc.getRotation().y;
+  const f = forward(yaw);
+  const r = right(yaw);
+  const pv = PIVOTS[boneKey] ?? [0, 0, 0];
+  const side = -(pv[0] + pos[0]) / 16 * sc; // model +x = NPC's left
+  const upDist = (pv[1] + pos[1]) / 16 * sc;
+  const fwd = -(pv[2] + pos[2]) / 16 * sc;
+  const l = npc.location;
+  return { x: l.x + r.x * side + f.x * fwd, y: l.y + upDist, z: l.z + r.z * side + f.z * fwd };
+}
+
+function spawnGizmo(s) {
+  try {
+    const g = s.npc.dimension.spawnEntity(GIZMO_ID, gizmoWorldPos(s.npc, s.bone.key, s.pos));
+    g.setRotation({ x: 0, y: s.npc.getRotation().y });
+    g.setProperty("npcstudio:gscale", clamp(getScale(s.npc) * (s.bone.key === "root" ? 1.8 : 1), 0.1, 4));
+    s.gizmo = g;
+    syncGizmo(s);
+  } catch (e) {
+    console.warn(`[NPC Studio] gizmo spawn failed: ${e}`);
+  }
+}
+
+function syncGizmo(s) {
+  const g = s.gizmo;
+  if (!g?.isValid) return;
+  try {
+    const mode = s.mode === "rot" ? 1 : 0;
+    if (g.getProperty("npcstudio:gmode") !== mode) g.setProperty("npcstudio:gmode", mode);
+    if (g.getProperty("npcstudio:gaxis") !== s.axis) g.setProperty("npcstudio:gaxis", s.axis);
+    const p = gizmoWorldPos(s.npc, s.bone.key, s.pos);
+    const o = g.location;
+    if (Math.abs(p.x - o.x) + Math.abs(p.y - o.y) + Math.abs(p.z - o.z) > 0.005) g.teleport(p, { rotation: { x: 0, y: s.npc.getRotation().y } });
+  } catch {
+    /* ignore */
+  }
+}
+
+/** Remove leftover gizmos (e.g. after a crash or someone leaving mid-edit). */
+export function cleanupGizmos() {
+  for (const d of ["overworld", "nether", "the_end"]) {
+    try {
+      for (const g of world.getDimension(d).getEntities({ type: GIZMO_ID })) {
+        if (![...gizmos.values()].some((s) => s.gizmo?.id === g.id)) g.remove();
+      }
+    } catch {
+      /* ignore */
+    }
   }
 }
 
@@ -345,6 +408,12 @@ export function startGizmo(player, npc, mode, back) {
   setWalk(player, false);
   player.setDynamicProperty("npcstudio:gizmo", true);
   highlight(npc);
+  spawnGizmo(session);
+  try {
+    player.onScreenDisplay.setTitle(`§b${bone.label}`, { subtitle: "§fLook around to pose it", fadeInDuration: 2, stayDuration: 30, fadeOutDuration: 8 });
+  } catch {
+    /* ignore */
+  }
   session.run = system.runInterval(() => tickGizmo(player, session), 1);
 }
 
@@ -389,8 +458,10 @@ function tickGizmo(player, s) {
     s.jump = jumping;
   }
 
-  const vals = s.mode === "rot" ? `§fX ${s.rot[0].toFixed(0)}  Y ${s.rot[1].toFixed(0)}  Z ${s.rot[2].toFixed(0)}` : `§fX ${s.pos[0].toFixed(2)}  Y ${s.pos[1].toFixed(2)}  Z ${s.pos[2].toFixed(2)} px`;
-  actionbar(player, `${s.mode === "rot" ? "§b§lROTATE" : "§6§lMOVE"}§r §f${s.bone.label} §7| Axis: §e${AXES[s.axis]} §7| ${vals}\n§aSneak§7=apply  §cJump§7=cancel  §eHotbar§7=axis  §dSwing§7=rot/move`);
+  syncGizmo(s);
+  const c = (i, v) => `${["§c", "§a", "§9"][i]}${"XYZ"[i]} ${v}`;
+  const vals = s.mode === "rot" ? s.rot.map((v, i) => c(i, v.toFixed(0) + "°")).join("  ") : s.pos.map((v, i) => c(i, v.toFixed(2))).join("  ");
+  actionbar(player, `${s.mode === "rot" ? "§b§lROTATE (rings)" : "§6§lMOVE (arrows)"}§r §f${s.bone.label}  §7Axis: ${AXES[s.axis]}\n${vals}\n§7Look around to pose · §aSneak§7 apply · §cJump§7 cancel · §eHotbar§7 axis · §dSwing§7 rotate/move`);
 }
 
 export function gizmoCycleAxis(player, newSlot) {
@@ -418,6 +489,11 @@ export function endGizmo(player, apply) {
   if (!s) return;
   gizmos.delete(player.id);
   system.clearRun(s.run);
+  try {
+    if (s.gizmo?.isValid) s.gizmo.remove();
+  } catch {
+    /* ignore */
+  }
   if (player.isValid) {
     setWalk(player, true);
     player.setDynamicProperty("npcstudio:gizmo", undefined);

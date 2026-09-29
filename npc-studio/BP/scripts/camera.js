@@ -5,7 +5,8 @@
  * for fast framing, and the control panel is split into short sub-menus.
  * Copyright (c) 2026 NoxeelMC. All rights reserved. See LICENSE.md.
  */
-import { EasingType, HudVisibility } from "@minecraft/server";
+import { EasingType } from "@minecraft/server";
+import { enterCinema, exitCinema, inCinema } from "./cinema.js";
 import { world, system, menu, modal, msg, ICON, CAMERA_ID, CAM_PRESET, NPC_FAMILY, MOB_TAG, catmull, lerp, wrapDeg, getJson, setJson, EASE, npcLabel } from "./core.js";
 
 const FOVS = [30, 40, 50, 60, 70, 80, 90, 100, 110];
@@ -33,24 +34,6 @@ function saveState(marker, s) {
   marker.setDynamicProperty("npcstudio:cam_fovdeg", s.fov);
 }
 
-const inView = new Set();
-function setViewing(player, on) {
-  if (on === inView.has(player.id)) return;
-  if (on) inView.add(player.id);
-  else inView.delete(player.id);
-  try {
-    player.onScreenDisplay.setHudVisibility(on ? HudVisibility.Hide : HudVisibility.Reset);
-  } catch {
-    /* ignore */
-  }
-  try {
-    if (on) player.addEffect("invisibility", 20 * 3600, { amplifier: 0, showParticles: false });
-    else player.removeEffect("invisibility");
-  } catch {
-    /* ignore */
-  }
-}
-
 const pendingSnap = new Map(); // player.id -> marker
 const lookTargets = new Map(); // marker.id -> entity
 const follows = new Map(); // marker.id -> run handle
@@ -60,24 +43,25 @@ export function viewThrough(player, s, smooth, facing) {
   const opts = { location: eye };
   if (facing?.isValid) opts.facingEntity = facing;
   else opts.rotation = { x: s.rotX, y: s.rotY };
-  if (smooth) opts.easeOptions = { easeTime: 0.3, easeType: EasingType.OutCubic };
-  try {
-    player.camera.setCamera(CAM_PRESET, opts);
-    player.camera.setFov({ fov: s.fov, easeOptions: smooth ? { easeTime: 0.3, easeType: EasingType.OutCubic } : undefined });
-  } catch (e) {
-    msg(player, `§c(Camera error: ${e})`);
-  }
-  setViewing(player, true);
+  const first = !inCinema(player);
+  enterCinema(player);
+  // first entry: the fade hides the cut; after that, glide smoothly between framings
+  const ease = !first && smooth ? { easeTime: 0.6, easeType: EasingType.InOutSine } : undefined;
+  if (ease) opts.easeOptions = ease;
+  const apply = () => {
+    try {
+      player.camera.setCamera(CAM_PRESET, opts);
+      player.camera.setFov({ fov: s.fov, easeOptions: ease });
+    } catch (e) {
+      msg(player, `§c(Camera error: ${e})`);
+    }
+  };
+  if (first) system.runTimeout(apply, 5);
+  else apply();
 }
 
 export function exitView(player) {
-  try {
-    player.camera.clear();
-    player.camera.setFov();
-  } catch {
-    /* ignore */
-  }
-  setViewing(player, false);
+  exitCinema(player);
 }
 
 function moveRel(loc, yaw, fwd, side, upDist) {
@@ -143,7 +127,7 @@ export function openCameraPanel(player, marker, skipView) {
         self();
       }, self)
     )
-    .btn("§aDone (keep looking through it)", ICON("done"), () => msg(player, "§7Camera view stays on. Hit the camera or use the Camera tool to exit."))
+    .btn("§aDone (keep looking through it)", ICON("done"), () => msg(player, "§7Camera view stays on. §e/exitcam§7 or double-tap sneak to leave, §e/cameras§7 to reopen this menu."))
     .btn("Exit Camera View", ICON("exit"), () => exitView(player))
     .btn("§cDelete Camera", ICON("delete"), () => {
       stopFollow(marker);
@@ -240,7 +224,7 @@ function startFollow(player, marker, target) {
     const s = camState(marker);
     s.location = { x: target.location.x + off.x, y: target.location.y + off.y, z: target.location.z + off.z };
     saveState(marker, s);
-    if (inView.has(player.id)) viewThrough(player, s, true, lookTargets.get(marker.id));
+    if (inCinema(player)) viewThrough(player, s, true, lookTargets.get(marker.id));
   }, 2);
   follows.set(marker.id, h);
 }
@@ -311,11 +295,15 @@ function playPath(player, marker, path, loop) {
   let seg = 0;
   let tick = 0;
   let sneakWas = player.isSneaking;
-  msg(player, "§7Playing path — sneak to stop.");
-  const h = system.runInterval(() => {
+  let h;
+  const stop = () => system.clearRun(h);
+  enterCinema(player, stop);
+  h = system.runInterval(() => {
+    if (!player.isValid) return stop();
     const sn = player.isSneaking;
-    if (!player.isValid || (sn && !sneakWas)) {
-      system.clearRun(h);
+    if (sn && !sneakWas) {
+      stop();
+      msg(player, "§7Path stopped. You're still in camera view (/exitcam to leave).");
       return;
     }
     sneakWas = sn;
@@ -324,21 +312,19 @@ function playPath(player, marker, path, loop) {
     try {
       const look = lookTargets.get(marker.id);
       const opts = look?.isValid ? { location: eye, facingEntity: look } : { location: eye, rotation: { x: s.rotX, y: s.rotY } };
-      if (seg + tick > 0) opts.easeOptions = { easeTime: 0.1, easeType: EasingType.Linear };
+      if (seg + tick > 0) opts.easeOptions = { easeTime: 0.2, easeType: EasingType.Linear };
       player.camera.setCamera(CAM_PRESET, opts);
-      player.camera.setFov({ fov: s.fov, easeOptions: { easeTime: 0.1, easeType: EasingType.Linear } });
+      player.camera.setFov({ fov: s.fov, easeOptions: { easeTime: 0.2, easeType: EasingType.Linear } });
     } catch {
-      system.clearRun(h);
-      return;
+      return stop();
     }
-    setViewing(player, true);
     tick++;
     if (tick >= segTicks[seg]) {
       tick = 0;
       seg++;
       if (seg >= path.length - 1) {
         if (loop) seg = 0;
-        else system.clearRun(h);
+        else stop();
       }
     }
   }, 1);
@@ -364,5 +350,5 @@ function shake(player, marker) {
 }
 
 export function isViewing(player) {
-  return inView.has(player.id);
+  return inCinema(player);
 }

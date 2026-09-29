@@ -14,6 +14,7 @@ import { openWardrobe, openBulkWardrobe, readAllEquip, applyEquipInfo, SLOTS } f
 import { pickSkin, setSkin, skinPlainName } from "./skins.js";
 import { openAnimator, playAllTimelines, stopAllTimelines, getTimeline } from "./animator.js";
 import { openShotsMenu } from "./shots.js";
+import { openRideMenu, isMounted } from "./mount.js";
 import { openCameraToolMenu } from "./camera.js";
 
 // ---------- spawning ----------
@@ -281,6 +282,7 @@ export function openManageMenu(player, npc, back) {
       setLookAtPlayers(npc, !isLooking(npc));
       self();
     })
+    .btn(isMounted(npc) ? "§aRiding §r§8(adjust / dismount)" : "Ride a Mob §8(horse, camel, wolf...)", ICON("ride"), () => openRideMenu(player, npc, self))
     .btn("Cinematic Shot Of This NPC", ICON("film"), () => openShotsMenu(player, self, npc))
     .btn("Move / Turn", ICON("move"), () => openMoveMenu(player, npc, self))
     .btn("Rename", ICON("rename"), () =>
@@ -554,7 +556,9 @@ function openHelp(player, back) {
       "§fWand: right-click NPC = edit, right-click air = this menu, left-click NPC = quick pose.",
       "§fShift + right-click an NPC holding any item = give it (exact copy).",
       "§fCamera tool: place/manage cameras. Mob tool: spawn mob props.",
-      "§fSneak stops any shot or camera path."
+      "§fSneak stops any shot or camera path.",
+      "§fLeave camera view: §e/exitcam§f or double-tap sneak. Menu: §e/npc§f. Cameras: §e/cameras§f.",
+      "§fRide: NPC menu > Ride a Mob. Mob Tool > a mob > Mob Poses (horse rearing, sitting...)."
     ].join("\n")
   )
     .back(back)

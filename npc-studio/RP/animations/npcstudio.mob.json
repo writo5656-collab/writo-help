@@ -1,0 +1,132 @@
+{
+  "format_version": "1.10.0",
+  "animations": {
+    "animation.npcstudio.mob.horse_rear": {
+      "loop": true,
+      "bones": {
+        "body": {
+          "rotation": [
+            -45,
+            0,
+            0
+          ]
+        },
+        "legbl": {
+          "rotation": [
+            45,
+            0,
+            0
+          ]
+        },
+        "legbr": {
+          "rotation": [
+            45,
+            0,
+            0
+          ]
+        },
+        "legfl": {
+          "rotation": [
+            "-60.0 + math.cos(query.life_time * 687.6) * 57.3",
+            0,
+            0
+          ]
+        },
+        "legfr": {
+          "rotation": [
+            "-60.0 - math.cos(query.life_time * 687.6) * 57.3",
+            0,
+            0
+          ]
+        },
+        "neck": {
+          "rotation": [
+            15,
+            0,
+            0
+          ]
+        },
+        "tail": {
+          "rotation": [
+            55,
+            0,
+            0
+          ]
+        }
+      }
+    },
+    "animation.npcstudio.mob.horse_rear_hold": {
+      "loop": true,
+      "bones": {
+        "body": {
+          "rotation": [
+            -45,
+            0,
+            0
+          ]
+        },
+        "legbl": {
+          "rotation": [
+            45,
+            0,
+            0
+          ]
+        },
+        "legbr": {
+          "rotation": [
+            45,
+            0,
+            0
+          ]
+        },
+        "legfl": {
+          "rotation": [
+            -70,
+            0,
+            0
+          ]
+        },
+        "legfr": {
+          "rotation": [
+            -35,
+            0,
+            0
+          ]
+        },
+        "neck": {
+          "rotation": [
+            10,
+            0,
+            0
+          ]
+        },
+        "tail": {
+          "rotation": [
+            55,
+            0,
+            0
+          ]
+        }
+      }
+    },
+    "animation.npcstudio.mob.horse_proud": {
+      "loop": true,
+      "bones": {
+        "neck": {
+          "rotation": [
+            -20,
+            0,
+            0
+          ]
+        },
+        "tail": {
+          "rotation": [
+            "30 + math.sin(query.life_time * 200) * 10",
+            0,
+            0
+          ]
+        }
+      }
+    }
+  }
+}

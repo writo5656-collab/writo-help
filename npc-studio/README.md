@@ -1,9 +1,24 @@
-# NPC Studio v3.0 (Minecraft Bedrock add-on by NoxeelMC)
+# NPC Studio v3.1 (Minecraft Bedrock add-on by NoxeelMC)
 
 Spawn, pose, dress, animate and film custom NPCs for thumbnails and cinematics.
-Download: `dist/NPCStudio-v3.0.0.mcaddon` (open it on your device and Minecraft imports both packs).
+Download: `dist/NPCStudio-v3.1.0.mcaddon` (open it on your device and Minecraft imports both packs).
 
-## What's new in v3.0
+## What's new in v3.1
+- **Visible 3D gizmo** on the body part you're posing: arrows (move) or rings (rotate),
+  red = X, green = Y, blue = Z, the axis you control glows yellow. Clearer start screen.
+- **Camera view hides you completely:** you switch to spectator while filming, so held items and
+  armor no longer float in the shot. Walking is locked and you return to the exact spot/game mode.
+- **`/exitcam`** (or double-tap sneak) leaves camera view; you're told this every time you enter.
+  Also `/npc` (menu) and `/cameras`. Chat fallback: `!exitcam`.
+- Smoother camera: fade in/out, eased moves between framings, softer per-frame easing on shots and paths.
+- **NPCs ride mobs:** NPC menu > Ride a Mob (or Mob Tool > mob > Put an NPC on it). Seat nudges,
+  sit sideways, surfing stance, riding poses (sword raised, waving, charge).
+- **Mob poses:** horse/donkey/mule rearing (kicking or hold), head held high, wolf/cat/fox/panda/camel
+  sitting, fox sleeping, panda lying, allay dance, sniffer happy, warden roar. Riders lean back
+  automatically when the horse rears.
+- New "Welcome to NPC Studio Mode" intro.
+
+## v3.0
 
 ### Armor trims and enchant glint (the #1 request)
 The old version equipped items with `/replaceitem`, which only takes an item name, so every

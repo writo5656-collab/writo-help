@@ -37,7 +37,10 @@ export const POSE_CATEGORIES = [
       "Levitating": { right_arm: [0, 0, 25], left_arm: [0, 0, -25], right_leg: [10], left_leg: [5], root: [0, 0, 0, 0, 8, 0] },
       "Swimming": { head: [-60], right_arm: [-180, 0, 30], left_arm: [-180, 0, -30], root: [90, 0, 0, 0, 6, 0] },
       "Crawling": { head: [-50], right_arm: [-150], left_arm: [-120], right_leg: [10], left_leg: [-10], root: [90, 0, 0, 0, 2, 0] },
-      "Riding": { right_arm: [-36], left_arm: [-36], right_leg: [-72, 18, 0], left_leg: [-72, -18, 0] }
+      "Riding": { right_arm: [-36], left_arm: [-36], right_leg: [-72, 18, 0], left_leg: [-72, -18, 0] },
+      "Riding: Sword Raised": { head: [-10], right_arm: [-165, 0, 15], left_arm: [-36], right_leg: [-72, 18, 0], left_leg: [-72, -18, 0] },
+      "Riding: Waving": { head: [0, -15], right_arm: [-160, 0, 25], left_arm: [-36], right_leg: [-72, 18, 0], left_leg: [-72, -18, 0] },
+      "Riding: Charge!": { head: [-15], body: [20], right_arm: [-100], left_arm: [-45], right_leg: [-72, 18, 0], left_leg: [-72, -18, 0] }
     }
   },
   {
@@ -81,6 +84,7 @@ export const POSE_CATEGORIES = [
       "Floss": { body: [0, 0, 8], right_arm: [10, 40, -20], left_arm: [10, 40, -20] },
       "Disco": { right_arm: [-160, 0, 30], left_arm: [30, 0, -20], body: [0, 0, 10], right_leg: [0, 0, 10] },
       "Ninja Run": { head: [-10], body: [35], right_arm: [60, 0, 10], left_arm: [60, 0, -10], right_leg: [-50], left_leg: [40] },
+      "Surfing": { head: [0, -60], body: [0, 60], right_arm: [0, 0, 55], left_arm: [0, 0, -55], right_leg: [-10, 0, 6], left_leg: [10, 0, -6], root: [0, 0, 0, 0, -1, 0] },
       "Big Stretch": { head: [-25], right_arm: [-175, 0, 20], left_arm: [-175, 0, -20], body: [-8] }
     }
   }
