@@ -1,3 +1,24 @@
+Featherlight Optimizer — 1.3.1
+==============================
+
+FIXED — 1.3.0 turned Vibrant Visuals off and could corrupt the screen
+---------------------------------------------------------------------
+
+1.3.0 raised min_engine_version to 1.26.0. Minecraft treats any pack
+with min_engine_version 1.21.110 or newer as a "modern" pack, and a
+modern pack that does not declare the "pbr" capability forces Vibrant
+Visuals off ("not compatible"). Mojang closed this as intended
+behaviour (MCPE-228970). Switching renderers when the pack was
+activated also made the screen flicker with static and stripes on at
+least one Samsung phone.
+
+The manifest now declares "capabilities": ["pbr"], which is how
+Microsoft's docs say a pack tells the game it can run under Vibrant
+Visuals. The pack adds no PBR textures, so everything it does not
+touch keeps vanilla's Vibrant Visuals look. The fog files carry no
+volumetric block, so volumetric fog is cheaper under Vibrant Visuals.
+
+
 Featherlight Optimizer — 1.3.0
 ==============================
 
