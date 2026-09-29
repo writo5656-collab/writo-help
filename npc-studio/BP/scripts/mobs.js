@@ -3,7 +3,7 @@
  * Copyright (c) 2026 NoxeelMC. All rights reserved. See LICENSE.md.
  */
 import { menu, modal, msg, ICON, MOB_TAG } from "./core.js";
-import { openPutNpcOn, openMobPoses } from "./mount.js";
+import { openPutNpcOn, openMobPoses, freezeMob, refreeze } from "./mount.js";
 
 const MOB_TYPES = [
   ["horse", "Horse", true], ["donkey", "Donkey", true], ["mule", "Mule", true], ["camel", "Camel", true],
@@ -15,17 +15,7 @@ const MOB_TYPES = [
   ["ender_dragon", "Ender Dragon"], ["axolotl", "Axolotl"], ["frog", "Frog"], ["panda", "Panda"], ["polar_bear", "Polar Bear"]
 ].map(([id, label, rideable]) => ({ id: `minecraft:${id}`, label, rideable: !!rideable }));
 
-const FREEZE_TICKS = 20000000;
-
-function freeze(mob, on) {
-  try {
-    if (on) mob.addEffect("slowness", FREEZE_TICKS, { amplifier: 255, showParticles: false });
-    else mob.removeEffect("slowness");
-  } catch {
-    /* ignore */
-  }
-  mob.setDynamicProperty("npcstudio:frozen", on);
-}
+const freeze = (mob, on) => freezeMob(mob, on);
 
 export function tryRide(player, mob) {
   try {
@@ -86,6 +76,7 @@ export function openMobManageMenu(player, mob) {
     .btn("Mob Poses (rear up, sit...)", ICON("pose_preset"), () => openMobPoses(player, mob, self))
     .btn("Face My Direction", ICON("turn"), () => {
       mob.setRotation({ x: 0, y: player.getRotation().y + 180 });
+      refreeze(mob);
       self();
     })
     .btn("Ride", ICON("ride"), () => msg(player, tryRide(player, mob) ? "§aRiding." : "§cCan't ride this mob."))

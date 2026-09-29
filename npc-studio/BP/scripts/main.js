@@ -9,7 +9,7 @@
  * See LICENSE.md in this pack for full terms.
  */
 import { ItemStack, EquipmentSlot, EntityComponentTypes, CommandPermissionLevel, CustomCommandStatus } from "@minecraft/server";
-import { world, system, safeOn, msg, actionbar, NPC_ID, CAMERA_ID, WAND_ID, CAMERA_TOOL_ID, MOB_TOOL_ID, MOB_TAG, TOOL_IDS, isLocked } from "./core.js";
+import { world, system, safeOn, msg, sfx, actionbar, NPC_ID, CAMERA_ID, WAND_ID, CAMERA_TOOL_ID, MOB_TOOL_ID, MOB_TAG, TOOL_IDS, isLocked } from "./core.js";
 import { openMainMenu, openManageMenu, getLookedAtNPC, startLookLoop } from "./npc.js";
 import { openCameraToolMenu, openCameraPanel, camState, viewThrough, exitView, isViewing } from "./camera.js";
 import { openMobToolMenu, openMobManageMenu, tryRide, tryDismount } from "./mobs.js";
@@ -17,6 +17,7 @@ import { quickEquip } from "./wardrobe.js";
 import { isInGizmo, endGizmo, gizmoCycleAxis, gizmoToggleMode, restoreAfterRejoin, cleanupGizmos } from "./poseEditor.js";
 import { inCinema, exitCinema, restoreCinemaAfterRejoin } from "./cinema.js";
 import { startMountLoop, reapplyMobPoses } from "./mount.js";
+import { inFlyCam, flyCamLock, flyCamZoom } from "./flycam.js";
 import { applyPose, expandPreset, pushUndo } from "./rig.js";
 import { ALL_POSES, QUICK_CYCLE } from "./poses.js";
 
@@ -51,6 +52,9 @@ safeOn(() => system.beforeEvents.startup, (ev) => {
       exitCinema(p, { fade: false });
       msg(p, "§7You're not in a camera view (reset anyway).");
     }
+  });
+  add("lockcam", "Fly Cam: lock the shot / finish the path", (p) => {
+    if (!flyCamLock(p, true)) msg(p, "§cYou're not flying a Fly Cam. Open the Camera tool > Fly Cam.");
   });
   add("npc", "Open the NPC Studio menu", (p) => openMainMenu(p));
   add("cameras", "Open the NPC Studio camera menu", (p) => openCameraToolMenu(p));
@@ -142,7 +146,7 @@ safeOn(() => world.afterEvents.entityHitEntity, (ev) => {
   const attacker = ev.damagingEntity;
   const target = ev.hitEntity;
   if (attacker?.typeId !== "minecraft:player") return;
-  if (isInGizmo(attacker)) return; // swing handled below
+  if (isInGizmo(attacker) || inFlyCam(attacker)) return; // swing handled below
   let held;
   try {
     held = attacker.getComponent(EntityComponentTypes.Equippable)?.getEquipment(EquipmentSlot.Mainhand);
@@ -171,6 +175,7 @@ safeOn(() => world.afterEvents.entityHitEntity, (ev) => {
     const name = QUICK_CYCLE[idx];
     pushUndo(target);
     applyPose(target, expandPreset(ALL_POSES[name]));
+    sfx(attacker, "pose");
     target.setDynamicProperty("npcstudio:preset_cycle", idx);
     actionbar(attacker, `§7Quick pose: §f${name} §8(${idx + 1}/${QUICK_CYCLE.length})`);
   }
@@ -178,10 +183,12 @@ safeOn(() => world.afterEvents.entityHitEntity, (ev) => {
 
 // ---------- gizmo controls ----------
 safeOn(() => world.afterEvents.playerHotbarSelectedSlotChange, (ev) => {
+  if (flyCamZoom(ev.player, ev.newSlotSelected)) return;
   if (isInGizmo(ev.player)) gizmoCycleAxis(ev.player, ev.newSlotSelected);
 }, "playerHotbarSelectedSlotChange");
 
 safeOn(() => world.afterEvents.playerSwingStart, (ev) => {
+  if (inFlyCam(ev.player)) return void flyCamLock(ev.player, false);
   if (isInGizmo(ev.player)) gizmoToggleMode(ev.player);
 }, "playerSwingStart");
 
@@ -191,6 +198,9 @@ safeOn(() => world.beforeEvents.chatSend, (ev) => {
   if (m === "!npc") {
     ev.cancel = true;
     system.run(() => openMainMenu(ev.sender));
+  } else if (m === "!lock" || m === "!lockcam") {
+    ev.cancel = true;
+    system.run(() => flyCamLock(ev.sender, true));
   } else if (m === "!exitcam" || m === "!exit") {
     ev.cancel = true;
     system.run(() => exitCinema(ev.sender));

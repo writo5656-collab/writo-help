@@ -8,7 +8,7 @@
  * Copyright (c) 2026 NoxeelMC. All rights reserved. See LICENSE.md.
  */
 import { InputPermissionCategory } from "@minecraft/server";
-import { world, system, menu, modal, msg, actionbar, ICON, clamp, wrapDeg, round, getJson, setJson, forward, right } from "./core.js";
+import { world, system, menu, modal, msg, sfx, actionbar, ICON, clamp, wrapDeg, round, getJson, setJson, forward, right } from "./core.js";
 import { BONES, getRot, setRot, getPos, setPos, getScale, setScale, readPose, applyPose, mirrorPose, expandPreset, pushUndo, undo, redo, historySize, snapPos, POS_LIMIT, getAnim, setAnim } from "./rig.js";
 import { POSE_CATEGORIES, LOOP_ANIMS } from "./poses.js";
 
@@ -191,6 +191,7 @@ export function openPoseLibrary(player, npc, back) {
           if (!npc.isValid) return;
           pushUndo(npc);
           applyPose(npc, expandPreset(preset));
+          sfx(player, "pose");
           msg(player, `§aPose: ${name}`);
           openPoseLibrary(player, npc, back);
         });
@@ -414,6 +415,7 @@ export function startGizmo(player, npc, mode, back) {
   } catch {
     /* ignore */
   }
+  sfx(player, "start");
   session.run = system.runInterval(() => tickGizmo(player, session), 1);
 }
 
@@ -498,6 +500,7 @@ export function endGizmo(player, apply) {
     setWalk(player, true);
     player.setDynamicProperty("npcstudio:gizmo", undefined);
     actionbar(player, apply ? "§aApplied." : "§cCancelled.");
+    sfx(player, apply ? "ok" : "click");
   }
   if (!apply && s.npc.isValid) undo(s.npc);
   if (player.isValid && s.npc.isValid) system.runTimeout(() => openPoseEditor(player, s.npc, s.back), 4);

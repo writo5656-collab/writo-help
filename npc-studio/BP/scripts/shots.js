@@ -7,7 +7,7 @@
  */
 import { EasingType } from "@minecraft/server";
 import {
-  world, system, menu, modal, msg, ICON, CAM_PRESET, NPC_FAMILY, EASE, EASE_KEYS, EASE_LABELS,
+  world, system, menu, modal, msg, sfx, ICON, CAM_PRESET, NPC_FAMILY, EASE, EASE_KEYS, EASE_LABELS,
   lerp, lerp3, add, sub, scale3, forward, right, orbitPoint, clamp, toRad, getJson, setJson, npcLabel
 } from "./core.js";
 import { playAllTimelines } from "./animator.js";
@@ -190,6 +190,7 @@ export function runShot(player, cfg, onEnd) {
     onEnd?.(completed);
   };
   const already = inCinema(player);
+  if (!already) sfx(player, "shutter");
   enterCinema(player, () => finish(false, true), { fade: cfg.fadeIn !== false, hideNames: cfg.hideNames !== false });
   if (cfg.fadeIn && already) fadeBlack(player); // cut between shots of a sequence
 

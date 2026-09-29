@@ -151,6 +151,78 @@ export function startMountLoop() {
     }
   }, 1);
   system.runInterval(reapplyMobPoses, 600);
+  system.runTimeout(rescanFrozen, 30);
+  system.runInterval(rescanFrozen, 200);
+  system.runInterval(freezeTick, 1);
+}
+
+// ---------- freezing mobs in place ----------
+// (v3.1 used slowness 255, but effect levels are one byte: 255 wraps around to almost nothing,
+// which is why horses kept walking.) Now: a real slowness level plus a position lock.
+const FREEZE_KEY = "npcstudio:freeze_at";
+const frozenMobs = new Map(); // id -> mob
+
+export function freezeMob(mob, on) {
+  mob.setDynamicProperty("npcstudio:frozen", on);
+  if (on) {
+    const r = mob.getRotation();
+    setJson(mob, FREEZE_KEY, { loc: { ...mob.location }, yaw: r.y });
+    frozenMobs.set(mob.id, mob);
+    try {
+      mob.addEffect("slowness", 20000000, { amplifier: 127, showParticles: false });
+    } catch {
+      /* ignore */
+    }
+  } else {
+    mob.setDynamicProperty(FREEZE_KEY, undefined);
+    frozenMobs.delete(mob.id);
+    try {
+      mob.removeEffect("slowness");
+    } catch {
+      /* ignore */
+    }
+  }
+}
+export const isFrozen = (mob) => !!mob.getDynamicProperty("npcstudio:frozen");
+/** Re-save the frozen spot after moving/turning a frozen mob on purpose. */
+export function refreeze(mob) {
+  if (isFrozen(mob)) freezeMob(mob, true);
+}
+
+function rescanFrozen() {
+  for (const dim of ["overworld", "nether", "the_end"]) {
+    try {
+      for (const mob of world.getDimension(dim).getEntities({ tags: [MOB_TAG] })) {
+        if (mob.getDynamicProperty("npcstudio:frozen")) {
+          if (mob.getDynamicProperty(FREEZE_KEY) === undefined) freezeMob(mob, true); // old worlds
+          frozenMobs.set(mob.id, mob);
+        }
+      }
+    } catch {
+      /* ignore */
+    }
+  }
+}
+
+function freezeTick() {
+  for (const [id, mob] of frozenMobs) {
+    if (!mob.isValid) {
+      frozenMobs.delete(id);
+      continue;
+    }
+    const f = getJson(mob, FREEZE_KEY, undefined);
+    if (!f) continue;
+    const l = mob.location;
+    const yaw = mob.getRotation().y;
+    if (Math.abs(l.x - f.loc.x) + Math.abs(l.y - f.loc.y) + Math.abs(l.z - f.loc.z) > 0.03 || Math.abs(((yaw - f.yaw + 540) % 360) - 180) > 1) {
+      try {
+        mob.teleport(f.loc, { rotation: { x: 0, y: f.yaw } });
+        mob.clearVelocity();
+      } catch {
+        /* ignore */
+      }
+    }
+  }
 }
 
 // ---------- which mobs can a player pick? ----------
@@ -254,11 +326,13 @@ const MOB_POSES = [
   { types: ["warden"], name: "Roar (once)", anim: "animation.warden.roar", once: true }
 ];
 
-function playAnim(mob, anim, stop) {
+function playAnim(mob, anim, stop, player) {
   try {
-    mob.runCommand(`playanimation @s ${anim} a 0.2 "${stop ? "1" : "0"}" npcstudio_pose`);
+    const r = mob.runCommand(`playanimation @s ${anim} a 0.2 "${stop ? "1" : "0"}" npcstudio_pose`);
+    if ((r?.successCount ?? 1) === 0 && player) msg(player, "§cThe game refused the pose animation.");
     return true;
   } catch (e) {
+    if (player) msg(player, `§cPose failed: ${e}`);
     console.warn(`[NPC Studio] playanimation failed: ${e}`);
     return false;
   }
@@ -296,19 +370,12 @@ export function openMobPoses(player, mob, back) {
   for (const p of poses) {
     m.btn(`${cur === p.anim ? "§a> " : ""}${p.name}`, ICON("ride"), () => {
       if (cur) playAnim(mob, cur, true);
-      if (playAnim(mob, p.anim, false)) {
+      if (playAnim(mob, p.anim, false, player)) {
         mob.addTag(MOB_TAG);
         mob.setDynamicProperty("npcstudio:mobpose", p.once ? undefined : p.anim);
         setRiderLean(mob, p.rider);
         // mobs must stay still or the pose fights their walking animation
-        if (!mob.getDynamicProperty("npcstudio:frozen")) {
-          try {
-            mob.addEffect("slowness", 20000000, { amplifier: 255, showParticles: false });
-            mob.setDynamicProperty("npcstudio:frozen", true);
-          } catch {
-            /* ignore */
-          }
-        }
+        if (!isFrozen(mob)) freezeMob(mob, true);
       }
       back?.();
     });

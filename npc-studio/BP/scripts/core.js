@@ -15,7 +15,68 @@ export const MOB_TAG = "npcstudio_mob";
 export const TOOL_IDS = [WAND_ID, CAMERA_TOOL_ID, MOB_TOOL_ID];
 export const CAM_PRESET = "npcstudio:cam_free";
 
-export const ICON = (name) => `textures/ui/npcstudio/icon_${name}`;
+// Real Minecraft item art where an item fits the action; our own drawn icons for the rest.
+const VANILLA_ICONS = {
+  equip: "textures/items/diamond_chestplate",
+  armor_set: "textures/items/netherite_chestplate",
+  trim: "textures/items/coast_armor_trim_smithing_template",
+  copy_outfit: "textures/items/armor_stand",
+  pose_manual: "textures/items/armor_stand",
+  custom: "textures/items/name_tag",
+  rename: "textures/items/name_tag",
+  enchant: "textures/items/book_enchanted",
+  pose_preset: "textures/items/book_writable",
+  save: "textures/items/book_written",
+  paste: "textures/items/paper",
+  animate: "textures/items/clock_item",
+  fov: "textures/items/spyglass",
+  spawn: "textures/items/totem",
+  manage: "textures/items/nether_star",
+  waypoint: "textures/items/ender_pearl",
+  shake: "textures/items/gunpowder",
+  ride: "textures/items/saddle",
+  dismount: "textures/items/lead",
+  freeze: "textures/blocks/ice_packed",
+  skin: "textures/items/dye_powder_pink",
+  debug: "textures/items/book_normal",
+  preset: "textures/blocks/chest_front",
+  bulkequip: "textures/items/bundle",
+  world: "textures/blocks/grass_side_carried",
+  day: "textures/items/glowstone_dust",
+  sun: "textures/blocks/double_plant_sunflower_front",
+  sunset: "textures/items/blaze_powder",
+  night: "textures/items/phantom_membrane",
+  midnight: "textures/items/echo_shard",
+  rain: "textures/items/bucket_water",
+  thunder: "textures/blocks/lightning_rod",
+  eye: "textures/items/ender_eye",
+  exit: "textures/items/door_wood",
+  flycam: "textures/items/phantom_membrane"
+};
+export const ICON = (name) => VANILLA_ICONS[name] ?? `textures/ui/npcstudio/icon_${name}`;
+
+// ---------- sound effects ----------
+const SOUNDS = {
+  error: ["mob.villager.no", 1, 1],
+  ok: ["random.orb", 0.35, 1.6],
+  click: ["random.click", 0.25, 1.4],
+  shutter: ["camera.take_picture", 0.9, 1],
+  open: ["item.book.page_turn", 0.6, 1.1],
+  equip: ["armor.equip_diamond", 0.8, 1],
+  trim: ["smithing_table.use", 0.7, 1],
+  pose: ["random.pop", 0.4, 1.3],
+  start: ["beacon.activate", 0.5, 1.4],
+  bell: ["note.bell", 0.6, 1.2]
+};
+export function sfx(player, kind) {
+  const s = SOUNDS[kind];
+  if (!s) return;
+  try {
+    player.playSound(s[0], { volume: s[1], pitch: s[2] });
+  } catch {
+    /* ignore */
+  }
+}
 
 // ---------- safe event subscription: one missing/renamed API must never kill the whole script ----------
 export function safeOn(getEvent, handler, label) {
@@ -159,6 +220,7 @@ export function menu(title, body) {
       return showWithRetry(form, player)
         .then((res) => {
           if (res.canceled) return;
+          sfx(player, "click");
           const fn = actions[res.selection];
           if (fn) fn();
         })
@@ -231,6 +293,9 @@ export function confirm(player, title, body, yesText, onYes, onNo) {
 export function msg(player, text) {
   try {
     player.sendMessage(text);
+    // red text = something went wrong (villager "hmm"), green = done
+    if (text.startsWith("§c")) sfx(player, "error");
+    else if (text.startsWith("§a")) sfx(player, "ok");
   } catch {
     /* player left */
   }

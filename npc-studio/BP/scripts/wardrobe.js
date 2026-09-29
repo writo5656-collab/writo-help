@@ -18,7 +18,7 @@
  * Copyright (c) 2026 NoxeelMC. All rights reserved. See LICENSE.md.
  */
 import { EquipmentSlot, ItemStack, EntityComponentTypes, EnchantmentTypes } from "@minecraft/server";
-import { world, system, menu, modal, confirm, msg, ICON, niceId, isLocked, npcsNear, getJson, TOOL_IDS, NPC_FAMILY } from "./core.js";
+import { world, system, menu, modal, confirm, msg, sfx, ICON, niceId, isLocked, npcsNear, getJson, TOOL_IDS, NPC_FAMILY } from "./core.js";
 import { TRIM_DATA, MATERIAL_LABELS, isTrimmable, trimTablePath, glintTablePath } from "./trimdata.js";
 
 export const SLOTS = [
@@ -301,6 +301,7 @@ function finishPickup(player, npc, drops, anchor, report, onDone) {
       fallback.push(niceId(info.id));
     }
   }
+  if (report.length) sfx(player, "equip");
   if (report.length) msg(player, `§aEquipped ${report.join(", ")}${exact ? " §7(exact copies — enchants & trims kept)" : ""}.`);
   if (fallback.length) {
     msg(player, `§e${fallback.join(", ")}: the NPC couldn't pick ${fallback.length > 1 ? "these" : "this"} up, so I used the basic method (item shows, trims won't). Use Trim Studio for trims.`);
@@ -514,6 +515,7 @@ export function openTrimStudio(player, npc, back, onlySlots) {
       if (equipTrim(npc, key, itemId, pattern, material, v.glint)) done.push(key);
       else failed.push(key);
     }
+    if (done.length) sfx(player, "trim");
     if (done.length) msg(player, `§d${pattern} trim (${material}) applied to ${done.join(", ")}.`);
     if (failed.length) msg(player, `§cCouldn't trim ${failed.join(", ")} — make sure the pack's loot tables are installed (use the .mcaddon from the release).`);
     back?.();

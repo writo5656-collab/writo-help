@@ -1,9 +1,25 @@
-# NPC Studio v3.1 (Minecraft Bedrock add-on by NoxeelMC)
+# NPC Studio v3.2 (Minecraft Bedrock add-on by NoxeelMC)
 
 Spawn, pose, dress, animate and film custom NPCs for thumbnails and cinematics.
-Download: `dist/NPCStudio-v3.1.0.mcaddon` (open it on your device and Minecraft imports both packs).
+Download: `dist/NPCStudio-v3.2.0.mcaddon` (open it on your device and Minecraft imports both packs).
 
-## What's new in v3.1
+## What's new in v3.2
+- **Fly Cam:** fly the camera with your normal joystick / WASD; the view follows with smooth
+  drone lag. **Tap (swing) or `/lockcam`** locks the shot as a camera. Hotbar scroll = zoom.
+  Fly Cam Path: every tap drops a path point, `/lockcam` saves the path. "Re-frame With Fly Cam"
+  moves an existing camera.
+- **Nothing of yours in the shot:** v3.1's spectator mode drew you as a floating see-through head.
+  Now you go invisible and your armor + held items move into your inventory while filming, and
+  come back when you exit.
+- **Frozen mobs really freeze:** slowness 255 wraps around to almost nothing (effect levels are one
+  byte). Frozen mobs now get a proper slowness level plus a position lock, so poses don't fight
+  the walking animation. Pose errors are reported in chat.
+- **Sound effects:** villager "hmm" on errors, soft chime on success, shutter when a shot starts or
+  locks, page turn/click on menus, armor/smithing sounds when equipping and trimming.
+- **New icons:** real Minecraft item art where an item fits, and a redrawn outlined icon set for
+  the rest (undo/redo, gizmo, play, record, lock...).
+
+## v3.1
 - **Visible 3D gizmo** on the body part you're posing: arrows (move) or rings (rotate),
   red = X, green = Y, blue = Z, the axis you control glows yellow. Clearer start screen.
 - **Camera view hides you completely:** you switch to spectator while filming, so held items and

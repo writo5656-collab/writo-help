@@ -7,6 +7,7 @@
  */
 import { EasingType } from "@minecraft/server";
 import { enterCinema, exitCinema, inCinema } from "./cinema.js";
+import { startFlyCam } from "./flycam.js";
 import { world, system, menu, modal, msg, ICON, CAMERA_ID, CAM_PRESET, NPC_FAMILY, MOB_TAG, catmull, lerp, wrapDeg, getJson, setJson, EASE, npcLabel } from "./core.js";
 
 const FOVS = [30, 40, 50, 60, 70, 80, 90, 100, 110];
@@ -79,6 +80,25 @@ function spawnCamera(player) {
   return marker;
 }
 
+function spawnCameraAt(player, loc, rot, fov) {
+  const marker = player.dimension.spawnEntity(CAMERA_ID, loc);
+  marker.setRotation({ x: rot.x, y: rot.y });
+  marker.nameTag = nextName();
+  marker.setDynamicProperty("npcstudio:cam_rx", rot.x);
+  marker.setDynamicProperty("npcstudio:cam_fovdeg", fov ?? 70);
+  return marker;
+}
+
+const FLY_HOOKS = {
+  spawnCamera: spawnCameraAt,
+  reframe: (marker, loc, rot, fov) => saveState(marker, { location: loc, rotX: rot.x, rotY: rot.y, fov }),
+  openPanel: (player, marker) => openCameraPanel(player, marker)
+};
+
+export function flyCam(player, mode, marker) {
+  startFlyCam(player, mode, FLY_HOOKS, marker);
+}
+
 export function openCameraToolMenu(player, back) {
   const cams = [...player.dimension.getEntities({ type: CAMERA_ID })];
   const m = menu("Cameras", "§7Place cameras around your scene, then look through them, animate paths between points, or use Cinematic Shots for automatic moves.");
@@ -91,6 +111,8 @@ export function openCameraToolMenu(player, back) {
       openCameraPanel(player, pending);
     });
   }
+  m.btn("§lFly Cam §r§8— fly with the joystick, tap to lock", ICON("flycam"), () => flyCam(player, "camera"));
+  m.btn("Fly Cam Path §8— tap to drop points, /lockcam to finish", ICON("waypoint"), () => flyCam(player, "path"));
   m.btn("+ Place Camera At My View", ICON("plus"), () => {
     const c = spawnCamera(player);
     msg(player, `§aPlaced ${c.nameTag}.`);
@@ -109,11 +131,7 @@ export function openCameraPanel(player, marker, skipView) {
   const self = () => openCameraPanel(player, marker, true);
   const path = getJson(marker, "npcstudio:path2", []);
   menu(marker.nameTag || "Camera", `§7FOV §f${s.fov}°  §7Path points §f${path.length}${lookTargets.get(marker.id)?.isValid ? `  §7Aiming at §f${npcLabel(lookTargets.get(marker.id))}` : ""}${follows.has(marker.id) ? "  §aFollowing" : ""}`)
-    .btn("§lFrame It Myself §r§8(walk there & look)", ICON("waypoint"), () => {
-      exitView(player);
-      pendingSnap.set(player.id, marker);
-      msg(player, "§eGo to where the camera should be and look at your shot, then right-click with the §fCamera Tool§e and tap §aSnap Here§e.");
-    })
+    .btn("§lRe-frame With Fly Cam §r§8(fly there, tap to lock)", ICON("flycam"), () => flyCam(player, "reframe", marker))
     .btn("Move & Turn (nudge)", ICON("move"), () => openNudge(player, marker, self))
     .btn(`Lens / FOV (${s.fov}°)`, ICON("fov"), () => openLens(player, marker, self))
     .btn("Aim At / Follow", ICON("manage"), () => openTracking(player, marker, self))

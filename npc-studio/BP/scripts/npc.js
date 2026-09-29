@@ -15,7 +15,7 @@ import { pickSkin, setSkin, skinPlainName } from "./skins.js";
 import { openAnimator, playAllTimelines, stopAllTimelines, getTimeline } from "./animator.js";
 import { openShotsMenu } from "./shots.js";
 import { openRideMenu, isMounted } from "./mount.js";
-import { openCameraToolMenu } from "./camera.js";
+import { openCameraToolMenu, flyCam } from "./camera.js";
 
 // ---------- spawning ----------
 function initNpc(npc, skin, rot, name) {
@@ -396,6 +396,7 @@ export function openMainMenu(player) {
       pickNpc(player, "Pick an NPC", (n) => openManageMenu(player, n, self), self);
     })
     .btn("§lCinematic Shots §r§8(30 camera moves)", ICON("film"), () => openShotsMenu(player, self))
+    .btn("§lFly Cam §r§8(joystick camera, tap to lock)", ICON("flycam"), () => flyCam(player, "camera"))
     .btn("Cameras (place & paths)", ICON("camera"), () => openCameraToolMenu(player, self))
     .btn("Scene: Play All NPC Animations", ICON("play"), () => {
       playAllTimelines(player);
@@ -530,7 +531,7 @@ function openWorldMenu(player, back) {
     .btn("Midnight", ICON("midnight"), run("time set 18000", "Midnight."))
     .btn("Freeze Time", ICON("freeze"), run("gamerule dodaylightcycle false", "Time frozen."))
     .btn("Unfreeze Time", ICON("freeze"), run("gamerule dodaylightcycle true", "Time runs again."))
-    .btn("Clear Weather", ICON("clear"), run("weather clear 999999", "Clear."))
+    .btn("Clear Weather", ICON("sun"), run("weather clear 999999", "Clear."))
     .btn("Rain", ICON("rain"), run("weather rain 999999", "Rain."))
     .btn("Thunderstorm", ICON("thunder"), run("weather thunder 999999", "Thunder."))
     .btn("Lock Weather", ICON("freeze"), run("gamerule doweathercycle false", "Weather locked."))
@@ -558,6 +559,7 @@ function openHelp(player, back) {
       "§fCamera tool: place/manage cameras. Mob tool: spawn mob props.",
       "§fSneak stops any shot or camera path.",
       "§fLeave camera view: §e/exitcam§f or double-tap sneak. Menu: §e/npc§f. Cameras: §e/cameras§f.",
+      "§fFly Cam: fly with the joystick, §etap§f or §e/lockcam§f to lock the shot, hotbar = zoom.",
       "§fRide: NPC menu > Ride a Mob. Mob Tool > a mob > Mob Poses (horse rearing, sitting...)."
     ].join("\n")
   )
