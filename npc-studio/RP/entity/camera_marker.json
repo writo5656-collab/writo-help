@@ -1,0 +1,17 @@
+{
+  "format_version": "1.10.0",
+  "minecraft:client_entity": {
+    "description": {
+      "identifier": "npcstudio:camera_marker",
+      "materials": { "default": "entity_alphatest" },
+      "textures": {
+        "default": "textures/entity/npcstudio/camera_marker"
+      },
+      "geometry": {
+        "default": "geometry.npcstudio.camera"
+      },
+      "render_controllers": ["controller.render.npcstudio.camera"],
+      "enable_attachables": false
+    }
+  }
+}

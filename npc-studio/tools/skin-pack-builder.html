@@ -1,0 +1,255 @@
+<title>NPC Studio Skin Pack Builder</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@500;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one narrow work column — pack settings, a grid of 20 numbered skin slots, then a sticky build bar. */
+:root {
+  --bg: #eef1f3;
+  --panel: #ffffff;
+  --ink: #17202a;
+  --muted: #5b6875;
+  --line: #d3dae0;
+  --accent: #0e8fa6;
+  --accent-ink: #ffffff;
+  --slot: #f6f8f9;
+  --good: #1d7a45;
+  --bad: #b3261e;
+  --display: "Pixelify Sans", "Courier New", monospace;
+  --body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #12171c; --panel: #1b2229; --ink: #e6ecf0; --muted: #93a1ad; --line: #2c3640;
+    --accent: #3fd0e8; --accent-ink: #0b1a1f; --slot: #161c22; --good: #5fd08c; --bad: #ff8a80;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #12171c; --panel: #1b2229; --ink: #e6ecf0; --muted: #93a1ad; --line: #2c3640;
+  --accent: #3fd0e8; --accent-ink: #0b1a1f; --slot: #161c22; --good: #5fd08c; --bad: #ff8a80;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font: 15px/1.55 var(--body); padding: 24px 16px 120px; }
+.wrap { max-width: 980px; margin: 0 auto; display: grid; gap: 22px; }
+header { display: grid; gap: 8px; }
+.eyebrow { font: 500 12px var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--accent); }
+h1 { font: 700 clamp(28px, 6vw, 42px)/1.05 var(--display); margin: 0; text-wrap: balance; }
+.lede { color: var(--muted); max-width: 64ch; margin: 0; }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 18px; display: grid; gap: 14px; }
+.panel h2 { font: 700 18px var(--display); margin: 0; }
+.steps { margin: 0; padding-left: 20px; display: grid; gap: 6px; color: var(--muted); }
+.steps b { color: var(--ink); font-weight: 600; }
+.row { display: flex; flex-wrap: wrap; gap: 12px; }
+.field { display: grid; gap: 4px; flex: 1 1 240px; min-width: 0; }
+label, .lbl { font: 500 12px var(--mono); letter-spacing: .04em; text-transform: uppercase; color: var(--muted); }
+input[type=text] { width: 100%; font: 15px var(--body); padding: 9px 10px; border: 1px solid var(--line); border-radius: 4px; background: var(--slot); color: var(--ink); }
+input[type=text]:focus-visible, button:focus-visible, .pick:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
+.slot { background: var(--slot); border: 1px solid var(--line); border-radius: 6px; padding: 12px; display: grid; grid-template-columns: 64px 1fr; gap: 10px 12px; align-items: center; min-width: 0; }
+.slot.filled { border-color: var(--accent); }
+.face { width: 64px; height: 64px; image-rendering: pixelated; border-radius: 3px; background: repeating-conic-gradient(var(--line) 0 25%, transparent 0 50%) 0 0 / 16px 16px; }
+.meta { display: grid; gap: 6px; min-width: 0; }
+.num { font: 500 12px var(--mono); color: var(--muted); display: flex; justify-content: space-between; gap: 6px; }
+.num .idx { color: var(--ink); }
+.pick { position: relative; display: inline-flex; align-items: center; justify-content: center; font: 600 13px var(--body); padding: 6px 10px; border-radius: 4px; border: 1px dashed var(--muted); cursor: pointer; color: var(--ink); }
+.pick input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.slot .name { grid-column: 1 / -1; }
+.err { grid-column: 1 / -1; color: var(--bad); font-size: 13px; margin: 0; }
+.clear { background: none; border: 0; color: var(--muted); font: 500 12px var(--mono); cursor: pointer; padding: 0; }
+.bar { position: fixed; left: 0; right: 0; bottom: 0; background: var(--panel); border-top: 1px solid var(--line); padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px)); }
+.bar .in { max-width: 980px; margin: 0 auto; display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; justify-content: space-between; }
+.status { color: var(--muted); font-size: 14px; min-width: 0; }
+.status.ok { color: var(--good); }
+.status.no { color: var(--bad); }
+.btn { font: 700 16px var(--display); letter-spacing: .02em; background: var(--accent); color: var(--accent-ink); border: 0; border-radius: 4px; padding: 11px 18px; cursor: pointer; }
+.btn[disabled] { opacity: .45; cursor: not-allowed; }
+.btn.ghost { background: transparent; color: var(--ink); border: 1px solid var(--line); }
+code { font: 13px var(--mono); background: var(--slot); border: 1px solid var(--line); border-radius: 3px; padding: 0 4px; }
+.note { font-size: 13px; color: var(--muted); margin: 0; }
+@media (prefers-reduced-motion: no-preference) { .slot { transition: border-color .15s; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <span class="eyebrow">NPC Studio v3 · resource pack tool</span>
+    <h1>Skin Pack Builder</h1>
+    <p class="lede">Put your own skins on NPC Studio NPCs. Pick PNG skins for any of the 20 custom slots, name them, and download a small resource pack. Everything happens in this browser; nothing is uploaded.</p>
+  </header>
+
+  <section class="panel" aria-labelledby="how">
+    <h2 id="how">How it works</h2>
+    <ol class="steps">
+      <li><b>Pick skins</b> for the slots below. Standard Minecraft skins: 64×64 PNG (128×128 HD also works).</li>
+      <li><b>Name each one.</b> The name shows in NPC Studio's skin picker.</li>
+      <li><b>Download</b> the pack and open it with Minecraft. If your device saved it as <code>.zip</code>, rename it to <code>.mcpack</code> first.</li>
+      <li>In your world: <b>Settings → Resource Packs</b>, activate it and move it <b>above</b> NPC Studio.</li>
+      <li>In game: <b>Spawn NPC → Custom skin slots</b>. For Alex-style skins set <b>Skin &amp; Size → Arm Model → Slim</b>.</li>
+    </ol>
+  </section>
+
+  <section class="panel" aria-labelledby="pk">
+    <h2 id="pk">Pack</h2>
+    <div class="row">
+      <div class="field"><label for="packName">Pack name</label><input type="text" id="packName" value="My NPC Skins" maxlength="40"></div>
+      <div class="field"><label for="packDesc">Description</label><input type="text" id="packDesc" value="Custom skins for NPC Studio" maxlength="80"></div>
+    </div>
+    <p class="note">Slots you leave empty keep NPC Studio's placeholder skin. Rebuild any time: NPCs remember their slot number, so updating the pack updates them.</p>
+  </section>
+
+  <section aria-label="Skin slots" class="grid" id="grid"></section>
+</div>
+
+<div class="bar">
+  <div class="in">
+    <span class="status" id="status" role="status">No skins picked yet.</span>
+    <button class="btn" id="build" disabled>Download pack</button>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script>
+const SLOTS = 20, FIRST_INDEX = 12;
+const slots = Array.from({ length: SLOTS }, (_, i) => ({ n: i + 1, file: null, img: null, name: "" }));
+const grid = document.getElementById("grid");
+const statusEl = document.getElementById("status");
+const buildBtn = document.getElementById("build");
+
+function drawFace(canvas, img) {
+  const ctx = canvas.getContext("2d");
+  ctx.imageSmoothingEnabled = false;
+  ctx.clearRect(0, 0, 64, 64);
+  if (!img) return;
+  const s = img.width / 64;
+  ctx.drawImage(img, 8 * s, 8 * s, 8 * s, 8 * s, 0, 0, 64, 64);   // face
+  ctx.drawImage(img, 40 * s, 8 * s, 8 * s, 8 * s, 0, 0, 64, 64);  // hat layer
+}
+
+function render() {
+  grid.textContent = "";
+  for (const s of slots) {
+    const card = document.createElement("div");
+    card.className = "slot" + (s.img ? " filled" : "");
+    const cv = document.createElement("canvas");
+    cv.width = cv.height = 64; cv.className = "face";
+    cv.setAttribute("aria-label", s.img ? `Face of ${s.name || "slot " + s.n}` : "Empty slot");
+    drawFace(cv, s.img);
+    const meta = document.createElement("div"); meta.className = "meta";
+    const num = document.createElement("div"); num.className = "num";
+    num.innerHTML = `<span>Custom slot <span class="idx">${s.n}</span></span>`;
+    if (s.img) {
+      const c = document.createElement("button"); c.className = "clear"; c.textContent = "remove";
+      c.onclick = () => { s.file = s.img = null; render(); };
+      num.appendChild(c);
+    }
+    const pick = document.createElement("label"); pick.className = "pick";
+    pick.textContent = s.img ? "Replace PNG" : "Choose PNG";
+    const inp = document.createElement("input"); inp.type = "file"; inp.accept = "image/png"; inp.id = "file" + s.n;
+    inp.onchange = () => inp.files[0] && loadFile(s, inp.files[0]);
+    pick.appendChild(inp);
+    meta.append(num, pick);
+    const name = document.createElement("input"); name.type = "text"; name.className = "name"; name.id = "name" + s.n;
+    name.placeholder = `Name (e.g. Ninja)`; name.maxLength = 32; name.value = s.name;
+    name.setAttribute("aria-label", `Name for custom slot ${s.n}`);
+    name.oninput = () => { s.name = name.value; };
+    card.append(cv, meta, name);
+    if (s.error) { const e = document.createElement("p"); e.className = "err"; e.textContent = s.error; card.append(e); }
+    grid.append(card);
+  }
+  const count = slots.filter((s) => s.img).length;
+  buildBtn.disabled = count === 0;
+  statusEl.className = "status";
+  statusEl.textContent = count ? `${count} skin${count > 1 ? "s" : ""} ready.` : "No skins picked yet.";
+}
+
+function loadFile(s, file) {
+  s.error = "";
+  const url = URL.createObjectURL(file);
+  const img = new Image();
+  img.onload = () => {
+    const ok = img.width === img.height && [64, 128, 256].includes(img.width);
+    if (!ok) {
+      s.error = img.width === 64 && img.height === 32
+        ? "That's an old 64×32 skin. Open it in a skin editor and save it as 64×64."
+        : `This image is ${img.width}×${img.height}. Skins must be square: 64×64 or 128×128.`;
+      s.file = s.img = null;
+    } else {
+      s.file = file; s.img = img;
+      if (!s.name) s.name = file.name.replace(/\.png$/i, "").replace(/[_-]+/g, " ").slice(0, 32);
+    }
+    render();
+  };
+  img.onerror = () => { s.error = "Couldn't read that file. Pick a PNG image."; render(); };
+  img.src = url;
+}
+
+function uuid() {
+  if (crypto.randomUUID) return crypto.randomUUID();
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0; return (c === "x" ? r : (r & 3) | 8).toString(16);
+  });
+}
+
+function canvasBlob(canvas) { return new Promise((res) => canvas.toBlob(res, "image/png")); }
+
+async function buildPack() {
+  const packName = document.getElementById("packName").value.trim() || "My NPC Skins";
+  const zip = new JSZip();
+  zip.file("manifest.json", JSON.stringify({
+    format_version: 2,
+    header: { name: packName, description: document.getElementById("packDesc").value.trim(), uuid: uuid(), version: [1, 0, 0], min_engine_version: [1, 21, 90] },
+    modules: [{ type: "resources", uuid: uuid(), version: [1, 0, 0] }]
+  }, null, 2));
+  const lang = [];
+  for (const s of slots) {
+    if (!s.img) continue;
+    zip.file(`textures/entity/npcstudio/custom_slot${s.n}.png`, s.file);
+    const clean = (s.name || `Custom ${s.n}`).replace(/[\r\n=]/g, " ").trim();
+    lang.push(`npcstudio.skin.${FIRST_INDEX + s.n - 1}=${clean}`);
+  }
+  zip.file("texts/en_US.lang", lang.join("\n") + "\n");
+  zip.file("texts/languages.json", JSON.stringify(["en_US"]));
+  // pack icon: first skin's face, big and crisp
+  const first = slots.find((s) => s.img);
+  const icon = document.createElement("canvas"); icon.width = icon.height = 256;
+  const ictx = icon.getContext("2d"); ictx.imageSmoothingEnabled = false;
+  const f = document.createElement("canvas"); f.width = f.height = 64; drawFace(f, first.img);
+  ictx.drawImage(f, 0, 0, 256, 256);
+  zip.file("pack_icon.png", await canvasBlob(icon));
+  const blob = await zip.generateAsync({ type: "blob", compression: "DEFLATE" });
+  const base = packName.replace(/[^\w\- ]+/g, "").trim().replace(/\s+/g, "_") || "NPC_Skins";
+  return { blob, base };
+}
+
+buildBtn.addEventListener("click", async () => {
+  buildBtn.disabled = true;
+  statusEl.className = "status"; statusEl.textContent = "Building pack…";
+  try {
+    const { blob, base } = await buildPack();
+    const dl = window.claude ? await window.claude.use("downloads") : null;
+    if (dl) {
+      try {
+        await dl.save({ filename: `${base}.zip`, data: blob });
+        statusEl.className = "status ok";
+        statusEl.textContent = `Saved ${base}.zip. Rename it to ${base}.mcpack, then open it with Minecraft.`;
+      } catch (e) {
+        statusEl.className = "status no";
+        statusEl.textContent = e && e.code === "declined" ? "Download cancelled." : "This view can't save files. Open the builder page directly in your browser.";
+      }
+    } else {
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob); a.download = `${base}.mcpack`;
+      document.body.append(a); a.click(); a.remove();
+      statusEl.className = "status ok";
+      statusEl.textContent = `Downloaded ${base}.mcpack. Open it with Minecraft to import.`;
+    }
+  } catch (e) {
+    statusEl.className = "status no";
+    statusEl.textContent = "Building failed: " + (e && e.message ? e.message : e);
+  }
+  buildBtn.disabled = false;
+});
+
+render();
+</script>

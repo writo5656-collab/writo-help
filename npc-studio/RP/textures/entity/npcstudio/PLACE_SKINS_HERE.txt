@@ -1,0 +1,7 @@
+Drop your own 64x64 player-format PNG skins here to replace these files:
+custom_slot1.png, custom_slot2.png, custom_slot3.png
+
+These 3 slots show up in the skin picker as "Custom 1", "Custom 2", "Custom 3" and
+are meant for you to overwrite with your own art without touching any of the
+premade themed skins (Steve, Alex, Dream, Technoblade, Warden, Soldier, Knight,
+Mage, Assassin, NoxeelMC, Mercenary, Scientist).

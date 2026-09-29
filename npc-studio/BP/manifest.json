@@ -1,0 +1,58 @@
+{
+  "format_version": 2,
+  "header": {
+    "name": "NPC Studio [BP]",
+    "description": "Spawn, pose (Blender-style), dress (trims + enchants), animate and film custom NPCs. v3.0. Made by NoxeelMC \u2014 subscribe on YouTube: youtube.com/@NoxeelMC",
+    "uuid": "1488081f-6f97-490a-a9cb-9478a510a6ad",
+    "version": [
+      3,
+      0,
+      0
+    ],
+    "min_engine_version": [
+      1,
+      21,
+      90
+    ]
+  },
+  "modules": [
+    {
+      "type": "data",
+      "uuid": "dd0b0aec-7396-409a-85a1-e599e44dd8a5",
+      "version": [
+        3,
+        0,
+        0
+      ]
+    },
+    {
+      "type": "script",
+      "language": "javascript",
+      "uuid": "e6977775-dfcb-47af-ab45-6a2d7aff4aca",
+      "entry": "scripts/main.js",
+      "version": [
+        3,
+        0,
+        0
+      ]
+    }
+  ],
+  "dependencies": [
+    {
+      "module_name": "@minecraft/server",
+      "version": "2.8.0"
+    },
+    {
+      "module_name": "@minecraft/server-ui",
+      "version": "2.1.0"
+    },
+    {
+      "uuid": "b82d7e2a-8ee9-4d8a-a24e-eabd0e1de294",
+      "version": [
+        3,
+        0,
+        0
+      ]
+    }
+  ]
+}

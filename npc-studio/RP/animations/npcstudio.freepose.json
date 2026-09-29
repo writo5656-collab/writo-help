@@ -1,0 +1,94 @@
+{
+  "format_version": "1.10.0",
+  "animations": {
+    "animation.npcstudio.freepose": {
+      "loop": true,
+      "bones": {
+        "head": {
+          "rotation": [
+            "query.property('npcstudio:head_x')",
+            "query.property('npcstudio:head_y')",
+            "query.property('npcstudio:head_z')"
+          ],
+          "position": [
+            "(math.mod(query.property('npcstudio:head_pos'), 256) - 128) * 0.25",
+            "(math.mod(math.floor(query.property('npcstudio:head_pos') / 256), 256) - 128) * 0.25",
+            "(math.floor(query.property('npcstudio:head_pos') / 65536) - 128) * 0.25"
+          ]
+        },
+        "body": {
+          "rotation": [
+            "query.property('npcstudio:body_x')",
+            "query.property('npcstudio:body_y')",
+            "query.property('npcstudio:body_z')"
+          ],
+          "position": [
+            "(math.mod(query.property('npcstudio:body_pos'), 256) - 128) * 0.25",
+            "(math.mod(math.floor(query.property('npcstudio:body_pos') / 256), 256) - 128) * 0.25",
+            "(math.floor(query.property('npcstudio:body_pos') / 65536) - 128) * 0.25"
+          ]
+        },
+        "rightArm": {
+          "rotation": [
+            "query.property('npcstudio:right_arm_x')",
+            "query.property('npcstudio:right_arm_y')",
+            "query.property('npcstudio:right_arm_z')"
+          ],
+          "position": [
+            "(math.mod(query.property('npcstudio:right_arm_pos'), 256) - 128) * 0.25",
+            "(math.mod(math.floor(query.property('npcstudio:right_arm_pos') / 256), 256) - 128) * 0.25",
+            "(math.floor(query.property('npcstudio:right_arm_pos') / 65536) - 128) * 0.25"
+          ]
+        },
+        "leftArm": {
+          "rotation": [
+            "query.property('npcstudio:left_arm_x')",
+            "query.property('npcstudio:left_arm_y')",
+            "query.property('npcstudio:left_arm_z')"
+          ],
+          "position": [
+            "(math.mod(query.property('npcstudio:left_arm_pos'), 256) - 128) * 0.25",
+            "(math.mod(math.floor(query.property('npcstudio:left_arm_pos') / 256), 256) - 128) * 0.25",
+            "(math.floor(query.property('npcstudio:left_arm_pos') / 65536) - 128) * 0.25"
+          ]
+        },
+        "rightLeg": {
+          "rotation": [
+            "query.property('npcstudio:right_leg_x')",
+            "query.property('npcstudio:right_leg_y')",
+            "query.property('npcstudio:right_leg_z')"
+          ],
+          "position": [
+            "(math.mod(query.property('npcstudio:right_leg_pos'), 256) - 128) * 0.25",
+            "(math.mod(math.floor(query.property('npcstudio:right_leg_pos') / 256), 256) - 128) * 0.25",
+            "(math.floor(query.property('npcstudio:right_leg_pos') / 65536) - 128) * 0.25"
+          ]
+        },
+        "leftLeg": {
+          "rotation": [
+            "query.property('npcstudio:left_leg_x')",
+            "query.property('npcstudio:left_leg_y')",
+            "query.property('npcstudio:left_leg_z')"
+          ],
+          "position": [
+            "(math.mod(query.property('npcstudio:left_leg_pos'), 256) - 128) * 0.25",
+            "(math.mod(math.floor(query.property('npcstudio:left_leg_pos') / 256), 256) - 128) * 0.25",
+            "(math.floor(query.property('npcstudio:left_leg_pos') / 65536) - 128) * 0.25"
+          ]
+        },
+        "root": {
+          "rotation": [
+            "(math.mod(query.property('npcstudio:root_rot'), 256) - 128) * 1.5",
+            "(math.mod(math.floor(query.property('npcstudio:root_rot') / 256), 256) - 128) * 1.5",
+            "(math.floor(query.property('npcstudio:root_rot') / 65536) - 128) * 1.5"
+          ],
+          "position": [
+            "(math.mod(query.property('npcstudio:root_pos'), 256) - 128) * 0.25",
+            "(math.mod(math.floor(query.property('npcstudio:root_pos') / 256), 256) - 128) * 0.25",
+            "(math.floor(query.property('npcstudio:root_pos') / 65536) - 128) * 0.25"
+          ]
+        }
+      }
+    }
+  }
+}

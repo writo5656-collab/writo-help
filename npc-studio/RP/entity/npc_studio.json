@@ -1,0 +1,142 @@
+{
+  "format_version": "1.10.0",
+  "minecraft:client_entity": {
+    "description": {
+      "identifier": "npcstudio:npc",
+      "materials": {
+        "default": "entity_alphatest"
+      },
+      "textures": {
+        "skin0": "textures/entity/npcstudio/steve",
+        "skin1": "textures/entity/npcstudio/alex",
+        "skin2": "textures/entity/npcstudio/dream",
+        "skin3": "textures/entity/npcstudio/technoblade",
+        "skin4": "textures/entity/npcstudio/warden",
+        "skin5": "textures/entity/npcstudio/soldier",
+        "skin6": "textures/entity/npcstudio/knight",
+        "skin7": "textures/entity/npcstudio/mage",
+        "skin8": "textures/entity/npcstudio/assassin",
+        "skin9": "textures/entity/npcstudio/noxeelmc",
+        "skin10": "textures/entity/npcstudio/mercenary",
+        "skin11": "textures/entity/npcstudio/scientist",
+        "skin12": "textures/entity/npcstudio/custom_slot1",
+        "skin13": "textures/entity/npcstudio/custom_slot2",
+        "skin14": "textures/entity/npcstudio/custom_slot3",
+        "skin15": "textures/entity/npcstudio/custom_slot4",
+        "skin16": "textures/entity/npcstudio/custom_slot5",
+        "skin17": "textures/entity/npcstudio/custom_slot6",
+        "skin18": "textures/entity/npcstudio/custom_slot7",
+        "skin19": "textures/entity/npcstudio/custom_slot8",
+        "skin20": "textures/entity/npcstudio/custom_slot9",
+        "skin21": "textures/entity/npcstudio/custom_slot10",
+        "skin22": "textures/entity/npcstudio/custom_slot11",
+        "skin23": "textures/entity/npcstudio/custom_slot12",
+        "skin24": "textures/entity/npcstudio/custom_slot13",
+        "skin25": "textures/entity/npcstudio/custom_slot14",
+        "skin26": "textures/entity/npcstudio/custom_slot15",
+        "skin27": "textures/entity/npcstudio/custom_slot16",
+        "skin28": "textures/entity/npcstudio/custom_slot17",
+        "skin29": "textures/entity/npcstudio/custom_slot18",
+        "skin30": "textures/entity/npcstudio/custom_slot19",
+        "skin31": "textures/entity/npcstudio/custom_slot20",
+        "eggsource": "textures/entity/npcstudio/spawn_egg_colors"
+      },
+      "geometry": {
+        "default": "geometry.humanoid.custom",
+        "slim": "geometry.humanoid.customSlim"
+      },
+      "animations": {
+        "freepose": "animation.npcstudio.freepose",
+        "breathe": "animation.npcstudio.anim.breathe",
+        "walk": "animation.npcstudio.anim.walk",
+        "run": "animation.npcstudio.anim.run",
+        "jump": "animation.npcstudio.anim.jump",
+        "wave": "animation.npcstudio.anim.wave",
+        "talk": "animation.npcstudio.anim.talk",
+        "dance": "animation.npcstudio.anim.dance",
+        "look_around": "animation.npcstudio.anim.look_around",
+        "swing": "animation.npcstudio.anim.swing",
+        "clap": "animation.npcstudio.anim.clap",
+        "zombie": "animation.npcstudio.anim.zombie",
+        "sit_idle": "animation.npcstudio.anim.sit_idle",
+        "hover": "animation.npcstudio.anim.hover",
+        "cheer": "animation.npcstudio.anim.cheer",
+        "nod": "animation.npcstudio.anim.nod",
+        "shake_head": "animation.npcstudio.anim.shake_head",
+        "salute": "animation.npcstudio.anim.salute",
+        "push_ups": "animation.npcstudio.anim.push_ups",
+        "guard": "animation.npcstudio.anim.guard"
+      },
+      "scripts": {
+        "scale": "query.property('npcstudio:scale')",
+        "animate": [
+          "freepose",
+          {
+            "breathe": "query.property('npcstudio:anim') == 1"
+          },
+          {
+            "walk": "query.property('npcstudio:anim') == 2"
+          },
+          {
+            "run": "query.property('npcstudio:anim') == 3"
+          },
+          {
+            "jump": "query.property('npcstudio:anim') == 4"
+          },
+          {
+            "wave": "query.property('npcstudio:anim') == 5"
+          },
+          {
+            "talk": "query.property('npcstudio:anim') == 6"
+          },
+          {
+            "dance": "query.property('npcstudio:anim') == 7"
+          },
+          {
+            "look_around": "query.property('npcstudio:anim') == 8"
+          },
+          {
+            "swing": "query.property('npcstudio:anim') == 9"
+          },
+          {
+            "clap": "query.property('npcstudio:anim') == 10"
+          },
+          {
+            "zombie": "query.property('npcstudio:anim') == 11"
+          },
+          {
+            "sit_idle": "query.property('npcstudio:anim') == 12"
+          },
+          {
+            "hover": "query.property('npcstudio:anim') == 13"
+          },
+          {
+            "cheer": "query.property('npcstudio:anim') == 14"
+          },
+          {
+            "nod": "query.property('npcstudio:anim') == 15"
+          },
+          {
+            "shake_head": "query.property('npcstudio:anim') == 16"
+          },
+          {
+            "salute": "query.property('npcstudio:anim') == 17"
+          },
+          {
+            "push_ups": "query.property('npcstudio:anim') == 18"
+          },
+          {
+            "guard": "query.property('npcstudio:anim') == 19"
+          }
+        ]
+      },
+      "render_controllers": [
+        "controller.render.npcstudio.default"
+      ],
+      "enable_attachables": true,
+      "spawn_egg": {
+        "texture": "eggsource"
+      }
+    }
+  }
+}

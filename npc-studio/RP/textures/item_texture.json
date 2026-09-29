@@ -1,0 +1,15 @@
+{
+  "resource_pack_name": "npcstudio",
+  "texture_name": "atlas.items",
+  "texture_data": {
+    "npcstudio_wand": {
+      "textures": "textures/items/npcstudio_wand"
+    },
+    "npcstudio_camera_tool": {
+      "textures": "textures/items/npcstudio_camera_tool"
+    },
+    "npcstudio_mob_tool": {
+      "textures": "textures/items/npcstudio_mob_tool"
+    }
+  }
+}
