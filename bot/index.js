@@ -1271,7 +1271,7 @@ async function showProfile(interaction, targetUser) {
     const embed = new EmbedBuilder()
         .setColor(title.role === 'Combat Grandmaster' ? 0xFFD700 : 0x5865F2)
         .setAuthor({ name: title.name })
-        .setTitle(`🏆 ${pd.username}`)
+        .setTitle(tour?.badges?.length ? `👑 ${pd.username} · ${tour.badges[0].replace('👑 ', '')}` : `🏆 ${pd.username}`)
         .setDescription([`${pd.region || 'Unknown Region'}${pd.device ? ` · ${pd.device}` : ''}`, tour?.badges?.length ? tour.badges.map(b => `**${b}**`).join(' · ') : null].filter(Boolean).join('\n'))
         .setThumbnail(thumbnailUrl)
         .addFields(
@@ -1327,7 +1327,7 @@ async function sendProfileToChannel(channel, targetUser) {
     const embed = new EmbedBuilder()
         .setColor(title.role === 'Combat Grandmaster' ? 0xFFD700 : 0x5865F2)
         .setAuthor({ name: title.name })
-        .setTitle(`🏆 ${pd.username}`)
+        .setTitle(tour?.badges?.length ? `👑 ${pd.username} · ${tour.badges[0].replace('👑 ', '')}` : `🏆 ${pd.username}`)
         .setDescription([`${pd.region || 'Unknown Region'}${pd.device ? ` · ${pd.device}` : ''}`, tour?.badges?.length ? tour.badges.map(b => `**${b}**`).join(' · ') : null].filter(Boolean).join('\n'))
         .setThumbnail(thumbnailUrl)
         .addFields(

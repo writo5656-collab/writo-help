@@ -101,7 +101,7 @@ module.exports = function createTournaments(deps) {
         return {
             name: '', gamemode: 'Sword', server: null, region: 'Any', size: 16, teamSize: 1,
             bestOf: 3, finalBestOf: 5, signupCloseAt: null, startAt: null, checkinMinutes: 30,
-            tierMin: null, tierMax: null, rules: '', refereeRoleId: null, stream: '', tz: null
+            tierMin: null, tierMax: null, rules: '', refereeRoleId: null, stream: '', tz: null, prize: ''
         };
     }
 
@@ -321,7 +321,7 @@ module.exports = function createTournaments(deps) {
                 { name: '🗓 Starts', value: c.startAt ? `${ts(c.startAt)}\n${ts(c.startAt, 'R')}` : '*not set*', inline: true },
                 { name: '✅ Check-in', value: c.checkinMinutes ? `${c.checkinMinutes} min before` : 'Off', inline: true },
                 { name: '🧑‍⚖️ Referees', value: c.refereeRoleId ? `<@&${c.refereeRoleId}>` : `@${REFEREE_ROLE} role`, inline: true },
-                { name: '👑 Prize', value: championRoleName(c.gamemode).replace('👑 ', ''), inline: true },
+                { name: '🎁 Prize', value: `${c.prize ? `**${c.prize}** + ` : ''}${championRoleName(c.gamemode)} title`, inline: true },
                 { name: '📺 Stream', value: c.stream || '—', inline: true },
                 { name: '📜 Rules', value: trunc(c.rules || '*none*', 1000), inline: false }
             )
@@ -339,7 +339,8 @@ module.exports = function createTournaments(deps) {
         serverOpts.push({ label: 'Other server (set in ⚙️ More settings)', value: 'custom', default: !!c.server && !servers.some(sv => c.server === `${sv.ip}:${sv.port}`) });
         const serverSelect = new StringSelectMenuBuilder().setCustomId(`tn:cfg:${t.id}:server`).setPlaceholder('🌐 Server').addOptions(serverOpts);
         const formatOpts = [];
-        for (const team of [1, 2]) for (const size of [8, 16, 32, 64]) {
+        const sizes = { 1: [8, 12, 16, 20, 24, 32, 48, 64], 2: [8, 12, 16, 24, 32] };
+        for (const team of [1, 2]) for (const size of sizes[team]) {
             formatOpts.push({ label: `${size} ${team === 2 ? 'teams · 2v2' : 'players · 1v1'}`, value: `${size}:${team}`, default: c.size === size && c.teamSize === team });
         }
         const formatSelect = new StringSelectMenuBuilder().setCustomId(`tn:cfg:${t.id}:format`).setPlaceholder('👥 Size').addOptions(formatOpts);
@@ -370,7 +371,7 @@ module.exports = function createTournaments(deps) {
             new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('close').setLabel(trunc(`Sign-ups close (your time: ${zoneLabel(c.tz || hostZone(t.hostId))})`, 45)).setPlaceholder('e.g. 25/09 21:00, 2026-09-25 21:00, in 1d, 21:00 CET').setStyle(TextInputStyle.Short).setRequired(true).setValue(formatLocal(c.signupCloseAt, c.tz || hostZone(t.hostId)))),
             new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('start').setLabel(trunc(`Starts (your time: ${zoneLabel(c.tz || hostZone(t.hostId))})`, 45)).setPlaceholder('e.g. 26/09 18:00, 18:00, in 2d, 18:00 UTC+1').setStyle(TextInputStyle.Short).setRequired(true).setValue(formatLocal(c.startAt, c.tz || hostZone(t.hostId)))),
             new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('bestof').setLabel('Best of: matches / final (e.g. 3/5)').setStyle(TextInputStyle.Short).setRequired(true).setValue(`${c.bestOf}/${c.finalBestOf}`)),
-            new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('rules').setLabel('Rules').setStyle(TextInputStyle.Paragraph).setMaxLength(1000).setRequired(false).setValue(c.rules || ''))
+            new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('prize').setLabel('Prize (optional, e.g. $20 or Nitro)').setStyle(TextInputStyle.Short).setMaxLength(80).setRequired(false).setValue(c.prize || ''))
         );
     }
     function moreModal(t) {
@@ -380,7 +381,7 @@ module.exports = function createTournaments(deps) {
             new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('region').setLabel('Region').setStyle(TextInputStyle.Short).setMaxLength(30).setRequired(false).setValue(c.region || 'Any')),
             new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('tier').setLabel('Tier limit: "any", "LT3" (or higher), "LT4-HT2"').setStyle(TextInputStyle.Short).setRequired(false).setValue(c.tierMin || c.tierMax ? [c.tierMin, c.tierMax].filter(Boolean).join('-') : 'any')),
             new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('checkin').setLabel('Check-in minutes before start (0 = off)').setStyle(TextInputStyle.Short).setRequired(false).setValue(String(c.checkinMinutes))),
-            new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('stream').setLabel('Stream link (optional)').setStyle(TextInputStyle.Short).setMaxLength(100).setRequired(false).setValue(c.stream || ''))
+            new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('rules').setLabel('Rules (a stream link here shows as "Watch")').setStyle(TextInputStyle.Paragraph).setMaxLength(1000).setRequired(false).setValue(c.rules || ''))
         );
     }
 
@@ -417,7 +418,7 @@ module.exports = function createTournaments(deps) {
                 ? `👑 **${entryName(t, t.championEntry)}** won and is **Best in ${c.gamemode}**!`
                 : t.status === 'cancelled'
                     ? `This tournament was cancelled.${t.cancelReason ? ` Reason: ${t.cancelReason}` : ''}`
-                    : `Winner gets the **${championRoleName(c.gamemode)}** title until the next ${c.gamemode} cup.`)
+                    : `🎁 Winner gets ${c.prize ? `**${c.prize}** and ` : ''}the **${championRoleName(c.gamemode)}** title until the next ${c.gamemode} cup.`)
             .addFields(
                 { name: '🗓 Starts', value: `${ts(c.startAt)}\n${ts(c.startAt, 'R')}`, inline: true },
                 { name: '⏳ Sign-ups close', value: Date.now() >= c.signupCloseAt ? 'Closed' : ts(c.signupCloseAt, 'R'), inline: true },
@@ -1246,7 +1247,7 @@ module.exports = function createTournaments(deps) {
             const embed = new EmbedBuilder().setColor(0xFFD700)
                 .setAuthor({ name: '👑 TOURNAMENT CHAMPION' })
                 .setTitle(`${entryName(t, t.championEntry)} ${champs.length > 1 ? 'are' : 'is'} Best in ${gm}!`)
-                .setDescription(`Won **${t.config.name}** against ${t.participants.length} ${unit(t)}.\nFinal: ${entryName(t, finalMatch.a)} **${finalMatch.winsA} – ${finalMatch.winsB}** ${entryName(t, finalMatch.b)}${finalMatch.refereeId ? ` · Referee <@${finalMatch.refereeId}>` : ''}`)
+                .setDescription(`Won **${t.config.name}** against ${t.participants.length} ${unit(t)}.${t.config.prize ? `\n🎁 Prize: **${t.config.prize}** (staff will contact the winner)` : ''}\nFinal: ${entryName(t, finalMatch.a)} **${finalMatch.winsA} – ${finalMatch.winsB}** ${entryName(t, finalMatch.b)}${finalMatch.refereeId ? ` · Referee <@${finalMatch.refereeId}>` : ''}`)
                 .addFields(
                     { name: '🥇 Winner', value: entryName(t, t.championEntry), inline: true },
                     { name: '🥈 Runner-up', value: entryName(t, runnerUp), inline: true },
@@ -1632,7 +1633,7 @@ module.exports = function createTournaments(deps) {
             const odd = n => n >= 1 && n <= 9 && n % 2 === 1;
             if (bo && odd(+bo[1]) && (!bo[2] || odd(+bo[2]))) { c.bestOf = +bo[1]; c.finalBestOf = bo[2] ? +bo[2] : +bo[1]; }
             else errors.push('Best of must be odd numbers like 3/5 or 1/3.');
-            c.rules = f('rules').trim();
+            c.prize = f('prize').trim();
         } else {
             c.server = f('server').trim() || c.server;
             c.region = f('region').trim() || 'Any';
@@ -1640,7 +1641,9 @@ module.exports = function createTournaments(deps) {
             if (tier) Object.assign(c, tier); else errors.push('Tier limit must look like "any", "LT3" or "LT4-HT2".');
             const ci = f('checkin').trim();
             if (/^\d{1,3}$/.test(ci)) c.checkinMinutes = Math.min(180, Number(ci)); else if (ci) errors.push('Check-in must be a number of minutes.');
-            c.stream = f('stream').trim();
+            c.rules = f('rules').trim();
+            // The first link in the rules (Twitch/YouTube…) is used as the stream.
+            c.stream = (c.rules.match(/https?:\/\/\S+/) || [''])[0];
         }
         saveData();
         if (interaction.isFromMessage()) await interaction.update(setupPanel(t));
