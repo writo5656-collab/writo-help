@@ -1,5 +1,5 @@
 require('dotenv').config();
-const { Client, GatewayIntentBits, REST, Routes, ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, PermissionsBitField, StringSelectMenuBuilder, AttachmentBuilder } = require('discord.js');
+const { Client, Events, GatewayIntentBits, REST, Routes, ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, PermissionsBitField, StringSelectMenuBuilder, AttachmentBuilder } = require('discord.js');
 const fs = require('fs');
 const express = require('express');
 const createTournaments = require('./tournaments');
@@ -1897,7 +1897,8 @@ const tournaments = createTournaments({
 });
 
 // ==================== READY ====================
-client.once('ready', async () => {
+// Events.ClientReady resolves to the right event name for the installed discord.js version.
+client.once(Events.ClientReady, async () => {
     console.log(`✅ MCBPVP BOT logged in as ${client.user.tag}`);
     const guild = client.guilds.cache.get(GUILD_ID);
     if (!guild) return console.error('❌ Guild not found!');
