@@ -2,6 +2,7 @@ require('dotenv').config();
 const { Client, GatewayIntentBits, REST, Routes, ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, PermissionsBitField, StringSelectMenuBuilder, AttachmentBuilder } = require('discord.js');
 const fs = require('fs');
 const express = require('express');
+const createTournaments = require('./tournaments');
 
 // ==================== GROQ AI CONFIG ====================
 const GROQ_API_KEY = process.env.GROQ_API_KEY;
@@ -110,6 +111,8 @@ COMMUNITY-WIDE DATA (use this to answer questions about the server, other player
 - #1 overall player: ${topPlayer ? `${topPlayer.username} (${topPlayer.points} pts)` : 'Nobody ranked yet'}
 - Current gamemode leaders: ${gamemodeLeaders}
 - Current queue sizes: ${queueSizes}
+- Active tournaments: ${tournaments.activeSummary() || 'none right now'}
+- Current tournament champions ("Best in <gamemode>"): ${tournaments.championsSummary() || 'none yet'}
 
 AVAILABLE TEST SERVERS:
 ${serverList}
@@ -168,6 +171,12 @@ BANNED MODS:
 8. Reach Hacks - Extended range
 9. X-Ray - See through blocks
 10. ESP - See players through walls
+
+TOURNAMENTS:
+- Hosts (Tournament Host role) run /tournament create; players press Join on the card in the tournaments channel
+- Single elimination, check-in DM before start, waitlist fills no-shows
+- Matches are played in private rooms; a referee decides the score
+- Winner gets the "👑 Best in <gamemode>" role; /tournaments shows champions
 
 MCBPVP KNOWLEDGE:
 - We're a Bedrock PvP community
@@ -588,6 +597,18 @@ function getSkinHeadUrl(player) {
     return null;
 }
 
+function getSkinBodyUrl(player) {
+    const head = getSkinHeadUrl(player);
+    return head ? head.replace('/avatar/', '/body/') : null;
+}
+
+// Profiles show the full-body skin render; everything else uses the head.
+async function getProfileImage(player, userId) {
+    const body = getSkinBodyUrl(player);
+    if (body) return { thumbnailUrl: body, files: [] };
+    return getAvatarForEmbed(player, userId);
+}
+
 // Single source of truth for putting a player's avatar into any embed.
 async function getAvatarForEmbed(player, userId) {
     const head = getSkinHeadUrl(player);
@@ -596,12 +617,15 @@ async function getAvatarForEmbed(player, userId) {
     return { thumbnailUrl: user?.displayAvatarURL({ extension: 'png', size: 128 }) || 'https://mc-heads.net/avatar/MHF_Steve/128.png', files: [] };
 }
 
+// State for /refreshskins (only one run at a time, stoppable from its button).
+const skinRefreshAll = { running: false, stop: false };
+
 // Re-checks skins in the background, slowly, so heads fill in without every
 // player having to run /refreshskin. Only touches players never checked by
 // this version, or without a skin and not checked for 3 days.
 let skinBackfillRunning = false;
 async function backfillSkins() {
-    if (skinBackfillRunning) return;
+    if (skinBackfillRunning || skinRefreshAll.running) return;
     skinBackfillRunning = true;
     let updated = 0;
     try {
@@ -1200,7 +1224,8 @@ async function showProfile(interaction, targetUser) {
     const points = calculateTotalPoints(targetUser.id);
     const title = getTitleFromPoints(points);
     const position = getPlayerPosition(targetUser.id);
-    const { thumbnailUrl, files } = await getAvatarForEmbed(pd, targetUser.id);
+    const { thumbnailUrl, files } = await getProfileImage(pd, targetUser.id);
+    const tour = tournaments.profileSummary(targetUser.id);
     const tierFields = GAMEMODE_ORDER.map(gm => ({
         name: `${getGamemodeSymbol(gm)} ${gm}`,
         value: pd.gamemodeRanks?.[gm] ? `\`${pd.gamemodeRanks[gm]}\`` : '`NA`',
@@ -1210,13 +1235,14 @@ async function showProfile(interaction, targetUser) {
         .setColor(title.role === 'Combat Grandmaster' ? 0xFFD700 : 0x5865F2)
         .setAuthor({ name: title.name })
         .setTitle(`🏆 ${pd.username}`)
-        .setDescription(`${pd.region || 'Unknown Region'}`)
+        .setDescription([`${pd.region || 'Unknown Region'}${pd.device ? ` · ${pd.device}` : ''}`, tour?.badges?.length ? tour.badges.map(b => `**${b}**`).join(' · ') : null].filter(Boolean).join('\n'))
         .setThumbnail(thumbnailUrl)
         .addFields(
             { name: '📍 Position', value: `**#${position} Overall** • ${points} pts`, inline: false },
             ...tierFields,
             { name: '\u200B', value: '\u200B', inline: false },
-            { name: '📊 Stats', value: `Tests: ${pd.testHistory?.length || 0} • Warnings: ${pd.warnings?.length || 0} • Strikes: ${pd.strikes || 0}/${STRIKE_BAN_LIMIT}`, inline: false }
+            { name: '📊 Stats', value: `Tests: ${pd.testHistory?.length || 0} • Warnings: ${pd.warnings?.length || 0} • Strikes: ${pd.strikes || 0}/${STRIKE_BAN_LIMIT}`, inline: false },
+            ...(tour?.line ? [{ name: '🏆 Tournaments', value: tour.line, inline: false }] : [])
         )
         .setFooter({ text: `Next title: ${getTitleFromPoints(points + 1).name} at ${getTitleFromPoints(points + 1).minPoints} points` })
         .setTimestamp();
@@ -1254,7 +1280,8 @@ async function sendProfileToChannel(channel, targetUser) {
     const points = calculateTotalPoints(targetUser.id);
     const title = getTitleFromPoints(points);
     const position = getPlayerPosition(targetUser.id);
-    const { thumbnailUrl, files } = await getAvatarForEmbed(pd, targetUser.id);
+    const { thumbnailUrl, files } = await getProfileImage(pd, targetUser.id);
+    const tour = tournaments.profileSummary(targetUser.id);
     const tierFields = GAMEMODE_ORDER.map(gm => ({
         name: `${getGamemodeSymbol(gm)} ${gm}`,
         value: pd.gamemodeRanks?.[gm] ? `\`${pd.gamemodeRanks[gm]}\`` : '`NA`',
@@ -1264,13 +1291,14 @@ async function sendProfileToChannel(channel, targetUser) {
         .setColor(title.role === 'Combat Grandmaster' ? 0xFFD700 : 0x5865F2)
         .setAuthor({ name: title.name })
         .setTitle(`🏆 ${pd.username}`)
-        .setDescription(`${pd.region || 'Unknown Region'}`)
+        .setDescription([`${pd.region || 'Unknown Region'}${pd.device ? ` · ${pd.device}` : ''}`, tour?.badges?.length ? tour.badges.map(b => `**${b}**`).join(' · ') : null].filter(Boolean).join('\n'))
         .setThumbnail(thumbnailUrl)
         .addFields(
             { name: '📍 Position', value: `**#${position} Overall** • ${points} pts`, inline: false },
             ...tierFields,
             { name: '\u200B', value: '\u200B', inline: false },
-            { name: '📊 Stats', value: `Tests: ${pd.testHistory?.length || 0} • Warnings: ${pd.warnings?.length || 0} • Strikes: ${pd.strikes || 0}/${STRIKE_BAN_LIMIT}`, inline: false }
+            { name: '📊 Stats', value: `Tests: ${pd.testHistory?.length || 0} • Warnings: ${pd.warnings?.length || 0} • Strikes: ${pd.strikes || 0}/${STRIKE_BAN_LIMIT}`, inline: false },
+            ...(tour?.line ? [{ name: '🏆 Tournaments', value: tour.line, inline: false }] : [])
         )
         .setFooter({ text: `Next title: ${getTitleFromPoints(points + 1).name} at ${getTitleFromPoints(points + 1).minPoints} points` })
         .setTimestamp();
@@ -1458,7 +1486,7 @@ async function autoSetupRoles(guild) {
     const rolesToCreate = [
         APPLICANT_ROLE, ...TITLES.map(t => t.role), ...RANK_ORDER,
         ...GAMEMODES.map(g => g.testerRole),
-        'CREATOR', STAFF_ROLES.ADMIN, STAFF_ROLES.MOD, 'HELPER', 'Tester'
+        'CREATOR', STAFF_ROLES.ADMIN, STAFF_ROLES.MOD, 'HELPER', 'Tester', ...tournaments.roleNames
     ];
     for (const roleName of rolesToCreate) {
         const existing = guild.roles.cache.find(r => r.name === roleName);
@@ -1652,7 +1680,11 @@ async function registerCommands() {
             ] },
             { name: 'user', type: 6, description: 'User for profile preview (optional)', required: false }
         ] },
-        { name: 'help', description: 'Show all commands' }
+        { name: 'refreshskins', description: '[Admin] Re-check skins for everyone (or one player)', options: [
+            { name: 'player', type: 6, description: 'Only this player', required: false }
+        ] },
+        { name: 'help', description: 'Show all commands' },
+        ...tournaments.commands
     ];
     const rest = new REST({ version: '10' }).setToken(TOKEN);
     try { await rest.put(Routes.applicationCommands(client.user.id), { body: commands }); console.log('✅ Commands registered'); } catch(e) { console.error('❌ Failed to register commands:', e); }
@@ -1699,6 +1731,13 @@ async function showHelp(interaction) {
             `\`/audit @user\` - Staff actions log`,
             `\`/check @user\` - Lookup player`,
             ``,
+            `**🏆 TOURNAMENTS**`,
+            `\`/tournaments\` - Current champions`,
+            `\`/tournament list\` - Active tournaments`,
+            `\`/tournament create\` - Host a tournament (Tournament Host)`,
+            `\`/tournament edit/start/cancel/kick/setwinner\` - Manage one`,
+            `Join with the **Join** button in 🏆・tournaments`,
+            ``,
             `**⚙️ ADMIN COMMANDS**`,
             `\`/settester @user\` - Set tester profile`,
             `\`/removetester @user\` - Remove tester`,
@@ -1728,6 +1767,7 @@ async function showHelp(interaction) {
             `\`/export\` - Export data to CSV`,
             `\`/backup\` - Manual database backup`,
             `\`/setup\` - Run role auto-setup`,
+            `\`/refreshskins [@user]\` - Re-check everyone's skin`,
             `\`/websitesync\` - Configure website sync (Owner only)`,
             `\`/testsync\` - Test website sync (Owner only)`,
             `\`/setperm\` - Set command permissions (Admin only)`,
@@ -1849,6 +1889,12 @@ async function viewTestServers(interaction) {
     await interaction.reply({ embeds: [embed], flags: 64 });
 }
 
+// ==================== TOURNAMENTS ====================
+const tournaments = createTournaments({
+    client, getDb: () => db, saveData, GAMEMODE_ORDER, RANK_ORDER, DISPLAY_ORDER, getGamemodeSymbol,
+    isStaffMember, LOG_CHANNEL, BOT_NAME, getSkinHeadUrl, getSkinBodyUrl
+});
+
 // ==================== READY ====================
 client.once('ready', async () => {
     console.log(`✅ MCBPVP BOT logged in as ${client.user.tag}`);
@@ -1861,6 +1907,7 @@ client.once('ready', async () => {
     await registerCommands();
     await initGemini();
     await restorePanels(guild);
+    tournaments.start();
     
     setInterval(() => {
         checkDecay(guild).catch(e => console.error('Decay check error:', e));
@@ -1959,6 +2006,7 @@ client.on('messageCreate', async (message) => {
 // ==================== INTERACTION HANDLER ====================
 client.on('interactionCreate', async interaction => {
     try {
+        if (await tournaments.handleInteraction(interaction)) return;
         if (interaction.isButton()) {
             if (interaction.customId === 'apply_button') {
                 if (db.players[interaction.user.id]) return interaction.reply({ content: '❌ Already applied!', flags: 64 });
@@ -1981,6 +2029,12 @@ client.on('interactionCreate', async interaction => {
             }
             if (interaction.customId === 'edit_profile_button') {
                 await showEditProfileModal(interaction);
+                return;
+            }
+            if (interaction.customId === 'refreshskins_stop') {
+                if (!isStaffMember(interaction.member)) return interaction.reply({ content: '❌ Staff only.', flags: 64 });
+                skinRefreshAll.stop = true;
+                await interaction.reply({ content: '⏹ Stopping after the current player…', flags: 64 });
                 return;
             }
             if (interaction.customId === 'edit_profile_disabled') {
@@ -3535,6 +3589,57 @@ client.on('interactionCreate', async interaction => {
         if (commandName === 'backup') {
             const file = writeBackup();
             await interaction.reply({ content: file ? `✅ Backup saved to \`${file}\` (last ${BACKUPS_TO_KEEP} kept)` : '❌ Backup failed, check the console.', flags: 64 });
+            return;
+        }
+        if (commandName === 'refreshskins') {
+            const one = options.getUser('player');
+            if (one) {
+                const p = db.players[one.id];
+                if (!p) return interaction.reply({ content: '❌ That player hasn\'t applied.', flags: 64 });
+                await interaction.deferReply({ flags: 64 });
+                const r = await refreshPlayerSkin(p);
+                saveData();
+                return interaction.editReply({ content: `**${p.username}**: ${skinResultMessage(r)}` });
+            }
+            if (skinRefreshAll.running || skinBackfillRunning) return interaction.reply({ content: '⏳ A skin check is already running. Try again in a few minutes.', flags: 64 });
+            const list = Object.values(db.players).filter(p => p.username);
+            skinRefreshAll.running = true; skinRefreshAll.stop = false;
+            const startedAt = Date.now();
+            let done = 0, found = 0, changed = 0;
+            const notFound = [];
+            const view = (final) => {
+                const embed = new EmbedBuilder().setColor(final ? 0x2ECC71 : 0x5865F2)
+                    .setTitle(final ? '✅ Skin refresh finished' : '🔄 Refreshing skins for all players')
+                    .setDescription(`\`${'█'.repeat(Math.round(done / Math.max(1, list.length) * 20)).padEnd(20, '░')}\` ${done} / ${list.length}`)
+                    .addFields(
+                        { name: '✅ Real skin', value: String(found), inline: true },
+                        { name: '🔁 Changed', value: String(changed), inline: true },
+                        { name: '⚠️ Not found', value: String(notFound.length), inline: true }
+                    )
+                    .setFooter({ text: final ? 'Not found = shown with their Discord avatar until their skin can be found' : `About ${Math.ceil((list.length - done) * 1.5)}s left` });
+                if (final && notFound.length) embed.addFields({ name: 'Players without a skin', value: notFound.join(', ').slice(0, 1000) });
+                return { embeds: [embed], components: final ? [] : [new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId('refreshskins_stop').setLabel('Stop').setEmoji('⏹').setStyle(ButtonStyle.Danger))] };
+            };
+            await interaction.reply({ ...view(false), flags: 64 });
+            try {
+                for (const p of list) {
+                    if (skinRefreshAll.stop) break;
+                    const before = getSkinHeadUrl(p);
+                    const r = await refreshPlayerSkin(p);
+                    done++;
+                    if (r.skin) found++; else notFound.push(p.username);
+                    if (getSkinHeadUrl(p) !== before) changed++;
+                    // Interaction tokens expire after 15 minutes; keep editing only while valid.
+                    if ((done % 5 === 0) && Date.now() - startedAt < 14 * 60 * 1000) await interaction.editReply(view(false)).catch(() => {});
+                    await new Promise(res => setTimeout(res, 1000));
+                }
+            } finally {
+                saveData();
+                skinRefreshAll.running = false;
+            }
+            console.log(`🧑 /refreshskins: ${done} checked, ${found} with skins, ${changed} changed.`);
+            await interaction.editReply(view(true)).catch(() => {});
+            await refreshDeployedLeaderboard(guild);
             return;
         }
         if (commandName === 'setup') {
