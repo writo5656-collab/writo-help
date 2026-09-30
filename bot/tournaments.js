@@ -7,6 +7,7 @@
 // and a 30-second scheduler drives the timed steps, so a restart never loses
 // a tournament - it just picks up where it left off.
 
+const path = require('path');
 const {
     ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, ModalBuilder, TextInputBuilder,
     TextInputStyle, StringSelectMenuBuilder, RoleSelectMenuBuilder, UserSelectMenuBuilder,
@@ -532,18 +533,229 @@ module.exports = function createTournaments(deps) {
         }
         return trunc(lines.join('\n'), 3900);
     }
-    function bracketEmbed(t) {
+    // ---------- bracket image ----------
+    // A real tournament-style bracket: rounds as columns, lines showing where
+    // winners go, losers crossed out, champion at the end. Needs
+    // @napi-rs/canvas; without it the text bracket is used instead.
+    let canvasLib = null;
+    function getCanvas() {
+        if (canvasLib === false) return null;
+        if (!canvasLib) {
+            try { canvasLib = require('@napi-rs/canvas'); } catch { canvasLib = false; return null; }
+            // Bundled font, so text shows even on hosts with no fonts installed.
+            try {
+                canvasLib.GlobalFonts.registerFromPath(path.join(__dirname, 'fonts', 'NotoSans-Regular.ttf'), 'MCB Sans');
+                canvasLib.GlobalFonts.registerFromPath(path.join(__dirname, 'fonts', 'NotoSans-Bold.ttf'), 'MCB Sans Bold');
+            } catch (e) { console.error('[Tournament] Could not load bundled fonts:', e.message); }
+        }
+        return canvasLib;
+    }
+    const font = (size, bold) => `${size}px "${bold ? 'MCB Sans Bold' : 'MCB Sans'}", "DejaVu Sans", sans-serif`;
+    const headCache = new Map();
+    async function loadHead(url) {
+        if (!url) return null;
+        if (headCache.has(url)) return headCache.get(url);
+        const img = await Promise.race([getCanvas().loadImage(url), new Promise(r => setTimeout(() => r(null), 4000))]).catch(() => null);
+        headCache.set(url, img);
+        return img;
+    }
+    function fitText(ctx, text, maxW) {
+        if (ctx.measureText(text).width <= maxW) return text;
+        let s = text;
+        while (s.length > 1 && ctx.measureText(s + '…').width > maxW) s = s.slice(0, -1);
+        return s + '…';
+    }
+    function roundRect(ctx, x, y, w, h, r) {
+        ctx.beginPath();
+        ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r);
+        ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
+    }
+    // Shown instead of "TBD" so players can see who they'll face next.
+    function feederLabel(t, m, side) {
+        if (m.round === 0) return m.result === 'bye' ? 'BYE' : 'TBD';
+        const prev = t.rounds[m.round - 1][m.index * 2 + (side === 'a' ? 0 : 1)];
+        return prev ? `Winner of ${matchLabel(t, prev)}` : 'TBD';
+    }
+    function sideScore(m, side) {
+        const mine = side === 'a' ? m.winsA : m.winsB;
+        if (m.status === 'live') return String(mine);
+        if (m.status !== 'done' || m.result === 'bye') return '';
+        const won = m.winner === m[side];
+        if (/^\d+–\d+$/.test(m.result)) return String(mine);
+        const short = { 'no-show': 'NS', DQ: 'DQ', forfeit: 'FF', removed: 'OUT', 'staff decision': '—' }[m.result] || '—';
+        return won ? 'W' : short;
+    }
+
+    async function renderBracketImage(t, highlightEntry = null) {
+        const C = getCanvas();
+        if (!C || !t.rounds) return null;
+        try {
+            const R = t.rounds.length, M0 = t.rounds[0].length;
+            const boxW = 270, rowH = 32, boxH = rowH * 2, gapX = 64, slot = boxH + 34, padX = 36, top = 178, champW = 250;
+            const W = padX * 2 + R * (boxW + gapX) + champW;
+            const H = top + M0 * slot + 50;
+            const canvas = C.createCanvas(W, H);
+            const ctx = canvas.getContext('2d');
+            const bg = ctx.createLinearGradient(0, 0, W, H);
+            bg.addColorStop(0, '#0e1016'); bg.addColorStop(1, '#171b26');
+            ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
+
+            // header
+            ctx.fillStyle = '#f0b232'; ctx.font = font(15, true);
+            ctx.fillText(`${t.config.gamemode.toUpperCase()} TOURNAMENT · ${t.config.teamSize === 2 ? '2V2 · ' : ''}SINGLE ELIMINATION`, padX, 44);
+            ctx.fillStyle = '#ffffff'; ctx.font = font(34, true);
+            ctx.fillText(fitText(ctx, t.config.name, W - padX * 2 - 260), padX, 86);
+            ctx.fillStyle = '#9aa0ae'; ctx.font = font(16);
+            const status = t.status === 'finished' ? 'Finished' : t.status === 'cancelled' ? 'Cancelled' : 'Live';
+            ctx.fillText(`${t.participants?.length || 0} ${unit(t)} · ${status}${t.config.server ? ` · ${t.config.server}` : ''}`, padX, 114);
+            ctx.textAlign = 'right';
+            ctx.fillText(`Updated ${new Date().toISOString().slice(11, 16)} UTC`, W - padX, 44);
+            ctx.textAlign = 'left';
+
+            const pos = (r, i) => ({ x: padX + r * (boxW + gapX), y: top + (i + 0.5) * slot * 2 ** r - boxH / 2 });
+            const mine = m => highlightEntry && (m.a === highlightEntry || m.b === highlightEntry);
+
+            // round titles
+            for (let r = 0; r < R; r++) {
+                const { x } = pos(r, 0);
+                ctx.fillStyle = '#c9ccd6'; ctx.font = font(15, true);
+                const title = roundName(t, r).toUpperCase();
+                ctx.fillText(title, x, top - 30);
+                const tw = ctx.measureText(title).width;
+                ctx.fillStyle = '#6b7080'; ctx.font = font(13);
+                ctx.fillText(`· Best of ${t.rounds[r][0].bestOf}`, x + tw + 8, top - 30);
+            }
+            ctx.fillStyle = '#f0b232'; ctx.font = font(15, true);
+            ctx.fillText('CHAMPION', padX + R * (boxW + gapX), top - 30);
+
+            // connectors (drawn first so boxes sit on top)
+            for (let r = 0; r < R; r++) {
+                for (const m of t.rounds[r]) {
+                    const p = pos(r, m.index);
+                    const fromX = p.x + boxW, fromY = p.y + boxH / 2;
+                    let toX, toY;
+                    if (r < R - 1) { const q = pos(r + 1, Math.floor(m.index / 2)); toX = q.x; toY = q.y + boxH / 2; }
+                    else { toX = padX + R * (boxW + gapX); toY = fromY; }
+                    const advanced = m.status === 'done' && m.winner;
+                    ctx.strokeStyle = advanced ? (mine(m) && m.winner === highlightEntry ? '#7984f5' : '#f0b232') : '#343948';
+                    ctx.lineWidth = advanced ? 3 : 2;
+                    const midX = fromX + gapX / 2;
+                    ctx.beginPath(); ctx.moveTo(fromX, fromY); ctx.lineTo(midX, fromY); ctx.lineTo(midX, toY); ctx.lineTo(toX, toY); ctx.stroke();
+                }
+            }
+
+            // match boxes
+            for (let r = 0; r < R; r++) {
+                for (const m of t.rounds[r]) {
+                    const { x, y } = pos(r, m.index);
+                    ctx.fillStyle = '#6b7080'; ctx.font = font(12, true);
+                    ctx.fillText(matchLabel(t, m), x + 2, y - 7);
+                    if (m.status === 'live') { ctx.fillStyle = '#ed4245'; ctx.fillText('● LIVE', x + boxW - 52, y - 7); }
+                    roundRect(ctx, x, y, boxW, boxH, 8);
+                    ctx.fillStyle = mine(m) ? '#232845' : '#1d212d'; ctx.fill();
+                    ctx.lineWidth = m.status === 'live' ? 2.5 : mine(m) ? 2.5 : 1.5;
+                    ctx.strokeStyle = m.status === 'live' ? '#ed4245' : mine(m) ? '#5865f2' : '#2e3342'; ctx.stroke();
+                    ctx.strokeStyle = '#2e3342'; ctx.lineWidth = 1;
+                    ctx.beginPath(); ctx.moveTo(x + 1, y + rowH); ctx.lineTo(x + boxW - 1, y + rowH); ctx.stroke();
+
+                    for (const side of ['a', 'b']) {
+                        const id = m[side];
+                        const ry = y + (side === 'a' ? 0 : rowH);
+                        const won = m.status === 'done' && id && m.winner === id;
+                        const lost = m.status === 'done' && id && m.winner !== id;
+                        let tx = x + 10;
+                        // seed
+                        ctx.font = font(12, true); ctx.fillStyle = '#5c6170';
+                        if (id && t.seeds?.[id]) ctx.fillText(String(t.seeds[id]), tx, ry + 21);
+                        tx += 22;
+                        // skin head
+                        // skin head, or a blank tile so names always line up
+                        const head = id ? await loadHead(getSkinHeadUrl(players()[entryMembers(t, id)[0]])) : null;
+                        ctx.globalAlpha = lost ? 0.35 : 1;
+                        if (head) ctx.drawImage(head, tx, ry + 6, 20, 20);
+                        else { roundRect(ctx, tx, ry + 6, 20, 20, 4); ctx.fillStyle = id ? '#2e3342' : '#232735'; ctx.fill(); }
+                        ctx.globalAlpha = 1;
+                        tx += 28;
+                        // name
+                        const label = id ? entryName(t, id) : feederLabel(t, m, side);
+                        ctx.font = id ? font(15, won || m.status !== 'done') : font(13);
+                        ctx.fillStyle = !id ? '#5c6170' : lost ? '#6b7080' : id === highlightEntry ? '#9ba4ff' : won ? '#ffffff' : '#dfe1e7';
+                        const scoreW = 36;
+                        const shown = fitText(ctx, label, x + boxW - scoreW - tx - 6);
+                        ctx.fillText(shown, tx, ry + 21);
+                        if (lost) {
+                            const w = ctx.measureText(shown).width;
+                            ctx.strokeStyle = '#ed4245'; ctx.lineWidth = 2;
+                            ctx.beginPath(); ctx.moveTo(tx - 2, ry + 16); ctx.lineTo(tx + w + 2, ry + 16); ctx.stroke();
+                        }
+                        // tier (solo only)
+                        // score
+                        const sc = id ? sideScore(m, side) : '';
+                        if (sc) {
+                            roundRect(ctx, x + boxW - scoreW, ry + (side === 'a' ? 0 : 0), scoreW, rowH, 0);
+                            ctx.fillStyle = won ? '#1f7a45' : m.status === 'live' ? '#3a1d22' : '#262a36'; ctx.fill();
+                            ctx.fillStyle = won ? '#ffffff' : m.status === 'live' ? '#ff8a8d' : '#8a8f9c';
+                            ctx.font = font(15, true); ctx.textAlign = 'center';
+                            ctx.fillText(sc, x + boxW - scoreW / 2, ry + 21);
+                            ctx.textAlign = 'left';
+                        }
+                    }
+                }
+            }
+
+            // champion box
+            const final = t.rounds[R - 1][0];
+            const fp = pos(R - 1, 0);
+            const cx = padX + R * (boxW + gapX), cy = fp.y - 10;
+            roundRect(ctx, cx, cy, champW - padX, boxH + 20, 10);
+            ctx.fillStyle = t.championEntry ? '#2e2710' : '#1d212d'; ctx.fill();
+            ctx.lineWidth = 2.5; ctx.strokeStyle = '#f0b232'; ctx.stroke();
+            ctx.fillStyle = '#f0b232'; ctx.font = font(13, true);
+            ctx.fillText(`👑 BEST IN ${t.config.gamemode.toUpperCase()}`.replace('👑 ', ''), cx + 14, cy + 26);
+            ctx.fillStyle = t.championEntry ? '#ffffff' : '#5c6170'; ctx.font = font(t.championEntry ? 19 : 15, !!t.championEntry);
+            ctx.fillText(fitText(ctx, t.championEntry ? entryName(t, t.championEntry) : `Winner of ${matchLabel(t, final)}`, champW - padX - 28), cx + 14, cy + 58);
+
+            // legend
+            ctx.font = font(13); ctx.fillStyle = '#6b7080';
+            ctx.fillText('Seed number · ● LIVE = playing now · Crossed out = knocked out · Gold line = winner\'s path · NS no-show · DQ disqualified · FF forfeit', padX, H - 20);
+
+            return new AttachmentBuilder(canvas.toBuffer('image/png'), { name: 'bracket.png' });
+        } catch (e) {
+            console.error(`[Tournament ${t.id}] Bracket image failed:`, e.message);
+            return null;
+        }
+    }
+
+    function bracketEmbed(t, withImage = false) {
         const done = allMatches(t).filter(m => m.status === 'done' && m.result !== 'bye').length;
         const total = allMatches(t).filter(m => m.result !== 'bye').length;
-        return new EmbedBuilder().setColor(0x5865F2)
+        const embed = new EmbedBuilder().setColor(0x5865F2)
             .setTitle(`🗂 Bracket · ${t.config.name}`)
-            .setDescription('```\n' + bracketText(t) + '\n```')
-            .setFooter({ text: `${done}/${total} matches played · updates live` })
+            .setFooter({ text: `${done}/${total} matches played · updates after every match` })
             .setTimestamp();
+        if (!withImage) return embed.setDescription('```\n' + bracketText(t) + '\n```');
+        const live = allMatches(t).filter(m => m.status === 'live').map(m => `🔴 **${matchLabel(t, m)}** ${entryName(t, m.a)} **${m.winsA}–${m.winsB}** ${entryName(t, m.b)}`);
+        const champ = t.championEntry ? `👑 **${entryName(t, t.championEntry)}** won the tournament!` : null;
+        return embed.setImage('attachment://bracket.png')
+            .setDescription([champ, ...live, !champ ? 'Press **🗂 Bracket** to see your own path highlighted.' : null].filter(Boolean).join('\n') || '​');
     }
-    async function updateBracket(t) {
-        const msg = await fetchMessage(t, t.bracketMsg);
-        if (msg) await msg.edit({ embeds: [bracketEmbed(t)], components: announcementComponents(t) }).catch(() => {});
+    async function postBracket(t, channel) {
+        const img = await renderBracketImage(t);
+        return channel.send({ embeds: [bracketEmbed(t, !!img)], files: img ? [img] : [], components: announcementComponents(t) }).catch(() => null);
+    }
+    // Re-drawing the image on every point would spam edits, so updates are
+    // batched: at most one edit every few seconds per tournament.
+    const bracketTimers = new Map();
+    function updateBracket(t) {
+        if (bracketTimers.has(t.id)) return Promise.resolve();
+        bracketTimers.set(t.id, setTimeout(async () => {
+            bracketTimers.delete(t.id);
+            const msg = await fetchMessage(t, t.bracketMsg);
+            if (!msg) return;
+            const img = await renderBracketImage(t);
+            await msg.edit({ embeds: [bracketEmbed(t, !!img)], files: img ? [img] : [], attachments: [], components: announcementComponents(t) }).catch(() => {});
+        }, 3000));
+        return Promise.resolve();
     }
 
     // ---------- predictions + live post ----------
@@ -725,6 +937,15 @@ module.exports = function createTournaments(deps) {
             await postTranscript(t, m, room);
         }
         const isFinal = m.round === t.rounds.length - 1;
+        if (!isFinal) {
+            const next = t.rounds[m.round + 1][Math.floor(m.index / 2)];
+            const oppSide = m.index % 2 === 0 ? 'b' : 'a';
+            if (!next[oppSide]) {
+                for (const uid of entryMembers(t, m.winner)) {
+                    await dm(uid, `✅ You won **${matchLabel(t, m)}** (${result})! Next up: **${matchLabel(t, next)}** against ${feederLabel(t, next, oppSide).replace('Winner of', 'the winner of')}. You'll get a DM with the room as soon as they finish.`);
+                }
+            }
+        }
         if (!isFinal && loser) {
             for (const uid of entryMembers(t, loser)) await dm(uid, `GG! You were knocked out of **${t.config.name}** in the ${roundName(t, m.round)} by **${entryName(t, m.winner)}** (${result}). Thanks for playing.`);
         }
@@ -847,7 +1068,7 @@ module.exports = function createTournaments(deps) {
         const bCh = tChannel(g, 'brackets') || fallback;
         const lCh = tChannel(g, 'live') || fallback;
         if (bCh) {
-            const b = await bCh.send({ embeds: [bracketEmbed(t)], components: announcementComponents(t) }).catch(() => null);
+            const b = await postBracket(t, bCh);
             if (b) t.bracketMsg = { channelId: bCh.id, messageId: b.id };
         }
         if (lCh) {
@@ -873,7 +1094,9 @@ module.exports = function createTournaments(deps) {
 
     async function makeChampionCard(t, finalMatch) {
         try {
-            const { createCanvas, loadImage } = require('@napi-rs/canvas');
+            const Cv = getCanvas();
+            if (!Cv) throw new Error('@napi-rs/canvas is not installed');
+            const { createCanvas, loadImage } = Cv;
             const W = 960, H = 420;
             const canvas = createCanvas(W, H);
             const ctx = canvas.getContext('2d');
@@ -890,14 +1113,14 @@ module.exports = function createTournaments(deps) {
                 if (img) { const h = 330, w = (img.width / img.height) * h; ctx.drawImage(img, x, 45, w, h); x += w + 20; }
             }
             const tx = Math.max(x + 30, 340);
-            ctx.fillStyle = '#ffd700'; ctx.font = 'bold 30px sans-serif';
+            ctx.fillStyle = '#ffd700'; ctx.font = font(30, true);
             ctx.fillText(`BEST IN ${t.config.gamemode.toUpperCase()}`, tx, 110);
-            ctx.fillStyle = '#ffffff'; ctx.font = 'bold 54px sans-serif';
+            ctx.fillStyle = '#ffffff'; ctx.font = font(54, true);
             ctx.fillText(trunc(entryName(t, t.championEntry), 20), tx, 180);
-            ctx.fillStyle = '#e8d9a8'; ctx.font = '28px sans-serif';
+            ctx.fillStyle = '#e8d9a8'; ctx.font = font(28);
             ctx.fillText(trunc(t.config.name, 34), tx, 240);
             ctx.fillText(`Final: ${finalMatch.winsA}–${finalMatch.winsB} vs ${trunc(entryName(t, finalMatch.winner === finalMatch.a ? finalMatch.b : finalMatch.a), 18)}`, tx, 285);
-            ctx.fillStyle = '#b8a877'; ctx.font = '22px sans-serif';
+            ctx.fillStyle = '#b8a877'; ctx.font = font(22);
             ctx.fillText(`${t.participants.length} ${unit(t)} · ${new Date().toLocaleDateString('en-GB')} · ${BOT_NAME}`, tx, 340);
             return new AttachmentBuilder(canvas.toBuffer('image/png'), { name: 'champion.png' });
         } catch (e) {
@@ -1541,7 +1764,12 @@ module.exports = function createTournaments(deps) {
         }
         if (kind === 'bracket') {
             if (!t.rounds) { await interaction.reply({ content: 'The bracket is made when sign-ups close and the tournament starts.', flags: 64 }); return true; }
-            await interaction.reply({ embeds: [bracketEmbed(t)], flags: 64 });
+            await interaction.deferReply({ flags: 64 });
+            const mineEntry = findEntryOf(t, interaction.user.id);
+            const img = await renderBracketImage(t, mineEntry && !mineEntry.pending ? mineEntry.id : null);
+            const e = bracketEmbed(t, !!img);
+            if (img && mineEntry) e.setDescription(`Your matches are outlined in **blue**.${t.status === 'running' ? (allMatches(t).some(m => m.status !== 'done' && (m.a === mineEntry.id || m.b === mineEntry.id)) ? ' You\'re still in!' : ' You\'ve been knocked out, GG.') : ''}`);
+            await interaction.editReply({ embeds: [e], files: img ? [img] : [] });
             return true;
         }
         if (kind === 'predm') {
@@ -1625,6 +1853,6 @@ module.exports = function createTournaments(deps) {
             tick().catch(e => console.error('[Tournament] tick failed:', e));
             console.log(`🏆 Tournaments ready (${activeList().length} active)`);
         },
-        _test: { tick, parseTime, resolveZone, worldClock, wallToUtc, formatLocal, seedOrder, buildBracket, advance, parseTierLimit, bracketText, matchLabel, resolveForfeits }
+        _test: { renderBracketImage, tick, parseTime, resolveZone, worldClock, wallToUtc, formatLocal, seedOrder, buildBracket, advance, parseTierLimit, bracketText, matchLabel, resolveForfeits }
     };
 };

@@ -3,7 +3,8 @@
 Tier-testing Discord bot for MCBPVP Club.
 
 ## Run it
-1. `npm install` (installs `@napi-rs/canvas` too, which draws the champion card; the bot still works if it fails to install)
+1. `npm install` (installs `@napi-rs/canvas` too, which draws the bracket image and champion card; if it fails to install, the bot falls back to a text bracket)
+   Keep the `fonts/` folder next to `index.js`. The images use it, so text shows even on hosts without fonts.
 2. Copy `.env.example` to `.env` and fill it in
 3. `npm start`
 
@@ -31,7 +32,7 @@ Run **`/tournament setup verified_role:@Verified`** (admin). It creates everythi
 ## Running a tournament
 1. `/tournament create`: set gamemode, server, size, 1v1/2v2, times, rules and referees in the private panel, then **Publish**
 2. Players press **Join** (full = waitlist). Check-in DMs go out before the start (default 30 min).
-3. At the start time the bracket is seeded by tier, and every match gets a private room with a referee.
+3. At the start time the bracket is seeded by tier and posted as an image in 🗂・brackets (updated after every match; the 🗂 Bracket button shows each player their own path), and every match gets a private room with a referee.
    Players get a DM with a button into their room.
 4. The referee scores each round; **End match** advances the winner. No-show and DQ ask for confirmation.
 5. The winner gets `👑 Best in <gamemode>`. The best predictor gets `🔮 Oracle` for 7 days.
