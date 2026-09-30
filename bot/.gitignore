@@ -1,0 +1,7 @@
+node_modules/
+.env
+tierbot.json
+tierbot.json.tmp
+backups/
+backup_*.json
+export.csv

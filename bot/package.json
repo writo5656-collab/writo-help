@@ -1,0 +1,20 @@
+{
+  "name": "mcbpvp-bot",
+  "version": "1.0.0",
+  "private": true,
+  "description": "MCBPVP Club tier-testing Discord bot",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "check": "node --check index.js"
+  },
+  "engines": { "node": ">=18" },
+  "dependencies": {
+    "discord.js": "^14.16.0",
+    "dotenv": "^16.4.0",
+    "express": "^4.21.0"
+  },
+  "optionalDependencies": {
+    "@napi-rs/canvas": "^0.1.56"
+  }
+}
