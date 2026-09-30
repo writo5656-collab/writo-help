@@ -3782,12 +3782,15 @@ client.on('interactionCreate', async interaction => {
         }
 
     } catch (error) {
-        console.error('[Global Interaction Error]', error);
+        console.error(`[Global Interaction Error] ${interaction.commandName || interaction.customId || '?'}:`, error);
         if (!interaction.isRepliable()) return;
+        // Staff see the real reason (e.g. "Missing Permissions") so problems can be fixed without digging in the console.
+        const detail = isStaffMember(interaction.member) ? `\n\`${String(error?.message || error).slice(0, 300)}\`${error?.code === 50013 ? '\n➡️ The bot is missing a Discord permission in that channel (check its role and the channel\'s permission overrides).' : ''}${error?.code === 50001 ? '\n➡️ The bot can\'t see that channel. Give its role View Channel there.' : ''}` : '';
+        const content = `❌ Something went wrong. Please try again.${detail}`;
         if (!interaction.replied && !interaction.deferred) {
-            await interaction.reply({ content: '❌ Something went wrong. Please try again.', flags: 64 }).catch(()=>{});
+            await interaction.reply({ content, flags: 64 }).catch(()=>{});
         } else {
-            await interaction.editReply({ content: '❌ Something went wrong. Please try again.' }).catch(()=>{});
+            await interaction.editReply({ content }).catch(()=>{});
         }
     }
 });
