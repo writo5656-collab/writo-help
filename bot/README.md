@@ -28,6 +28,7 @@ Run **`/tournament setup verified_role:@Verified`** (admin). It creates everythi
   - `Tournament Ping`: pinged when a tournament is published
 - Created automatically when needed: `👑 Best in <gamemode>` champion roles and the `🔮 Oracle` role.
 - The bot's own role must be **above** the champion/Oracle roles so it can hand them out.
+- **Security bots (Wick, etc.):** whitelist this bot for channel create/delete and role changes, or it gets quarantined when a round opens several match rooms. The bot already spaces channel changes 2.5s apart (`CHANNEL_GAP_MS` in `.env` to change).
 - To rename channels, edit `CHANNELS` at the top of `tournaments.js`.
 
 ## Running a tournament

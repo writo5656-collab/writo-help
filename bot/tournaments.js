@@ -34,6 +34,10 @@ const ORACLE_ROLE = '🔮 Oracle';
 const ORACLE_DAYS = 7;
 const NO_SHOW_MINUTES = 10;
 const ROOM_CLOSE_DELAY_MS = 60 * 1000;
+// Anti-nuke bots (Wick etc.) quarantine anything that makes/deletes many
+// channels at once, so channel changes are spaced out. Still whitelist the
+// bot in your security bot - a big round opens many rooms.
+const CHANNEL_GAP_MS = Number(process.env.CHANNEL_GAP_MS) || 2500;
 const TICK_MS = 30 * 1000;
 // Everyone SEES tournament times in their own timezone (Discord timestamps).
 // Hosts TYPE times in their own timezone, set once with /tournament timezone;
@@ -251,6 +255,18 @@ module.exports = function createTournaments(deps) {
     }
 
     // ---------- helpers ----------
+    // Runs channel creates/deletes one at a time with a gap between them.
+    let channelQueue = Promise.resolve();
+    let lastChannelOp = 0;
+    function paced(fn) {
+        const run = channelQueue.then(async () => {
+            const wait = lastChannelOp + CHANNEL_GAP_MS - Date.now();
+            if (wait > 0) await new Promise(r => setTimeout(r, wait));
+            try { return await fn(); } finally { lastChannelOp = Date.now(); }
+        });
+        channelQueue = run.catch(() => {});
+        return run;
+    }
     async function dm(userId, payload) {
         const u = await client.users.fetch(userId).catch(() => null);
         if (!u) return false;
@@ -798,13 +814,13 @@ module.exports = function createTournaments(deps) {
     async function getCategory(guild) {
         let cat = guild.channels.cache.find(c => c.name === MATCH_CATEGORY && c.type === 4);
         if (!cat) {
-            cat = await guild.channels.create({
+            cat = await paced(() => guild.channels.create({
                 name: MATCH_CATEGORY, type: 4,
                 permissionOverwrites: [
                     { id: guild.id, deny: [PermissionsBitField.Flags.ViewChannel] },
                     { id: client.user.id, allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.ManageChannels] }
                 ]
-            });
+            }));
         }
         return cat;
     }
@@ -874,11 +890,11 @@ module.exports = function createTournaments(deps) {
             ...members.map(id => ({ id, allow }))
         ];
         if (m.refereeId) overwrites.push({ id: m.refereeId, allow });
-        const room = await guild.channels.create({
+        const room = await paced(() => guild.channels.create({
             name: `${matchLabel(t, m).toLowerCase()}-${slug(entryName(t, m.a))}-vs-${slug(entryName(t, m.b))}`,
             type: 0, parent: cat, permissionOverwrites: overwrites,
             topic: `Tournament ${t.id} · ${m.id} · ${t.config.name}`
-        });
+        }));
         m.channelId = room.id;
         m.status = 'live';
         m.readyAt = Date.now();
@@ -1140,7 +1156,7 @@ module.exports = function createTournaments(deps) {
         t.cancelReason = reason || '';
         const guild = guildOf(t);
         for (const m of allMatches(t)) {
-            if (m.channelId) { await guild?.channels.cache.get(m.channelId)?.delete().catch(() => {}); m.channelId = null; }
+            if (m.channelId) { const ch = guild?.channels.cache.get(m.channelId); if (ch) await paced(() => ch.delete()).catch(() => {}); m.channelId = null; }
         }
         saveData();
         const everyone = new Set([...t.slots, ...t.waitlist].flatMap(id => entryMembers(t, id)));
@@ -1271,7 +1287,8 @@ module.exports = function createTournaments(deps) {
         // Close finished match rooms (done here, not with setTimeout, so a restart can't leave them behind).
         for (const m of allMatches(t)) {
             if (m.status === 'done' && m.channelId && m.closedAt && now - m.closedAt >= ROOM_CLOSE_DELAY_MS) {
-                await guildOf(t)?.channels.cache.get(m.channelId)?.delete().catch(() => {});
+                const ch = guildOf(t)?.channels.cache.get(m.channelId);
+                if (ch) await paced(() => ch.delete()).catch(() => {});
                 m.channelId = null; saveData();
             }
         }
@@ -1519,7 +1536,7 @@ module.exports = function createTournaments(deps) {
         const lines = [`🔒 Visible to **${verified.name}** only. Unverified members can't see these channels.`];
 
         let cat = guild.channels.cache.find(c => c.name === TOURNAMENT_CATEGORY && c.type === 4);
-        if (!cat) { cat = await guild.channels.create({ name: TOURNAMENT_CATEGORY, type: 4, permissionOverwrites: [hidden, { id: verified.id, allow: [F.ViewChannel] }, botAllow] }); lines.push(`✅ Created category **${TOURNAMENT_CATEGORY}**`); }
+        if (!cat) { cat = await paced(() => guild.channels.create({ name: TOURNAMENT_CATEGORY, type: 4, permissionOverwrites: [hidden, { id: verified.id, allow: [F.ViewChannel] }, botAllow] })); lines.push(`✅ Created category **${TOURNAMENT_CATEGORY}**`); }
         else await cat.permissionOverwrites.set([hidden, { id: verified.id, allow: [F.ViewChannel] }, botAllow]).catch(() => {});
 
         for (const [key, name] of Object.entries(CHANNELS)) {
@@ -1529,7 +1546,7 @@ module.exports = function createTournaments(deps) {
                 await ch.permissionOverwrites.set(perms).catch(() => {});
                 lines.push(`☑️ ${ch} already existed, permissions updated`);
             } else {
-                ch = await guild.channels.create({ name, type: 0, parent: cat, permissionOverwrites: perms });
+                ch = await paced(() => guild.channels.create({ name, type: 0, parent: cat, permissionOverwrites: perms }));
                 lines.push(`✅ Created ${ch}`);
             }
             // Post + pin the info embed once (again if someone deleted it).
