@@ -14,7 +14,8 @@ Run **`/tournament setup verified_role:@Verified`** (admin). It creates everythi
 ```
 🏆 TOURNAMENTS                 read-only, only the bot posts
  ├─ 📢・tournament-signups    sign-up cards
- ├─ 🗂・brackets              brackets, updated after every match
+ ├─ 🗂・brackets              bracket image, always up to date
+ ├─ 📜・match-results         new post after every match + bracket after each round
  ├─ 🔴・live-matches          live scores + 🔮 predictions
  ├─ 👑・champions             winners + champion cards
  └─ 💬・tournament-chat       open chat for players

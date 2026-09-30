@@ -20,6 +20,7 @@ const TOURNAMENT_CATEGORY = '🏆 TOURNAMENTS';
 const CHANNELS = {
     signups: '📢・tournament-signups',
     brackets: '🗂・brackets',
+    results: '📜・match-results',
     live: '🔴・live-matches',
     champions: '👑・champions',
     chat: '💬・tournament-chat'
@@ -261,7 +262,9 @@ module.exports = function createTournaments(deps) {
     function tChannel(guild, key) {
         if (!guild) return null;
         const byName = name => guild.channels.cache.find(c => c.name === name && c.type === 0);
-        return byName(CHANNELS[key]) || byName(CHANNELS.signups) || byName(LEGACY_CHANNEL) || null;
+        // Results fall back to the live channel rather than cluttering sign-ups.
+        const extra = key === 'results' ? [byName(CHANNELS.live)] : [];
+        return byName(CHANNELS[key]) || extra.find(Boolean) || byName(CHANNELS.signups) || byName(LEGACY_CHANNEL) || null;
     }
     const channelUrl = (t, channelId) => `https://discord.com/channels/${t.guildId}/${channelId}`;
     function resolveTournament(interaction, idOpt) {
@@ -937,6 +940,7 @@ module.exports = function createTournaments(deps) {
             await postTranscript(t, m, room);
         }
         const isFinal = m.round === t.rounds.length - 1;
+        await postMatchResult(t, m, loser, isFinal);
         if (!isFinal) {
             const next = t.rounds[m.round + 1][Math.floor(m.index / 2)];
             const oppSide = m.index % 2 === 0 ? 'b' : 'a';
@@ -952,6 +956,58 @@ module.exports = function createTournaments(deps) {
         if (isFinal) await finishTournament(t, m);
         else await startReadyMatches(t);
         await refreshPublic(t);
+    }
+
+    // A new post (not an edit) after every match, so people get notified.
+    async function postMatchResult(t, m, loser, isFinal) {
+        const guild = guildOf(t);
+        const ch = tChannel(guild, 'results');
+        if (!ch) return;
+        const w = entryName(t, m.winner), l = entryName(t, loser);
+        const scored = /^\d+–\d+$/.test(m.result);
+        const score = scored ? (m.winner === m.a ? `${m.winsA} – ${m.winsB}` : `${m.winsB} – ${m.winsA}`) : null;
+        const how = { 'no-show': `${l} didn't show up`, DQ: `${l} was disqualified`, removed: `${l} was removed`, 'staff decision': 'decided by staff', forfeit: 'by forfeit' }[m.result];
+        let next = '🏆 **Tournament champion!**';
+        if (!isFinal) {
+            const nm = t.rounds[m.round + 1][Math.floor(m.index / 2)];
+            const oppSide = m.index % 2 === 0 ? 'b' : 'a';
+            next = `**${matchLabel(t, nm)}** vs ${nm[oppSide] ? `**${entryName(t, nm[oppSide])}**` : feederLabel(t, nm, oppSide).replace('Winner of', 'the winner of')}`;
+        }
+        const embed = new EmbedBuilder().setColor(isFinal ? 0xFFD700 : 0x2ECC71)
+            .setAuthor({ name: `${isFinal ? '👑' : '✅'} ${matchLabel(t, m)} · ${t.config.name}` })
+            .setTitle(`${w} defeated ${l}`)
+            .setDescription(score ? `## ${score}` : `*${how || m.result}*`)
+            .addFields(
+                { name: '🏅 Round', value: `${roundName(t, m.round)} · BO${m.bestOf}`, inline: true },
+                { name: '⏭ Next', value: next, inline: true },
+                { name: '🧑‍⚖️ Referee', value: m.refereeId ? `<@${m.refereeId}>` : '—', inline: true }
+            )
+            .setFooter({ text: `${t.config.gamemode} · Full bracket in #${CHANNELS.brackets}` })
+            .setTimestamp();
+        if (m.log.length) embed.addFields({ name: '📋 Rounds', value: m.log.map((sd, i) => `R${i + 1}: ${sd === 'a' ? entryName(t, m.a) : entryName(t, m.b)}`).join(' · ').slice(0, 1000), inline: false });
+        const sp = predictionSplit(t, m);
+        if (sp) {
+            const pct = m.winner === m.a ? sp.pa : sp.pb;
+            embed.addFields({ name: '🔮 Predictions', value: `${pct}% of ${sp.n} fan${sp.n === 1 ? '' : 's'} picked ${w}${pct < 50 ? ' (upset!)' : ''}`, inline: false });
+        }
+        const head = getSkinHeadUrl(players()[entryMembers(t, m.winner)[0]]);
+        if (head) embed.setThumbnail(head);
+        await ch.send({ embeds: [embed], allowedMentions: { parse: [] } }).catch(() => {});
+
+        // When a whole round is done, post the bracket once (not after every match).
+        t.roundsPosted ??= {};
+        const round = t.rounds[m.round];
+        if (!isFinal && !t.roundsPosted[m.round] && round.every(x => x.status === 'done')) {
+            t.roundsPosted[m.round] = true;
+            saveData();
+            const img = await renderBracketImage(t);
+            const re = new EmbedBuilder().setColor(0x5865F2)
+                .setTitle(`🏁 ${roundName(t, m.round)} complete`)
+                .setDescription(`**${roundName(t, m.round + 1)}** ${m.round + 1 === t.rounds.length - 1 ? 'is next: one match for the title!' : 'are starting now.'}\n${t.rounds[m.round + 1].map(x => `• ${matchLabel(t, x)}: ${entryName(t, x.a)} vs ${entryName(t, x.b)}`).join('\n')}`)
+                .setTimestamp();
+            if (img) re.setImage('attachment://bracket.png');
+            await ch.send({ embeds: [re], files: img ? [img] : [], allowedMentions: { parse: [] } }).catch(() => {});
+        }
     }
 
     // Auto-resolves matches where one side was removed/kicked.
@@ -1395,6 +1451,15 @@ module.exports = function createTournaments(deps) {
                 '',
                 'Every tournament is **single elimination**: lose once and you\'re out.'
             ].join('\n'));
+            case 'results': return e.setTitle('📜 Match Results').setDescription([
+                'A result is posted here **after every match**: who won, the score, and where the winner goes next.',
+                '',
+                '• When a whole round finishes, the updated **bracket image** is posted too.',
+                `• The always-up-to-date bracket is in ${ch('brackets')}.`,
+                '• 🔮 Each result shows how many fans predicted the winner. Watch for upsets!',
+                '',
+                '**NS** = no-show · **DQ** = disqualified · **FF** = forfeit'
+            ].join('\n'));
             case 'live': return e.setTitle('🔴 Live Matches').setDescription([
                 'Scores update here **round by round** while matches are played.',
                 '',
@@ -1423,7 +1488,7 @@ module.exports = function createTournaments(deps) {
                 '• Don\'t argue about results here. Problems during a match go to the **referee in your match room**.',
                 '• Don\'t ping hosts or referees for no reason.',
                 '',
-                `Sign-ups are in ${ch('signups')} · brackets in ${ch('brackets')} · live scores in ${ch('live')}.`
+                `Sign-ups: ${ch('signups')} · brackets: ${ch('brackets')} · results: ${ch('results')} · live scores: ${ch('live')}.`
             ].join('\n'));
         }
         return e;
