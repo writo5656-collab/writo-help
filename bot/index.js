@@ -6,11 +6,24 @@ const createTournaments = require('./tournaments');
 
 // ==================== GROQ AI CONFIG ====================
 const GROQ_API_KEY = process.env.GROQ_API_KEY;
-// llama-3.3-70b-versatile was decommissioned by Groq (404 model_not_found).
-// Using a primary + fallback list so a single future deprecation can't
-// silently break the AI assistant again - it'll just quietly move down
-// the list instead of failing every request.
-const GROQ_MODELS = ['llama-3.1-8b-instant', 'meta-llama/llama-4-scout-17b-16e-instruct', 'llama-3.3-70b-versatile'];
+// Preferred models, best first. Groq retires models over time, so at startup
+// the bot asks Groq which models this key can use and picks from those - a
+// retired model can't silently break the assistant anymore.
+const GROQ_PREFERRED = ['llama-3.3-70b-versatile', 'openai/gpt-oss-120b', 'meta-llama/llama-4-maverick-17b-128e-instruct', 'meta-llama/llama-4-scout-17b-16e-instruct', 'openai/gpt-oss-20b', 'qwen/qwen3-32b', 'llama-3.1-8b-instant'];
+let groqModels = [...GROQ_PREFERRED];
+// Last Groq failure, shown to staff in the AI channel so problems are visible.
+let lastAIError = null;
+
+function explainGroqError(status, body) {
+    const b = (body || '').toLowerCase();
+    if (status === 401) return 'Groq rejected the API key (401). Make a new key at https://console.groq.com/keys and put it in GROQ_API_KEY in .env, then restart.';
+    if (status === 429) return 'Groq rate limit reached (429). The free tier has per-minute and per-day limits - wait a bit, or check https://console.groq.com/settings/limits.';
+    if (status === 413 || b.includes('too large') || b.includes('context_length')) return `Request too large for the model (${status}).`;
+    if (b.includes('decommissioned') || b.includes('model_not_found') || b.includes('does not exist')) return `The AI model was retired by Groq (${status}). Restart the bot so it picks a new model.`;
+    if (b.includes('organization') && (b.includes('restricted') || b.includes('disabled'))) return `Your Groq account/organization is restricted (${status}). Check https://console.groq.com.`;
+    if (status >= 500) return `Groq is having problems right now (${status}). Try again later.`;
+    return `Groq error ${status}: ${(body || '').slice(0, 200)}`;
+}
 const AI_CHANNEL_NAME = '🤖・mcbpvp-assistant';
 
 let geminiClient = null;
@@ -23,7 +36,26 @@ async function initGemini() {
         return;
     }
     geminiClient = true;
-    console.log('✅ AI (Groq) initialized successfully');
+    try {
+        const res = await fetch('https://api.groq.com/openai/v1/models', {
+            headers: { Authorization: `Bearer ${GROQ_API_KEY}` }, signal: AbortSignal.timeout(10000)
+        });
+        if (!res.ok) {
+            const body = await res.text().catch(() => '');
+            lastAIError = explainGroqError(res.status, body);
+            console.error(`❌ AI (Groq) check failed: ${lastAIError}`);
+            return;
+        }
+        const data = await res.json();
+        const ids = (data.data || []).filter(m => m.active !== false).map(m => m.id)
+            .filter(id => !/whisper|tts|guard|embed|playai|distil|prompt-guard|compound|orpheus/i.test(id));
+        const ordered = [...GROQ_PREFERRED.filter(m => ids.includes(m)), ...ids.filter(m => !GROQ_PREFERRED.includes(m))];
+        if (ordered.length) groqModels = ordered.slice(0, 5);
+        lastAIError = null;
+        console.log(`✅ AI (Groq) key OK · model ${groqModels[0]}${groqModels.length > 1 ? ` (fallbacks: ${groqModels.slice(1).join(', ')})` : ''}`);
+    } catch (e) {
+        console.warn(`⚠️ AI (Groq): couldn't check available models (${e.message}). Using the built-in list.`);
+    }
 }
 
 // ==================== AI SYSTEM PROMPT WITH LIVE DATA ====================
@@ -194,9 +226,10 @@ Always be cool, knowledgeable, and genuinely helpful — like a friend who's act
         }));
 
         let groqResponse, errBody = '';
-        for (const model of GROQ_MODELS) {
+        for (const model of groqModels) {
             groqResponse = await fetch('https://api.groq.com/openai/v1/chat/completions', {
                 method: 'POST',
+                signal: AbortSignal.timeout(30000),
                 headers: {
                     'Authorization': `Bearer ${GROQ_API_KEY}`,
                     'Content-Type': 'application/json'
@@ -214,17 +247,20 @@ Always be cool, knowledgeable, and genuinely helpful — like a friend who's act
             });
             if (groqResponse.ok) break;
             errBody = await groqResponse.text().catch(() => '');
-            // Only fall through to the next model if this one is dead/renamed -
-            // any other error (rate limit, bad request, etc) should stop immediately
-            // rather than burning through the whole list pointlessly.
-            if (!errBody.includes('model_not_found')) break;
-            console.error(`[Groq] Model ${model} unavailable, trying next fallback...`);
+            // Try the next model when this one is retired/missing or its own
+            // limit is hit (limits are per model on Groq). A bad key stops at once.
+            const retired = /model_not_found|decommissioned|does not exist/i.test(errBody) || groqResponse.status === 404;
+            if (!retired && groqResponse.status !== 429) break;
+            console.error(`[Groq] ${model} failed (${groqResponse.status}), trying next model...`);
+            if (retired) groqModels = groqModels.filter(m => m !== model);
         }
 
         if (!groqResponse.ok) {
+            lastAIError = explainGroqError(groqResponse.status, errBody);
             console.error(`[Groq] API error ${groqResponse.status}:`, errBody);
             return null;
         }
+        lastAIError = null;
 
         const data = await groqResponse.json();
         const responseText = data.choices?.[0]?.message?.content || 'I had trouble processing that. Could you try again?';
@@ -235,6 +271,7 @@ Always be cool, knowledgeable, and genuinely helpful — like a friend who's act
         return responseText;
     } catch (error) {
         console.error('AI Error:', error);
+        lastAIError = error.name === 'TimeoutError' ? 'Groq took too long to answer (timeout).' : `Couldn't reach Groq: ${error.message}`;
         return null;
     }
 }
@@ -1997,7 +2034,9 @@ client.on('messageCreate', async (message) => {
                 await message.reply({ content: chunk, allowedMentions: { repliedUser: true, parse: [] } });
             }
         } else {
-            await message.reply('🤔 Hmm, I couldn\'t quite process that. Could you try rephrasing your question?');
+            // Staff get the actual reason; everyone else a friendly message.
+            const staffHint = isStaffMember(message.member) && lastAIError ? `\n-# 🔧 Staff only: ${lastAIError}` : '';
+            await message.reply({ content: `🤔 Hmm, I couldn't answer that right now. Try again in a bit.${staffHint}`, allowedMentions: { repliedUser: true, parse: [] } });
         }
     } catch (error) {
         console.error('AI Response Error:', error);
