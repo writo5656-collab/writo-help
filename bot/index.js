@@ -1471,9 +1471,10 @@ async function showEditProfileModal(interaction) {
 async function syncToWebsite(testData) {
     if (!db.websiteSync?.enabled || !db.websiteSync?.apiUrl) return { success: false };
     try {
-        const fetch = (await import('node-fetch')).default;
+        // Built-in fetch (Node 18+); node-fetch was never in package.json.
         const response = await fetch(db.websiteSync.apiUrl, {
             method: 'POST',
+            signal: AbortSignal.timeout(10000),
             headers: { 'Content-Type': 'application/json', 'X-API-Key': db.websiteSync.apiKey },
             body: JSON.stringify({ action: 'update_rank', data: testData })
         });
