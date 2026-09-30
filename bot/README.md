@@ -37,4 +37,8 @@ Run **`/tournament setup verified_role:@Verified`** (admin). It creates everythi
 5. The winner gets `👑 Best in <gamemode>`. The best predictor gets `🔮 Oracle` for 7 days.
 
 Other host commands: `/tournament edit | start | cancel | kick | setwinner | list | templates`.
-Times accept `2026-09-26 18:00`, `26/09 18:00`, `18:00` or `in 1d 4h`.
+### Time zones
+- Players see every tournament time in **their own** timezone (Discord timestamps), and each card also lists the start time for India, Pakistan, the Gulf, SE Asia, EU, UK, US and Brazil.
+- Hosts run **`/tournament timezone`** once. Times they type are then read in their timezone.
+- Times accept `26/09 18:00`, `2026-09-26 18:00`, `18:00`, `in 1d 4h`, a zone suffix like `18:00 CET` / `18:00 UTC+1`, or a Discord timestamp `<t:1790000000:F>`.
+- The setup panel warns when the start time falls at night (00:00–07:00) for any region.

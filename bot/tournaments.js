@@ -33,9 +33,36 @@ const ORACLE_DAYS = 7;
 const NO_SHOW_MINUTES = 10;
 const ROOM_CLOSE_DELAY_MS = 60 * 1000;
 const TICK_MS = 30 * 1000;
-// Times typed by hosts ("2026-09-26 18:00") are read in this UTC offset.
-// Discord timestamps then show every viewer their own local time.
-const TZ_OFFSET = process.env.TOURNAMENT_TZ_OFFSET || '+05:30';
+// Everyone SEES tournament times in their own timezone (Discord timestamps).
+// Hosts TYPE times in their own timezone, set once with /tournament timezone;
+// this is only the default for hosts who haven't set one.
+const DEFAULT_TZ = process.env.TOURNAMENT_TIMEZONE || 'Asia/Kolkata';
+
+// Choices for /tournament timezone (Discord allows 25).
+const TIMEZONE_CHOICES = [
+    ['India (IST)', 'Asia/Kolkata'], ['Pakistan (PKT)', 'Asia/Karachi'], ['Bangladesh', 'Asia/Dhaka'], ['Nepal', 'Asia/Kathmandu'],
+    ['UAE / Oman', 'Asia/Dubai'], ['Saudi / Qatar / Kuwait', 'Asia/Riyadh'], ['Turkey', 'Europe/Istanbul'], ['Russia (Moscow)', 'Europe/Moscow'],
+    ['EU Central (DE, FR, NL, PL, IT, ES)', 'Europe/Berlin'], ['EU East (GR, RO, FI, UA)', 'Europe/Athens'], ['UK / Ireland / Portugal', 'Europe/London'],
+    ['Egypt', 'Africa/Cairo'], ['South Africa', 'Africa/Johannesburg'], ['Thailand / Vietnam / Indonesia (WIB)', 'Asia/Bangkok'],
+    ['Singapore / Malaysia / Philippines', 'Asia/Singapore'], ['Japan / Korea', 'Asia/Tokyo'], ['Australia East', 'Australia/Sydney'],
+    ['New Zealand', 'Pacific/Auckland'], ['US East', 'America/New_York'], ['US Central', 'America/Chicago'], ['US Mountain', 'America/Denver'],
+    ['US West', 'America/Los_Angeles'], ['Mexico', 'America/Mexico_City'], ['Brazil', 'America/Sao_Paulo'], ['UTC', 'UTC']
+];
+// Short names hosts can add after a time, e.g. "26/09 18:00 CET".
+const ZONE_ABBR = {
+    IST: 'Asia/Kolkata', PKT: 'Asia/Karachi', NPT: 'Asia/Kathmandu', GST: 'Asia/Dubai', UAE: 'Asia/Dubai', KSA: 'Asia/Riyadh', TRT: 'Europe/Istanbul',
+    MSK: 'Europe/Moscow', CET: 'Europe/Berlin', CEST: 'Europe/Berlin', EET: 'Europe/Athens', EEST: 'Europe/Athens', WET: 'Europe/London',
+    GMT: 'UTC', UTC: 'UTC', UK: 'Europe/London', SGT: 'Asia/Singapore', PHT: 'Asia/Singapore', MYT: 'Asia/Singapore', WIB: 'Asia/Jakarta',
+    ICT: 'Asia/Bangkok', JST: 'Asia/Tokyo', KST: 'Asia/Seoul', AEST: 'Australia/Sydney', AEDT: 'Australia/Sydney', NZT: 'Pacific/Auckland',
+    EST: 'America/New_York', EDT: 'America/New_York', ET: 'America/New_York', CST: 'America/Chicago', CDT: 'America/Chicago', CT: 'America/Chicago',
+    MST: 'America/Denver', MDT: 'America/Denver', PST: 'America/Los_Angeles', PDT: 'America/Los_Angeles', PT: 'America/Los_Angeles', BRT: 'America/Sao_Paulo'
+};
+// Shown on every card so players can compare and hosts can pick a fair time.
+const WORLD_CLOCK = [
+    ['🇮🇳 India', 'Asia/Kolkata'], ['🇵🇰 Pakistan', 'Asia/Karachi'], ['🇦🇪 Gulf', 'Asia/Dubai'], ['🇸🇬 SE Asia', 'Asia/Singapore'],
+    ['🇪🇺 EU', 'Europe/Berlin'], ['🇬🇧 UK', 'Europe/London'], ['🇺🇸 US East', 'America/New_York'], ['🇺🇸 US West', 'America/Los_Angeles'],
+    ['🇧🇷 Brazil', 'America/Sao_Paulo']
+];
 
 const championRoleName = gm => `👑 Best in ${gm}`;
 const ts = (ms, style = 'F') => `<t:${Math.floor(ms / 1000)}:${style}>`;
@@ -68,49 +95,106 @@ module.exports = function createTournaments(deps) {
         return {
             name: '', gamemode: 'Sword', server: null, region: 'Any', size: 16, teamSize: 1,
             bestOf: 3, finalBestOf: 5, signupCloseAt: null, startAt: null, checkinMinutes: 30,
-            tierMin: null, tierMax: null, rules: '', refereeRoleId: null, stream: ''
+            tierMin: null, tierMax: null, rules: '', refereeRoleId: null, stream: '', tz: null
         };
     }
 
-    // ---------- time parsing ----------
-    function offsetMinutes() {
-        const m = TZ_OFFSET.match(/^([+-])(\d{1,2}):?(\d{2})?$/);
-        if (!m) return 330;
-        return (m[1] === '-' ? -1 : 1) * (Number(m[2]) * 60 + Number(m[3] || 0));
-    }
-    // Accepts "in 2h", "1d 4h", "30m", "2026-09-26 18:00", "26/09 18:00", "26/09/2026 18:00", "18:00".
-    function parseTime(input, now = Date.now()) {
+    // ---------- time zones ----------
+    // A zone is an IANA name ("Europe/Berlin", DST handled by Node) or a fixed
+    // offset like "UTC+05:30".
+    function resolveZone(input) {
         if (!input) return null;
-        const t = input.trim().toLowerCase();
+        const v = input.trim();
+        const up = v.toUpperCase();
+        if (ZONE_ABBR[up]) return ZONE_ABBR[up];
+        const off = up.match(/^(?:UTC|GMT)?\s*([+-])(\d{1,2})(?::?(\d{2}))?$/);
+        if (off && Number(off[2]) <= 14) return `UTC${off[1]}${off[2].padStart(2, '0')}:${off[3] || '00'}`;
+        try { new Intl.DateTimeFormat('en-US', { timeZone: v }); return v; } catch { return null; }
+    }
+    function zoneOffsetMin(zone, utcMs) {
+        const fixed = zone.match(/^UTC([+-])(\d{2}):(\d{2})$/);
+        if (fixed) return (fixed[1] === '-' ? -1 : 1) * (Number(fixed[2]) * 60 + Number(fixed[3]));
+        const parts = Object.fromEntries(new Intl.DateTimeFormat('en-US', {
+            timeZone: zone, hourCycle: 'h23', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit'
+        }).formatToParts(new Date(utcMs)).map(x => [x.type, x.value]));
+        const asUtc = Date.UTC(+parts.year, parts.month - 1, +parts.day, +parts.hour % 24, +parts.minute, +parts.second);
+        return Math.round((asUtc - Math.floor(utcMs / 1000) * 1000) / 6e4);
+    }
+    // Wall-clock time in a zone -> real moment (handles daylight saving).
+    function wallToUtc(y, mo, d, h, mi, zone) {
+        const guess = Date.UTC(y, mo, d, h, mi);
+        let utc = guess - zoneOffsetMin(zone, guess) * 6e4;
+        const again = guess - zoneOffsetMin(zone, utc) * 6e4;
+        if (again !== utc) utc = again;
+        return utc;
+    }
+    function wallParts(ms, zone) {
+        const d = new Date(ms + zoneOffsetMin(zone, ms) * 6e4);
+        return { y: d.getUTCFullYear(), mo: d.getUTCMonth(), d: d.getUTCDate(), h: d.getUTCHours(), mi: d.getUTCMinutes(), wd: d.getUTCDay() };
+    }
+    function zoneLabel(zone) {
+        const abbr = Object.entries(ZONE_ABBR).find(([, z]) => z === zone)?.[0];
+        if (abbr && !['UK', 'ET', 'CT', 'PT', 'GMT', 'UAE', 'KSA'].includes(abbr)) return abbr;
+        const choice = TIMEZONE_CHOICES.find(([, z]) => z === zone)?.[0];
+        return choice || zone;
+    }
+    const hostZone = uid => store().hostTz?.[uid] || resolveZone(DEFAULT_TZ) || 'Asia/Kolkata';
+
+    // Accepts "in 2h", "1d 4h", "2026-09-26 18:00", "26/09 18:00", "26/09/2026 18:00",
+    // "18:00", any of those followed by a zone ("18:00 CET", "18:00 UTC+1"),
+    // or a Discord timestamp like <t:1790000000:F>.
+    function parseTime(input, zone, now = Date.now()) {
+        if (!input) return null;
+        let t = input.trim();
+        const stamp = t.match(/^<t:(\d{9,11})(?::[a-zA-Z])?>$/) || t.match(/^(\d{10})$/);
+        if (stamp) return Number(stamp[1]) * 1000;
+        t = t.toLowerCase();
         const rel = t.replace(/^in\s+/, '');
         if (/^(\d+\s*[dhm]\s*)+$/.test(rel)) {
             let ms = 0;
             for (const [, n, u] of rel.matchAll(/(\d+)\s*([dhm])/g)) ms += Number(n) * { d: 864e5, h: 36e5, m: 6e4 }[u];
             return now + ms;
         }
-        const off = offsetMinutes() * 6e4;
-        const local = new Date(now + off); // "now" as wall-clock in the host timezone, read via UTC getters
+        const suffix = t.match(/^(.*\d)\s+([a-z_/+\-:0-9]+)$/i);
+        if (suffix && !/^\d{1,2}:\d{2}$/.test(suffix[2])) {
+            const z = resolveZone(suffix[2]);
+            if (!z) return null;
+            zone = z; t = suffix[1].trim();
+        }
+        const today = wallParts(now, zone);
         let m = t.match(/^(\d{4})-(\d{1,2})-(\d{1,2})[ t](\d{1,2}):(\d{2})$/);
-        if (m) return Date.UTC(+m[1], m[2] - 1, +m[3], +m[4], +m[5]) - off;
+        if (m) return wallToUtc(+m[1], m[2] - 1, +m[3], +m[4], +m[5], zone);
         m = t.match(/^(\d{1,2})\/(\d{1,2})(?:\/(\d{4}))?\s+(\d{1,2}):(\d{2})$/);
         if (m) {
-            let when = Date.UTC(m[3] ? +m[3] : local.getUTCFullYear(), m[2] - 1, +m[1], +m[4], +m[5]) - off;
-            if (!m[3] && when < now) when = Date.UTC(local.getUTCFullYear() + 1, m[2] - 1, +m[1], +m[4], +m[5]) - off;
+            let when = wallToUtc(m[3] ? +m[3] : today.y, m[2] - 1, +m[1], +m[4], +m[5], zone);
+            if (!m[3] && when < now) when = wallToUtc(today.y + 1, m[2] - 1, +m[1], +m[4], +m[5], zone);
             return when;
         }
         m = t.match(/^(\d{1,2}):(\d{2})$/);
         if (m) {
-            let when = Date.UTC(local.getUTCFullYear(), local.getUTCMonth(), local.getUTCDate(), +m[1], +m[2]) - off;
-            if (when < now) when += 864e5;
+            let when = wallToUtc(today.y, today.mo, today.d, +m[1], +m[2], zone);
+            if (when < now) when = wallToUtc(today.y, today.mo, today.d + 1, +m[1], +m[2], zone);
             return when;
         }
         return null;
     }
-    function formatLocal(ms) {
+    function formatLocal(ms, zone) {
         if (!ms) return '';
-        const d = new Date(ms + offsetMinutes() * 6e4);
+        const w = wallParts(ms, zone);
         const p = n => String(n).padStart(2, '0');
-        return `${d.getUTCFullYear()}-${p(d.getUTCMonth() + 1)}-${p(d.getUTCDate())} ${p(d.getUTCHours())}:${p(d.getUTCMinutes())}`;
+        return `${w.y}-${p(w.mo + 1)}-${p(w.d)} ${p(w.h)}:${p(w.mi)}`;
+    }
+    // "🇮🇳 India 18:00 Fri · 🇪🇺 EU 14:30 Fri · ..." plus who gets a night-time start.
+    function worldClock(ms) {
+        const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+        const p = n => String(n).padStart(2, '0');
+        const night = [];
+        const parts = WORLD_CLOCK.map(([label, zone]) => {
+            const w = wallParts(ms, zone);
+            if (w.h >= 0 && w.h < 7) night.push(label);
+            return `${label} **${p(w.h)}:${p(w.mi)}** ${days[w.wd]}`;
+        });
+        return { text: parts.join('\n'), night };
     }
 
     // ---------- permissions ----------
@@ -221,7 +305,12 @@ module.exports = function createTournaments(deps) {
                 { name: '📺 Stream', value: c.stream || '—', inline: true },
                 { name: '📜 Rules', value: trunc(c.rules || '*none*', 1000), inline: false }
             )
-            .setFooter({ text: `ID ${t.id} · Times you type are read as UTC${TZ_OFFSET} · Only you can see this` });
+            .setFooter({ text: `ID ${t.id} · Times you type are read as ${zoneLabel(c.tz || hostZone(t.hostId))} (change: /tournament timezone) · Only you can see this` });
+        if (c.startAt) {
+            const wc = worldClock(c.startAt);
+            embed.addFields({ name: '🌍 Start time around the world', value: wc.text, inline: false });
+            if (wc.night.length) embed.addFields({ name: '⚠️ Night-time start for', value: `${wc.night.join(', ')}. Players there may miss it. Consider a region tournament or a different time.`, inline: false });
+        }
 
         const gmSelect = new StringSelectMenuBuilder().setCustomId(`tn:cfg:${t.id}:gamemode`).setPlaceholder('Gamemode')
             .addOptions(GAMEMODE_ORDER.map(g => ({ label: `Gamemode: ${g}`, value: g, default: g === c.gamemode })));
@@ -258,8 +347,8 @@ module.exports = function createTournaments(deps) {
         const c = t.config;
         return new ModalBuilder().setCustomId(`tn:mod:${t.id}:details`).setTitle('Name, times & rules').addComponents(
             new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('name').setLabel('Tournament name').setStyle(TextInputStyle.Short).setMaxLength(60).setRequired(true).setValue(c.name || '')),
-            new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('close').setLabel('Sign-ups close (e.g. 2026-09-25 21:00, in 1d)').setStyle(TextInputStyle.Short).setRequired(true).setValue(formatLocal(c.signupCloseAt))),
-            new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('start').setLabel('Starts (e.g. 26/09 18:00, in 2d)').setStyle(TextInputStyle.Short).setRequired(true).setValue(formatLocal(c.startAt))),
+            new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('close').setLabel(trunc(`Sign-ups close (your time: ${zoneLabel(c.tz || hostZone(t.hostId))})`, 45)).setPlaceholder('e.g. 25/09 21:00, 2026-09-25 21:00, in 1d, 21:00 CET').setStyle(TextInputStyle.Short).setRequired(true).setValue(formatLocal(c.signupCloseAt, c.tz || hostZone(t.hostId)))),
+            new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('start').setLabel(trunc(`Starts (your time: ${zoneLabel(c.tz || hostZone(t.hostId))})`, 45)).setPlaceholder('e.g. 26/09 18:00, 18:00, in 2d, 18:00 UTC+1').setStyle(TextInputStyle.Short).setRequired(true).setValue(formatLocal(c.startAt, c.tz || hostZone(t.hostId)))),
             new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('bestof').setLabel('Best of: matches / final (e.g. 3/5)').setStyle(TextInputStyle.Short).setRequired(true).setValue(`${c.bestOf}/${c.finalBestOf}`)),
             new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('rules').setLabel('Rules').setStyle(TextInputStyle.Paragraph).setMaxLength(1000).setRequired(false).setValue(c.rules || ''))
         );
@@ -318,10 +407,13 @@ module.exports = function createTournaments(deps) {
                 { name: '✅ Check-in', value: c.checkinMinutes ? `${c.checkinMinutes} min before start` : 'Not needed', inline: true },
                 { name: `👥 ${t.config.teamSize === 2 ? 'Teams' : 'Players'} ${t.slots.length}/${c.size}${t.waitlist.length ? ` · waitlist ${t.waitlist.length}` : ''}`, value: `\`${bar(t.slots.length, c.size)}\``, inline: false }
             )
-            .setFooter({ text: `Hosted by ${host?.username || 'staff'} · ID ${t.id} · Seeded by ${c.gamemode} tier` })
+            .setFooter({ text: `Hosted by ${host?.username || 'staff'} · ID ${t.id} · The times above show in YOUR timezone` })
             .setTimestamp();
         const hostHead = getSkinHeadUrl(host);
         if (hostHead) embed.setThumbnail(hostHead);
+        if (t.status === 'signup' || t.status === 'checkin' || t.status === 'draft') {
+            embed.addFields({ name: '🌍 Start time around the world', value: worldClock(c.startAt).text, inline: false });
+        }
         if (c.stream) embed.addFields({ name: '📺 Stream', value: c.stream, inline: false });
         const follow = [t.bracketMsg && `🗂 <#${t.bracketMsg.channelId}>`, t.liveMsg && `🔴 <#${t.liveMsg.channelId}>`].filter(Boolean);
         if (follow.length && t.status === 'running') embed.addFields({ name: 'Follow along', value: [...new Set(follow)].join(' · '), inline: false });
@@ -942,6 +1034,19 @@ module.exports = function createTournaments(deps) {
             return interaction.reply({ embeds: [embed], flags: 64 });
         }
         const sub = options.getSubcommand();
+        if (sub === 'timezone') {
+            const s0 = store();
+            s0.hostTz ??= {};
+            const zone = resolveZone(options.getString('zone'));
+            if (!zone) return interaction.reply({ content: '❌ Unknown timezone.', flags: 64 });
+            s0.hostTz[interaction.user.id] = zone;
+            // Apply to this host's tournaments that can still be edited.
+            for (const tt of activeList()) if (tt.hostId === interaction.user.id && ['draft', 'signup'].includes(tt.status)) tt.config.tz = zone;
+            saveData();
+            const w = wallParts(Date.now(), zone);
+            const p = n => String(n).padStart(2, '0');
+            return interaction.reply({ content: `🕒 Your timezone is now **${zoneLabel(zone)}** (it's ${p(w.h)}:${p(w.mi)} there right now). Times you type when creating tournaments are read in this timezone. Players still see every time in their own timezone.`, flags: 64 });
+        }
         if (sub === 'setup') {
             if (!isStaffMember(member)) return interaction.reply({ content: '❌ Only admins can create the tournament channels.', flags: 64 });
             await interaction.deferReply({ flags: 64 });
@@ -966,6 +1071,7 @@ module.exports = function createTournaments(deps) {
             const gm = options.getString('gamemode');
             if (gm) config.gamemode = gm;
             config.name = name;
+            config.tz = hostZone(interaction.user.id);
             const id = `T${++s.counter}`;
             s.list[id] = { id, status: 'draft', hostId: interaction.user.id, guildId: guild.id, createdAt: Date.now(), config, entries: {}, slots: [], waitlist: [] };
             saveData();
@@ -1177,7 +1283,7 @@ module.exports = function createTournaments(deps) {
             if (!c.name) return interaction.reply({ content: '❌ Give the tournament a name first.', flags: 64 });
             const baseName = c.name.replace(/\s*#\d+\s*$/, '').trim();
             const num = Number(c.name.match(/#(\d+)\s*$/)?.[1] || 0);
-            const { name, signupCloseAt, startAt, ...rest } = c;
+            const { name, signupCloseAt, startAt, tz, ...rest } = c;
             const s = store();
             s.templates[baseName.toLowerCase()] = { baseName, count: Math.max(num, s.templates[baseName.toLowerCase()]?.count || 0), config: rest };
             saveData();
@@ -1213,7 +1319,8 @@ module.exports = function createTournaments(deps) {
         const errors = [];
         if (which === 'details') {
             c.name = f('name').trim();
-            const close = parseTime(f('close')), start = parseTime(f('start'));
+            const zone = c.tz || hostZone(t.hostId);
+            const close = parseTime(f('close'), zone), start = parseTime(f('start'), zone);
             if (close) c.signupCloseAt = close; else errors.push(`Couldn't read the sign-up close time "${f('close')}".`);
             if (start) c.startAt = start; else errors.push(`Couldn't read the start time "${f('start')}".`);
             const bo = f('bestof').match(/^\s*(\d)\s*(?:\/\s*(\d))?\s*$/);
@@ -1233,7 +1340,7 @@ module.exports = function createTournaments(deps) {
         saveData();
         if (interaction.isFromMessage()) await interaction.update(setupPanel(t));
         else await interaction.reply({ ...setupPanel(t), flags: 64 });
-        if (errors.length) await interaction.followUp({ content: `⚠️ ${errors.join('\n')}\nTime examples: \`2026-09-26 18:00\`, \`26/09 18:00\`, \`18:00\`, \`in 1d 4h\`.`, flags: 64 });
+        if (errors.length) await interaction.followUp({ content: `⚠️ ${errors.join('\n')}\nTime examples: \`26/09 18:00\`, \`2026-09-26 18:00\`, \`18:00\`, \`18:00 CET\`, \`in 1d 4h\`.`, flags: 64 });
     }
 
     async function handleJoin(interaction, t) {
@@ -1493,6 +1600,9 @@ module.exports = function createTournaments(deps) {
                     { name: 'player', type: 6, description: 'Winning player (or a member of the winning team)', required: true }, idOpt
                 ] },
                 { type: 1, name: 'list', description: 'Show active tournaments and their IDs' },
+                { type: 1, name: 'timezone', description: '[Host] Set your timezone (used when you type tournament times)', options: [
+                    { name: 'zone', type: 3, description: 'Where you are', required: true, choices: TIMEZONE_CHOICES.map(([name, value]) => ({ name, value })) }
+                ] },
                 { type: 1, name: 'setup', description: '[Admin] Create/repair the tournament channels (safe to run again)', options: [
                     { name: 'verified_role', type: 8, description: 'Role that can see the channels (default: a role named Verified)', required: false }
                 ] },
@@ -1515,6 +1625,6 @@ module.exports = function createTournaments(deps) {
             tick().catch(e => console.error('[Tournament] tick failed:', e));
             console.log(`🏆 Tournaments ready (${activeList().length} active)`);
         },
-        _test: { tick, parseTime, formatLocal, seedOrder, buildBracket, advance, parseTierLimit, bracketText, matchLabel, resolveForfeits }
+        _test: { tick, parseTime, resolveZone, worldClock, wallToUtc, formatLocal, seedOrder, buildBracket, advance, parseTierLimit, bracketText, matchLabel, resolveForfeits }
     };
 };
