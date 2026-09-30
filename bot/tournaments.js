@@ -379,7 +379,7 @@ module.exports = function createTournaments(deps) {
         return new ModalBuilder().setCustomId(`tn:mod:${t.id}:more`).setTitle('More settings').addComponents(
             new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('server').setLabel('Server name / IP (e.g. Tidal · play.tidal.gg)').setStyle(TextInputStyle.Short).setMaxLength(80).setRequired(false).setValue(c.server || '')),
             new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('region').setLabel('Region').setStyle(TextInputStyle.Short).setMaxLength(30).setRequired(false).setValue(c.region || 'Any')),
-            new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('tier').setLabel('Tier limit: "any", "LT3" (or higher), "LT4-HT2"').setStyle(TextInputStyle.Short).setRequired(false).setValue(c.tierMin || c.tierMax ? [c.tierMin, c.tierMax].filter(Boolean).join('-') : 'any')),
+            new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('tier').setLabel('Tier limit (any / LT3 / LT4-HT2)').setPlaceholder('any = everyone · LT3 = LT3 or higher · LT4-HT2 = range').setStyle(TextInputStyle.Short).setRequired(false).setValue(c.tierMin || c.tierMax ? [c.tierMin, c.tierMax].filter(Boolean).join('-') : 'any')),
             new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('checkin').setLabel('Check-in minutes before start (0 = off)').setStyle(TextInputStyle.Short).setRequired(false).setValue(String(c.checkinMinutes))),
             new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('rules').setLabel('Rules (a stream link here shows as "Watch")').setStyle(TextInputStyle.Paragraph).setMaxLength(1000).setRequired(false).setValue(c.rules || ''))
         );
@@ -1725,7 +1725,7 @@ module.exports = function createTournaments(deps) {
             const side = action.endsWith('a') ? 'a' : 'b';
             const what = action.startsWith('ns') ? 'did not show' : 'is disqualified';
             const row = new ActionRowBuilder().addComponents(
-                new ButtonBuilder().setCustomId(`tn:ref:${t.id}:${m.id}:${action}!`).setLabel(`Yes, ${entryName(t, m[side])} ${what}`).setStyle(ButtonStyle.Danger)
+                new ButtonBuilder().setCustomId(`tn:ref:${t.id}:${m.id}:${action}!`).setLabel(trunc(`Yes, ${entryName(t, m[side])} ${what}`, 80)).setStyle(ButtonStyle.Danger)
             );
             return interaction.reply({ content: `Are you sure? **${entryName(t, m[side === 'a' ? 'b' : 'a'])}** will win this match.`, components: [row], flags: 64 });
         }
