@@ -477,7 +477,7 @@ module.exports = function createTournaments(deps) {
     const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     const STATUS_LOOK = {
-        open: ['SIGN-UPS OPEN', '#2ecc71'], closed: ['SIGN-UPS CLOSED', '#f0b232'], checkin: ['CHECK-IN OPEN', '#3498db'],
+        open: ['SIGN-UPS OPEN', null], closed: ['SIGN-UPS CLOSED', '#f0b232'], checkin: ['CHECK-IN OPEN', '#3498db'],
         running: ['LIVE', '#ed4245'], finished: ['FINISHED', '#f0b232'], cancelled: ['CANCELLED', '#ed4245'], draft: ['PREVIEW', '#5865f2']
     };
     async function announcementCard(t) {
@@ -488,7 +488,8 @@ module.exports = function createTournaments(deps) {
         const day = ms => { const w = wallParts(ms, zone); return `${DAYS[w.wd]} ${w.d} ${MONTHS[w.mo]}`; };
         const time = ms => { const w = wallParts(ms, zone); return `${p2(w.h)}:${p2(w.mi)} ${zl}`; };
         const key = t.status === 'signup' ? (Date.now() >= c.signupCloseAt ? 'closed' : 'open') : t.status;
-        const [status, statusColor] = STATUS_LOOK[key] || STATUS_LOOK.open;
+        const [status, look] = STATUS_LOOK[key] || STATUS_LOOK.open;
+        const statusColor = look || cards.accent();
         const host = players()[t.hostId];
         const world = WORLD_CLOCK.slice(0, 8).map(([place, z]) => {
             const w = wallParts(c.startAt, z);
@@ -778,7 +779,7 @@ module.exports = function createTournaments(deps) {
                         const sc = id ? sideScore(m, side) : '';
                         if (sc) {
                             roundRect(ctx, x + boxW - scoreW, ry + (side === 'a' ? 0 : 0), scoreW, rowH, 0);
-                            ctx.fillStyle = won ? '#1f7a45' : m.status === 'live' ? '#3a1d22' : '#262a36'; ctx.fill();
+                            ctx.fillStyle = won ? cards.accentDark() : m.status === 'live' ? '#3a1d22' : '#262a36'; ctx.fill();
                             ctx.fillStyle = won ? '#ffffff' : m.status === 'live' ? '#ff8a8d' : '#8a8f9c';
                             ctx.font = font(15, true); ctx.textAlign = 'center';
                             ctx.fillText(sc, x + boxW - scoreW / 2, ry + 21);
@@ -1079,7 +1080,7 @@ module.exports = function createTournaments(deps) {
         if (m.log.length) rows.push(['Rounds', m.log.map(sd => (sd === 'a' ? entryName(t, m.a) : entryName(t, m.b))).join(' · ')]);
         if (sp) { const pct = m.winner === m.a ? sp.pa : sp.pb; rows.push(['Predictions', `${pct}% picked ${w}${pct < 50 ? ' · upset!' : ''}`]); }
         const card = await cards.versusCard({
-            kicker: `${matchLabel(t, m)} · ${t.config.name}`, accent: isFinal ? '#f0b232' : '#2ecc71',
+            kicker: `${matchLabel(t, m)} · ${t.config.name}`, accent: isFinal ? '#f0b232' : cards.accent(),
             title: isFinal ? `${w} wins ${t.config.name}!` : `${w} defeated ${l}`,
             left: { name: w, head, won: true, sub: isFinal ? 'CHAMPION' : 'WINNER' },
             right: { name: l, head: getSkinHeadUrl(players()[entryMembers(t, loser)[0]]), won: false },

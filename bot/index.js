@@ -1977,7 +1977,7 @@ async function announceTester(guild, memberId, action = 'add', removedData = nul
     const testerData = db.testers[memberId];
     if (!testerData && action !== 'remove') return;
     const card = action === 'add'
-        ? await renderTesterCard(member.user, testerData, 'NEW TESTER', '#2ecc71', member.displayName)
+        ? await renderTesterCard(member.user, testerData, 'NEW TESTER', cards.accent(), member.displayName)
         : await renderTesterCard(member.user, removedData, 'TESTER RETIRED', '#ed4245', member.displayName);
     if (card) return channel.send({ content: action === 'add' ? `Welcome our new **${testerData.gamemode}** tester <@${memberId}>!` : undefined, files: [card], allowedMentions: { parse: [] } }).catch(() => {});
     const symbol = getGamemodeSymbol(testerData?.gamemode || '');
@@ -2628,7 +2628,7 @@ client.on('interactionCreate', async interaction => {
                 if (resultsChannel) {
                     const playerUser = await client.users.fetch(playerId).catch(() => null);
                     const resultCard = await cards.testResultCard({
-                        status: statusLabel, accent: '#' + statusColor.toString(16).padStart(6, '0'),
+                        status: statusLabel, accent: statusLabel === 'TIER UPGRADE' ? cards.accent() : '#' + statusColor.toString(16).padStart(6, '0'),
                         name: player.username, head: getSkinHeadUrl(player) || playerUser?.displayAvatarURL({ extension: 'png', size: 128 }),
                         gamemode: gamemodeName, emoji: getGamemodeSymbol(gamemodeName),
                         from: previousRank, to: rank === 'No upgrade' ? null : rank,

@@ -27,9 +27,21 @@ const COL = {
     gold: '#f0b232', goldBg: '#2e2710', green: '#2ecc71', greenDk: '#1f7a45', red: '#ed4245',
     orange: '#e67e22', blue: '#5865f2', sky: '#3498db'
 };
+// Main accent colour (progress bars, winner boxes, "SIGN-UPS OPEN"…).
+// Set CARD_COLOR in .env to a name below or a hex like #ff3355.
+const COLORS = { red: '#e5484d', crimson: '#c9184a', purple: '#8e6cff', blue: '#3b8cff', cyan: '#1fb6cf', orange: '#ff7a1a', pink: '#e8488c', green: '#2ecc71' };
+function setColor(c) {
+    const v = String(c || '').trim().toLowerCase();
+    COL.accent = COLORS[v] || (/^#[0-9a-f]{6}$/.test(v) ? v : COLORS.red);
+    // Darker shade for filled cells (e.g. the winning score in the bracket).
+    const n = parseInt(COL.accent.slice(1), 16);
+    COL.accentDark = '#' + [16, 8, 0].map(sh => Math.round(((n >> sh) & 255) * 0.55).toString(16).padStart(2, '0')).join('');
+    return COL.accent;
+}
 // Tier chip colours: tier 1 gold → tier 5 grey.
 const TIER_COL = { 1: '#f0b232', 2: '#e67e22', 3: '#b07cd8', 4: '#3498db', 5: '#95a0ab' };
 const W = 960, P = 40;
+setColor(process.env.CARD_COLOR);
 
 const font = (size, bold) => `${size}px "${bold ? 'MCB Sans Bold' : 'MCB Sans'}", "DejaVu Sans", sans-serif`;
 
@@ -88,7 +100,7 @@ function chip(ctx, x, y, label, color, size = 20, h = 40) {
     txt(ctx, label, x + 14, y + h / 2 + size * 0.36, size, color, true);
     return w;
 }
-function progress(ctx, x, y, w, h, frac, color = COL.green) {
+function progress(ctx, x, y, w, h, frac, color = COL.accent) {
     box(ctx, x, y, w, h, h / 2, COL.line);
     const fw = Math.max(0, Math.min(1, frac)) * w;
     if (fw > 0) box(ctx, x, y, Math.max(fw, h), h, h / 2, color);
@@ -179,7 +191,7 @@ async function tournamentCard(d) {
         let hx = P;
         if (emo) { ctx.drawImage(emo, P, y - 34, 44, 44); hx += 56; }
         txt(ctx, `${d.gamemode.toUpperCase()} TOURNAMENT`, hx, y, 22, COL.gold, true);
-        chip(ctx, hx + width(ctx, `${d.gamemode.toUpperCase()} TOURNAMENT`, 22, true) + 18, y - 32, d.status, d.statusColor || COL.green, 18, 40);
+        chip(ctx, hx + width(ctx, `${d.gamemode.toUpperCase()} TOURNAMENT`, 22, true) + 18, y - 32, d.status, d.statusColor || COL.accent, 18, 40);
         txt(ctx, d.name, P, y + 76, 58, COL.text, true, W - P * 2);
         if (d.champion) txt(ctx, `Champion: ${d.champion}`, P, y + 118, 26, COL.gold, true, W - P * 2);
         else txt(ctx, [d.host && `Hosted by ${d.host}`, d.server].filter(Boolean).join('  ·  '), P, y + 118, 23, COL.muted, false, W - P * 2);
@@ -213,9 +225,9 @@ async function tournamentCard(d) {
         txt(ctx, cnt, P + 26, y + 104, 60, COL.text, true);
         txt(ctx, `/ ${d.size}`, P + 36 + width(ctx, cnt, 60, true), y + 104, 30, COL.muted, true);
         const full = d.players.length >= d.size;
-        txt(ctx, d.waitlist ? `+${d.waitlist} waitlist` : full ? 'Full' : `${d.size - d.players.length} spots left`, P + 26, y + 138, 20, full || d.waitlist ? COL.gold : COL.green, true);
+        txt(ctx, d.waitlist ? `+${d.waitlist} waitlist` : full ? 'Full' : `${d.size - d.players.length} spots left`, P + 26, y + 138, 20, full || d.waitlist ? COL.gold : COL.accent, true);
         const bx = P + 250;
-        progress(ctx, bx, y + 30, bw, 16, d.players.length / Math.max(1, d.size), full ? COL.gold : COL.green);
+        progress(ctx, bx, y + 30, bw, 16, d.players.length / Math.max(1, d.size), full ? COL.gold : COL.accent);
         if (!heads) txt(ctx, 'Be the first to join!', bx, y + 100, 24, COL.faint, false);
         const gap = (bw - perRow * hs) / (perRow - 1);
         for (let i = 0; i < Math.min(heads, perRow * rows); i++) {
@@ -329,17 +341,17 @@ async function versusCard(d) {
     const rows = d.rows || [];
     const H = 180 + 330 + Math.ceil(rows.length / 2) * 104 + (d.footer ? 90 : 30);
     return render('result.png', H, async ctx => {
-        background(ctx, H, d.accent || COL.green);
-        label(ctx, d.kicker, P, 64, d.accent || COL.green);
+        background(ctx, H, d.accent || COL.accent);
+        label(ctx, d.kicker, P, 64, d.accent || COL.accent);
         txt(ctx, d.title, P, 122, 44, COL.text, true, W - P * 2);
         const cy = 180, side = (W - P * 2 - 180) / 2;
         for (const [pl, x] of [[d.left, P], [d.right, P + side + 180]]) {
             if (!pl) continue;
-            box(ctx, x, cy, side, 300, 18, pl.won ? '#17291f' : COL.panel, pl.won ? COL.green : COL.line, 2.5);
+            box(ctx, x, cy, side, 300, 18, pl.won ? COL.accent + '1f' : COL.panel, pl.won ? COL.accent : COL.line, 2.5);
             await head(ctx, pl.head, x + side / 2 - 70, cy + 30, 140, pl.name, pl.won === false ? 0.45 : 1);
             txt(ctx, pl.name, x + side / 2, cy + 222, 30, pl.won === false ? COL.dim : COL.text, true, side - 30, 'center');
             if (pl.won === false) { const w = Math.min(side - 30, width(ctx, pl.name, 30, true)); ctx.fillStyle = COL.red; ctx.fillRect(x + side / 2 - w / 2 - 4, cy + 210, w + 8, 3); }
-            txt(ctx, pl.sub || (pl.won ? 'WINNER' : pl.won === false ? 'ELIMINATED' : ''), x + side / 2, cy + 266, 20, pl.won ? COL.green : COL.dim, true, side - 30, 'center');
+            txt(ctx, pl.sub || (pl.won ? 'WINNER' : pl.won === false ? 'ELIMINATED' : ''), x + side / 2, cy + 266, 20, pl.won ? COL.accent : COL.dim, true, side - 30, 'center');
         }
         // centre score
         const mx = P + side + 90;
@@ -422,7 +434,7 @@ async function queueCard(d) {
         tiles.forEach(([k, v, sub], i) => {
             const x = P + i * (tw + 20);
             box(ctx, x, ty, tw, 150, 16, COL.panel, COL.line);
-            label(ctx, k, x + 22, ty + 38, i === 0 && d.testers.length ? COL.green : COL.dim);
+            label(ctx, k, x + 22, ty + 38, i === 0 && d.testers.length ? COL.accent : COL.dim);
             txt(ctx, v, x + 22, ty + 96, 44, COL.text, true, tw - 44);
             txt(ctx, sub, x + 22, ty + 130, 18, COL.muted, false, tw - 44);
         });
@@ -473,4 +485,4 @@ async function testerCard(d) {
     });
 }
 
-module.exports = { tournamentCard, profileCard, versusCard, testResultCard, queueCard, testerCard, available: () => !!canvasLib() };
+module.exports = { setColor, accent: () => COL.accent, accentDark: () => COL.accentDark, tournamentCard, profileCard, versusCard, testResultCard, queueCard, testerCard, available: () => !!canvasLib() };
