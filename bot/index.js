@@ -230,6 +230,24 @@ Always be cool, knowledgeable, and genuinely helpful — like a friend who's act
     }
 }
 
+// Splits long text into Discord-sized chunks, preferring line breaks so
+// formatting survives.
+function splitMessage(text, max = 1990) {
+    const chunks = [];
+    let current = '';
+    for (const line of text.split('\n')) {
+        if (line.length > max) {
+            if (current) { chunks.push(current); current = ''; }
+            for (let i = 0; i < line.length; i += max) chunks.push(line.slice(i, i + max));
+            continue;
+        }
+        if ((current ? current.length + 1 : 0) + line.length > max) { chunks.push(current); current = line; }
+        else current = current ? `${current}\n${line}` : line;
+    }
+    if (current) chunks.push(current);
+    return chunks;
+}
+
 // ==================== KEEP-ALIVE SERVER ====================
 const keepAliveApp = express();
 keepAliveApp.get('/', (req, res) => res.send('Bot is alive!'));
@@ -239,11 +257,17 @@ keepAliveApp.listen(process.env.SERVER_PORT || process.env.PORT || 3000, () => c
 // Lets the Minecraft server ask "what rank does this player have in Sword?"
 // and report Rookie -> LT5 auto-promotions. Does not touch anything else.
 
-const MCBPVP_SECRET = process.env.MCBPVP_SECRET || 'CHANGE-ME-TO-A-LONG-RANDOM-STRING';
+// No default: with a known fallback string anyone could promote players.
+const MCBPVP_SECRET = process.env.MCBPVP_SECRET || null;
+if (!MCBPVP_SECRET) console.warn('⚠️ MCBPVP_SECRET is not set - the Minecraft bridge (/mcbpvp/*) is disabled.');
 
 keepAliveApp.use(express.json());
 
 function checkMcbpvpAuth(req, res) {
+    if (!MCBPVP_SECRET) {
+        res.status(503).json({ error: 'bridge disabled: set MCBPVP_SECRET in .env' });
+        return false;
+    }
     if (req.headers['x-mcbpvp-secret'] !== MCBPVP_SECRET) {
         res.status(401).json({ error: 'unauthorized' });
         return false;
@@ -459,132 +483,141 @@ if (!db.testerStats) db.testerStats = {};
 if (!db.activeTests) db.activeTests = {};
 if (!db.queueMessages) db.queueMessages = {};
 if (!db.testServers) db.testServers = [];
-function saveData() { try { fs.writeFileSync(DATA_FILE, JSON.stringify(db, null, 2)); } catch(e) { console.error('Failed to save data:', e); } }
-
-// ==================== BEDROCK SKIN AVATARS ====================
-// This is a Bedrock/Geyser server, so most players never had a real Java
-// skin - fetchSkinAvatar() above was silently returning the default Steve
-// thumbnail for almost everyone via mc-heads.net. This fetches the actual
-// Bedrock skin through GeyserMC's official Global API (verified working
-// endpoints as of this build):
-//   GET https://api.geysermc.org/v2/xbox/xuid/:gamertag -> { xuid }
-//   GET https://api.geysermc.org/v2/skin/:xuid           -> { texture_id, ... }
-async function fetchBedrockSkin(gamertag) {
+if (!db.panels) db.panels = {};
+// Write to a temp file then rename, so a crash mid-save can't leave a
+// half-written (corrupted) tierbot.json.
+function saveData() {
     try {
-        const fetch = (await import('node-fetch')).default;
-        const xuidRes = await fetch(`https://api.geysermc.org/v2/xbox/xuid/${encodeURIComponent(gamertag)}`, { timeout: 5000 });
-        if (!xuidRes.ok) return null;
-        const { xuid } = await xuidRes.json();
-        if (!xuid) return null;
-        const skinRes = await fetch(`https://api.geysermc.org/v2/skin/${xuid}`, { timeout: 5000 });
-        if (!skinRes.ok) return null;
-        const skinData = await skinRes.json();
-        if (!skinData.texture_id) return null;
-        return { xuid, textureId: skinData.texture_id };
-    } catch (e) {
-        console.error(`[BedrockSkin] Failed for ${gamertag}:`, e.message);
-        return null;
-    }
+        fs.writeFileSync(DATA_FILE + '.tmp', JSON.stringify(db, null, 2));
+        fs.renameSync(DATA_FILE + '.tmp', DATA_FILE);
+    } catch(e) { console.error('Failed to save data:', e); }
 }
 
-// Renders just the head (base layer + hat overlay) from a full skin texture.
-// Lazily requires @napi-rs/canvas and fails soft (returns null) if it isn't
-// installed yet, so a missing dependency can never crash the whole bot -
-// it just falls back to the default/Java thumbnail until installed.
-async function renderBedrockHeadAvatar(textureId) {
+const BACKUP_DIR = 'backups';
+const BACKUPS_TO_KEEP = 14;
+function writeBackup() {
     try {
-        const { createCanvas, loadImage, GlobalFonts } = require('@napi-rs/canvas');
-        const skinImg = await loadImage(`https://textures.minecraft.net/texture/${textureId}`);
-        const canvas = createCanvas(128, 128);
-        const ctx = canvas.getContext('2d');
-        ctx.imageSmoothingEnabled = false;
-        ctx.drawImage(skinImg, 8, 8, 8, 8, 0, 0, 128, 128);   // base head
-        ctx.drawImage(skinImg, 40, 8, 8, 8, 0, 0, 128, 128);  // hat overlay
-        return canvas.toBuffer('image/png');
-    } catch (e) {
-        console.error(`[BedrockSkin] Render failed for texture ${textureId}:`, e.message);
-        return null;
+        if (!fs.existsSync(BACKUP_DIR)) fs.mkdirSync(BACKUP_DIR);
+        const file = `${BACKUP_DIR}/tierbot_${new Date().toISOString().replace(/[:.]/g, '-')}.json`;
+        fs.writeFileSync(file, JSON.stringify(db, null, 2));
+        const old = fs.readdirSync(BACKUP_DIR).filter(f => f.startsWith('tierbot_')).sort().slice(0, -BACKUPS_TO_KEEP);
+        for (const f of old) fs.unlinkSync(`${BACKUP_DIR}/${f}`);
+        return file;
+    } catch (e) { console.error('Backup failed:', e); return null; }
+}
+
+// ==================== SKIN AVATARS ====================
+// Why heads used to show as Steve (or not at all):
+//  - mc-heads.net returns HTTP 200 with a Steve head for ANY unknown name, so
+//    the old fetchSkinAvatar() always "succeeded" on its first try and saved Steve.
+//  - GeyserMC's Global API only knows Bedrock players who have joined a Geyser
+//    server; everyone else gets a 503 ("Unable to find user in our cache").
+//  - Even when Geyser knows the player, persona/marketplace skins can't be
+//    uploaded, so Geyser stores the default Steve texture for them.
+//  - The head was drawn with @napi-rs/canvas, which silently failed when the
+//    package wasn't installed on the host.
+// Now: a real Bedrock skin (via Geyser) or a real Java account (via Mojang) is
+// rendered by mc-heads.net from its texture/UUID - no canvas needed. Anyone
+// else gets their Discord avatar instead of a fake Steve.
+const DEFAULT_SKIN_TEXTURES = new Set([
+    '31f477eb1a7beee631c2ca64d06f8f68fa93a3386d04452ab27f43acdf1b60cb', // Geyser's default Steve
+    '1a4af718455d4aab528e7a61f86fa25e6a369d1768dcb13f7df319a713eb810b', // Mojang Steve
+    '3b60a1f6d562f52aaebbf1434f1de147933a3affe0e764fa49ea057536623cd3'  // Mojang Alex
+]);
+
+async function fetchJson(url) {
+    const res = await fetch(url, { signal: AbortSignal.timeout(6000) });
+    if (!res.ok) return null;
+    return res.json().catch(() => null);
+}
+
+// Returns { skin, reason }. skin is { source: 'bedrock', textureId } or
+// { source: 'java', uuid }, or null with reason 'default_skin' | 'not_found'.
+async function resolveSkin(gamertag) {
+    const name = (gamertag || '').trim();
+    if (!name) return { skin: null, reason: 'not_found' };
+    let reason = 'not_found';
+    try {
+        const x = await fetchJson(`https://api.geysermc.org/v2/xbox/xuid/${encodeURIComponent(name)}`);
+        if (x?.xuid) {
+            const s = await fetchJson(`https://api.geysermc.org/v2/skin/${x.xuid}`);
+            if (s?.texture_id && !DEFAULT_SKIN_TEXTURES.has(s.texture_id)) {
+                return { skin: { source: 'bedrock', textureId: s.texture_id }, reason: null };
+            }
+            reason = 'default_skin';
+        }
+    } catch (e) { console.error(`[Skin] Geyser lookup failed for ${name}:`, e.message); }
+    if (/^[A-Za-z0-9_]{3,16}$/.test(name)) {
+        try {
+            const p = await fetchJson(`https://api.mojang.com/users/profiles/minecraft/${name}`);
+            if (p?.id) return { skin: { source: 'java', uuid: p.id }, reason: null };
+        } catch (e) { console.error(`[Skin] Mojang lookup failed for ${name}:`, e.message); }
     }
+    return { skin: null, reason };
+}
+
+function applySkin(player, skin) {
+    player.skinSource = skin?.source || null;
+    player.textureId = skin?.textureId || null;
+    player.skinUuid = skin?.uuid || null;
+    player.skinUrl = null;
+    player.skinCheckedAt = Date.now();
+}
+
+async function refreshPlayerSkin(player) {
+    const { skin, reason } = await resolveSkin(player.username);
+    applySkin(player, skin);
+    return { skin, reason };
+}
+
+function skinResultMessage({ skin, reason }) {
+    if (skin?.source === 'bedrock') return '✅ Bedrock skin found!';
+    if (skin?.source === 'java') return '✅ Java skin found!';
+    if (reason === 'default_skin') return '⚠️ Your skin shows as default Steve on Geyser (persona/marketplace skins can\'t be read). Your Discord avatar will be used instead.';
+    return '⚠️ Skin not found yet. Join any Geyser/MCBPVP server once, then run /refreshskin. Your Discord avatar is used until then.';
+}
+
+function getSkinHeadUrl(player) {
+    if (!player) return null;
+    if (player.skinSource === 'bedrock' && player.textureId) return `https://mc-heads.net/avatar/${player.textureId}/128.png`;
+    if (player.skinSource === 'java' && player.skinUuid) return `https://mc-heads.net/avatar/${player.skinUuid}/128.png`;
+    // Players saved by older versions: textureId set, no skinSource yet.
+    if (!player.skinSource && player.textureId && !DEFAULT_SKIN_TEXTURES.has(player.textureId)) {
+        return `https://mc-heads.net/avatar/${player.textureId}/128.png`;
+    }
+    return null;
 }
 
 // Single source of truth for putting a player's avatar into any embed.
-// Renders their real Bedrock head if we have a texture on file, otherwise
-// falls back to the stored Java/mc-heads URL, otherwise default Steve.
-async function getAvatarForEmbed(player) {
-    if (player?.textureId) {
-        const buffer = await renderBedrockHeadAvatar(player.textureId);
-        if (buffer) {
-            return { thumbnailUrl: 'attachment://avatar.png', files: [new AttachmentBuilder(buffer, { name: 'avatar.png' })] };
-        }
-    }
-    return { thumbnailUrl: player?.skinUrl || 'https://mc-heads.net/avatar/Steve/64.png', files: [] };
+async function getAvatarForEmbed(player, userId) {
+    const head = getSkinHeadUrl(player);
+    if (head) return { thumbnailUrl: head, files: [] };
+    const user = userId ? await client.users.fetch(userId).catch(() => null) : null;
+    return { thumbnailUrl: user?.displayAvatarURL({ extension: 'png', size: 128 }) || 'https://mc-heads.net/avatar/MHF_Steve/128.png', files: [] };
 }
 
-// ==================== SKIN FETCHING ====================
-async function fetchSkinAvatar(gamertag) {
-    console.log(`[Skin] Fetching for: ${gamertag}`);
-    const variations = [gamertag, gamertag.replace(/_$/, '')];
-    const defaultSkin = 'https://mc-heads.net/avatar/Steve/64.png';
-    const methods = [
-        async (name) => {
-            const fetch = (await import('node-fetch')).default;
-            const url = `https://mc-heads.net/avatar/${name}/64.png`;
-            const res = await fetch(url, { timeout: 5000 });
-            if (res.ok) return url;
-            return null;
-        },
-        async (name) => {
-            const fetch = (await import('node-fetch')).default;
-            const url = `https://mc-heads.net/avatar/.${name}/64.png`;
-            const res = await fetch(url, { timeout: 5000 });
-            if (res.ok) return url;
-            return null;
-        },
-        async (name) => {
-            const fetch = (await import('node-fetch')).default;
-            const url = `https://minotar.net/avatar/${name}/64.png`;
-            const res = await fetch(url, { timeout: 5000 });
-            if (res.ok) return url;
-            return null;
-        },
-        async (name) => {
-            const fetch = (await import('node-fetch')).default;
-            const url = `https://crafatar.com/avatars/${name}/64.png`;
-            const res = await fetch(url, { timeout: 5000 });
-            if (res.ok) return url;
-            return null;
-        },
-        async (name) => {
-            const fetch = (await import('node-fetch')).default;
-            const xuidRes = await fetch(`https://api.geysermc.org/v2/xbox/xuid/${encodeURIComponent(name)}`, { timeout: 5000 });
-            if (!xuidRes.ok) return null;
-            const xuidData = await xuidRes.json();
-            const xuid = xuidData.xuid;
-            if (!xuid) return null;
-            const skinRes = await fetch(`https://api.geysermc.org/v2/skin/${xuid}`, { timeout: 5000 });
-            if (!skinRes.ok) return null;
-            const skinData = await skinRes.json();
-            const textureId = skinData.texture_id;
-            if (!textureId) return null;
-            return `https://textures.minecraft.net/texture/${textureId}`;
-        },
-        async (name) => {
-            const fetch = (await import('node-fetch')).default;
-            const url = `https://visage.surgeplay.com/face/64/${name}`;
-            const res = await fetch(url, { timeout: 5000 });
-            if (res.ok) return url;
-            return null;
+// Re-checks skins in the background, slowly, so heads fill in without every
+// player having to run /refreshskin. Only touches players never checked by
+// this version, or without a skin and not checked for 3 days.
+let skinBackfillRunning = false;
+async function backfillSkins() {
+    if (skinBackfillRunning) return;
+    skinBackfillRunning = true;
+    let updated = 0;
+    try {
+        const stale = Date.now() - 3 * 24 * 60 * 60 * 1000;
+        for (const player of Object.values(db.players)) {
+            if (!player.username) continue;
+            const neverChecked = !player.skinCheckedAt;
+            const noSkinAndStale = !getSkinHeadUrl(player) && player.skinCheckedAt < stale;
+            if (!neverChecked && !noSkinAndStale) continue;
+            await refreshPlayerSkin(player);
+            updated++;
+            await new Promise(r => setTimeout(r, 1500));
         }
-    ];
-    for (const name of variations) {
-        for (const method of methods) {
-            try {
-                const result = await method(name);
-                if (result) return result;
-            } catch (e) { continue; }
-        }
-    }
-    return defaultSkin;
+        if (updated) { saveData(); console.log(`🧑 Skin backfill checked ${updated} player(s).`); }
+    } catch (e) { console.error('Skin backfill error:', e); }
+    skinBackfillRunning = false;
 }
 
 // ==================== HELPER FUNCTIONS ====================
@@ -595,7 +628,9 @@ function calculateTotalPoints(playerId) {
     for (const gm of GAMEMODE_ORDER) {
         total += player.gamemodePoints?.[gm] || 0;
     }
-    return total;
+    // Admin adjustment from /setpoints (can be negative).
+    total += player.bonusPoints || 0;
+    return Math.max(0, total);
 }
 
 function getTitleFromPoints(points) {
@@ -686,6 +721,30 @@ function hasCommandPermission(interaction, commandName) {
         return true;
     }
 }
+
+function isStaffMember(member) {
+    if (!member) return false;
+    return member.permissions.has(PermissionsBitField.Flags.Administrator)
+        || member.roles.cache.some(r => r.name === STAFF_ROLES.ADMIN || r.name === STAFF_ROLES.MOD);
+}
+
+// A bot-created test channel always has "PlayerID: <id>" in its topic.
+function isTestChannel(channel) {
+    return !!channel && /^(test|testertest)-/.test(channel.name || '') && /PlayerID: \d+/.test(channel.topic || '');
+}
+
+// Only the tester who claimed the channel (or the admin running a tester
+// test) and staff may press Start/Done/Close. The player being tested never can.
+function canRunTestChannel(interaction) {
+    const topic = interaction.channel?.topic || '';
+    const playerId = topic.match(/PlayerID: (\d+)/)?.[1];
+    if (playerId && playerId === interaction.user.id) return false;
+    const ownerId = topic.match(/(?:TesterID|AdminID): (\d+)/)?.[1];
+    if (ownerId && ownerId === interaction.user.id) return true;
+    return isStaffMember(interaction.member);
+}
+
+const NOT_YOUR_TEST = '❌ Only the tester who claimed this player (or staff) can do that.';
 
 // ==================== DECAY SYSTEM ====================
 async function checkDecay(guild) {
@@ -820,6 +879,8 @@ async function deployQueueViewer(channel, gamemode = 'Sword') {
     });
     activeQueueViewer = { message: msg, gamemode };
     currentQueueGamemode = gamemode;
+    db.panels.queueViewer = { channelId: channel.id, messageId: msg.id, gamemode };
+    saveData();
     return msg;
 }
 
@@ -835,6 +896,7 @@ async function refreshQueueViewer(guild, gamemode = null) {
     }).catch(() => {});
     activeQueueViewer.gamemode = target;
     currentQueueGamemode = target;
+    if (db.panels.queueViewer && db.panels.queueViewer.gamemode !== target) { db.panels.queueViewer.gamemode = target; saveData(); }
 }
 
 async function updateQueueViewerAuto(guild, gamemode) {
@@ -1034,6 +1096,8 @@ async function sendLeaderboardToChannel(channel, gamemodeValue = 'overall', page
         currentLeaderboardGamemode = gamemodeValue; 
         currentLeaderboardPage = currentPage;
         currentTierFilter = tierFilter;
+        db.panels.leaderboard = { channelId: channel.id, messageId: msg.id };
+        saveData();
     }
     return msg;
 }
@@ -1103,6 +1167,24 @@ async function updateLeaderboardMessage(interaction, gamemodeValue = null, page 
     }
 }
 
+// The queue viewer and leaderboard used to stop auto-updating after every
+// restart because the message was only remembered in memory.
+async function restorePanels(guild) {
+    const load = async (ref) => {
+        if (!ref) return null;
+        const ch = guild.channels.cache.get(ref.channelId);
+        return ch ? ch.messages.fetch(ref.messageId).catch(() => null) : null;
+    };
+    const qMsg = await load(db.panels.queueViewer);
+    if (qMsg) {
+        activeQueueViewer = { message: qMsg, gamemode: db.panels.queueViewer.gamemode || 'Sword' };
+        currentQueueGamemode = activeQueueViewer.gamemode;
+    }
+    const lMsg = await load(db.panels.leaderboard);
+    if (lMsg) activeLeaderboardMessage = lMsg;
+    console.log(`📌 Panels restored: queue viewer ${qMsg ? '✅' : '—'}, leaderboard ${lMsg ? '✅' : '—'}`);
+}
+
 async function deployLeaderboard(interaction) {
     await interaction.deferReply({ flags: 64 });
     const channel = interaction.guild.channels.cache.find(c => c.name === LEADERBOARD_CHANNEL);
@@ -1118,7 +1200,7 @@ async function showProfile(interaction, targetUser) {
     const points = calculateTotalPoints(targetUser.id);
     const title = getTitleFromPoints(points);
     const position = getPlayerPosition(targetUser.id);
-    const { thumbnailUrl, files } = await getAvatarForEmbed(pd);
+    const { thumbnailUrl, files } = await getAvatarForEmbed(pd, targetUser.id);
     const tierFields = GAMEMODE_ORDER.map(gm => ({
         name: `${getGamemodeSymbol(gm)} ${gm}`,
         value: pd.gamemodeRanks?.[gm] ? `\`${pd.gamemodeRanks[gm]}\`` : '`NA`',
@@ -1172,7 +1254,7 @@ async function sendProfileToChannel(channel, targetUser) {
     const points = calculateTotalPoints(targetUser.id);
     const title = getTitleFromPoints(points);
     const position = getPlayerPosition(targetUser.id);
-    const { thumbnailUrl, files } = await getAvatarForEmbed(pd);
+    const { thumbnailUrl, files } = await getAvatarForEmbed(pd, targetUser.id);
     const tierFields = GAMEMODE_ORDER.map(gm => ({
         name: `${getGamemodeSymbol(gm)} ${gm}`,
         value: pd.gamemodeRanks?.[gm] ? `\`${pd.gamemodeRanks[gm]}\`` : '`NA`',
@@ -1376,7 +1458,7 @@ async function autoSetupRoles(guild) {
     const rolesToCreate = [
         APPLICANT_ROLE, ...TITLES.map(t => t.role), ...RANK_ORDER,
         ...GAMEMODES.map(g => g.testerRole),
-        'CREATOR', 'ADMIN', 'HELPER', 'Tester'
+        'CREATOR', STAFF_ROLES.ADMIN, STAFF_ROLES.MOD, 'HELPER', 'Tester'
     ];
     for (const roleName of rolesToCreate) {
         const existing = guild.roles.cache.find(r => r.name === roleName);
@@ -1440,13 +1522,21 @@ async function recalculateAllPlayers(guild) {
             }
         }
 
-        // Drop any leftover corrupted keys and rebuild clean.
+        // Drop any leftover corrupted keys and rebuild clean. If the rank is
+        // unchanged and its points were lowered by decay, keep the decayed
+        // value - otherwise every restart silently undid decay.
+        const prevRanks = data.gamemodeRanks;
+        const prevPoints = data.gamemodePoints;
         data.gamemodeRanks = {};
         data.gamemodePoints = {};
         for (const gm of GAMEMODE_ORDER) {
             if (latestRankByGm[gm]) {
+                const fixed = getFixedPointsForRank(latestRankByGm[gm]);
+                const kept = prevRanks[gm] === latestRankByGm[gm] && typeof prevPoints[gm] === 'number'
+                    ? Math.max(0, Math.min(prevPoints[gm], fixed))
+                    : fixed;
                 data.gamemodeRanks[gm] = latestRankByGm[gm];
-                data.gamemodePoints[gm] = getFixedPointsForRank(latestRankByGm[gm]);
+                data.gamemodePoints[gm] = kept;
                 if (!data.gamemodeLastTest[gm]) data.gamemodeLastTest[gm] = latestDateByGm[gm] || Date.now();
             }
         }
@@ -1512,7 +1602,7 @@ async function registerCommands() {
         { name: 'deapply', description: '[Admin] Remove player application (keeps data)', options: [{ name: 'player', type: 6, description: 'Player to deapply', required: true }] },
         { name: 'forceunverify', description: '[Admin] Force unverify a player (wipes data)', options: [{ name: 'player', type: 6, description: 'Player to unverify', required: true }] },
         { name: 'forcerank', description: '[Admin] Force change player rank', options: [{ name: 'player', type: 6, description: 'Player', required: true }, { name: 'rank', type: 3, description: 'New rank', required: true, choices: rankChoices }] },
-        { name: 'setpoints', description: '[Admin] Set player points', options: [{ name: 'player', type: 6, description: 'Player', required: true }, { name: 'points', type: 4, description: 'Points amount', required: true }] },
+        { name: 'setpoints', description: '[Admin] Set a player\'s total points (stored as a bonus on top of tier points)', options: [{ name: 'player', type: 6, description: 'Player', required: true }, { name: 'points', type: 4, description: 'Points amount', required: true }] },
         { name: 'reset', description: '[Admin] Reset a single player completely (wipes data)', options: [{ name: 'player', type: 6, description: 'Player to reset', required: true }] },
         { name: 'resetall', description: '[Admin] **RESET EVERYTHING** – clears all players, queues, stats (keeps kits & testers)' },
         { name: 'recalculate', description: '[Admin] Recalculate player points', options: [{ name: 'player', type: 6, description: 'Player', required: true }] },
@@ -1704,7 +1794,9 @@ async function sendTestersEmbed(interaction, page = 1) {
             new ButtonBuilder().setCustomId(`testers_page:${curPage+1}`).setLabel('NEXT ▶').setStyle(ButtonStyle.Secondary).setDisabled(curPage===totalPages)
         );
     }
-    await interaction.reply({ embeds: [embed], components: row.components.length ? [row] : [], flags: 64 });
+    const payload = { embeds: [embed], components: row.components.length ? [row] : [] };
+    if (interaction.isButton()) await interaction.update(payload);
+    else await interaction.reply({ ...payload, flags: 64 });
 }
 
 async function announceTester(guild, memberId, action = 'add') {
@@ -1768,13 +1860,16 @@ client.once('ready', async () => {
     await cleanupLeftMembers(guild);
     await registerCommands();
     await initGemini();
+    await restorePanels(guild);
     
     setInterval(() => {
-        try {
-            checkDecay(guild);
-        } catch(e) { console.error('Decay check error:', e); }
+        checkDecay(guild).catch(e => console.error('Decay check error:', e));
+        writeBackup();
+        backfillSkins();
     }, 24 * 60 * 60 * 1000);
     await checkDecay(guild);
+    writeBackup();
+    backfillSkins();
     
     console.log(`\n✅ Ready! | ${GAMEMODES.length} gamemodes loaded`);
     console.log(`📌 Use /sendpanel apply, /sendpanel request, or /sendpanel tester to deploy panels.`);
@@ -1849,13 +1944,8 @@ client.on('messageCreate', async (message) => {
     try {
         const response = await getAIResponse(message.author.id, message.content, message.guild);
         if (response) {
-            if (response.length > 2000) {
-                const chunks = response.match(/.{1,1990}/g) || [response];
-                for (const chunk of chunks) {
-                    await message.reply(chunk);
-                }
-            } else {
-                await message.reply(response);
+            for (const chunk of splitMessage(response)) {
+                await message.reply({ content: chunk, allowedMentions: { repliedUser: true, parse: [] } });
             }
         } else {
             await message.reply('🤔 Hmm, I couldn\'t quite process that. Could you try rephrasing your question?');
@@ -1898,6 +1988,7 @@ client.on('interactionCreate', async interaction => {
                 return;
             }
             if (interaction.customId === 'start_test') {
+                if (!canRunTestChannel(interaction)) return interaction.reply({ content: NOT_YOUR_TEST, flags: 64 });
                 await interaction.deferUpdate();
                 const embed = new EmbedBuilder()
                     .setColor(0x2ECC71)
@@ -1910,6 +2001,7 @@ client.on('interactionCreate', async interaction => {
                 return;
             }
             if (interaction.customId === 'done_test') {
+                if (!canRunTestChannel(interaction)) return interaction.reply({ content: NOT_YOUR_TEST, flags: 64 });
                 let playerId = interaction.channel.topic?.match(/PlayerID: (\d+)/)?.[1];
                 let gamemode = interaction.channel.topic?.match(/Gamemode:\s*(.+?)(?:\s\||$)/)?.[1];
                 if (!playerId) {
@@ -1926,10 +2018,7 @@ client.on('interactionCreate', async interaction => {
             }
             if (interaction.customId === 'verify_pack') {
                 const channel = interaction.channel;
-                const testerId = channel.topic?.match(/TesterID: (\d+)/)?.[1];
-                if (testerId && interaction.user.id !== testerId && !interaction.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
-                    return interaction.reply({ content: '❌ Only the tester who claimed this player can verify.', flags: 64 });
-                }
+                if (!canRunTestChannel(interaction)) return interaction.reply({ content: NOT_YOUR_TEST, flags: 64 });
                 await interaction.reply({ content: '✅ Texture pack verified. You may now start the test.', flags: 64 });
                 const row = new ActionRowBuilder().addComponents(
                     new ButtonBuilder().setCustomId('start_test').setLabel('▶ Start Test').setStyle(ButtonStyle.Success),
@@ -1940,6 +2029,7 @@ client.on('interactionCreate', async interaction => {
                 return;
             }
             if (interaction.customId === 'close_ticket') {
+                if (!canRunTestChannel(interaction)) return interaction.reply({ content: NOT_YOUR_TEST, flags: 64 });
                 await interaction.reply({ content: '🔒 Closing channel...', flags: 64 });
                 const gamemode = interaction.channel.topic?.match(/Gamemode:\s*(.+?)(?:\s\||$)/)?.[1];
                 const playerId = interaction.channel.topic?.match(/PlayerID: (\d+)/)?.[1];
@@ -2044,7 +2134,6 @@ client.on('interactionCreate', async interaction => {
                 return;
             }
             if (interaction.customId.startsWith('testers_page:')) {
-                await interaction.deferUpdate();
                 const page = parseInt(interaction.customId.split(':')[1]);
                 await sendTestersEmbed(interaction, page);
                 return;
@@ -2151,22 +2240,17 @@ client.on('interactionCreate', async interaction => {
                 const role = await getRole(interaction.guild, APPLICANT_ROLE);
                 if (!role) return interaction.reply({ content: '❌ Role not found', flags: 64 });
                 await interaction.member.roles.add(role);
-                const bedrockSkin = await fetchBedrockSkin(username);
-                const skinUrl = bedrockSkin ? null : await fetchSkinAvatar(username);
-                db.players[interaction.user.id] = {
+                await interaction.deferReply({ flags: 64 });
+                const player = {
                     username, region, device, rank: null, gamemodeRanks: {}, gamemodePoints: {}, gamemodeLastTest: {},
-                    customAvatar: null, skinUrl: skinUrl, textureId: bedrockSkin?.textureId || null, appliedAt: Date.now(), testHistory: [], notifyOnPick: true,
+                    customAvatar: null, appliedAt: Date.now(), testHistory: [], notifyOnPick: true,
                     lastRequestAt: 0, lastTestTimestamp: 0, warnings: [], strikes: 0, editCount: 0
                 };
+                const skinResult = await refreshPlayerSkin(player);
+                db.players[interaction.user.id] = player;
                 saveData();
                 await updateTitleRole(interaction.guild, interaction.user.id);
-                if (bedrockSkin) {
-                    await interaction.reply({ content: `✅ Applied! Welcome ${username}\n✅ Bedrock skin found and saved!`, flags: 64 });
-                } else if (skinUrl) {
-                    await interaction.reply({ content: `✅ Applied! Welcome ${username}\n✅ Skin found and saved!`, flags: 64 });
-                } else {
-                    await interaction.reply({ content: `✅ Applied! Welcome ${username}\n⚠️ Skin could not be fetched. Use /refreshskin later.`, flags: 64 });
-                }
+                await interaction.editReply({ content: `✅ Applied! Welcome ${username}\n${skinResultMessage(skinResult)}` });
                 return;
             }
             if (interaction.customId === 'editprofile_modal') {
@@ -2185,16 +2269,13 @@ client.on('interactionCreate', async interaction => {
                 player.device = device;
                 player.editCount = editCount + 1;
                 if (username !== oldUsername) {
-                    const bedrockSkin = await fetchBedrockSkin(username);
-                    if (bedrockSkin) {
-                        player.textureId = bedrockSkin.textureId;
-                    } else {
-                        const newSkin = await fetchSkinAvatar(username);
-                        if (newSkin) player.skinUrl = newSkin;
-                    }
+                    await interaction.deferReply({ flags: 64 });
+                    await refreshPlayerSkin(player);
                 }
                 saveData();
-                await interaction.reply({ content: `✅ Profile updated! (${player.editCount}/${MAX_PROFILE_EDITS} edits used)`, flags: 64 });
+                const editMsg = `✅ Profile updated! (${player.editCount}/${MAX_PROFILE_EDITS} edits used)`;
+                if (interaction.deferred) await interaction.editReply({ content: editMsg });
+                else await interaction.reply({ content: editMsg, flags: 64 });
                 return;
             }
             if (interaction.customId === 'search_player_modal') {
@@ -2239,22 +2320,27 @@ client.on('interactionCreate', async interaction => {
                 if (!target) return interaction.reply({ content: '❌ Target not found', flags: 64 });
                 const role = await getRole(interaction.guild, APPLICANT_ROLE);
                 if (!role) return interaction.reply({ content: '❌ Role not found', flags: 64 });
+                await interaction.deferReply({ flags: 64 });
                 await target.roles.add(role);
-                const skinUrl = await fetchSkinAvatar(username);
-                db.players[targetId] = {
+                const player = {
                     username, region, device, rank: null, gamemodeRanks: {}, gamemodePoints: {}, gamemodeLastTest: {},
-                    customAvatar: null, skinUrl: skinUrl, appliedAt: Date.now(), testHistory: [], notifyOnPick: true,
+                    customAvatar: null, appliedAt: Date.now(), testHistory: [], notifyOnPick: true,
                     lastRequestAt: 0, lastTestTimestamp: 0, warnings: [], strikes: 0, editCount: 0
                 };
+                const skinResult = await refreshPlayerSkin(player);
+                db.players[targetId] = player;
                 saveData();
                 await updateTitleRole(interaction.guild, targetId);
-                await interaction.reply({ content: `✅ Force applied ${target.user.tag}`, flags: 64 });
+                await interaction.editReply({ content: `✅ Force applied ${target.user.tag}\n${skinResultMessage(skinResult)}` });
                 return;
             }
             if (interaction.customId.startsWith('done_modal:')) {
-                await interaction.deferUpdate();
                 const parts = interaction.customId.split(':');
                 const playerId = parts[1];
+                if (playerId === interaction.user.id || !canRunTestChannel(interaction)) {
+                    return interaction.reply({ content: NOT_YOUR_TEST, flags: 64 });
+                }
+                await interaction.deferUpdate();
                 const gamemodeName = parts[2];
                 let rankInput = interaction.fields.getTextInputValue('rank');
                 const score = interaction.fields.getTextInputValue('score');
@@ -2312,7 +2398,7 @@ client.on('interactionCreate', async interaction => {
                 const totalPoints = calculateTotalPoints(playerId);
                 const title = getTitleFromPoints(totalPoints);
                 const titleImage = TITLE_IMAGES[title.name] || TITLE_IMAGES['Combat Learner'];
-                const { thumbnailUrl, files: avatarFiles } = await getAvatarForEmbed(player);
+                const { thumbnailUrl, files: avatarFiles } = await getAvatarForEmbed(player, playerId);
                 
                 // Classify the outcome so the announcement actually communicates
                 // what happened, instead of every result looking the same.
@@ -2462,9 +2548,7 @@ client.on('interactionCreate', async interaction => {
                 
                 await interaction.followUp({ content: `✅ Test completed! ${pointsEarned > 0 ? '+' : ''}${pointsEarned} points`, flags: 64 });
                 
-                setTimeout(() => {
-                    try { interaction.channel.delete(); } catch(e) {}
-                }, 5000);
+                setTimeout(() => interaction.channel?.delete().catch(() => {}), 5000);
                 return;
             }
             if (interaction.customId === 'website_sync_modal') {
@@ -2513,6 +2597,7 @@ client.on('interactionCreate', async interaction => {
                     removed = true;
                 }
             }
+            if (removed) saveData();
             await interaction.reply({ content: removed ? '✅ Removed from queues' : '❌ Not in any queue', flags: 64 });
             return;
         }
@@ -2548,21 +2633,9 @@ client.on('interactionCreate', async interaction => {
             if (!db.players[interaction.user.id]) return interaction.reply({ content: '❌ Apply first', flags: 64 });
             const player = db.players[interaction.user.id];
             await interaction.reply({ content: '🔄 Fetching your skin...', flags: 64 });
-            const bedrockSkin = await fetchBedrockSkin(player.username);
-            if (bedrockSkin) {
-                player.textureId = bedrockSkin.textureId;
-                saveData();
-                await interaction.editReply({ content: '✅ Bedrock skin updated successfully!', flags: 64 });
-                return;
-            }
-            const newSkin = await fetchSkinAvatar(player.username);
-            if (newSkin) {
-                player.skinUrl = newSkin;
-                saveData();
-                await interaction.editReply({ content: '✅ Skin updated successfully!', flags: 64 });
-            } else {
-                await interaction.editReply({ content: '❌ Could not fetch skin. Make sure your gamertag is correct and try again later.', flags: 64 });
-            }
+            const skinResult = await refreshPlayerSkin(player);
+            saveData();
+            await interaction.editReply({ content: skinResultMessage(skinResult) });
             return;
         }
         if (commandName === 'cooldown') {
@@ -2589,8 +2662,13 @@ client.on('interactionCreate', async interaction => {
             return;
         }
         if (commandName === 'leaderboard') {
-            await interaction.deferReply();
-            await updateLeaderboardMessage(interaction, 'overall', 1);
+            await interaction.deferReply({ flags: 64 });
+            const { embed } = await formatLeaderboardEmbed(guild, 'overall', 1);
+            const lbChannel = guild.channels.cache.find(c => c.name === LEADERBOARD_CHANNEL);
+            await interaction.editReply({
+                content: lbChannel ? `Full leaderboard with filters: ${lbChannel}` : undefined,
+                embeds: [embed]
+            });
             return;
         }
         if (commandName === 'stats') {
@@ -2654,6 +2732,10 @@ client.on('interactionCreate', async interaction => {
         }
         if (commandName === 'viewtestservers') {
             await viewTestServers(interaction);
+            return;
+        }
+        if (commandName === 'help') {
+            await showHelp(interaction);
             return;
         }
 
@@ -2914,6 +2996,7 @@ client.on('interactionCreate', async interaction => {
         }
 
         if (commandName === 'done') {
+            if (!canRunTestChannel(interaction)) return interaction.reply({ content: NOT_YOUR_TEST, flags: 64 });
             let playerId = channel.topic?.match(/PlayerID: (\d+)/)?.[1];
             let gamemode = channel.topic?.match(/Gamemode:\s*(.+?)(?:\s\||$)/)?.[1];
             if (!playerId) {
@@ -2933,10 +3016,22 @@ client.on('interactionCreate', async interaction => {
             if (commandName === 'forceclose' && !isMod) {
                 return interaction.reply({ content: '❌ This command requires the **Mod** role or higher.', flags: 64 });
             }
+            // Never delete a normal channel: only bot-created test channels.
+            if (!isTestChannel(channel)) {
+                return interaction.reply({ content: '❌ This only works inside a test channel.', flags: 64 });
+            }
+            if (commandName === 'close' && !canRunTestChannel(interaction)) {
+                return interaction.reply({ content: NOT_YOUR_TEST, flags: 64 });
+            }
             await interaction.reply({ content: '🔒 Closing channel...', flags: 64 });
-            setTimeout(() => {
-                try { channel.delete(); } catch(e) {}
-            }, 3000);
+            const closeGm = channel.topic?.match(/Gamemode:\s*(.+?)(?:\s\||$)/)?.[1];
+            const closePid = channel.topic?.match(/PlayerID: (\d+)/)?.[1];
+            if (closeGm && closePid && db.queues[closeGm]) {
+                db.queues[closeGm].testing = db.queues[closeGm].testing.filter(t => t.userId !== closePid);
+                saveData();
+                await updateQueueViewerAuto(guild, closeGm);
+            }
+            setTimeout(() => channel.delete().catch(() => {}), 3000);
             return;
         }
 
@@ -3304,10 +3399,15 @@ client.on('interactionCreate', async interaction => {
             const target = options.getMember('player');
             const points = options.getInteger('points');
             if (!db.players[target.id]) return interaction.reply({ content: '❌ Player not found', flags: 64 });
-            db.players[target.id].manualPoints = points;
-            await updateTitleRole(guild, target.id);
+            // Stored as an offset on top of tier points, so later tests still
+            // add/remove points normally.
+            const p = db.players[target.id];
+            p.bonusPoints = 0;
+            p.bonusPoints = points - calculateTotalPoints(target.id);
             saveData();
-            await interaction.reply({ content: `✅ ${target.user.tag} → ${points} pts`, flags: 64 });
+            await updateTitleRole(guild, target.id);
+            await refreshDeployedLeaderboard(guild);
+            await interaction.reply({ content: `✅ ${target.user.tag} → ${points} pts (${p.bonusPoints >= 0 ? '+' : ''}${p.bonusPoints} bonus on top of tier points)`, flags: 64 });
             return;
         }
         if (commandName === 'reset') {
@@ -3370,11 +3470,10 @@ client.on('interactionCreate', async interaction => {
             return;
         }
         if (commandName === 'refreshleaderboard') {
-            const channel = guild.channels.cache.find(c => c.name === LEADERBOARD_CHANNEL);
-            if (channel && activeLeaderboardMessage) {
-                await sendLeaderboardToChannel(channel, currentLeaderboardGamemode || 'overall', 1, currentTierFilter);
-            }
-            await interaction.reply({ content: '✅ Leaderboard refreshed', flags: 64 });
+            if (!activeLeaderboardMessage) return interaction.reply({ content: '❌ No leaderboard deployed yet. Use /deployleaderboard.', flags: 64 });
+            await interaction.deferReply({ flags: 64 });
+            await refreshDeployedLeaderboard(guild);
+            await interaction.editReply({ content: '✅ Leaderboard refreshed' });
             return;
         }
         if (commandName === 'sendpanel') {
@@ -3423,9 +3522,10 @@ client.on('interactionCreate', async interaction => {
             return;
         }
         if (commandName === 'export') {
+            const cell = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
             let csv = 'User ID,Username,Region,Device,Points,Rank,Strikes,Blacklisted\n';
             for (const [id, data] of Object.entries(db.players)) {
-                csv += `${id},${data.username},${data.region},${data.device},${calculateTotalPoints(id)},${data.rank||'None'},${data.strikes||0},${db.blacklist.includes(id)}\n`;
+                csv += [id, data.username, data.region, data.device, calculateTotalPoints(id), data.rank || 'None', data.strikes || 0, db.blacklist.includes(id)].map(cell).join(',') + '\n';
             }
             fs.writeFileSync('export.csv', csv);
             await interaction.reply({ content: '✅ Exported', files: [{ attachment: 'export.csv', name: 'players.csv' }], flags: 64 });
@@ -3433,8 +3533,8 @@ client.on('interactionCreate', async interaction => {
             return;
         }
         if (commandName === 'backup') {
-            fs.writeFileSync(`backup_${Date.now()}.json`, JSON.stringify(db, null, 2));
-            await interaction.reply({ content: '✅ Backup created', flags: 64 });
+            const file = writeBackup();
+            await interaction.reply({ content: file ? `✅ Backup saved to \`${file}\` (last ${BACKUPS_TO_KEEP} kept)` : '❌ Backup failed, check the console.', flags: 64 });
             return;
         }
         if (commandName === 'setup') {
@@ -3442,7 +3542,10 @@ client.on('interactionCreate', async interaction => {
             await interaction.reply({ content: '✅ Role setup complete! Missing roles have been created.', flags: 64 });
             return;
         }
-        if (commandName === 'websitesync' && isOwner) {
+        if ((commandName === 'websitesync' || commandName === 'testsync') && !isOwner) {
+            return interaction.reply({ content: '❌ Only the server owner can use this command.', flags: 64 });
+        }
+        if (commandName === 'websitesync') {
             const modal = new ModalBuilder().setCustomId('website_sync_modal').setTitle('Website Sync Setup');
             modal.addComponents(
                 new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('api_url').setLabel('API URL').setStyle(TextInputStyle.Short).setRequired(true).setPlaceholder('https://yourwebsite.com/api/sync')),
@@ -3451,7 +3554,7 @@ client.on('interactionCreate', async interaction => {
             await interaction.showModal(modal);
             return;
         }
-        if (commandName === 'testsync' && isOwner) {
+        if (commandName === 'testsync') {
             if (!db.websiteSync?.enabled) return interaction.reply({ content: '❌ Website sync not configured', flags: 64 });
             const testData = { action: 'test', message: 'Test connection from Discord bot', timestamp: new Date().toISOString() };
             const result = await syncToWebsite(testData);
@@ -3570,15 +3673,12 @@ client.on('interactionCreate', async interaction => {
             }
             return;
         }
-        if (commandName === 'help') {
-            await showHelp(interaction);
-            return;
-        }
 
     } catch (error) {
         console.error('[Global Interaction Error]', error);
+        if (!interaction.isRepliable()) return;
         if (!interaction.replied && !interaction.deferred) {
-            await interaction.reply({ content: '❌ Something went wrong. Please try again.', flags: 64 });
+            await interaction.reply({ content: '❌ Something went wrong. Please try again.', flags: 64 }).catch(()=>{});
         } else {
             await interaction.editReply({ content: '❌ Something went wrong. Please try again.' }).catch(()=>{});
         }
