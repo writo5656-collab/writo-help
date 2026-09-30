@@ -8,7 +8,7 @@ Tier-testing Discord bot for MCBPVP Club.
 3. `npm start`
 
 ## One-time Discord setup for tournaments
-Run **`/tournament setup`** (admin). It creates everything, and it's safe to run again:
+Run **`/tournament setup verified_role:@Verified`** (admin). It creates everything, visible only to your Verified role, with a pinned post in each channel explaining what it is for. It is safe to run again (it repairs permissions and missing posts):
 
 ```
 🏆 TOURNAMENTS                 read-only, only the bot posts

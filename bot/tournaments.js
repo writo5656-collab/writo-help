@@ -945,7 +945,7 @@ module.exports = function createTournaments(deps) {
         if (sub === 'setup') {
             if (!isStaffMember(member)) return interaction.reply({ content: '❌ Only admins can create the tournament channels.', flags: 64 });
             await interaction.deferReply({ flags: 64 });
-            return interaction.editReply({ content: await setupChannels(guild) });
+            return interaction.editReply({ content: await setupChannels(guild, options.getRole('verified_role')) });
         }
         const hostOnly = ['create', 'edit', 'start', 'cancel', 'kick', 'setwinner', 'templates'];
         if (hostOnly.includes(sub) && !canHost(member)) {
@@ -1032,33 +1032,124 @@ module.exports = function createTournaments(deps) {
         return false;
     }
 
-    async function setupChannels(guild) {
-        const F = PermissionsBitField.Flags;
-        const readOnly = [
-            { id: guild.id, allow: [F.ViewChannel, F.ReadMessageHistory], deny: [F.SendMessages, F.CreatePublicThreads, F.CreatePrivateThreads] },
-            { id: client.user.id, allow: [F.ViewChannel, F.SendMessages, F.EmbedLinks, F.AttachFiles, F.ReadMessageHistory, F.MentionEveryone] }
-        ];
-        const lines = [];
-        let cat = guild.channels.cache.find(c => c.name === TOURNAMENT_CATEGORY && c.type === 4);
-        if (!cat) { cat = await guild.channels.create({ name: TOURNAMENT_CATEGORY, type: 4 }); lines.push(`✅ Created category **${TOURNAMENT_CATEGORY}**`); }
-        const topics = {
-            signups: 'Sign up for tournaments here. Press Join on a card.',
-            brackets: 'Live brackets. They update after every match.',
-            live: 'Live scores. Press 🔮 Predict winner before a match starts.',
-            champions: 'Hall of fame. Every tournament winner.',
-            chat: 'Talk about tournaments here.'
-        };
-        for (const [key, name] of Object.entries(CHANNELS)) {
-            const existing = guild.channels.cache.find(c => c.name === name && c.type === 0);
-            if (existing) { lines.push(`☑️ ${existing} already exists`); continue; }
-            const ch = await guild.channels.create({
-                name, type: 0, parent: cat, topic: topics[key],
-                // Chat is open to everyone; the rest are read-only so only the bot posts.
-                permissionOverwrites: key === 'chat' ? [] : readOnly
-            });
-            lines.push(`✅ Created ${ch}`);
+    // What each channel is for - posted and pinned as the first message, so
+    // nobody wonders what a channel does.
+    function channelIntro(key) {
+        const e = new EmbedBuilder().setColor(0xFFD700).setFooter({ text: `${BOT_NAME} · Tournaments` });
+        const ch = k => `**#${CHANNELS[k]}**`;
+        switch (key) {
+            case 'signups': return e.setTitle('📢 Tournament Sign-ups').setDescription([
+                'New tournaments are announced here. Press **✅ Join** on a card to sign up.',
+                '',
+                '**Before you join**',
+                '• You need an applied profile (**APPLY NOW** in the dashboard). Your in-game name comes from it.',
+                '• Some tournaments have a tier limit. The card tells you.',
+                '• Blacklisted players can\'t join.',
+                '',
+                '**How it works**',
+                '1️⃣ **Join** before sign-ups close. If it\'s full, you go on the **waitlist**.',
+                '2️⃣ Before the start you get a **DM to check in**. Miss it and the waitlist takes your spot.',
+                '3️⃣ When your match is ready you get a **DM with a button** into your private match room.',
+                '4️⃣ A **referee** watches your match and decides the score.',
+                '',
+                '👥 **2v2 tournaments:** pick your teammate after pressing Join. They get a DM to accept.',
+                `🔔 Want a ping for new tournaments? Ask staff for the **${PING_ROLE}** role.`
+            ].join('\n'));
+            case 'brackets': return e.setTitle('🗂 Brackets').setDescription([
+                'The bracket for every running tournament is posted here and **updates itself** after each match.',
+                '',
+                '**Reading the bracket**',
+                '• **QF** = quarterfinal, **SF** = semifinal. The number is the match.',
+                '• `(HT2)` is the player\'s tier in that gamemode. Players are **seeded by tier**, so the best players meet late.',
+                '• 🔴 = being played now · ✅ = finished · `bye` = no opponent, moves on automatically.',
+                '• `NO-SHOW`, `DQ` and `FORFEIT` show how a match was decided without being played.',
+                '',
+                'Every tournament is **single elimination**: lose once and you\'re out.'
+            ].join('\n'));
+            case 'live': return e.setTitle('🔴 Live Matches').setDescription([
+                'Scores update here **round by round** while matches are played.',
+                '',
+                '**🔮 Predictions**',
+                '• Press **Predict winner** and pick who you think wins a match.',
+                '• Picks close as soon as the first round of that match is played.',
+                '• You can\'t predict your own match.',
+                `• The best predictor of each tournament gets the **${ORACLE_ROLE}** role for ${ORACLE_DAYS} days.`,
+                '',
+                '📺 If a stream link or server is listed, you can watch or spectate there.'
+            ].join('\n'));
+            case 'champions': return e.setTitle('👑 Hall of Champions').setDescription([
+                'Every tournament winner is posted here with their **champion card**.',
+                '',
+                '• The winner gets the **👑 Best in <gamemode>** role, e.g. 👑 Best in Mace.',
+                '• You keep it until someone wins the next tournament in that gamemode.',
+                '• Titles also show on your **/profile**.',
+                '',
+                'Use **/tournaments** to see the current champion of every gamemode.'
+            ].join('\n'));
+            case 'chat': return e.setTitle('💬 Tournament Chat').setDescription([
+                'Talk about tournaments here: hype, questions, looking for a 2v2 teammate.',
+                '',
+                '**Rules**',
+                '• Be respectful. Trash talk that turns into harassment gets you removed from tournaments.',
+                '• Don\'t argue about results here. Problems during a match go to the **referee in your match room**.',
+                '• Don\'t ping hosts or referees for no reason.',
+                '',
+                `Sign-ups are in ${ch('signups')} · brackets in ${ch('brackets')} · live scores in ${ch('live')}.`
+            ].join('\n'));
         }
-        lines.push('', 'Private match rooms go in **🏆 TOURNAMENT MATCHES** (created automatically when the first match starts).');
+        return e;
+    }
+
+    function findVerifiedRole(guild, picked) {
+        const s = store();
+        if (picked) return picked;
+        if (s.verifiedRoleId) { const r = guild.roles.cache.get(s.verifiedRoleId); if (r) return r; }
+        return guild.roles.cache.find(r => r.name.toLowerCase() === 'verified') || null;
+    }
+
+    // Creates (or repairs) the tournament category and channels. Only the
+    // Verified role can see them; everything except the chat is read-only.
+    async function setupChannels(guild, pickedRole) {
+        const F = PermissionsBitField.Flags;
+        const verified = findVerifiedRole(guild, pickedRole);
+        if (!verified) {
+            return '❌ I couldn\'t find your Verified role. Run `/tournament setup verified_role:@YourVerifiedRole` and pick it.';
+        }
+        const s = store();
+        s.verifiedRoleId = verified.id;
+        s.channelIntros ??= {};
+        const botAllow = { id: client.user.id, allow: [F.ViewChannel, F.SendMessages, F.EmbedLinks, F.AttachFiles, F.ReadMessageHistory, F.MentionEveryone, F.ManageMessages] };
+        const hidden = { id: guild.id, deny: [F.ViewChannel] };
+        const readOnly = [hidden, { id: verified.id, allow: [F.ViewChannel, F.ReadMessageHistory], deny: [F.SendMessages, F.CreatePublicThreads, F.CreatePrivateThreads] }, botAllow];
+        const open = [hidden, { id: verified.id, allow: [F.ViewChannel, F.ReadMessageHistory, F.SendMessages] }, botAllow];
+        const lines = [`🔒 Visible to **${verified.name}** only. Unverified members can't see these channels.`];
+
+        let cat = guild.channels.cache.find(c => c.name === TOURNAMENT_CATEGORY && c.type === 4);
+        if (!cat) { cat = await guild.channels.create({ name: TOURNAMENT_CATEGORY, type: 4, permissionOverwrites: [hidden, { id: verified.id, allow: [F.ViewChannel] }, botAllow] }); lines.push(`✅ Created category **${TOURNAMENT_CATEGORY}**`); }
+        else await cat.permissionOverwrites.set([hidden, { id: verified.id, allow: [F.ViewChannel] }, botAllow]).catch(() => {});
+
+        for (const [key, name] of Object.entries(CHANNELS)) {
+            const perms = key === 'chat' ? open : readOnly;
+            let ch = guild.channels.cache.find(c => c.name === name && c.type === 0);
+            if (ch) {
+                await ch.permissionOverwrites.set(perms).catch(() => {});
+                lines.push(`☑️ ${ch} already existed, permissions updated`);
+            } else {
+                ch = await guild.channels.create({ name, type: 0, parent: cat, permissionOverwrites: perms });
+                lines.push(`✅ Created ${ch}`);
+            }
+            // Post + pin the info embed once (again if someone deleted it).
+            const introId = s.channelIntros[key];
+            const existing = introId ? await ch.messages.fetch(introId).catch(() => null) : null;
+            if (existing) await existing.edit({ embeds: [channelIntro(key)] }).catch(() => {});
+            else {
+                const msg = await ch.send({ embeds: [channelIntro(key)] }).catch(() => null);
+                if (msg) { s.channelIntros[key] = msg.id; await msg.pin().catch(() => {}); }
+            }
+        }
+        saveData();
+        lines.push('', '📌 Each channel has a pinned post explaining what it\'s for.',
+            'Private match rooms go in **🏆 TOURNAMENT MATCHES** (created automatically when the first match starts).');
         return lines.join('\n');
     }
 
@@ -1402,7 +1493,9 @@ module.exports = function createTournaments(deps) {
                     { name: 'player', type: 6, description: 'Winning player (or a member of the winning team)', required: true }, idOpt
                 ] },
                 { type: 1, name: 'list', description: 'Show active tournaments and their IDs' },
-                { type: 1, name: 'setup', description: '[Admin] Create the tournament channels (safe to run again)' },
+                { type: 1, name: 'setup', description: '[Admin] Create/repair the tournament channels (safe to run again)', options: [
+                    { name: 'verified_role', type: 8, description: 'Role that can see the channels (default: a role named Verified)', required: false }
+                ] },
                 { type: 1, name: 'templates', description: '[Host] Show saved templates' }
             ]
         },
