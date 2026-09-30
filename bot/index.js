@@ -1163,9 +1163,37 @@ function getGamemodeDisplayName(gamemodeValue) {
     return mapping[gamemodeValue] || gamemodeValue;
 }
 
+// Leaderboard as an image card (podium for the top 3 on page 1), or the embed.
+async function leaderboardPayload(guild, gamemodeValue, page, tierFilter) {
+    const res = await formatLeaderboardEmbed(guild, gamemodeValue, page, tierFilter);
+    const fallback = { ...res, payload: { content: '', embeds: [res.embed], files: [], attachments: [] } };
+    if (!cards.available()) return fallback;
+    const overall = gamemodeValue === 'overall';
+    const gmName = getGamemodeDisplayName(gamemodeValue);
+    const start = (res.currentPage - 1) * 20;
+    const list = (res.pagePlayers || []).filter(Boolean).map((p, i) => ({
+        pos: start + i + 1,
+        name: p.displayName || p.username,
+        head: getSkinHeadUrl(db.players[p.id]),
+        body: getSkinBodyUrl(db.players[p.id]),
+        value: overall ? `${p.points} pts` : null,
+        sub: overall ? p.title : `${db.players[p.id]?.gamemodePoints?.[gmName] ?? p.points ?? 0} pts`,
+        rank: overall ? null : p.rank
+    }));
+    const podium = res.currentPage === 1 ? list.slice(0, 3) : [];
+    const card = await cards.leaderboardCard({
+        mode: gmName, emoji: overall ? null : getGamemodeSymbol(gmName),
+        subtitle: `${res.totalPlayers} ${res.totalPlayers === 1 ? 'player' : 'players'} ranked · Page ${res.currentPage} of ${res.totalPages}`,
+        filter: tierFilter || null,
+        podium, rows: list.slice(podium.length),
+        footer: `Updated ${new Date().toISOString().slice(11, 16)} UTC · use the menus below to switch`
+    });
+    return card ? { ...res, payload: { content: '', embeds: [], files: [card], attachments: [] } } : fallback;
+}
+
 async function sendLeaderboardToChannel(channel, gamemodeValue = 'overall', page = 1, tierFilter = null) {
     const guild = channel.guild;
-    const { embed, totalPages, currentPage, pagePlayers } = await formatLeaderboardEmbed(guild, gamemodeValue, page, tierFilter);
+    const { payload, totalPages, currentPage, pagePlayers } = await leaderboardPayload(guild, gamemodeValue, page, tierFilter);
     
     const tierSelect = new StringSelectMenuBuilder()
         .setCustomId('leaderboard_tier_menu')
@@ -1207,7 +1235,8 @@ async function sendLeaderboardToChannel(channel, gamemodeValue = 'overall', page
         : [tierRow, buttonsRow, selectRow];
     if (playerRow && components.length < 5) components.push(playerRow);
     
-    const msg = await channel.send({ embeds: [embed], components }).catch(()=>null);
+    const { attachments, ...sendable } = payload;
+    const msg = await channel.send({ ...sendable, components }).catch(()=>null);
     if (msg) { 
         activeLeaderboardMessage = msg; 
         currentLeaderboardGamemode = gamemodeValue; 
@@ -1225,7 +1254,7 @@ async function updateLeaderboardMessage(interaction, gamemodeValue = null, page 
     const targetPage = page !== null ? page : currentLeaderboardPage;
     const targetTier = tierFilter !== undefined ? tierFilter : currentTierFilter;
     
-    const { embed, totalPages, currentPage, pagePlayers } = await formatLeaderboardEmbed(guild, targetGamemode, targetPage, targetTier);
+    const { payload, totalPages, currentPage, pagePlayers } = await leaderboardPayload(guild, targetGamemode, targetPage, targetTier);
     
     const tierSelect = new StringSelectMenuBuilder()
         .setCustomId('leaderboard_tier_menu')
@@ -1268,19 +1297,20 @@ async function updateLeaderboardMessage(interaction, gamemodeValue = null, page 
     if (playerRow && components.length < 5) components.push(playerRow);
     
     if (isEdit && existingMsg) { 
-        await existingMsg.edit({ embeds: [embed], components }).catch(()=>{}); 
+        await existingMsg.edit({ ...payload, components }).catch(()=>{}); 
         currentLeaderboardGamemode = targetGamemode; 
         currentLeaderboardPage = currentPage;
         currentTierFilter = targetTier;
     } else if (activeLeaderboardMessage) { 
-        await activeLeaderboardMessage.edit({ embeds: [embed], components }).catch(()=>{}); 
+        await activeLeaderboardMessage.edit({ ...payload, components }).catch(()=>{}); 
         currentLeaderboardGamemode = targetGamemode; 
         currentLeaderboardPage = currentPage;
         currentTierFilter = targetTier;
     } else if (interaction.deferred || interaction.replied) {
-        await interaction.editReply({ embeds: [embed], components }).catch(()=>{});
+        await interaction.editReply({ ...payload, components }).catch(()=>{});
     } else {
-        await interaction.reply({ embeds: [embed], components }).catch(()=>{}); 
+        const { attachments, ...sendable } = payload;
+        await interaction.reply({ ...sendable, components }).catch(()=>{}); 
     }
 }
 
@@ -2877,11 +2907,11 @@ client.on('interactionCreate', async interaction => {
         }
         if (commandName === 'leaderboard') {
             await interaction.deferReply({ flags: 64 });
-            const { embed } = await formatLeaderboardEmbed(guild, 'overall', 1);
+            const { payload } = await leaderboardPayload(guild, 'overall', 1, null);
             const lbChannel = guild.channels.cache.find(c => c.name === LEADERBOARD_CHANNEL);
             await interaction.editReply({
-                content: lbChannel ? `Full leaderboard with filters: ${lbChannel}` : undefined,
-                embeds: [embed]
+                ...payload,
+                content: lbChannel ? `Full leaderboard with filters: ${lbChannel}` : ''
             });
             return;
         }

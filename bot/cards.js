@@ -50,10 +50,37 @@ function roundRect(ctx, x, y, w, h, r) {
     ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r);
     ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
 }
+// Panels (COL.panel / COL.panelHi) get a soft gradient, shadow and a
+// hairline edge; everything else is a flat fill.
 function box(ctx, x, y, w, h, r, color, stroke, lw = 2) {
+    const isPanel = color === COL.panel || color === COL.panelHi;
+    if (isPanel) {
+        ctx.save();
+        ctx.shadowColor = 'rgba(0,0,0,0.45)'; ctx.shadowBlur = 22; ctx.shadowOffsetY = 6;
+        roundRect(ctx, x, y, w, h, r);
+        const g = ctx.createLinearGradient(0, y, 0, y + h);
+        g.addColorStop(0, color === COL.panelHi ? '#272c3d' : '#222634');
+        g.addColorStop(1, color === COL.panelHi ? '#1f2332' : '#1a1d28');
+        ctx.fillStyle = g; ctx.fill();
+        ctx.restore();
+        roundRect(ctx, x + 0.5, y + 0.5, w - 1, h - 1, r);
+        ctx.lineWidth = 1.5; ctx.strokeStyle = stroke && stroke !== COL.line ? stroke : 'rgba(255,255,255,0.07)'; ctx.stroke();
+        // top highlight
+        ctx.save(); roundRect(ctx, x, y, w, h, r); ctx.clip();
+        const hl = ctx.createLinearGradient(0, y, 0, y + 30); hl.addColorStop(0, 'rgba(255,255,255,0.05)'); hl.addColorStop(1, 'rgba(255,255,255,0)');
+        ctx.fillStyle = hl; ctx.fillRect(x, y, w, 30); ctx.restore();
+        return;
+    }
     roundRect(ctx, x, y, w, h, r);
     ctx.fillStyle = color; ctx.fill();
     if (stroke) { ctx.lineWidth = lw; ctx.strokeStyle = stroke; ctx.stroke(); }
+}
+// Soft coloured light, used behind headers and skins.
+function glow(ctx, x, y, radius, color, alpha = 0.25) {
+    const g = ctx.createRadialGradient(x, y, 0, x, y, radius);
+    const a = Math.round(alpha * 255).toString(16).padStart(2, '0');
+    g.addColorStop(0, color + a); g.addColorStop(1, color + '00');
+    ctx.fillStyle = g; ctx.fillRect(x - radius, y - radius, radius * 2, radius * 2);
 }
 // The bundled font has no emoji or CJK glyphs; drop them so they don't
 // show up as empty boxes.
@@ -89,21 +116,42 @@ function wrap(ctx, text, maxW, size, bold, maxLines) {
     return lines;
 }
 function background(ctx, H, accent = COL.gold) {
-    const g = ctx.createLinearGradient(0, 0, W, H);
-    g.addColorStop(0, COL.bg1); g.addColorStop(1, COL.bg2);
+    const g = ctx.createLinearGradient(0, 0, 0, H);
+    g.addColorStop(0, '#12141c'); g.addColorStop(1, '#0c0d12');
     ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
-    ctx.fillStyle = accent; ctx.fillRect(0, 0, W, 8);
+    glow(ctx, W * 0.85, 0, 520, accent, 0.22);
+    glow(ctx, 0, H, 420, accent, 0.08);
+    // faint diagonal texture
+    ctx.save(); ctx.globalAlpha = 0.025; ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1;
+    for (let i = -H; i < W; i += 22) { ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i + H, H); ctx.stroke(); }
+    ctx.restore();
+    const bar = ctx.createLinearGradient(0, 0, W, 0);
+    bar.addColorStop(0, accent); bar.addColorStop(1, accent + '33');
+    ctx.fillStyle = bar; ctx.fillRect(0, 0, W, 7);
+}
+// Big faded icon in the top-right corner.
+async function watermark(ctx, symbol, size = 260) {
+    const img = await loadImg(emojiUrl(symbol));
+    if (!img) return;
+    ctx.save(); ctx.globalAlpha = 0.07; ctx.drawImage(img, W - size + 30, -20, size, size); ctx.restore();
 }
 function chip(ctx, x, y, label, color, size = 20, h = 40) {
     const w = width(ctx, label, size, true) + 28;
-    box(ctx, x, y, w, h, 9, color + '30', color);
+    const g = ctx.createLinearGradient(0, y, 0, y + h);
+    g.addColorStop(0, color + '40'); g.addColorStop(1, color + '1c');
+    roundRect(ctx, x, y, w, h, h / 2 - 4); ctx.fillStyle = g; ctx.fill();
+    ctx.lineWidth = 1.5; ctx.strokeStyle = color + 'aa'; ctx.stroke();
     txt(ctx, label, x + 14, y + h / 2 + size * 0.36, size, color, true);
     return w;
 }
 function progress(ctx, x, y, w, h, frac, color = COL.accent) {
-    box(ctx, x, y, w, h, h / 2, COL.line);
+    box(ctx, x, y, w, h, h / 2, '#2a2f3d');
     const fw = Math.max(0, Math.min(1, frac)) * w;
-    if (fw > 0) box(ctx, x, y, Math.max(fw, h), h, h / 2, color);
+    if (fw > 0) {
+        ctx.save(); ctx.shadowColor = color; ctx.shadowBlur = 14;
+        const g = ctx.createLinearGradient(x, 0, x + fw, 0); g.addColorStop(0, color + 'aa'); g.addColorStop(1, color);
+        roundRect(ctx, x, y, Math.max(fw, h), h, h / 2); ctx.fillStyle = g; ctx.fill(); ctx.restore();
+    }
 }
 function label(ctx, s, x, y, color = COL.dim) { txt(ctx, String(s).toUpperCase(), x, y, 17, color, true); }
 
@@ -129,17 +177,23 @@ async function head(ctx, url, x, y, size, name, alpha = 1) {
     const key = String(url || '').match(/mc-heads\.net\/avatar\/([^/?]+)/)?.[1];
     const skin = key ? await loadImg(`https://mc-heads.net/skin/${key}`) : null;
     const img = skin ? null : await loadImg(url);
+    const r = Math.max(4, Math.round(size / 7));
     ctx.globalAlpha = alpha;
-    ctx.imageSmoothingEnabled = false;
-    if (skin) {
-        ctx.drawImage(skin, 8, 8, 8, 8, x, y, size, size);              // face
-        if (skin.height >= 32) ctx.drawImage(skin, 40, 8, 8, 8, x, y, size, size); // outer layer
+    if (skin || img) {
+        ctx.save(); roundRect(ctx, x, y, size, size, r); ctx.clip();
+        ctx.imageSmoothingEnabled = false;
+        if (skin) {
+            ctx.drawImage(skin, 8, 8, 8, 8, x, y, size, size);              // face
+            if (skin.height >= 32) ctx.drawImage(skin, 40, 8, 8, 8, x, y, size, size); // outer layer
+        } else ctx.drawImage(img, x, y, size, size);
+        ctx.imageSmoothingEnabled = true;
+        ctx.restore();
+        roundRect(ctx, x, y, size, size, r); ctx.lineWidth = 2; ctx.strokeStyle = 'rgba(255,255,255,0.14)'; ctx.stroke();
+        ctx.globalAlpha = 1;
+        return;
     }
-    ctx.imageSmoothingEnabled = true;
-    if (skin) { ctx.globalAlpha = 1; return; }
-    if (img) { ctx.imageSmoothingEnabled = false; ctx.drawImage(img, x, y, size, size); ctx.imageSmoothingEnabled = true; }
-    else {
-        box(ctx, x, y, size, size, Math.round(size / 6), COL.panelHi, COL.line);
+    {
+        box(ctx, x, y, size, size, r, COL.panelHi, COL.line);
         txt(ctx, (String(name || '?').trim()[0] || '?').toUpperCase(), x + size / 2, y + size * 0.68, Math.round(size * 0.48), COL.muted, true, size, 'center');
     }
     ctx.globalAlpha = 1;
@@ -152,8 +206,11 @@ async function avatarCircle(ctx, url, cx, cy, r) {
     return true;
 }
 function footer(ctx, H, text) {
-    ctx.fillStyle = COL.line; ctx.fillRect(P, H - 64, W - P * 2, 2);
-    txt(ctx, text, P, H - 26, 18, COL.dim, false, W - P * 2);
+    const g = ctx.createLinearGradient(P, 0, W - P, 0);
+    g.addColorStop(0, 'rgba(255,255,255,0.10)'); g.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = g; ctx.fillRect(P, H - 64, W - P * 2, 2);
+    txt(ctx, 'MCBPVP CLUB', W - P, H - 26, 16, COL.faint, true, 200, 'right');
+    txt(ctx, text, P, H - 26, 18, COL.dim, false, W - P * 2 - 180);
 }
 function done(canvas, name) {
     const { AttachmentBuilder } = require('discord.js');
@@ -186,6 +243,7 @@ async function tournamentCard(d) {
     const H = 636 + ph + 44 + 40 + 2 * 74 + 90;
     return render('tournament.png', H, async ctx => {
         background(ctx, H, d.statusColor || COL.gold);
+        await watermark(ctx, d.emoji, 300);
         let y = 64;
         const emo = await loadImg(emojiUrl(d.emoji));
         let hx = P;
@@ -198,7 +256,14 @@ async function tournamentCard(d) {
 
         // prize
         y = 222;
-        box(ctx, P, y, W - P * 2, 116, 16, COL.goldBg, COL.gold, 2.5);
+        {
+            const g = ctx.createLinearGradient(P, 0, W - P, 0);
+            g.addColorStop(0, '#3a2c08'); g.addColorStop(1, '#1d1a12');
+            ctx.save(); ctx.shadowColor = 'rgba(240,178,50,0.25)'; ctx.shadowBlur = 30;
+            roundRect(ctx, P, y, W - P * 2, 116, 16); ctx.fillStyle = g; ctx.fill(); ctx.restore();
+            roundRect(ctx, P, y, W - P * 2, 116, 16); ctx.lineWidth = 2; ctx.strokeStyle = COL.gold + 'cc'; ctx.stroke();
+            glow(ctx, P + 120, y + 60, 200, COL.gold, 0.12);
+        }
         label(ctx, 'Prize', P + 28, y + 38, COL.gold);
         if (d.prize) {
             txt(ctx, d.prize, P + 28, y + 92, 48, COL.text, true, 360);
@@ -266,6 +331,10 @@ async function profileCard(d) {
         // skin panel
         const sw = 300, sh = 470;
         box(ctx, P, 40, sw, sh, 18, COL.panel, champion ? COL.gold : COL.line, 2.5);
+        ctx.save(); roundRect(ctx, P, 40, sw, sh, 18); ctx.clip();
+        glow(ctx, P + sw / 2, 250, 230, accent, 0.35);
+        ctx.fillStyle = 'rgba(0,0,0,0.25)'; ctx.beginPath(); ctx.ellipse(P + sw / 2, 474, 90, 14, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.restore();
         const body = await loadImg(d.body);
         if (body) {
             const h = 400, w = (body.width / body.height) * h;
@@ -296,7 +365,7 @@ async function profileCard(d) {
         txt(ctx, `${d.points}`, x0 + rw / 2, py + 104, 56, COL.text, true);
         if (d.titleNext) {
             txt(ctx, `${d.nextPoints - d.points} pts to ${d.titleNext}`, x0 + 26, py + 146, 20, COL.muted, true, rw - 52);
-            progress(ctx, x0 + 26, py + 162, rw - 52, 16, (d.points - d.prevPoints) / Math.max(1, d.nextPoints - d.prevPoints));
+            progress(ctx, x0 + 26, py + 162, rw - 52, 16, (d.points - d.prevPoints) / Math.max(1, d.nextPoints - d.prevPoints), accent);
         } else {
             txt(ctx, 'Highest title reached', x0 + 26, py + 146, 20, COL.gold, true);
             progress(ctx, x0 + 26, py + 162, rw - 52, 16, 1, COL.gold);
@@ -316,8 +385,10 @@ async function profileCard(d) {
             if (m.rank) {
                 const c = tierColor(m.rank);
                 const cwid = width(ctx, m.rank, 20, true) + 24;
-                box(ctx, x + gw - cwid - 14, y + 19, cwid, 40, 9, c + '30', c);
-                txt(ctx, m.rank, x + gw - cwid / 2 - 14, y + 46, 20, c, true, 90, 'center');
+                const g = ctx.createLinearGradient(0, y + 19, 0, y + 59);
+                g.addColorStop(0, c); g.addColorStop(1, c + 'b0');
+                roundRect(ctx, x + gw - cwid - 14, y + 19, cwid, 40, 10); ctx.fillStyle = g; ctx.fill();
+                txt(ctx, m.rank, x + gw - cwid / 2 - 14, y + 46, 20, '#15161c', true, 90, 'center');
             } else txt(ctx, '—', x + gw - 34, y + 48, 22, COL.faint, true, 30, 'center');
         }
 
@@ -347,6 +418,7 @@ async function versusCard(d) {
         const cy = 180, side = (W - P * 2 - 180) / 2;
         for (const [pl, x] of [[d.left, P], [d.right, P + side + 180]]) {
             if (!pl) continue;
+            if (pl.won) glow(ctx, x + side / 2, cy + 110, 260, d.accent || COL.accent, 0.22);
             box(ctx, x, cy, side, 300, 18, pl.won ? COL.accent + '1f' : COL.panel, pl.won ? COL.accent : COL.line, 2.5);
             await head(ctx, pl.head, x + side / 2 - 70, cy + 30, 140, pl.name, pl.won === false ? 0.45 : 1);
             txt(ctx, pl.name, x + side / 2, cy + 222, 30, pl.won === false ? COL.dim : COL.text, true, side - 30, 'center');
@@ -377,7 +449,9 @@ async function testResultCard(d) {
     const H = d.notes ? 760 : 660;
     return render('test-result.png', H, async ctx => {
         background(ctx, H, d.accent);
+        await watermark(ctx, d.emoji, 300);
         chip(ctx, P, 32, d.status, d.accent, 20, 44);
+        glow(ctx, P + 75, 180, 160, d.accent, 0.25);
         await head(ctx, d.head, P, 104, 150, d.name);
         txt(ctx, d.name, P + 180, 170, 52, COL.text, true, W - P * 2 - 180);
         const emo = await loadImg(emojiUrl(d.emoji));
@@ -418,7 +492,8 @@ async function queueCard(d) {
     const shown = d.waiting.slice(0, 12);
     const H = 336 + Math.max(1, shown.length) * 70 + (d.waiting.length > shown.length ? 40 : 0) + 100;
     return render('queue.png', H, async ctx => {
-        background(ctx, H, COL.blue);
+        background(ctx, H, COL.accent);
+        await watermark(ctx, d.emoji, 280);
         const emo = await loadImg(emojiUrl(d.emoji));
         let hx = P;
         if (emo) { ctx.drawImage(emo, P, 30, 56, 56); hx += 70; }
@@ -446,8 +521,8 @@ async function queueCard(d) {
         if (!shown.length) { box(ctx, P, y, W - P * 2, 60, 12, COL.panel); txt(ctx, 'Nobody waiting. Press REQUEST TEST to join!', W / 2, y + 39, 22, COL.faint, false, W - P * 2, 'center'); }
         for (let i = 0; i < shown.length; i++) {
             const w = shown[i], ry = y + i * 70;
-            box(ctx, P, ry, W - P * 2, 60, 12, i === 0 ? '#1d2a3f' : COL.panel, i === 0 ? COL.sky : null);
-            txt(ctx, `#${i + 1}`, P + 20, ry + 40, 24, i === 0 ? COL.sky : COL.dim, true, 60);
+            box(ctx, P, ry, W - P * 2, 60, 12, i === 0 ? COL.accent + '26' : COL.panel, i === 0 ? COL.accent : null);
+            txt(ctx, `#${i + 1}`, P + 20, ry + 40, 24, i === 0 ? COL.accent : COL.dim, true, 60);
             await head(ctx, w.head, P + 84, ry + 10, 40, w.name);
             txt(ctx, w.name, P + 138, ry + 40, 24, COL.soft, true, W - P * 2 - 420);
             if (w.waitedDays >= 3) txt(ctx, `waiting ${w.waitedDays}d`, W - P - 190, ry + 39, 18, COL.gold, true, 120, 'right');
@@ -467,7 +542,9 @@ async function testerCard(d) {
     return render('tester.png', H, async ctx => {
         const accent = d.statusColor || COL.blue;
         background(ctx, H, accent);
+        await watermark(ctx, d.emoji, 280);
         chip(ctx, P, 32, d.status, accent, 20, 44);
+        glow(ctx, P + 90, 200, 150, accent, 0.3);
         const ok = await avatarCircle(ctx, d.avatar, P + 90, 200, 90);
         if (!ok) await head(ctx, null, P, 110, 180, d.name);
         txt(ctx, d.name, P + 210, 176, 50, COL.text, true, W - P * 2 - 210);
@@ -485,4 +562,87 @@ async function testerCard(d) {
     });
 }
 
-module.exports = { setColor, accent: () => COL.accent, accentDark: () => COL.accentDark, tournamentCard, profileCard, versusCard, testResultCard, queueCard, testerCard, available: () => !!canvasLib() };
+// =====================================================================
+// Leaderboard
+// d: { mode, emoji, subtitle, filter, podium: [player×≤3], rows: [player], footer }
+// player: { pos, name, head, body, value, sub, rank }   (rank = tier chip, e.g. HT2)
+// =====================================================================
+const MEDAL = { 1: '#f0b232', 2: '#c3cad6', 3: '#d08a4a' };
+async function leaderboardCard(d) {
+    const podiumH = d.podium?.length ? 560 : 0;
+    const rowH = 78;
+    const H = 170 + podiumH + (d.rows.length || (podiumH ? 0 : 1)) * rowH + 110;
+    return render('leaderboard.png', H, async ctx => {
+        background(ctx, H, MEDAL[1]);
+        await watermark(ctx, d.emoji, 300);
+        const emo = await loadImg(emojiUrl(d.emoji));
+        let hx = P;
+        if (emo) { ctx.drawImage(emo, P, 34, 60, 60); hx += 76; }
+        txt(ctx, `${d.mode.toUpperCase()} LEADERBOARD`, hx, 84, 44, COL.text, true, W - hx - P);
+        txt(ctx, d.subtitle, P, 136, 22, COL.muted, false, W - P * 2 - 220);
+        if (d.filter) chip(ctx, W - P - width(ctx, d.filter, 18, true) - 28, 106, d.filter, COL.accent, 18, 40);
+
+        // podium: #2 left, #1 centre, #3 right
+        if (d.podium?.length) {
+            const base = 170 + podiumH - 30;
+            const spots = [[2, W / 2 - 290, 125], [1, W / 2, 175], [3, W / 2 + 290, 100]];
+            for (const [place, cx, bh] of spots) {
+                const pl = d.podium[place - 1];
+                if (!pl) continue;
+                const c = MEDAL[place], bw = 250, top = base - bh;
+                glow(ctx, cx, top - 150, 230, c, place === 1 ? 0.3 : 0.18);
+                // skin (full body if we have it)
+                const body = await loadImg(pl.body);
+                const skinH = place === 1 ? 270 : 220;
+                if (body) {
+                    const w = (body.width / body.height) * skinH;
+                    ctx.fillStyle = 'rgba(0,0,0,0.35)'; ctx.beginPath(); ctx.ellipse(cx, top - 58, 70, 12, 0, 0, Math.PI * 2); ctx.fill();
+                    ctx.imageSmoothingEnabled = false; ctx.drawImage(body, cx - w / 2, top - 60 - skinH, w, skinH); ctx.imageSmoothingEnabled = true;
+                } else await head(ctx, pl.head, cx - 55, top - 170, 110, pl.name);
+                txt(ctx, pl.name, cx, top - 20, place === 1 ? 30 : 25, COL.text, true, bw, 'center');
+                // block
+                const g = ctx.createLinearGradient(0, top, 0, base);
+                g.addColorStop(0, c + 'cc'); g.addColorStop(1, c + '33');
+                ctx.save(); ctx.shadowColor = c + '66'; ctx.shadowBlur = 24;
+                roundRect(ctx, cx - bw / 2, top, bw, bh, 14); ctx.fillStyle = g; ctx.fill(); ctx.restore();
+                // tier badge / points at the top of the block, big place number below it
+                if (pl.rank) {
+                    const tc = tierColor(pl.rank), cw = width(ctx, pl.rank, 20, true) + 26;
+                    roundRect(ctx, cx - cw / 2, top + 12, cw, 36, 10); ctx.fillStyle = '#15161c'; ctx.fill();
+                    txt(ctx, pl.rank, cx, top + 37, 20, tc, true, cw, 'center');
+                } else {
+                    const vw = width(ctx, pl.value, 20, true) + 26;
+                    roundRect(ctx, cx - vw / 2, top + 12, vw, 36, 10); ctx.fillStyle = '#15161c'; ctx.fill();
+                    txt(ctx, pl.value, cx, top + 37, 20, c, true, bw - 20, 'center');
+                }
+                const numSize = Math.max(28, Math.min(bh - 58, 80));
+                txt(ctx, String(place), cx, base - 14, numSize, 'rgba(0,0,0,0.30)', true, bw, 'center');
+            }
+        }
+
+        // rows
+        let y = 170 + podiumH;
+        if (!d.rows.length && !d.podium?.length) {
+            box(ctx, P, y, W - P * 2, 64, 14, COL.panel);
+            txt(ctx, 'Nobody ranked here yet. Get tested to appear!', W / 2, y + 41, 22, COL.faint, false, W - P * 2, 'center');
+        }
+        for (const pl of d.rows) {
+            const medal = MEDAL[pl.pos];
+            box(ctx, P, y, W - P * 2, rowH - 12, 14, medal ? COL.panelHi : COL.panel, medal ? medal + 'aa' : null);
+            txt(ctx, `#${pl.pos}`, P + 22, y + 44, 24, medal || COL.dim, true, 70);
+            await head(ctx, pl.head, P + 96, y + 9, 48, pl.name);
+            txt(ctx, pl.name, P + 160, y + (pl.sub ? 34 : 44), 25, COL.soft, true, W - P * 2 - 400);
+            if (pl.sub) txt(ctx, pl.sub, P + 160, y + 58, 17, COL.muted, false, W - P * 2 - 400);
+            if (pl.rank) {
+                const tc = tierColor(pl.rank), cw = width(ctx, pl.rank, 20, true) + 26;
+                const g = ctx.createLinearGradient(0, y + 14, 0, y + 52); g.addColorStop(0, tc); g.addColorStop(1, tc + 'b0');
+                roundRect(ctx, W - P - cw - 18, y + 14, cw, 38, 10); ctx.fillStyle = g; ctx.fill();
+                txt(ctx, pl.rank, W - P - cw / 2 - 18, y + 41, 20, '#15161c', true, cw, 'center');
+            } else txt(ctx, pl.value, W - P - 20, y + 44, 24, COL.text, true, 220, 'right');
+            y += rowH;
+        }
+        footer(ctx, H, d.footer);
+    });
+}
+
+module.exports = { setColor, accent: () => COL.accent, accentDark: () => COL.accentDark, tournamentCard, profileCard, leaderboardCard, versusCard, testResultCard, queueCard, testerCard, available: () => !!canvasLib() };
