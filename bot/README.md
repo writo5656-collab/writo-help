@@ -8,13 +8,25 @@ Tier-testing Discord bot for MCBPVP Club.
 3. `npm start`
 
 ## One-time Discord setup for tournaments
-- **Channel:** `🏆・tournaments`. Sign-up cards, brackets, live scores and champions are posted here.
-- **Roles:** the bot creates these on startup. Give them to the right people:
+Run **`/tournament setup`** (admin). It creates everything, and it's safe to run again:
+
+```
+🏆 TOURNAMENTS                 read-only, only the bot posts
+ ├─ 📢・tournament-signups    sign-up cards
+ ├─ 🗂・brackets              brackets, updated after every match
+ ├─ 🔴・live-matches          live scores + 🔮 predictions
+ ├─ 👑・champions             winners + champion cards
+ └─ 💬・tournament-chat       open chat for players
+🏆 TOURNAMENT MATCHES          private match rooms (made automatically)
+```
+
+- **Roles:** the bot creates these on startup. Give them out:
   - `Tournament Host`: can run `/tournament create`
   - `Referee`: gets assigned to match rooms and decides scores
   - `Tournament Ping`: pinged when a tournament is published
-- Created automatically when needed: the `🏆 TOURNAMENT MATCHES` category, `👑 Best in <gamemode>` champion roles, and the `🔮 Oracle` role.
+- Created automatically when needed: `👑 Best in <gamemode>` champion roles and the `🔮 Oracle` role.
 - The bot's own role must be **above** the champion/Oracle roles so it can hand them out.
+- To rename channels, edit `CHANNELS` at the top of `tournaments.js`.
 
 ## Running a tournament
 1. `/tournament create`: set gamemode, server, size, 1v1/2v2, times, rules and referees in the private panel, then **Publish**

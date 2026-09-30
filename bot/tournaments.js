@@ -13,7 +13,17 @@ const {
     PermissionsBitField, AttachmentBuilder
 } = require('discord.js');
 
-const TOURNAMENT_CHANNEL = '🏆・tournaments';
+// Public channels live under one category so tournaments don't clutter the server.
+// /tournament setup creates them all. Rename here if you want different names.
+const TOURNAMENT_CATEGORY = '🏆 TOURNAMENTS';
+const CHANNELS = {
+    signups: '📢・tournament-signups',
+    brackets: '🗂・brackets',
+    live: '🔴・live-matches',
+    champions: '👑・champions',
+    chat: '💬・tournament-chat'
+};
+const LEGACY_CHANNEL = '🏆・tournaments'; // older single-channel setup still works as a fallback
 const MATCH_CATEGORY = '🏆 TOURNAMENT MATCHES';
 const HOST_ROLE = 'Tournament Host';
 const REFEREE_ROLE = 'Referee';
@@ -161,6 +171,13 @@ module.exports = function createTournaments(deps) {
         return u.send(payload).then(() => true).catch(() => false);
     }
     const guildOf = t => client.guilds.cache.get(t.guildId);
+    // Finds the channel for a kind of post, falling back to the sign-up channel
+    // (or the old single #🏆・tournaments channel) if it doesn't exist.
+    function tChannel(guild, key) {
+        if (!guild) return null;
+        const byName = name => guild.channels.cache.find(c => c.name === name && c.type === 0);
+        return byName(CHANNELS[key]) || byName(CHANNELS.signups) || byName(LEGACY_CHANNEL) || null;
+    }
     const channelUrl = (t, channelId) => `https://discord.com/channels/${t.guildId}/${channelId}`;
     function resolveTournament(interaction, idOpt) {
         const s = store();
@@ -306,6 +323,8 @@ module.exports = function createTournaments(deps) {
         const hostHead = getSkinHeadUrl(host);
         if (hostHead) embed.setThumbnail(hostHead);
         if (c.stream) embed.addFields({ name: '📺 Stream', value: c.stream, inline: false });
+        const follow = [t.bracketMsg && `🗂 <#${t.bracketMsg.channelId}>`, t.liveMsg && `🔴 <#${t.liveMsg.channelId}>`].filter(Boolean);
+        if (follow.length && t.status === 'running') embed.addFields({ name: 'Follow along', value: [...new Set(follow)].join(' · '), inline: false });
         return embed;
     }
     function announcementComponents(t) {
@@ -731,14 +750,19 @@ module.exports = function createTournaments(deps) {
         t.startedAt = Date.now();
         saveData();
 
-        const ch = guildOf(t)?.channels.cache.find(c => c.name === TOURNAMENT_CHANNEL) || (t.announce && guildOf(t)?.channels.cache.get(t.announce.channelId));
-        if (ch) {
-            const b = await ch.send({ embeds: [bracketEmbed(t)], components: announcementComponents(t) }).catch(() => null);
-            if (b) t.bracketMsg = { channelId: ch.id, messageId: b.id };
-            const l = await ch.send({ embeds: [liveEmbed(t)], components: announcementComponents(t) }).catch(() => null);
-            if (l) t.liveMsg = { channelId: ch.id, messageId: l.id };
-            saveData();
+        const g = guildOf(t);
+        const fallback = t.announce && g?.channels.cache.get(t.announce.channelId);
+        const bCh = tChannel(g, 'brackets') || fallback;
+        const lCh = tChannel(g, 'live') || fallback;
+        if (bCh) {
+            const b = await bCh.send({ embeds: [bracketEmbed(t)], components: announcementComponents(t) }).catch(() => null);
+            if (b) t.bracketMsg = { channelId: bCh.id, messageId: b.id };
         }
+        if (lCh) {
+            const l = await lCh.send({ embeds: [liveEmbed(t)], components: announcementComponents(t) }).catch(() => null);
+            if (l) t.liveMsg = { channelId: lCh.id, messageId: l.id };
+        }
+        saveData();
         await startReadyMatches(t);
     }
 
@@ -828,7 +852,7 @@ module.exports = function createTournaments(deps) {
         }
         saveData();
 
-        const ch = guild?.channels.cache.find(c => c.name === TOURNAMENT_CHANNEL) || (t.announce && guild?.channels.cache.get(t.announce.channelId));
+        const ch = tChannel(guild, 'champions') || (t.announce && guild?.channels.cache.get(t.announce.channelId));
         if (ch) {
             const semis = t.rounds.length >= 2 ? t.rounds[t.rounds.length - 2].map(m => (m.winner === m.a ? m.b : m.a)).filter(Boolean) : [];
             const card = await makeChampionCard(t, finalMatch);
@@ -918,6 +942,11 @@ module.exports = function createTournaments(deps) {
             return interaction.reply({ embeds: [embed], flags: 64 });
         }
         const sub = options.getSubcommand();
+        if (sub === 'setup') {
+            if (!isStaffMember(member)) return interaction.reply({ content: '❌ Only admins can create the tournament channels.', flags: 64 });
+            await interaction.deferReply({ flags: 64 });
+            return interaction.editReply({ content: await setupChannels(guild) });
+        }
         const hostOnly = ['create', 'edit', 'start', 'cancel', 'kick', 'setwinner', 'templates'];
         if (hostOnly.includes(sub) && !canHost(member)) {
             return interaction.reply({ content: `❌ You need the **${HOST_ROLE}** role to run tournaments.`, flags: 64 });
@@ -1003,6 +1032,36 @@ module.exports = function createTournaments(deps) {
         return false;
     }
 
+    async function setupChannels(guild) {
+        const F = PermissionsBitField.Flags;
+        const readOnly = [
+            { id: guild.id, allow: [F.ViewChannel, F.ReadMessageHistory], deny: [F.SendMessages, F.CreatePublicThreads, F.CreatePrivateThreads] },
+            { id: client.user.id, allow: [F.ViewChannel, F.SendMessages, F.EmbedLinks, F.AttachFiles, F.ReadMessageHistory, F.MentionEveryone] }
+        ];
+        const lines = [];
+        let cat = guild.channels.cache.find(c => c.name === TOURNAMENT_CATEGORY && c.type === 4);
+        if (!cat) { cat = await guild.channels.create({ name: TOURNAMENT_CATEGORY, type: 4 }); lines.push(`✅ Created category **${TOURNAMENT_CATEGORY}**`); }
+        const topics = {
+            signups: 'Sign up for tournaments here. Press Join on a card.',
+            brackets: 'Live brackets. They update after every match.',
+            live: 'Live scores. Press 🔮 Predict winner before a match starts.',
+            champions: 'Hall of fame. Every tournament winner.',
+            chat: 'Talk about tournaments here.'
+        };
+        for (const [key, name] of Object.entries(CHANNELS)) {
+            const existing = guild.channels.cache.find(c => c.name === name && c.type === 0);
+            if (existing) { lines.push(`☑️ ${existing} already exists`); continue; }
+            const ch = await guild.channels.create({
+                name, type: 0, parent: cat, topic: topics[key],
+                // Chat is open to everyone; the rest are read-only so only the bot posts.
+                permissionOverwrites: key === 'chat' ? [] : readOnly
+            });
+            lines.push(`✅ Created ${ch}`);
+        }
+        lines.push('', 'Private match rooms go in **🏆 TOURNAMENT MATCHES** (created automatically when the first match starts).');
+        return lines.join('\n');
+    }
+
     async function handleConfig(interaction, t, action) {
         if (!canManage(interaction.member, t)) return interaction.reply({ content: '❌ Only the host can change this.', flags: 64 });
         if (!['draft', 'signup'].includes(t.status)) return interaction.reply({ content: '❌ This tournament can\'t be edited anymore.', flags: 64 });
@@ -1041,8 +1100,8 @@ module.exports = function createTournaments(deps) {
                 await updateAnnouncement(t);
                 return interaction.followUp({ content: '✅ Changes saved and the sign-up card is updated.', flags: 64 });
             }
-            const ch = interaction.guild.channels.cache.find(x => x.name === TOURNAMENT_CHANNEL);
-            if (!ch) return interaction.reply({ content: `❌ Create a channel called **${TOURNAMENT_CHANNEL}** first.`, flags: 64 });
+            const ch = tChannel(interaction.guild, 'signups');
+            if (!ch) return interaction.reply({ content: '❌ The tournament channels don\'t exist yet. An admin can create them with `/tournament setup`.', flags: 64 });
             await interaction.deferUpdate();
             t.status = 'signup';
             t.publishedAt = Date.now();
@@ -1343,6 +1402,7 @@ module.exports = function createTournaments(deps) {
                     { name: 'player', type: 6, description: 'Winning player (or a member of the winning team)', required: true }, idOpt
                 ] },
                 { type: 1, name: 'list', description: 'Show active tournaments and their IDs' },
+                { type: 1, name: 'setup', description: '[Admin] Create the tournament channels (safe to run again)' },
                 { type: 1, name: 'templates', description: '[Host] Show saved templates' }
             ]
         },
