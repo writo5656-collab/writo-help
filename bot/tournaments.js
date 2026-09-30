@@ -8,6 +8,7 @@
 // a tournament - it just picks up where it left off.
 
 const path = require('path');
+const cards = require('./cards');
 const {
     ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, ModalBuilder, TextInputBuilder,
     TextInputStyle, StringSelectMenuBuilder, RoleSelectMenuBuilder, UserSelectMenuBuilder,
@@ -472,9 +473,73 @@ module.exports = function createTournaments(deps) {
         const ch = guildOf(t)?.channels.cache.get(ref.channelId);
         return ch ? ch.messages.fetch(ref.messageId).catch(() => null) : null;
     }
-    async function updateAnnouncement(t) {
-        const msg = await fetchMessage(t, t.announce);
-        if (msg) await msg.edit({ embeds: [announcementEmbed(t)], components: announcementComponents(t) }).catch(() => {});
+    // ---- sign-up card as an image ----
+    const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const STATUS_LOOK = {
+        open: ['SIGN-UPS OPEN', '#2ecc71'], closed: ['SIGN-UPS CLOSED', '#f0b232'], checkin: ['CHECK-IN OPEN', '#3498db'],
+        running: ['LIVE', '#ed4245'], finished: ['FINISHED', '#f0b232'], cancelled: ['CANCELLED', '#ed4245'], draft: ['PREVIEW', '#5865f2']
+    };
+    async function announcementCard(t) {
+        if (!cards.available()) return null;
+        const c = t.config;
+        const zone = c.tz || hostZone(t.hostId), zl = zoneLabel(zone);
+        const p2 = n => String(n).padStart(2, '0');
+        const day = ms => { const w = wallParts(ms, zone); return `${DAYS[w.wd]} ${w.d} ${MONTHS[w.mo]}`; };
+        const time = ms => { const w = wallParts(ms, zone); return `${p2(w.h)}:${p2(w.mi)} ${zl}`; };
+        const key = t.status === 'signup' ? (Date.now() >= c.signupCloseAt ? 'closed' : 'open') : t.status;
+        const [status, statusColor] = STATUS_LOOK[key] || STATUS_LOOK.open;
+        const host = players()[t.hostId];
+        const world = WORLD_CLOCK.slice(0, 8).map(([place, z]) => {
+            const w = wallParts(c.startAt, z);
+            return [place.replace(/^\S+\s/, ''), `${p2(w.h)}:${p2(w.mi)}`, DAYS[w.wd]];
+        });
+        return cards.tournamentCard({
+            status, statusColor, name: c.name, gamemode: c.gamemode, emoji: getGamemodeSymbol(c.gamemode),
+            host: host?.username, champion: t.status === 'finished' && t.championEntry ? entryName(t, t.championEntry) : null,
+            server: [c.server, c.region && c.region !== 'Any' ? c.region : null].filter(Boolean).join(' · '),
+            prize: c.prize, title: championRoleName(c.gamemode).replace('👑 ', ''),
+            tiles: [
+                ['Starts', day(c.startAt), time(c.startAt)],
+                ['Sign-ups close', Date.now() >= c.signupCloseAt ? 'Closed' : day(c.signupCloseAt), Date.now() >= c.signupCloseAt ? '' : time(c.signupCloseAt)],
+                ['Format', `Single elim${c.teamSize === 2 ? ' · 2v2' : ''}`, `BO${c.bestOf}${c.finalBestOf !== c.bestOf ? ` · final BO${c.finalBestOf}` : ''}`],
+                ['Check-in', c.checkinMinutes ? `${c.checkinMinutes} min before` : 'Not needed', c.checkinMinutes ? 'DM with a button' : '']
+            ],
+            players: t.slots.map(id => ({ name: entryName(t, id), head: getSkinHeadUrl(players()[entryMembers(t, id)[0]]) })),
+            size: c.size, waitlist: t.waitlist.length, unit: unit(t), world,
+            footer: `${tierLimitText(c)} · Seeded by ${c.gamemode} tier · Referees decide every match · ID ${t.id}`
+        });
+    }
+    // One text line under the card: Discord timestamps show each viewer their own time.
+    function announcementLine(t) {
+        const c = t.config;
+        switch (t.status) {
+            case 'signup': return Date.now() >= c.signupCloseAt
+                ? `🔒 Sign-ups closed · starts ${ts(c.startAt, 'F')} (${ts(c.startAt, 'R')})`
+                : `🗓 Starts ${ts(c.startAt, 'F')} (${ts(c.startAt, 'R')}) · ⏳ sign-ups close ${ts(c.signupCloseAt, 'R')}`;
+            case 'checkin': return `✅ Check-in is open (check your DMs) · starts ${ts(c.startAt, 'R')}`;
+            case 'running': return `🔴 Live now${t.bracketMsg ? ` · bracket <#${t.bracketMsg.channelId}>` : ''}${t.liveMsg ? ` · scores <#${t.liveMsg.channelId}>` : ''}`;
+            case 'finished': return `🏁 Finished · 👑 **${entryName(t, t.championEntry)}** is Best in ${c.gamemode}!`;
+            case 'cancelled': return `❌ Cancelled${t.cancelReason ? `: ${t.cancelReason}` : ''}`;
+            default: return '';
+        }
+    }
+    async function announcementPayload(t) {
+        const card = await announcementCard(t);
+        return card
+            ? { content: announcementLine(t), embeds: [], files: [card], attachments: [], components: announcementComponents(t) }
+            : { content: '', embeds: [announcementEmbed(t)], files: [], attachments: [], components: announcementComponents(t) };
+    }
+    // Joins can come in bursts, so the card is redrawn at most every few seconds.
+    const announceTimers = new Map();
+    function updateAnnouncement(t) {
+        if (announceTimers.has(t.id)) return Promise.resolve();
+        announceTimers.set(t.id, setTimeout(async () => {
+            announceTimers.delete(t.id);
+            const msg = await fetchMessage(t, t.announce);
+            if (msg) await msg.edit({ ...(await announcementPayload(t)), allowedMentions: { parse: [] } }).catch(() => {});
+        }, 2000));
+        return Promise.resolve();
     }
 
     // ---------- bracket ----------
@@ -1009,7 +1074,21 @@ module.exports = function createTournaments(deps) {
         }
         const head = getSkinHeadUrl(players()[entryMembers(t, m.winner)[0]]);
         if (head) embed.setThumbnail(head);
-        await ch.send({ embeds: [embed], allowedMentions: { parse: [] } }).catch(() => {});
+        const refName = m.refereeId ? (await client.users.fetch(m.refereeId).catch(() => null))?.username : null;
+        const rows = [['Next', next.replace(/\*\*/g, '').replace('🏆 ', '')], ['Referee', refName || '—']];
+        if (m.log.length) rows.push(['Rounds', m.log.map(sd => (sd === 'a' ? entryName(t, m.a) : entryName(t, m.b))).join(' · ')]);
+        if (sp) { const pct = m.winner === m.a ? sp.pa : sp.pb; rows.push(['Predictions', `${pct}% picked ${w}${pct < 50 ? ' · upset!' : ''}`]); }
+        const card = await cards.versusCard({
+            kicker: `${matchLabel(t, m)} · ${t.config.name}`, accent: isFinal ? '#f0b232' : '#2ecc71',
+            title: isFinal ? `${w} wins ${t.config.name}!` : `${w} defeated ${l}`,
+            left: { name: w, head, won: true, sub: isFinal ? 'CHAMPION' : 'WINNER' },
+            right: { name: l, head: getSkinHeadUrl(players()[entryMembers(t, loser)[0]]), won: false },
+            // Matches not decided by playing show a short code in the middle (W/O = walkover).
+            score: score || ({ 'no-show': 'W/O', DQ: 'DQ', removed: 'W/O', forfeit: 'FF' }[m.result] || 'W'),
+            how: score ? `Best of ${m.bestOf}` : ({ 'no-show': 'no-show', DQ: 'disqualified', removed: 'removed', forfeit: 'forfeit', 'staff decision': 'staff decision' }[m.result] || m.result), rows,
+            footer: `${roundName(t, m.round)} · full bracket in the brackets channel`
+        });
+        await ch.send(card ? { files: [card], allowedMentions: { parse: [] } } : { embeds: [embed], allowedMentions: { parse: [] } }).catch(() => {});
 
         // When a whole round is done, post the bracket once (not after every match).
         t.roundsPosted ??= {};
@@ -1022,8 +1101,10 @@ module.exports = function createTournaments(deps) {
                 .setTitle(`🏁 ${roundName(t, m.round)} complete`)
                 .setDescription(`**${roundName(t, m.round + 1)}** ${m.round + 1 === t.rounds.length - 1 ? 'is next: one match for the title!' : 'are starting now.'}\n${t.rounds[m.round + 1].map(x => `• ${matchLabel(t, x)}: ${entryName(t, x.a)} vs ${entryName(t, x.b)}`).join('\n')}`)
                 .setTimestamp();
-            if (img) re.setImage('attachment://bracket.png');
-            await ch.send({ embeds: [re], files: img ? [img] : [], allowedMentions: { parse: [] } }).catch(() => {});
+            if (img) {
+                const nextText = t.rounds[m.round + 1].map(x => `• **${matchLabel(t, x)}**: ${entryName(t, x.a)} vs ${entryName(t, x.b)}`).join('\n');
+                await ch.send({ content: `🏁 **${roundName(t, m.round)} complete!** ${roundName(t, m.round + 1)} ${m.round + 1 === t.rounds.length - 1 ? 'is next, one match for the title:' : 'are starting now:'}\n${nextText}`, files: [img], allowedMentions: { parse: [] } }).catch(() => {});
+            } else await ch.send({ embeds: [re], allowedMentions: { parse: [] } }).catch(() => {});
         }
     }
 
@@ -1260,7 +1341,16 @@ module.exports = function createTournaments(deps) {
             if (card) embed.setImage('attachment://champion.png');
             else if (body) embed.setThumbnail(body);
             const ping = guild.roles.cache.find(r => r.name === PING_ROLE);
-            await ch.send({ content: ping ? `${ping}` : undefined, embeds: [embed], files: card ? [card] : [], allowedMentions: { roles: ping ? [ping.id] : [] } }).catch(() => {});
+            const text = [
+                ping ? `${ping}` : null,
+                `👑 **${entryName(t, t.championEntry)} ${champs.length > 1 ? 'are' : 'is'} Best in ${gm}!**`,
+                `Won **${t.config.name}** against ${t.participants.length} ${unit(t)} · 🥈 ${entryName(t, runnerUp)}`,
+                t.config.prize ? `🎁 Prize: **${t.config.prize}** (staff will contact the winner)` : null,
+                t.topPredictors ? `🔮 Top predictor: ${t.topPredictors.userIds.map(id => `<@${id}>`).join(', ')} (${t.topPredictors.correct} correct)` : null
+            ].filter(Boolean).join('\n');
+            await ch.send(card
+                ? { content: text, files: [card], allowedMentions: { roles: ping ? [ping.id] : [] } }
+                : { content: ping ? `${ping}` : undefined, embeds: [embed], allowedMentions: { roles: ping ? [ping.id] : [] } }).catch(() => {});
         }
         await refreshPublic(t);
     }
@@ -1584,7 +1674,10 @@ module.exports = function createTournaments(deps) {
         else if (action === 'details') { return interaction.showModal(detailsModal(t)); }
         else if (action === 'more') { return interaction.showModal(moreModal(t)); }
         else if (action === 'preview') {
-            return interaction.reply({ content: '👁 Preview (only you can see this):', embeds: [announcementEmbed({ ...t, status: 'signup', config: { ...c, signupCloseAt: c.signupCloseAt || Date.now() + 864e5, startAt: c.startAt || Date.now() + 2 * 864e5, name: c.name || 'Unnamed tournament' } })], flags: 64 });
+            await interaction.deferReply({ flags: 64 });
+            const fake = { ...t, status: 'signup', config: { ...c, signupCloseAt: c.signupCloseAt || Date.now() + 864e5, startAt: c.startAt || Date.now() + 2 * 864e5, name: c.name || 'Unnamed tournament' } };
+            const { attachments, components, ...p } = await announcementPayload(fake);
+            return interaction.editReply({ ...p, content: `👁 Preview (only you can see this)${p.content ? `\n${p.content}` : ''}` });
         } else if (action === 'template') {
             if (!c.name) return interaction.reply({ content: '❌ Give the tournament a name first.', flags: 64 });
             const baseName = c.name.replace(/\s*#\d+\s*$/, '').trim();
@@ -1609,7 +1702,9 @@ module.exports = function createTournaments(deps) {
             t.status = 'signup';
             t.publishedAt = Date.now();
             const ping = interaction.guild.roles.cache.find(r => r.name === PING_ROLE);
-            const msg = await ch.send({ content: ping ? `${ping}` : undefined, embeds: [announcementEmbed(t)], components: announcementComponents(t), allowedMentions: { roles: ping ? [ping.id] : [] } });
+            const payload = await announcementPayload(t);
+            const { attachments, ...sendable } = payload;
+            const msg = await ch.send({ ...sendable, content: [ping ? `${ping}` : null, payload.content].filter(Boolean).join('\n') || undefined, allowedMentions: { roles: ping ? [ping.id] : [] } });
             t.announce = { channelId: ch.id, messageId: msg.id };
             saveData();
             return interaction.editReply({ content: `📢 Published in ${ch}! Use \`/tournament edit id:${t.id}\` to change times or rules before check-in.`, embeds: [], components: [] });
@@ -1890,7 +1985,8 @@ module.exports = function createTournaments(deps) {
         return {
             badges: titles,
             line: s ? `${s.won} won · ${s.finals} finals · ${s.matchWins}–${s.matchLosses} matches${s.predictionsCorrect ? ` · 🔮 ${s.predictionsCorrect} correct picks` : ''}` : null,
-            pastTitles: s?.titles?.length || 0
+            pastTitles: s?.titles?.length || 0,
+            stats: s || null
         };
     }
 

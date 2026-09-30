@@ -4,7 +4,7 @@ Tier-testing Discord bot for MCBPVP Club.
 
 ## Run it
 1. `npm install` (installs `@napi-rs/canvas` too, which draws the bracket image and champion card; if it fails to install, the bot falls back to a text bracket)
-   Keep the `fonts/` folder next to `index.js`. The images use it, so text shows even on hosts without fonts.
+   Keep `cards.js`, `tournaments.js` and the `fonts/` folder next to `index.js`. The images use it, so text shows even on hosts without fonts.
 2. Copy `.env.example` to `.env` and fill it in
 3. `npm start`
 

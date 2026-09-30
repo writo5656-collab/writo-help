@@ -3,6 +3,7 @@ const { Client, Events, GatewayIntentBits, REST, Routes, ModalBuilder, TextInput
 const fs = require('fs');
 const express = require('express');
 const createTournaments = require('./tournaments');
+const cards = require('./cards');
 
 // ==================== GROQ AI CONFIG ====================
 const GROQ_API_KEY = process.env.GROQ_API_KEY;
@@ -528,6 +529,9 @@ if (!db.testers) db.testers = {};
 if (!db.testerStats) db.testerStats = {};
 if (!db.activeTests) db.activeTests = {};
 if (!db.queueMessages) db.queueMessages = {};
+if (!db.testDurations) db.testDurations = {};   // gamemode -> last 20 test lengths (minutes), for queue estimates
+if (!db.queueJoinedAt) db.queueJoinedAt = {};   // gamemode -> { userId: timestamp }
+if (!db.queueTopNotified) db.queueTopNotified = {}; // gamemode -> userId already told they're #1
 if (!db.testServers) db.testServers = [];
 if (!db.panels) db.panels = {};
 // Write to a temp file then rename, so a crash mid-save can't leave a
@@ -902,6 +906,54 @@ async function buildQueueEmbed(guild, gamemode) {
     return embed;
 }
 
+function formatEta(mins) {
+    if (mins < 60) return `~${Math.max(5, Math.round(mins / 5) * 5)} min`;
+    const h = Math.floor(mins / 60), m = Math.round((mins % 60) / 15) * 15;
+    return `~${h} h${m ? ` ${m} min` : ''}`;
+}
+
+// Queue viewer as an image card; falls back to the embed.
+async function queuePayload(guild, gamemode) {
+    const embed = await buildQueueEmbed(guild, gamemode); // also cleans finished tests
+    if (!cards.available()) return { embeds: [embed], files: [], attachments: [] };
+    const queue = db.queues[gamemode] || { waiting: [], testing: [] };
+    const gmData = GAMEMODES.find(g => g.name === gamemode);
+    const testerRole = gmData ? await getRole(guild, gmData.testerRole) : null;
+    const online = testerRole ? [...testerRole.members.values()].filter(m => m.presence && m.presence.status !== 'offline').map(m => m.displayName || m.user.username) : [];
+    const durations = db.testDurations[gamemode] || [];
+    const avg = durations.length ? Math.round(durations.reduce((a, b) => a + b, 0) / durations.length) : 20;
+    const joined = db.queueJoinedAt[gamemode] || {};
+    const now = Date.now();
+    const waiting = (queue.waiting || []).map((id, i) => {
+        const p = db.players[id];
+        return {
+            name: p?.username || 'Unknown',
+            head: getSkinHeadUrl(p),
+            // With nobody online there's no honest estimate.
+            eta: online.length ? formatEta(((i + 1) * avg) / online.length) : 'no tester online',
+            waitedDays: joined[id] ? Math.floor((now - joined[id]) / 864e5) : 0
+        };
+    });
+    const card = await cards.queueCard({
+        gamemode, emoji: getGamemodeSymbol(gamemode), testers: online,
+        testing: (queue.testing || []).map(t => [db.players[t.userId]?.username || 'Unknown', db.players[t.testerId]?.username || guild.members.cache.get(t.testerId)?.displayName || 'tester']),
+        waiting, max: db.settings.maxQueueSizePerGamemode?.[gamemode] || MAX_QUEUE_SIZE, avg,
+        footer: `Updated ${new Date().toISOString().slice(11, 16)} UTC · wait times are estimates · avg from the last ${durations.length || 0} tests`
+    });
+    return card ? { content: '', embeds: [], files: [card], attachments: [] } : { embeds: [embed], files: [], attachments: [] };
+}
+
+// DMs whoever just became #1 in a queue (once), unless they turned notifications off.
+async function notifyQueueTop(guild, gamemode) {
+    const top = db.queues[gamemode]?.waiting?.[0];
+    if (!top || db.queueTopNotified[gamemode] === top) return;
+    db.queueTopNotified[gamemode] = top;
+    saveData();
+    if (db.players[top]?.notifyOnPick === false) return;
+    const member = await guild.members.fetch(top).catch(() => null);
+    await member?.send(`🔔 You're **#1** in the **${gamemode}** queue! Get your client and texture pack ready; a tester will claim you soon.\n-# Turn these DMs off with /notify`).catch(() => {});
+}
+
 function buildQueueComponents(gamemode) {
     const select = new StringSelectMenuBuilder()
         .setCustomId('queue_gamemode_menu')
@@ -931,10 +983,10 @@ function buildQueueComponents(gamemode) {
 }
 
 async function deployQueueViewer(channel, gamemode = 'Sword') {
-    const embed = await buildQueueEmbed(channel.guild, gamemode);
+    const { attachments, ...payload } = await queuePayload(channel.guild, gamemode);
     const components = buildQueueComponents(gamemode);
     const msg = await channel.send({
-        embeds: [embed],
+        ...payload,
         components,
         allowedMentions: { parse: ['users'] }
     });
@@ -948,10 +1000,10 @@ async function deployQueueViewer(channel, gamemode = 'Sword') {
 async function refreshQueueViewer(guild, gamemode = null) {
     if (!activeQueueViewer) return;
     const target = gamemode || activeQueueViewer.gamemode || 'Sword';
-    const embed = await buildQueueEmbed(guild, target);
+    const payload = await queuePayload(guild, target);
     const components = buildQueueComponents(target);
     await activeQueueViewer.message.edit({
-        embeds: [embed],
+        ...payload,
         components,
         allowedMentions: { parse: ['users'] }
     }).catch(() => {});
@@ -960,8 +1012,12 @@ async function refreshQueueViewer(guild, gamemode = null) {
     if (db.panels.queueViewer && db.panels.queueViewer.gamemode !== target) { db.panels.queueViewer.gamemode = target; saveData(); }
 }
 
+// Called after a queue changes: redraws the viewer only if it's showing that
+// gamemode (it used to jump to whichever queue changed last), then tells the
+// new #1 player.
 async function updateQueueViewerAuto(guild, gamemode) {
-    if (activeQueueViewer) await refreshQueueViewer(guild, gamemode);
+    if (activeQueueViewer && activeQueueViewer.gamemode === gamemode) await refreshQueueViewer(guild, gamemode);
+    await notifyQueueTop(guild, gamemode);
 }
 
 // ==================== LEADERBOARD SYSTEM ====================
@@ -1255,9 +1311,30 @@ async function deployLeaderboard(interaction) {
 }
 
 // ==================== PROFILES & PANELS ====================
+// Profile as an image card (null if images aren't available → embed is used).
+async function renderProfileCard(pd, user) {
+    if (!cards.available()) return null;
+    const points = calculateTotalPoints(user.id);
+    const title = getTitleFromPoints(points);
+    const next = TITLES[TITLES.indexOf(title) + 1];
+    const tour = tournaments.profileSummary(user.id);
+    const ts = tour?.stats;
+    return cards.profileCard({
+        name: pd.username, title: title.name, titleNext: next?.name, points, nextPoints: next?.minPoints, prevPoints: title.minPoints,
+        position: getPlayerPosition(user.id), region: pd.region, device: pd.device,
+        badges: (tour?.badges || []).map(b => b.replace('👑 ', '')),
+        body: getSkinBodyUrl(pd), avatar: user.displayAvatarURL?.({ extension: 'png', size: 256 }),
+        accent: title.role === 'Combat Grandmaster' ? '#f0b232' : null,
+        modes: GAMEMODE_ORDER.map(gm => ({ name: gm, emoji: getGamemodeSymbol(gm), rank: pd.gamemodeRanks?.[gm] || null })),
+        stats: [['Tests', pd.testHistory?.length || 0], ['Cups won', ts?.won || 0], ['Match W–L', `${ts?.matchWins || 0}–${ts?.matchLosses || 0}`], ['Strikes', `${pd.strikes || 0}/${STRIKE_BAN_LIMIT}`]]
+    });
+}
+
 async function showProfile(interaction, targetUser) {
     const pd = db.players[targetUser.id];
     if (!pd) return interaction.reply({ content: `❌ ${targetUser.username} has not applied yet!`, flags: 64 });
+    // Drawing the card can take a few seconds (skin download), so acknowledge first.
+    if (!interaction.deferred && !interaction.replied) await interaction.deferReply({ flags: 64 });
     const points = calculateTotalPoints(targetUser.id);
     const title = getTitleFromPoints(points);
     const position = getPlayerPosition(targetUser.id);
@@ -1308,7 +1385,9 @@ async function showProfile(interaction, targetUser) {
             components.push(row);
         }
     }
-    await interaction.reply({ embeds: [embed], components, files, flags: 64 });
+    const card = await renderProfileCard(pd, targetUser);
+    if (card) return interaction.editReply({ files: [card], components });
+    await interaction.editReply({ embeds: [embed], components, files });
 }
 
 async function sendProfileToChannel(channel, targetUser) {
@@ -1339,7 +1418,8 @@ async function sendProfileToChannel(channel, targetUser) {
         )
         .setFooter({ text: `Next title: ${getTitleFromPoints(points + 1).name} at ${getTitleFromPoints(points + 1).minPoints} points` })
         .setTimestamp();
-    await channel.send({ embeds: [embed], files });
+    const card = await renderProfileCard(pd, targetUser);
+    await channel.send(card ? { files: [card] } : { embeds: [embed], files });
 }
 
 async function sendApplyPanel(channel) {
@@ -1877,13 +1957,29 @@ async function sendTestersEmbed(interaction, page = 1) {
     else await interaction.reply({ ...payload, flags: 64 });
 }
 
-async function announceTester(guild, memberId, action = 'add') {
+// Tester card image (status: 'NEW TESTER', 'TESTER', 'RETIRED').
+async function renderTesterCard(user, td, status, statusColor, displayName) {
+    if (!cards.available() || !td) return null;
+    const setBy = td.setBy ? (await client.users.fetch(td.setBy).catch(() => null))?.username : null;
+    return cards.testerCard({
+        name: displayName || user.username, avatar: user.displayAvatarURL({ extension: 'png', size: 256 }),
+        gamemode: td.gamemode, emoji: getGamemodeSymbol(td.gamemode), tier: td.tier, region: td.region, device: td.device,
+        tests: db.testerStats[user.id]?.tests || 0, certified: td.certified, status, statusColor,
+        footer: `${td.certified ? 'Certified tester' : 'Not certified yet'}${setBy ? ` · set by ${setBy}` : ''}${td.autoTestGamemode ? ` · auto-test: ${td.autoTestGamemode}` : ''}`
+    });
+}
+
+async function announceTester(guild, memberId, action = 'add', removedData = null) {
     const channel = guild.channels.cache.find(c => c.name === TESTER_LIST_CHANNEL);
     if (!channel) return;
     const member = await guild.members.fetch(memberId).catch(()=>null);
     if (!member) return;
     const testerData = db.testers[memberId];
     if (!testerData && action !== 'remove') return;
+    const card = action === 'add'
+        ? await renderTesterCard(member.user, testerData, 'NEW TESTER', '#2ecc71', member.displayName)
+        : await renderTesterCard(member.user, removedData, 'TESTER RETIRED', '#ed4245', member.displayName);
+    if (card) return channel.send({ content: action === 'add' ? `Welcome our new **${testerData.gamemode}** tester <@${memberId}>!` : undefined, files: [card], allowedMentions: { parse: [] } }).catch(() => {});
     const symbol = getGamemodeSymbol(testerData?.gamemode || '');
     let embed;
     if (action === 'add') {
@@ -2151,8 +2247,8 @@ client.on('interactionCreate', async interaction => {
             }
             if (interaction.customId.startsWith('queue_refresh:')) {
                 const gamemode = interaction.customId.split(':')[1];
-                await refreshQueueViewer(interaction.guild, gamemode);
                 await interaction.deferUpdate();
+                await refreshQueueViewer(interaction.guild, gamemode);
                 return;
             }
             if (interaction.customId.startsWith('queue_myposition:')) {
@@ -2179,8 +2275,8 @@ client.on('interactionCreate', async interaction => {
                 }
                 queue.waiting = waiting.filter(id => id !== interaction.user.id);
                 saveData();
-                await refreshQueueViewer(interaction.guild, gamemode);
                 await interaction.reply({ content: `🚪 You left the **${gamemode}** queue.`, flags: 64 });
+                await updateQueueViewerAuto(interaction.guild, gamemode);
                 return;
             }
             if (interaction.customId.startsWith('leaderboard_page:')) {
@@ -2252,16 +2348,17 @@ client.on('interactionCreate', async interaction => {
                 if (db.queues[gm].waiting.length >= max) return interaction.reply({ content: `❌ ${gm} queue full`, flags: 64 });
                 if (db.queues[gm].waiting.includes(interaction.user.id)) return interaction.reply({ content: '❌ Already in queue', flags: 64 });
                 db.queues[gm].waiting.push(interaction.user.id);
+                (db.queueJoinedAt[gm] ??= {})[interaction.user.id] = Date.now();
                 player.lastRequestAt = Date.now();
                 saveData();
-                await updateQueueViewerAuto(interaction.guild, gm);
                 await interaction.reply({ content: `✅ Added to ${gm} queue (#${db.queues[gm].waiting.length})`, flags: 64 });
+                await updateQueueViewerAuto(interaction.guild, gm);
                 return;
             }
             if (interaction.customId === 'queue_gamemode_menu') {
                 const gamemode = interaction.values[0];
-                await refreshQueueViewer(interaction.guild, gamemode);
                 await interaction.deferUpdate();
+                await refreshQueueViewer(interaction.guild, gamemode);
                 return;
             }
             if (interaction.customId === 'leaderboard_view_profile') {
@@ -2402,8 +2499,8 @@ client.on('interactionCreate', async interaction => {
                 }
                 db.testers[targetId] = { gamemode, tier, region, device, setBy: interaction.user.id, setAt: Date.now(), certified: false };
                 saveData();
-                await announceTester(interaction.guild, targetId, 'add');
                 await interaction.reply({ content: `✅ Tester profile set for <@${targetId}> (${gamemode})!`, flags: 64 });
+                await announceTester(interaction.guild, targetId, 'add');
                 return;
             }
             if (interaction.customId.startsWith('forceapply_modal:')) {
@@ -2528,11 +2625,33 @@ client.on('interactionCreate', async interaction => {
                     .setTimestamp();
                 
                 const resultsChannel = interaction.guild.channels.cache.find(c=>c.name===RESULTS_CHANNEL);
-                if (resultsChannel) await resultsChannel.send({ content: `<@${playerId}>`, embeds: [resultsEmbed], files: avatarFiles });
+                if (resultsChannel) {
+                    const playerUser = await client.users.fetch(playerId).catch(() => null);
+                    const resultCard = await cards.testResultCard({
+                        status: statusLabel, accent: '#' + statusColor.toString(16).padStart(6, '0'),
+                        name: player.username, head: getSkinHeadUrl(player) || playerUser?.displayAvatarURL({ extension: 'png', size: 128 }),
+                        gamemode: gamemodeName, emoji: getGamemodeSymbol(gamemodeName),
+                        from: previousRank, to: rank === 'No upgrade' ? null : rank,
+                        points: `${pointsEarned > 0 ? '+' : ''}${pointsEarned} (${newPoints} total)`, score,
+                        tester: interaction.member?.displayName || interaction.user.username,
+                        notes: notes === 'No notes' ? null : notes,
+                        footer: `${BOT_NAME} · Test result · ${new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}`
+                    });
+                    await resultsChannel.send(resultCard
+                        ? { content: `<@${playerId}>`, files: [resultCard] }
+                        : { content: `<@${playerId}>`, embeds: [resultsEmbed], files: avatarFiles });
+                }
+
+                // Remember how long this test took, for the queue's wait estimates.
+                const testingEntry = db.queues[gamemodeName]?.testing?.find(t => t.userId === playerId);
+                if (testingEntry?.startedAt) {
+                    const mins = Math.round((Date.now() - testingEntry.startedAt) / 60000);
+                    if (mins >= 2 && mins <= 180) { (db.testDurations[gamemodeName] ??= []).push(mins); db.testDurations[gamemodeName] = db.testDurations[gamemodeName].slice(-20); }
+                }
                 
                 for (const gm of GAMEMODES) {
                     const q = db.queues[gm.name];
-                    if (q) {
+                    if (q && (q.waiting.includes(playerId) || q.testing.some(t => t.userId === playerId))) {
                         q.waiting = q.waiting.filter(id=>id!==playerId);
                         q.testing = q.testing.filter(t=>t.userId!==playerId);
                         await updateQueueViewerAuto(interaction.guild, gm.name);
@@ -2547,7 +2666,7 @@ client.on('interactionCreate', async interaction => {
                         const nextPlayer = await interaction.guild.members.fetch(nextPlayerId).catch(()=>null);
                         if (nextPlayer) {
                             queue.waiting = queue.waiting.filter(id => id !== nextPlayerId);
-                            queue.testing.push({ userId: nextPlayerId, testerId: interaction.user.id });
+                            queue.testing.push({ userId: nextPlayerId, testerId: interaction.user.id, startedAt: Date.now() });
                             saveData();
                             let category;
                             const overrideId = CATEGORY_OVERRIDES[gamemodeName];
@@ -2683,17 +2802,17 @@ client.on('interactionCreate', async interaction => {
             return;
         }
         if (commandName === 'cancel') {
-            let removed = false;
+            const changed = [];
             for (const gm of GAMEMODES) {
                 const q = db.queues[gm.name];
                 if (q && q.waiting.includes(interaction.user.id)) {
                     q.waiting = q.waiting.filter(id=>id!==interaction.user.id);
-                    await updateQueueViewerAuto(guild, gm.name);
-                    removed = true;
+                    changed.push(gm.name);
                 }
             }
-            if (removed) saveData();
-            await interaction.reply({ content: removed ? '✅ Removed from queues' : '❌ Not in any queue', flags: 64 });
+            if (changed.length) saveData();
+            await interaction.reply({ content: changed.length ? '✅ Removed from queues' : '❌ Not in any queue', flags: 64 });
+            for (const gm of changed) await updateQueueViewerAuto(guild, gm);
             return;
         }
         if (commandName === 'position') {
@@ -2809,8 +2928,11 @@ client.on('interactionCreate', async interaction => {
             if (!td) return interaction.reply({ content: '❌ Not a tester', flags: 64 });
             const symbol = getGamemodeSymbol(td.gamemode);
             const tests = db.testerStats[targetUser.id]?.tests || 0;
+            await interaction.deferReply({ flags: 64 });
+            const card = await renderTesterCard(targetUser, td, 'TESTER', '#5865f2', guild.members.cache.get(targetUser.id)?.displayName);
+            if (card) return interaction.editReply({ files: [card] });
             const embed = new EmbedBuilder().setColor(0x5865F2).setTitle(`${symbol} ${td.gamemode} Tester`).setThumbnail(targetUser.displayAvatarURL()).setDescription(`**Tier:** ${td.tier}\n**Region:** ${td.region || 'Not set'}\n**Device:** ${td.device || 'Not set'}\n**Tests:** ${tests}`);
-            await interaction.reply({ embeds: [embed], flags: 64 });
+            await interaction.editReply({ embeds: [embed] });
             return;
         }
         if (commandName === 'testerleaderboard') {
@@ -2887,7 +3009,7 @@ client.on('interactionCreate', async interaction => {
                     const q = db.queues[gm.name];
                     if (q && q.waiting.includes(target.id)) {
                         q.waiting = q.waiting.filter(id => id !== target.id);
-                        q.testing.push({ userId: target.id, testerId: interaction.user.id });
+                        q.testing.push({ userId: target.id, testerId: interaction.user.id, startedAt: Date.now() });
                         saveData();
                         break;
                     }
@@ -3139,7 +3261,9 @@ client.on('interactionCreate', async interaction => {
             const embed = new EmbedBuilder().setColor(RANK_COLORS[td.tier]||0x5865F2).setAuthor({ name: targetUser.username, iconURL: targetUser.displayAvatarURL() })
                 .setTitle(`${symbol} ${td.gamemode} TESTER`)
                 .setDescription(`**Tier:** ${td.tier}\n**Region:** ${td.region||'Not set'}\n**Device:** ${td.device||'Not set'}\n**Tests:** ${tests}\n**Certified:** ${td.certified ? '✅ Yes' : '❌ No'}\n**Auto-Test:** ${td.autoTestGamemode || 'Disabled'}`);
-            await interaction.reply({ embeds: [embed], flags: 64 });
+            await interaction.deferReply({ flags: 64 });
+            const card = await renderTesterCard(targetUser, td, 'TESTER', '#5865f2', guild.members.cache.get(targetUser.id)?.displayName);
+            await interaction.editReply(card ? { files: [card] } : { embeds: [embed] });
             return;
         }
 
@@ -3402,10 +3526,11 @@ client.on('interactionCreate', async interaction => {
                 const member = await guild.members.fetch(targetUser.id).catch(()=>null);
                 if (testerRole && member) await member.roles.remove(testerRole).catch(()=>{});
             }
+            const oldTester = db.testers[targetUser.id];
             delete db.testers[targetUser.id];
             saveData();
-            await announceTester(guild, targetUser.id, 'remove');
             await interaction.reply({ content: `✅ Removed tester ${targetUser.username}`, flags: 64 });
+            await announceTester(guild, targetUser.id, 'remove', oldTester);
             return;
         }
         if (commandName === 'removetier') {
