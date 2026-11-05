@@ -2,7 +2,7 @@
  * NPC Studio — core.js (shared constants + helpers)
  * Copyright (c) 2026 NoxeelMC. All rights reserved. See LICENSE.md.
  */
-import { world, system } from "@minecraft/server";
+import { world, system, InputPermissionCategory } from "@minecraft/server";
 import { ActionFormData, ModalFormData, MessageFormData } from "@minecraft/server-ui";
 
 export const NPC_ID = "npcstudio:npc";
@@ -215,6 +215,36 @@ function toggleFold(player, id) {
   else s.add(id);
 }
 
+// ---------- free look: while the Studio panel is open you can turn your view in the free space on the
+// right (the menu screen lets touches through, RP/ui/server_form.json) but not walk, jump, break,
+// place or hit. Tapping an NPC there selects it (viewport.js). ----------
+const editing = new Set(); // player ids with the Studio panel open
+const lockedByEditor = new Map(); // player.id -> categories we switched off
+const LOCK_CATS = [InputPermissionCategory.LateralMovement, InputPermissionCategory.Jump, InputPermissionCategory.Sneak];
+export function isEditing(player) {
+  return editing.has(player.id);
+}
+export function editorLock(player, on) {
+  if (on) editing.add(player.id);
+  else editing.delete(player.id);
+  try {
+    const perms = player.inputPermissions;
+    if (on) {
+      if (lockedByEditor.has(player.id)) return;
+      // only switch off what is on now, so Pose Mode / camera view keep their own locks
+      const cats = LOCK_CATS.filter((c) => perms.isPermissionCategoryEnabled(c));
+      cats.forEach((c) => perms.setPermissionCategory(c, false));
+      lockedByEditor.set(player.id, cats);
+    } else {
+      const cats = lockedByEditor.get(player.id) ?? [];
+      lockedByEditor.delete(player.id);
+      cats.forEach((c) => perms.setPermissionCategory(c, true));
+    }
+  } catch {
+    /* player left */
+  }
+}
+
 /** Marks a button action that keeps the player on the same screen (no onLeave). */
 export function keep(fn) {
   fn.stay = true;
@@ -367,8 +397,10 @@ export function menu(title, body) {
         } else row({ ...r, text: r.text || PLAIN + " " });
       }
       if (page < pages - 1) row({ text: PLAIN + "Next page", icon: ICON("play"), fn: keep(() => stay(() => (page += 1), true)) });
+      editorLock(player, true);
       return showWithRetry(form, player)
         .then((res) => {
+          editorLock(player, false); // before the action, so Pose Mode / camera view can set their own locks
           if (res.canceled) {
             if (res.cancelationReason !== "UserBusy") runLeave();
             return;
@@ -379,7 +411,10 @@ export function menu(title, body) {
           if (!fn.stay) runLeave();
           fn();
         })
-        .catch((e) => console.warn(`[NPC Studio] menu "${title}" error: ${e}`));
+        .catch((e) => {
+          editorLock(player, false);
+          console.warn(`[NPC Studio] menu "${title}" error: ${e}`);
+        });
     }
   };
   // slider / stepper / fold taps stay on this screen; everything else leaves it
@@ -447,8 +482,10 @@ export function modal(title) {
     },
     show(player, onSubmit, onCancel) {
       if (!submitText) form.submitButton("Apply");
+      editorLock(player, true);
       return showWithRetry(form, player)
         .then((res) => {
+          editorLock(player, false);
           if (res.canceled) {
             if (onCancel) onCancel();
             return;
@@ -460,7 +497,10 @@ export function modal(title) {
           names.forEach((n, i) => (out[n] = inputs[i]));
           onSubmit(out);
         })
-        .catch((e) => console.warn(`[NPC Studio] modal "${title}" error: ${e}`));
+        .catch((e) => {
+          editorLock(player, false);
+          console.warn(`[NPC Studio] modal "${title}" error: ${e}`);
+        });
     }
   };
   return api;

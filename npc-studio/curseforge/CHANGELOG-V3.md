@@ -9,6 +9,7 @@
 - Inventory section shows the NPC's 6 slots as tiles; tap one to change it
 - Section headers in cyan with their icon; tab names fit
 - Spawn, rename, presets and every other input form open in the same dark panel instead of a grey box
+- Free look: while the panel is open, drag in the free space on the right to look around. You can't walk, break, place or hit there; tap an NPC to select it
 
 ## NPC Studio V3: the studio update
 

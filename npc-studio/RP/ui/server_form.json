@@ -7,7 +7,17 @@
   "$background_animations": [
    "@server_form.npcs_no_anim"
   ],
-  "render_game_behind": true
+  "render_game_behind": true,
+  "absorbs_input": false
+ },
+ "npcs_blocker": {
+  "type": "input_panel",
+  "size": [
+   "100%",
+   "100%"
+  ],
+  "modal": true,
+  "prevent_touch_input": true
  },
  "npcs_no_anim": {
   "anim_type": "offset",
@@ -75,7 +85,13 @@
   ],
   "controls": [
    {
-    "long_form@server_form.long_form": {}
+    "block@server_form.npcs_blocker": {
+     "controls": [
+      {
+       "long_form@server_form.long_form": {}
+      }
+     ]
+    }
    }
   ]
  },
@@ -105,7 +121,13 @@
      ],
      "controls": [
       {
-       "custom_form@server_form.custom_form": {}
+       "block@server_form.npcs_blocker": {
+        "controls": [
+         {
+          "custom_form@server_form.custom_form": {}
+         }
+        ]
+       }
       }
      ]
     }
