@@ -178,60 +178,121 @@ export function cleanLabel(text) {
   return t.trim();
 }
 
-// V3 side panel: an invisible tag at the start of the title tells RP/ui/server_form.json to draw
-// the menu as the docked dark panel (list or icon grid, with or without tabs).
-const PANEL_TAGS = { list: "§n§p§s§r", listTabs: "§n§p§t§r", grid: "§n§p§g§r", gridTabs: "§n§p§h§r" };
+// V3.1 editor: every NPC Studio menu uses one fixed button layout that RP/ui/server_form.json draws
+// like the website editor (tools/make_ui.py):
+//   0-5 tabs · 6-17 NPC heads (right rail) · 18-25 bottom tools · 26+ rows in the left panel
+// An empty label hides a slot. Row tags: §h§r open section, §i§r folded section, §w§r switch row.
+const EDITOR_TAG = "§n§p§s§r";
 export const TAB_MARK = "§u§r";
+const HDR_OPEN = "§h§r", HDR_SHUT = "§i§r", SW = "§w§r";
+const RAIL_N = 12, BAR_N = 8, ROW_MAX = 100;
 export const SWITCH = (on) => ICON(on ? "switch_on" : "switch_off");
 
+/** panel.js fills these in: default tabs, the NPC heads on the right and the bottom tools. */
+const hooks = { tabs: (_player) => null, rail: (_player) => [], bar: (_player) => [] };
+export function setEditorHooks(h) {
+  Object.assign(hooks, h);
+}
+
+const folded = new Map(); // player.id -> Set(section ids)
+function isFolded(player, id) {
+  return folded.get(player.id)?.has(id) ?? false;
+}
+function toggleFold(player, id) {
+  let s = folded.get(player.id);
+  if (!s) folded.set(player.id, (s = new Set()));
+  if (s.has(id)) s.delete(id);
+  else s.add(id);
+}
+
 /**
- * Button menu where each button carries its own callback — no fragile index math.
- * menu(title, body).btn(text, icon, fn).back(fn).show(player)
- *   .grid()                      icon grid instead of a list
- *   .tabs(names, active, onTab)  tab row (must come before any btn)
+ * menu(title, body)
+ *   .section(id, title, icon)          foldable section header; rows after it belong to it
+ *   .btn(text, icon, fn)               normal row
+ *   .field(label, value, icon, fn)     "Label  value" row
+ *   .toggle(text, on, fn)              row with a switch on the right
+ *   .tabs(names, active, onTab)        own tab row (default: the Studio tabs)
+ *   .back(fn) · .grid() (kept for old callers, rows are used everywhere) · .show(player)
  */
 export function menu(title, body) {
-  const form = new ActionFormData();
-  if (body) form.body(body);
-  const actions = [];
-  let onBack;
-  let grid = false;
-  let hasTabs = false;
+  const rows = []; // {kind, text, icon, fn, sec}
+  let section = null;
+  let ownTabs = null;
+  let page = 0;
   const api = {
     grid() {
-      grid = true;
       return api;
     },
     tabs(names, active, onTab) {
-      hasTabs = true;
-      names.forEach((n, i) => {
-        form.button(`${TAB_MARK}${i === active ? "§b" : ""}${n}`);
-        actions.push(() => onTab(i));
-      });
+      ownTabs = { names, active, onTab };
+      return api;
+    },
+    section(id, text, icon) {
+      section = id;
+      rows.push({ kind: "hdr", id, text, icon });
       return api;
     },
     btn(text, icon, fn) {
-      const label = cleanLabel(text);
-      if (icon) form.button(label, icon);
-      else form.button(label);
-      actions.push(fn);
+      rows.push({ kind: "row", text: cleanLabel(text), icon, fn, sec: section });
+      return api;
+    },
+    field(label, value, icon, fn) {
+      rows.push({ kind: "row", text: `§7${label}  §f${String(value).replace(/§./g, "")}`, icon, fn, sec: section });
+      return api;
+    },
+    toggle(text, on, fn) {
+      rows.push({ kind: "sw", text: (on ? "§b" : "") + cleanLabel(text).replace(/^§b/, ""), icon: SWITCH(on), fn, sec: section });
       return api;
     },
     back(fn) {
-      onBack = fn;
-      form.button("Back", ICON("back"));
-      actions.push(fn);
+      section = null;
+      rows.push({ kind: "row", text: "Back", icon: ICON("back"), fn, sec: null });
       return api;
     },
     show(player) {
-      const tag = grid ? (hasTabs ? PANEL_TAGS.gridTabs : PANEL_TAGS.grid) : hasTabs ? PANEL_TAGS.listTabs : PANEL_TAGS.list;
-      form.title(tag + title);
+      const form = new ActionFormData().title(EDITOR_TAG + title);
+      if (body) form.body(body);
+      const actions = [];
+      const add = (label, icon, fn) => {
+        if (icon) form.button(label, icon);
+        else form.button(label);
+        actions.push(fn);
+      };
+      // 0-5 tabs
+      const t = ownTabs ?? hooks.tabs(player);
+      for (let i = 0; i < 6; i++) {
+        const name = t?.names?.[i];
+        add(name ? `${TAB_MARK}${i === t.active ? "§b" : ""}${name}` : "", undefined, name ? () => t.onTab(i) : undefined);
+      }
+      // 6-17 NPC heads, 18-25 tools
+      const rail = hooks.rail(player) ?? [];
+      for (let i = 0; i < RAIL_N; i++) add(rail[i] ? rail[i].label || " " : "", rail[i]?.icon, rail[i]?.fn);
+      const bar = hooks.bar(player) ?? [];
+      for (let i = 0; i < BAR_N; i++) add(bar[i] ? bar[i].label || " " : "", bar[i]?.icon, bar[i]?.fn);
+      // 26+ rows (folded sections hide their rows)
+      const visible = rows.filter((r) => r.kind === "hdr" || !r.sec || !isFolded(player, r.sec));
+      const per = ROW_MAX - 2;
+      const pages = Math.max(1, Math.ceil(visible.length / per));
+      page = Math.min(page, pages - 1);
+      const slice = visible.slice(page * per, page * per + per);
+      if (page > 0) add("Previous page", ICON("back"), () => ((page -= 1), api.show(player)));
+      for (const r of slice) {
+        if (r.kind === "hdr") {
+          const shut = isFolded(player, r.id);
+          add(`${shut ? HDR_SHUT : HDR_OPEN}${r.text}`, r.icon, () => {
+            toggleFold(player, r.id);
+            api.show(player);
+          });
+        } else add(r.kind === "sw" ? SW + r.text : r.text || " ", r.icon, r.fn);
+      }
+      if (page < pages - 1) add("Next page", ICON("play"), () => ((page += 1), api.show(player)));
       return showWithRetry(form, player)
         .then((res) => {
           if (res.canceled) return;
-          sfx(player, "click");
           const fn = actions[res.selection];
-          if (fn) fn();
+          if (!fn) return;
+          sfx(player, "click");
+          fn();
         })
         .catch((e) => console.warn(`[NPC Studio] menu "${title}" error: ${e}`));
     }

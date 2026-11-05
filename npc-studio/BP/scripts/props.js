@@ -353,7 +353,7 @@ export function giveTool(player, id) {
 
 export function openToolsMenu(player, back) {
   menu("Studio Tools")
-    .btn("Camera Monitor", "textures/items/npcstudio_monitor", () => giveTool(player, MONITOR_ID))
+    .btn("Preview Viewer", "textures/items/npcstudio_monitor", () => giveTool(player, MONITOR_ID))
     .btn("NPC Stamp", "textures/items/npcstudio_stamp", () => giveTool(player, STAMP_ID))
     .btn("NPC Rotator", "textures/items/npcstudio_rotator", () => giveTool(player, ROTATOR_ID))
     .btn("Teleporter", "textures/items/npcstudio_teleporter", () => giveTool(player, TELEPORTER_ID))

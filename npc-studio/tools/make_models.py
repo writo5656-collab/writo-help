@@ -289,7 +289,47 @@ def make_prop():
     }])
 
 
+# ----------------------------------------------------------------------------------------------
+# Silhouette outline (V3.1): a slightly bigger copy of the NPC drawn with inverted culling, so only
+# its far side shows around the edges, like the Java NPC Studio outline. 3 thicknesses, classic/slim,
+# and an "armored" set that sits outside armor.
+# ----------------------------------------------------------------------------------------------
+SIL_THICK = [0.35, 0.6, 1.0]
+ARMOR_EXTRA = 1.0
+
+
+def make_silhouette():
+    geos = []
+    for ti, t in enumerate(SIL_THICK):
+        for slim in (False, True):
+            for armored in (False, True):
+                extra = ARMOR_EXTRA if armored else 0.0
+                bones = []
+                for name, parent, pivot, cubes in humanoid(slim):
+                    b = {"name": name, "pivot": pivot}
+                    if parent:
+                        b["parent"] = parent
+                    layer = 0.5 if name == "head" else 0.25  # hat / sleeve layers
+                    cs = [{"origin": o, "size": sz, "inflate": round(max(layer, extra) + t, 3), "uv": [0, 0]} for o, sz in cubes]
+                    if cs:
+                        b["cubes"] = cs
+                    bones.append(b)
+                geos.append({"description": {
+                    "identifier": f"geometry.npcstudio.sil_{ti}{'_slim' if slim else ''}{'_armor' if armored else ''}",
+                    "texture_width": 4, "texture_height": 4,
+                    "visible_bounds_width": 2, "visible_bounds_height": 3, "visible_bounds_offset": [0, 1.5, 0]},
+                    "bones": bones})
+    save_geo("npcstudio_silhouette.geo.json", geos)
+    Image.new("RGBA", (4, 4), (39, 211, 245, 255)).save(os.path.join(TEX, "outline_sil.png"))
+    mats = os.path.join(RP, "materials")
+    os.makedirs(mats, exist_ok=True)
+    with open(os.path.join(mats, "entity.material"), "w") as f:
+        json.dump({"materials": {"version": "1.0.0",
+                                 "npcstudio_outline:entity": {"+states": ["InvertCulling"], "-states": ["DisableCulling"]}}}, f, indent=2)
+
+
 if __name__ == "__main__":
+    make_silhouette()
     make_prop()
     make_fogs()
     make_camera()

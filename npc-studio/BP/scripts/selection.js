@@ -7,6 +7,9 @@
  *   bit 1 (2)        NPC Bright (ignores world lighting)
  *   bits 2-5 (4..60) cape number (0 = none, 1-8)
  *   bit 6 (64)       prop mode: body hidden, only the held block/item shows
+ *   bits 7-8         outline thickness (0 thin, 1 medium, 2 thick)
+ *   bit 9 (512)      outline style: 0 silhouette (custom material), 1 wireframe boxes
+ *   bit 10 (1024)    wears armor (silhouette sits outside the armor)
  * Outlines are hidden for everyone while anybody is filming (camera view, peek, Photo Mode),
  * so a selection never ends up in a shot.
  */
@@ -44,6 +47,35 @@ export function getCape(npc) {
 export function setCape(npc, n) {
   setFlags(npc, (getFlags(npc) & ~60) | ((n & 15) << 2));
 }
+// ---------- outline look (shared by everyone, stored per NPC; set from the editor) ----------
+export const THICKNESS = ["Thin", "Medium", "Thick"];
+export const OUTLINE_STYLES = ["Silhouette", "Wireframe"];
+const outlineLook = { thick: 1, style: 0 }; // world default, changed in the editor
+export function getOutlineLook() {
+  return { ...outlineLook };
+}
+export function setOutlineLook(look) {
+  Object.assign(outlineLook, look);
+  try {
+    world.setDynamicProperty("npcstudio:outline_look", JSON.stringify(outlineLook));
+  } catch {
+    /* ignore */
+  }
+  refreshAll();
+}
+function lookBits(npc) {
+  // the wardrobe remembers what each NPC wears (equipment can't be read from non-player entities)
+  const armored = ["head", "chest", "legs", "feet"].some((k) => npc.getDynamicProperty(`npcstudio:equip_${k}`) !== undefined);
+  return (outlineLook.thick << 7) | (outlineLook.style << 9) | (armored ? 1024 : 0);
+}
+system.runTimeout(() => {
+  try {
+    Object.assign(outlineLook, JSON.parse(String(world.getDynamicProperty("npcstudio:outline_look") ?? "{}")));
+  } catch {
+    /* ignore */
+  }
+}, 5);
+
 /** Prop mode (bit 6): body hidden, only the held item shows (block / item props). */
 export function isProp(npc) {
   return (getFlags(npc) & 64) !== 0;
@@ -109,8 +141,8 @@ function refresh(npcs) {
   const show = !outlinesHidden && filming.size === 0;
   for (const npc of npcs) {
     if (!npc?.isValid) continue;
-    const f = getFlags(npc);
-    setFlags(npc, show && selectedByAnyone(npc) ? f | 1 : f & ~1);
+    const f = getFlags(npc) & ~(1 | (3 << 7) | 512 | 1024);
+    setFlags(npc, show && selectedByAnyone(npc) ? f | 1 | lookBits(npc) : f);
   }
 }
 function refreshAll() {
@@ -147,3 +179,8 @@ system.runTimeout(() => {
     }
   }
 }, 30);
+
+/** Re-apply the outline look (e.g. after the NPC put armor on). */
+export function refreshOutline(npc) {
+  refresh([npc]);
+}

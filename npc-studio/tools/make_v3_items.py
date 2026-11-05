@@ -77,7 +77,7 @@ ICONS = {
 ................
 ................""",
 }
-NAMES = {"monitor": "Camera Monitor", "stamp": "NPC Stamp", "rotator": "NPC Rotator", "teleporter": "Teleporter"}
+NAMES = {"monitor": "Preview Viewer", "stamp": "NPC Stamp", "rotator": "NPC Rotator", "teleporter": "Teleporter"}
 
 
 def draw(art):

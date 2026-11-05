@@ -1,0 +1,13 @@
+{
+  "materials": {
+    "version": "1.0.0",
+    "npcstudio_outline:entity": {
+      "+states": [
+        "InvertCulling"
+      ],
+      "-states": [
+        "DisableCulling"
+      ]
+    }
+  }
+}

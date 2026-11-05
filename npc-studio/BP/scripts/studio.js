@@ -1,7 +1,7 @@
 /**
  * NPC Studio V3 — studio.js : Peek, Photo Mode, Layer Shot, green screen and hide/show.
  *
- * Peek (Camera Monitor): tap = look through the selected camera, tap again = next camera,
+ * Peek (Preview Viewer): tap = look through the selected camera, tap again = next camera,
  *   double-tap sneak / /exitcam = back to you. The action bar shows "‹ Camera 2 ›".
  * Photo Mode: 3-2-1, then everything disappears (HUD, hand, outlines, cameras, name tags) and the
  *   screen flashes: take your device screenshot. Tap to come back.
@@ -41,7 +41,7 @@ function showGuides(player, on) {
 }
 
 // =====================================================================================
-// Peek through cameras (Camera Monitor)
+// Peek through cameras (Preview Viewer)
 // =====================================================================================
 const peeking = new Map(); // player.id -> { list, i }
 

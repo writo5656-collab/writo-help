@@ -27,7 +27,8 @@ import { dropPlayer } from "./selection.js";
 import { restoreFog } from "./fog.js";
 import { ALL_POSES, QUICK_CYCLE } from "./poses.js";
 
-const STARTER_ITEMS = [WAND_ID, CAMERA_TOOL_ID, MONITOR_ID, MOB_TOOL_ID, HANDBOOK_ID];
+// V3.1: only two items. Everything else lives in the editor (Baton) and its bottom bar.
+const STARTER_ITEMS = [WAND_ID, MONITOR_ID];
 
 system.run(() => {
   world.sendMessage("§8[§bNPC Studio V3§8] §7Studio loaded — grab your baton and roll camera. §8by NoxeelMC");
@@ -87,7 +88,7 @@ safeOn(() => world.afterEvents.playerSpawn, (ev) => {
       /* ignore */
     }
     msg(player, "§b§l» WELCOME TO NPC STUDIO V3");
-    msg(player, "§fYou're the director now. §7Tap the air with the §bDirector's Baton§7 to start. New here? Open the §bHandbook§7.");
+    msg(player, "§fYou're the director now. §7Tap with the §bDirector's Baton§7 to open the editor; the §bPreview Viewer§7 looks through your cameras.");
     const inv = player.getComponent("minecraft:inventory")?.container;
     if (!inv) return;
     for (const itemId of STARTER_ITEMS) {

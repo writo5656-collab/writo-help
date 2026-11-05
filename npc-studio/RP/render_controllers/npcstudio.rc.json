@@ -158,6 +158,36 @@
       "textures": [
         "Array.capes[math.mod(math.floor(query.property('npcstudio:flags') / 4), 16) - 1]"
       ]
+    },
+    "controller.render.npcstudio.outline_sil": {
+      "arrays": {
+        "geometries": {
+          "Array.sil": [
+            "Geometry.sil_0",
+            "Geometry.sil_0_armor",
+            "Geometry.sil_0_slim",
+            "Geometry.sil_0_slim_armor",
+            "Geometry.sil_1",
+            "Geometry.sil_1_armor",
+            "Geometry.sil_1_slim",
+            "Geometry.sil_1_slim_armor",
+            "Geometry.sil_2",
+            "Geometry.sil_2_armor",
+            "Geometry.sil_2_slim",
+            "Geometry.sil_2_slim_armor"
+          ]
+        }
+      },
+      "geometry": "Array.sil[math.mod(math.floor(query.property('npcstudio:flags') / 128), 4) * 4 + (query.property('npcstudio:slim') ? 2 : 0) + math.mod(math.floor(query.property('npcstudio:flags') / 1024), 2)]",
+      "materials": [
+        {
+          "*": "Material.outline_sil"
+        }
+      ],
+      "textures": [
+        "Texture.outline_sil"
+      ],
+      "ignore_lighting": true
     }
   }
 }

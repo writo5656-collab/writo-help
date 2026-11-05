@@ -42,8 +42,8 @@ export const CHAPTERS = [
         "",
         "§aGreen§f = your selected camera, §9blue§f = others, §7grey§f = locked."
       ]),
-      P("monitor", "Peek (Camera Monitor)", [
-        "Tap with the §bCamera Monitor§f: your screen becomes the selected camera.",
+      P("monitor", "Peek (Preview Viewer)", [
+        "Tap with the §bPreview Viewer§f: your screen becomes the selected camera.",
         "§7• Tap again: next camera  • Double-tap sneak or §f/exitcam§7: back to you",
         "",
         "§7The thirds guide helps framing (Camera tab switch). It never shows in Photo Mode."
@@ -97,7 +97,7 @@ export const CHAPTERS = [
         "§7• Hit an NPC: cycle quick poses.",
         "",
         "§bCine Camera§f — place cameras and fly the camera.",
-        "§bCamera Monitor§f — peek through your cameras.",
+        "§bPreview Viewer§f — peek through your cameras.",
         "§bBeast Whistle§f — spawn animals and mobs as props.",
         "§bHandbook§f — this book.",
         "",

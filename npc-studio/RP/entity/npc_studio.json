@@ -5,7 +5,8 @@
       "identifier": "npcstudio:npc",
       "materials": {
         "default": "entity_alphatest",
-        "outline": "entity_alphatest"
+        "outline": "entity_alphatest",
+        "outline_sil": "npcstudio_outline"
       },
       "textures": {
         "skin0": "textures/entity/npcstudio/steve",
@@ -49,7 +50,8 @@
         "cape5": "textures/entity/npcstudio/capes/cape5",
         "cape6": "textures/entity/npcstudio/capes/cape6",
         "cape7": "textures/entity/npcstudio/capes/cape7",
-        "cape8": "textures/entity/npcstudio/capes/cape8"
+        "cape8": "textures/entity/npcstudio/capes/cape8",
+        "outline_sil": "textures/entity/npcstudio/outline_sil"
       },
       "geometry": {
         "default": "geometry.humanoid.custom",
@@ -57,7 +59,19 @@
         "outline": "geometry.npcstudio.outline",
         "outline_slim": "geometry.npcstudio.outline_slim",
         "cape": "geometry.npcstudio.cape",
-        "prop": "geometry.npcstudio.prop"
+        "prop": "geometry.npcstudio.prop",
+        "sil_0": "geometry.npcstudio.sil_0",
+        "sil_0_armor": "geometry.npcstudio.sil_0_armor",
+        "sil_0_slim": "geometry.npcstudio.sil_0_slim",
+        "sil_0_slim_armor": "geometry.npcstudio.sil_0_slim_armor",
+        "sil_1": "geometry.npcstudio.sil_1",
+        "sil_1_armor": "geometry.npcstudio.sil_1_armor",
+        "sil_1_slim": "geometry.npcstudio.sil_1_slim",
+        "sil_1_slim_armor": "geometry.npcstudio.sil_1_slim_armor",
+        "sil_2": "geometry.npcstudio.sil_2",
+        "sil_2_armor": "geometry.npcstudio.sil_2_armor",
+        "sil_2_slim": "geometry.npcstudio.sil_2_slim",
+        "sil_2_slim_armor": "geometry.npcstudio.sil_2_slim_armor"
       },
       "animations": {
         "freepose": "animation.npcstudio.freepose",
@@ -152,7 +166,10 @@
           "controller.render.npcstudio.bright": "math.mod(math.floor(query.property('npcstudio:flags') / 2), 2) == 1"
         },
         {
-          "controller.render.npcstudio.outline": "math.mod(query.property('npcstudio:flags'), 2) == 1 && math.mod(math.floor(query.property('npcstudio:flags') / 64), 2) == 0"
+          "controller.render.npcstudio.outline": "math.mod(query.property('npcstudio:flags'), 2) == 1 && math.mod(math.floor(query.property('npcstudio:flags') / 64), 2) == 0 && math.mod(math.floor(query.property('npcstudio:flags') / 512), 2) == 1"
+        },
+        {
+          "controller.render.npcstudio.outline_sil": "math.mod(query.property('npcstudio:flags'), 2) == 1 && math.mod(math.floor(query.property('npcstudio:flags') / 64), 2) == 0 && math.mod(math.floor(query.property('npcstudio:flags') / 512), 2) == 0"
         },
         {
           "controller.render.npcstudio.cape": "math.mod(math.floor(query.property('npcstudio:flags') / 4), 16) > 0 && math.mod(math.floor(query.property('npcstudio:flags') / 64), 2) == 0"
