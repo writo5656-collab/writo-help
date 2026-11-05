@@ -4,7 +4,8 @@
     "description": {
       "identifier": "npcstudio:npc",
       "materials": {
-        "default": "entity_alphatest"
+        "default": "entity_alphatest",
+        "outline": "entity_alphatest"
       },
       "textures": {
         "skin0": "textures/entity/npcstudio/steve",
@@ -39,11 +40,24 @@
         "skin29": "textures/entity/npcstudio/custom_slot18",
         "skin30": "textures/entity/npcstudio/custom_slot19",
         "skin31": "textures/entity/npcstudio/custom_slot20",
-        "eggsource": "textures/entity/npcstudio/spawn_egg_colors"
+        "eggsource": "textures/entity/npcstudio/spawn_egg_colors",
+        "outline": "textures/entity/npcstudio/outline",
+        "cape1": "textures/entity/npcstudio/capes/cape1",
+        "cape2": "textures/entity/npcstudio/capes/cape2",
+        "cape3": "textures/entity/npcstudio/capes/cape3",
+        "cape4": "textures/entity/npcstudio/capes/cape4",
+        "cape5": "textures/entity/npcstudio/capes/cape5",
+        "cape6": "textures/entity/npcstudio/capes/cape6",
+        "cape7": "textures/entity/npcstudio/capes/cape7",
+        "cape8": "textures/entity/npcstudio/capes/cape8"
       },
       "geometry": {
         "default": "geometry.humanoid.custom",
-        "slim": "geometry.humanoid.customSlim"
+        "slim": "geometry.humanoid.customSlim",
+        "outline": "geometry.npcstudio.outline",
+        "outline_slim": "geometry.npcstudio.outline_slim",
+        "cape": "geometry.npcstudio.cape",
+        "prop": "geometry.npcstudio.prop"
       },
       "animations": {
         "freepose": "animation.npcstudio.freepose",
@@ -131,7 +145,18 @@
         ]
       },
       "render_controllers": [
-        "controller.render.npcstudio.default"
+        {
+          "controller.render.npcstudio.default": "math.mod(math.floor(query.property('npcstudio:flags') / 2), 2) == 0"
+        },
+        {
+          "controller.render.npcstudio.bright": "math.mod(math.floor(query.property('npcstudio:flags') / 2), 2) == 1"
+        },
+        {
+          "controller.render.npcstudio.outline": "math.mod(query.property('npcstudio:flags'), 2) == 1 && math.mod(math.floor(query.property('npcstudio:flags') / 64), 2) == 0"
+        },
+        {
+          "controller.render.npcstudio.cape": "math.mod(math.floor(query.property('npcstudio:flags') / 4), 16) > 0 && math.mod(math.floor(query.property('npcstudio:flags') / 64), 2) == 0"
+        }
       ],
       "enable_attachables": true,
       "spawn_egg": {

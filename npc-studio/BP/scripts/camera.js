@@ -8,6 +8,7 @@
 import { EasingType } from "@minecraft/server";
 import { enterCinema, exitCinema, inCinema } from "./cinema.js";
 import { startFlyCam } from "./flycam.js";
+import { liveCamera } from "./live.js";
 import { world, system, menu, modal, msg, ICON, CAMERA_ID, CAM_PRESET, NPC_FAMILY, MOB_TAG, catmull, lerp, wrapDeg, getJson, setJson, EASE, npcLabel } from "./core.js";
 
 const FOVS = [30, 40, 50, 60, 70, 80, 90, 100, 110];
@@ -33,19 +34,67 @@ function saveState(marker, s) {
   marker.teleport(s.location, { rotation: { x: s.rotX, y: s.rotY } });
   marker.setDynamicProperty("npcstudio:cam_rx", s.rotX);
   marker.setDynamicProperty("npcstudio:cam_fovdeg", s.fov);
+  syncCamLook(marker, s);
 }
+
+// ---------- V3 pyramid camera: the model shows the tilt, the FOV (frame size) and the state colour ----------
+// green = the camera you selected, blue = other cameras, grey = locked
+const selectedCam = new Map(); // player.id -> marker
+export function syncCamLook(marker, s = camState(marker)) {
+  try {
+    marker.setProperty("npcstudio:cam_pitch", Math.max(-90, Math.min(90, s.rotX)));
+    marker.setProperty("npcstudio:cam_fov", Math.max(10, Math.min(130, Math.round(s.fov))));
+    const sel = [...selectedCam.values()].some((m) => m?.isValid && m.id === marker.id);
+    marker.setProperty("npcstudio:cam_state", isCamLocked(marker) ? 2 : sel ? 1 : 0);
+  } catch {
+    /* old marker without the V3 properties until it reloads */
+  }
+}
+export function isCamLocked(marker) {
+  return !!marker.getDynamicProperty("npcstudio:cam_locked");
+}
+export function selectCamera(player, marker) {
+  const prev = selectedCam.get(player.id);
+  selectedCam.set(player.id, marker);
+  if (prev?.isValid && prev.id !== marker.id) syncCamLook(prev);
+  syncCamLook(marker);
+}
+export function getSelectedCamera(player) {
+  const m = selectedCam.get(player.id);
+  if (m?.isValid) return m;
+  // fall back to the nearest camera
+  const cams = allCameras(player);
+  return cams[0];
+}
+/** Cameras in this dimension, nearest first, in "Camera N" order when equally near. */
+export function allCameras(player) {
+  const p = player.location;
+  return [...player.dimension.getEntities({ type: CAMERA_ID })].sort(
+    (a, b) => Math.hypot(a.location.x - p.x, a.location.z - p.z) - Math.hypot(b.location.x - p.x, b.location.z - p.z)
+  );
+}
+export function syncAllCameras() {
+  for (const d of ["overworld", "nether", "the_end"]) {
+    try {
+      for (const m of world.getDimension(d).getEntities({ type: CAMERA_ID })) syncCamLook(m);
+    } catch {
+      /* ignore */
+    }
+  }
+}
+system.runTimeout(syncAllCameras, 30);
 
 const pendingSnap = new Map(); // player.id -> marker
 const lookTargets = new Map(); // marker.id -> entity
 const follows = new Map(); // marker.id -> run handle
 
-export function viewThrough(player, s, smooth, facing) {
+export function viewThrough(player, s, smooth, facing, cinemaOpts) {
   const eye = { x: s.location.x, y: s.location.y + 0.15, z: s.location.z };
   const opts = { location: eye };
   if (facing?.isValid) opts.facingEntity = facing;
   else opts.rotation = { x: s.rotX, y: s.rotY };
   const first = !inCinema(player);
-  enterCinema(player);
+  enterCinema(player, undefined, cinemaOpts);
   // first entry: the fade hides the cut; after that, glide smoothly between framings
   const ease = !first && smooth ? { easeTime: 0.6, easeType: EasingType.InOutSine } : undefined;
   if (ease) opts.easeOptions = ease;
@@ -59,6 +108,25 @@ export function viewThrough(player, s, smooth, facing) {
   };
   if (first) system.runTimeout(apply, 5);
   else apply();
+}
+
+/** Live lens + framing editor (sliders move the camera while you look through it). */
+export function openLiveCamera(player, marker, back) {
+  if (isCamLocked(marker)) {
+    msg(player, "§cThis camera is locked. Unlock it first.");
+    return back?.();
+  }
+  liveCamera(player, marker, {
+    state: camState,
+    save: saveState,
+    view: (m) => viewThrough(player, camState(m), false, lookTargets.get(m.id), { quiet: true })
+  }, back);
+}
+
+/** Look through a camera marker (keeps its aim target). Used by Peek and Layer Shot. */
+export function lookThrough(player, marker, cinemaOpts) {
+  selectCamera(player, marker);
+  viewThrough(player, camState(marker), true, lookTargets.get(marker.id), cinemaOpts);
 }
 
 export function exitView(player) {
@@ -77,6 +145,7 @@ function spawnCamera(player) {
   marker.nameTag = nextName();
   marker.setDynamicProperty("npcstudio:cam_rx", rot.x);
   marker.setDynamicProperty("npcstudio:cam_fovdeg", 70);
+  selectCamera(player, marker);
   return marker;
 }
 
@@ -86,6 +155,7 @@ function spawnCameraAt(player, loc, rot, fov) {
   marker.nameTag = nextName();
   marker.setDynamicProperty("npcstudio:cam_rx", rot.x);
   marker.setDynamicProperty("npcstudio:cam_fovdeg", fov ?? 70);
+  selectCamera(player, marker);
   return marker;
 }
 
@@ -119,6 +189,12 @@ export function flyCam(player, mode, marker) {
     .show(player);
 }
 
+export function placeCameraAtView(player) {
+  const c = spawnCamera(player);
+  msg(player, `§aPlaced ${c.nameTag}.`);
+  openCameraPanel(player, c);
+}
+
 export function openCameraToolMenu(player, back) {
   const cams = [...player.dimension.getEntities({ type: CAMERA_ID })];
   const m = menu("Cameras", "§7Place cameras around your scene, then look through them, animate paths between points, or use Cinematic Shots for automatic moves.");
@@ -147,13 +223,21 @@ export function openCameraToolMenu(player, back) {
 export function openCameraPanel(player, marker, skipView) {
   if (!marker.isValid) return;
   const s = camState(marker);
+  selectCamera(player, marker);
   if (!skipView) viewThrough(player, s, true, lookTargets.get(marker.id));
   const self = () => openCameraPanel(player, marker, true);
+  const locked = isCamLocked(marker);
+  const guard = (fn) => () => (isCamLocked(marker) ? (msg(player, "§cThis camera is locked. Unlock it first."), self()) : fn());
   const path = getJson(marker, "npcstudio:path2", []);
   menu(marker.nameTag || "Camera", `§7FOV §f${s.fov}°  §7Path points §f${path.length}${lookTargets.get(marker.id)?.isValid ? `  §7Aiming at §f${npcLabel(lookTargets.get(marker.id))}` : ""}${follows.has(marker.id) ? "  §aFollowing" : ""}`)
-    .btn("§lRe-frame With Fly Cam §r§8(fly there, tap to lock)", ICON("flycam"), () => flyCam(player, "reframe", marker))
-    .btn("Move & Turn (nudge)", ICON("move"), () => openNudge(player, marker, self))
-    .btn(`Lens / FOV (${s.fov}°)`, ICON("fov"), () => openLens(player, marker, self))
+    .btn("§lRe-frame With Fly Cam §r§8(fly there, tap to lock)", ICON("flycam"), guard(() => flyCam(player, "reframe", marker)))
+    .btn("Move & Turn (nudge)", ICON("move"), guard(() => openNudge(player, marker, self)))
+    .btn(`Lens / FOV (${s.fov}°)`, ICON("fov"), guard(() => openLens(player, marker, self)))
+    .btn(locked ? "§aLocked §r§8(tap to unlock)" : "Lock Camera", ICON("lock"), () => {
+      marker.setDynamicProperty("npcstudio:cam_locked", locked ? undefined : true);
+      syncCamLook(marker);
+      self();
+    })
     .btn("Aim At / Follow", ICON("manage"), () => openTracking(player, marker, self))
     .btn("Camera Path (smooth spline)", ICON("play"), () => openPath(player, marker, self))
     .btn("Shake", ICON("shake"), () => {

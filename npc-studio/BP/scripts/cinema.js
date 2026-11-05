@@ -10,9 +10,10 @@
  * - If you leave the world mid-shot, everything is restored when you come back.
  * Copyright (c) 2026 NoxeelMC. All rights reserved. See LICENSE.md.
  */
-import { GameMode, HudVisibility, InputPermissionCategory, EquipmentSlot } from "@minecraft/server";
+import { GameMode, HudVisibility, HudElement, InputPermissionCategory, EquipmentSlot } from "@minecraft/server";
 import { world, system, msg, actionbar, NPC_FAMILY, getJson, setJson } from "./core.js";
 import { holdTempItem, purgeTempItems } from "./hotbar.js";
+import { setFilming } from "./selection.js";
 
 const STATE_KEY = "npcstudio:cinema";
 const active = new Map(); // player.id -> { onExit, sneakTaps, lastSneak, hint }
@@ -105,6 +106,7 @@ export function enterCinema(player, onExit, opts = {}) {
     setJson(player, STATE_KEY, { mode, loc: { ...player.location }, rot: { x: r.x, y: r.y }, dim: player.dimension.id, gear, sel: player.selectedSlotIndex });
   }
   active.set(player.id, { sneakTaps: 0, lastSneak: false, lastTapTick: 0, freeMove: !!opts.freeMove, sel: player.selectedSlotIndex });
+  setFilming(player, true); // cyan outlines off while anyone films
   // an invisible item in your (now empty) hand: tap the screen / right-click = leave camera view
   holdTempItem(player, opts.freeMove ? "npcstudio:cam_lock" : "npcstudio:cam_exit");
 
@@ -128,14 +130,39 @@ export function enterCinema(player, onExit, opts = {}) {
       /* ignore */
     }
   }
+  hideHud(player, opts.keepText);
+  if (opts.hideNames !== false) setNames(player, true);
+  // one short line in chat (it fades by itself): how to get back out
+  if (!opts.freeMove && !opts.quiet) msg(player, "§b§l» Camera view §r§7— §ftap the screen§7 or type §e/exitcam§7 to get out");
+}
+
+/** Hide the HUD. keepText = hide every element except titles / action bar (Peek shows "‹ Camera 2 ›"). */
+const ALL_HUD = Object.values(HudElement).filter((v) => typeof v === "number");
+export function hideHud(player, keepText) {
   try {
-    player.onScreenDisplay.setHudVisibility(HudVisibility.Hide);
+    if (keepText) player.onScreenDisplay.setHudVisibility(HudVisibility.Hide, ALL_HUD);
+    else player.onScreenDisplay.setHudVisibility(HudVisibility.Hide);
   } catch {
     /* ignore */
   }
-  if (opts.hideNames !== false) setNames(player, true);
-  // one short line in chat (it fades by itself): how to get back out
-  if (!opts.freeMove) msg(player, "§b§l» Camera view §r§7— §ftap the screen§7 or type §e/exitcam§7 to get out");
+}
+
+/** What tapping the screen does while in camera view (default: leave it). Cleared on exit. */
+const tapHandlers = new Map();
+export function setCinemaTap(player, fn) {
+  if (fn) tapHandlers.set(player.id, fn);
+  else tapHandlers.delete(player.id);
+}
+/** Returns true when a tap handler took the tap. */
+export function cinemaTap(player) {
+  const fn = tapHandlers.get(player.id);
+  if (!fn) return false;
+  try {
+    fn();
+  } catch (e) {
+    console.warn(`[NPC Studio] tap handler: ${e}`);
+  }
+  return true;
 }
 
 /** Keep the invisible exit item in hand: scrolling the hotbar would show your other items. */
@@ -270,6 +297,8 @@ export function exitCinema(player, opts = {}) {
   const handler = exitHandlers.get(player.id);
   exitHandlers.delete(player.id);
   const wasActive = active.delete(player.id);
+  setFilming(player, false);
+  tapHandlers.delete(player.id);
   if (handler) {
     try {
       handler();
@@ -373,6 +402,7 @@ system.runInterval(() => {
     const player = world.getEntity(id);
     if (!player?.isValid) {
       active.delete(id);
+      setFilming({ id }, false);
       continue;
     }
     const sn = player.isSneaking;

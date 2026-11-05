@@ -26,20 +26,12 @@ function stateFor(player) {
 
 const fmt = (a) => a.map((v) => (Math.round(v * 10) / 10).toString()).join(" / ");
 
-function highlight(npc) {
-  try {
-    npc.addEffect("glowing", 200, { amplifier: 0, showParticles: false });
-  } catch {
-    /* cosmetic */
-  }
-}
 
 // =====================================================================================
 // POSE EDITOR HUB
 // =====================================================================================
 export function openPoseEditor(player, npc, back) {
   if (!npc.isValid) return;
-  highlight(npc);
   const self = () => openPoseEditor(player, npc, back);
   const h = historySize(npc);
   menu("Pose Editor", "§7Tip: §fPose Mode§7 is the fastest way — look at an arm, tap Rotate, look around, sneak when it looks right.")
@@ -426,7 +418,6 @@ export function startGizmo(player, npc, back) {
   }
   setWalk(player, false);
   player.setDynamicProperty("npcstudio:gizmo", true);
-  highlight(npc);
   spawnGizmo(s);
   sfx(player, "start");
   s.run = system.runInterval(() => tickGizmo(player, s), 1);
@@ -595,7 +586,23 @@ export function endGizmo(player, apply) {
     actionbar(player, apply ? "§aPose saved." : "§cPose Mode cancelled — changes undone.");
     sfx(player, apply ? "ok" : "click");
   }
-  if (player.isValid && s.npc.isValid) system.runTimeout(() => openPoseEditor(player, s.npc, s.back), 6);
+  if (!player.isValid || !s.npc.isValid) return;
+  const after = () => (s.back ? s.back() : openPoseEditor(player, s.npc));
+  system.runTimeout(() => {
+    if (!apply) return after();
+    // V3: one quick check before the panel comes back
+    menu("Keep this pose?", "§7Closing this keeps it too.")
+      .btn("Yes, keep it", ICON("done"), after)
+      .btn("§cNo, undo it", ICON("undo"), () => {
+        if (s.npc.isValid) {
+          applyPose(s.npc, s.start.pose);
+          setScale(s.npc, s.start.scale);
+        }
+        actionbar(player, "§7Pose undone.");
+        after();
+      })
+      .show(player);
+  }, 6);
 }
 
 /** Safety net: if someone left the world mid-edit, give walking and their hotbar back. */

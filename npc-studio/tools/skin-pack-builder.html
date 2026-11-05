@@ -113,7 +113,7 @@ code { font: 13px var(--mono); background: var(--panel-2); border: 1px solid var
 /* top bar + links */
 .topbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; padding-block: 2px 6px; }
 .logo { display: flex; align-items: center; gap: 10px; font: 700 18px var(--display); color: var(--ink); text-decoration: none; }
-.logo i { width: 26px; height: 26px; border-radius: 6px; background: conic-gradient(from 45deg, var(--accent), #7a5cff, var(--accent)); box-shadow: inset 0 0 0 3px rgba(0,0,0,.25); }
+.logo img { width: 28px; height: 28px; border-radius: 6px; display: block; }
 .links { display: flex; flex-wrap: wrap; gap: 8px; }
 .pill { display: inline-flex; align-items: center; gap: 8px; font: 700 13px var(--body); text-decoration: none; padding: 8px 14px; border-radius: 999px; color: #fff; border: 0; }
 .pill svg { width: 16px; height: 16px; fill: currentColor; flex: none; }
@@ -149,7 +149,7 @@ footer.site a { color: var(--accent); }
 
 <div class="wrap" id="top">
   <nav class="topbar" aria-label="NoxeelMC links">
-    <a class="logo" href="#top"><i aria-hidden="true"></i>NoxeelMC</a>
+    <a class="logo" href="#top"><img src="data:image/png;base64,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" alt="" width="28" height="28">NoxeelMC</a>
     <div class="links">
       <a class="pill discord" id="lnkDiscord" href="#" target="_blank" rel="noopener" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.3 4.4A19.8 19.8 0 0 0 15.4 3l-.6 1.2a18.3 18.3 0 0 0-5.6 0L8.6 3a19.7 19.7 0 0 0-4.9 1.4C.6 9 .0 13.5.3 18a19.9 19.9 0 0 0 6 3l1.3-2.1a12.9 12.9 0 0 1-2-1l.5-.4a14.2 14.2 0 0 0 12 0l.5.4c-.6.4-1.3.7-2 1L18 21a19.8 19.8 0 0 0 6-3c.4-5.2-.8-9.7-3.7-13.6ZM8.5 15.3c-1.2 0-2.1-1.1-2.1-2.4s.9-2.4 2.1-2.4 2.2 1.1 2.1 2.4c0 1.3-.9 2.4-2.1 2.4Zm7 0c-1.2 0-2.1-1.1-2.1-2.4s.9-2.4 2.1-2.4 2.2 1.1 2.1 2.4c0 1.3-.9 2.4-2.1 2.4Z"/></svg>Discord</a>
       <a class="pill curse" id="lnkCurse" href="#" target="_blank" rel="noopener" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7h6.5L8 5h9l-1 2h5l-1.6 3.4c-1 2-2.9 3.3-5.1 3.5l-1.1 2.1H15l1 3H8l1-3h1.8L9.6 14C6 13.7 3.5 10.8 3 7Z"/></svg>CurseForge</a>
@@ -158,7 +158,7 @@ footer.site a { color: var(--accent); }
   </nav>
   <header>
     <div class="brand">
-      <span class="eyebrow"><span class="rec-dot" aria-hidden="true"></span>NPC Studio V2 · resource pack tool</span>
+      <span class="eyebrow"><span class="rec-dot" aria-hidden="true"></span>NPC Studio V3 · resource pack tool</span>
       <h1>Skin Pack Builder</h1>
       <p class="lede">Put your own skins on NPC Studio NPCs. Drop in PNG skins, check them on the live model, name them, and download one small pack. Everything stays in your browser.</p>
     </div>
@@ -214,7 +214,7 @@ footer.site a { color: var(--accent); }
         <h2>Pack</h2>
         <div class="row">
           <div class="field"><label for="packName">Pack name</label><input type="text" id="packName" value="My NPC Skins" maxlength="40"></div>
-          <div class="field"><label for="packDesc">Description</label><input type="text" id="packDesc" value="Custom skins for NPC Studio V2" maxlength="80"></div>
+          <div class="field"><label for="packDesc">Description</label><input type="text" id="packDesc" value="Custom skins for NPC Studio V3" maxlength="80"></div>
         </div>
         <details>
           <summary>After downloading</summary>
@@ -229,9 +229,24 @@ footer.site a { color: var(--accent); }
     </section>
   </div>
   <section class="log" aria-labelledby="whatsnew">
-    <h2 class="section-title" id="whatsnew">What's new in NPC Studio V2</h2>
+    <h2 class="section-title" id="whatsnew">What's new in NPC Studio V3</h2>
     <article class="release">
-      <header><span class="ver">V2</span><h3>The director update</h3><span class="when">latest</span></header>
+      <header><span class="ver">V3</span><h3>The studio update</h3><span class="when">latest</span></header>
+      <ul class="features">
+        <li><b><span class="tag new">new</span>Studio Panel</b><span>One dark panel on the left with six tabs: Display, Pose, Presets, World, Camera, Layers.</span></li>
+        <li><b><span class="tag new">new</span>Live editors</b><span>Drag a slider and the NPC changes while the menu stays open: size, pose, lens, fog, time.</span></li>
+        <li><b><span class="tag new">new</span>Trim Studio fitting room</b><span>The camera moves close and every pattern or colour shows on the NPC right away.</span></li>
+        <li><b><span class="tag new">new</span>Cyan outline</b><span>Everyone sees which NPC is selected. Hidden while filming.</span></li>
+        <li><b><span class="tag new">new</span>Pyramid cameras</b><span>A lens point and a frame that shows the real shot size. Green = selected.</span></li>
+        <li><b><span class="tag new">new</span>Peek &amp; Photo Mode</b><span>Look through any camera with one tap; hide everything for a clean screenshot.</span></li>
+        <li><b><span class="tag new">new</span>Green screen &amp; Layer Shot</b><span>NPC on green, background without NPCs, from the same camera.</span></li>
+        <li><b><span class="tag new">new</span>Depth Fog</b><span>8 looks that fade the distance and make NPCs pop.</span></li>
+        <li><b><span class="tag new">new</span>Props, crowds &amp; scenes</b><span>Block, item and particle props; crowds in grids and circles; save whole scenes.</span></li>
+        <li><b><span class="tag new">new</span>Capes &amp; new tools</b><span>8 capes, name tag colours, NPC Bright, Stamp, Rotator, Teleporter, Camera Monitor.</span></li>
+      </ul>
+    </article>
+    <article class="release">
+      <header><span class="ver old">V2</span><h3>The director update</h3><span class="when">earlier</span></header>
       <ul class="features">
         <li><b><span class="tag new">new</span>Armor trims &amp; glint</b><span>Trim Studio menu, or copy your own trimmed and enchanted armor onto an NPC.</span></li>
         <li><b><span class="tag new">new</span>Pose Mode gizmo</b><span>Look at a body part, rotate or move it, sneak when done. Live X/Y/Z in the corner.</span></li>
@@ -255,7 +270,7 @@ footer.site a { color: var(--accent); }
 
   <section class="faq" aria-labelledby="faqtitle">
     <h2 class="section-title" id="faqtitle">Questions</h2>
-    <details><summary>Do I need NPC Studio V2 installed?</summary><p>Yes. This page only makes a skin pack; the NPCs come from the NPC Studio V2 add-on on CurseForge.</p></details>
+    <details><summary>Do I need NPC Studio V3 installed?</summary><p>Yes. This page only makes a skin pack; the NPCs come from the NPC Studio add-on on CurseForge.</p></details>
     <details><summary>My download is a .zip, not .mcpack</summary><p>Rename the file so it ends in .mcpack, then open it. Minecraft imports it.</p></details>
     <details><summary>My skins don't show in game</summary><p>In your world's Resource Packs, make sure the skin pack is active and sits above NPC Studio in the list.</p></details>
     <details><summary>Are my skins uploaded anywhere?</summary><p>No. Everything happens on your device; the pack is built right in your browser.</p></details>
@@ -263,7 +278,7 @@ footer.site a { color: var(--accent); }
   </section>
 
   <footer class="site">
-    <span>NPC Studio V2 by <b>NoxeelMC</b></span>
+    <span>NPC Studio V3 by <b>NoxeelMC</b></span>
     <span id="footLinks"></span>
   </footer>
 </div>

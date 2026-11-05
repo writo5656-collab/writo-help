@@ -9,16 +9,95 @@ const P = (icon, title, lines) => ({ icon, title, text: lines.join("\n") });
 
 export const CHAPTERS = [
   {
+    name: "New In V3",
+    icon: "layers",
+    pages: [
+      P("outline", "The Studio Panel", [
+        "Everything now lives in one panel on the left with six tabs:",
+        "§bDisplay§f — skin, size, wardrobe, cape, name tag",
+        "§bPose§f — Pose Mode, exact sliders, library, undo",
+        "§bPresets§f — presets, scenes, crowds, props, tools",
+        "§bWorld§f — time, weather, Depth Fog, studio rules",
+        "§bCamera§f — Fly Cam, cameras, Peek, shots",
+        "§bLayers§f — green screen, hide/show, Photo Mode",
+        "",
+        "§7Switches flip with one tap. The ☰ / X closes the panel so you can move."
+      ]),
+      P("scale", "Live Editors", [
+        "Size, exact pose sliders, Trim Studio, time, fog and camera lens open a §bgrey live editor§f.",
+        "",
+        "§7Drag a slider and the NPC or world changes right away. The editor stays open until you close it."
+      ]),
+      P("trim", "Trim Studio (Fitting Room)", [
+        "The camera moves close to the NPC. Change pattern, material, armor and glint and see each change on the NPC immediately.",
+        "§7'Turn the view' walks the camera around the NPC."
+      ]),
+      P("outline", "Cyan Outline", [
+        "The NPC you're editing gets a cyan outline that every player sees, so you always know which one is selected.",
+        "",
+        "§7Outlines hide automatically while anyone is filming. §fPresets > Select All Nearby§7 selects many NPCs at once."
+      ]),
+      P("camera", "Pyramid Cameras", [
+        "Cameras are drawn as a lens point joined to a frame. The frame shows the camera's real shot size: a narrow FOV makes a small frame.",
+        "",
+        "§aGreen§f = your selected camera, §9blue§f = others, §7grey§f = locked."
+      ]),
+      P("monitor", "Peek (Camera Monitor)", [
+        "Tap with the §bCamera Monitor§f: your screen becomes the selected camera.",
+        "§7• Tap again: next camera  • Double-tap sneak or §f/exitcam§7: back to you",
+        "",
+        "§7The thirds guide helps framing (Camera tab switch). It never shows in Photo Mode."
+      ]),
+      P("fog", "Depth Fog", [
+        "Far things fade into a colour while close things stay sharp. Gives depth and makes NPCs stand out.",
+        "",
+        "§78 looks (white, black, haze, sunset, night, horror, dream, smoke) and 9 distances. Only you see it."
+      ]),
+      P("photo", "Photo Mode", [
+        "3-2-1, then the HUD, your hand, outlines, cameras and name tags disappear and the screen flashes.",
+        "§fTake your device screenshot§7 (phone: power + volume down). Tap the screen to come back.",
+        "",
+        "§7Add-ons can't save pictures by themselves, so the screenshot is yours to take."
+      ]),
+      P("backdrop", "Green Screen & Layers", [
+        "§bGreen Screen§f puts a flat green box around your scene. Remove the green in any editor (CapCut, PicsArt, Photopea) for a clean NPC picture.",
+        "",
+        "§bLayer Shot§f takes 3 photos from the same camera: full shot, NPCs on green, background only. They line up perfectly.",
+        "§7Use a flat area: blocks between camera and NPC still show."
+      ]),
+      P("prop", "Block, Item & Particle Props", [
+        "§fBlock & Item Props§7: a floating block or item you move, turn (Display > Turn The Prop) and scale.",
+        "§fParticle Props§7: a spot that keeps playing fire, smoke, hearts, sparks..."
+      ]),
+      P("crowd", "Crowds & Scenes", [
+        "§fMake A Crowd§7 copies the selected NPC into a grid, line, circle or random scatter, with random turns and poses.",
+        "§fScene Presets§7 save everything around you (NPCs, mobs, props, cameras) and place it anywhere."
+      ]),
+      P("tools", "New Tools", [
+        "§bNPC Stamp§f — tap an NPC to copy, tap a block to paste.",
+        "§bNPC Rotator§f — tap an NPC to make it face you.",
+        "§bTeleporter§f — go where you look.",
+        "§7Get them in Presets > Studio Tools."
+      ]),
+      P("cape", "Capes, Name Tags, NPC Bright", [
+        "§fCape§7: 8 capes for any NPC.",
+        "§fName Tag§7: colour, bold, or hide it.",
+        "§fNPC Bright§7: the NPC stays fully lit in dark scenes."
+      ])
+    ]
+  },
+  {
     name: "Getting Started",
     icon: "debug",
     pages: [
       P("spawn", "Your Tools", [
         "§bDirector's Baton§f — your main tool.",
-        "§7• Tap / right-click the air: main menu.",
-        "§7• Tap an NPC: edit that NPC.",
+        "§7• Tap / right-click the air: the Studio Panel.",
+        "§7• Tap an NPC: select it and edit it in the panel.",
         "§7• Hit an NPC: cycle quick poses.",
         "",
         "§bCine Camera§f — place cameras and fly the camera.",
+        "§bCamera Monitor§f — peek through your cameras.",
         "§bBeast Whistle§f — spawn animals and mobs as props.",
         "§bHandbook§f — this book.",
         "",
@@ -167,7 +246,7 @@ export const CHAPTERS = [
 
 export function openHandbook(player, back) {
   sfx(player, "open");
-  const m = menu("§lNPC Studio V2 Handbook", "§7Tap a chapter to see what each feature does.");
+  const m = menu("§lNPC Studio V3 Handbook", "§7Tap a chapter to see what each feature does.");
   for (const ch of CHAPTERS) m.btn(ch.name, ICON(ch.icon), () => openChapter(player, ch, () => openHandbook(player, back)));
   if (back) m.back(back);
   m.show(player);

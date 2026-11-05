@@ -460,7 +460,7 @@ function openSlotMenu(player, npc, slotKey, back) {
 const SLOT_WORDS = { Head: "on the head", Chest: "on the chest", Legs: "on the legs", Feet: "on the feet", Mainhand: "in the main hand", Offhand: "in the offhand" };
 const EXAMPLES = { Head: "pumpkin, zombie head, diamond helmet", Chest: "elytra, netherite chestplate", Legs: "iron leggings", Feet: "golden boots", Mainhand: "diamond sword, bow, torch", Offhand: "totem, shield, torch" };
 
-function searchItems(query) {
+export function searchItems(query) {
   const words = query.toLowerCase().replace(/[^a-z0-9 _:]/g, " ").split(/[\s_]+/).filter(Boolean);
   if (!words.length) return [];
   const hits = [];

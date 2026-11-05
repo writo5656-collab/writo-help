@@ -42,11 +42,12 @@
         "geometries": {
           "Array.geos": [
             "Geometry.default",
-            "Geometry.slim"
+            "Geometry.slim",
+            "Geometry.prop"
           ]
         }
       },
-      "geometry": "Array.geos[query.property('npcstudio:slim') ? 1 : 0]",
+      "geometry": "Array.geos[math.mod(math.floor(query.property('npcstudio:flags') / 64), 2) == 1 ? 2 : (query.property('npcstudio:slim') ? 1 : 0)]",
       "materials": [
         {
           "*": "Material.default"
@@ -54,6 +55,108 @@
       ],
       "textures": [
         "Array.skins[query.property('npcstudio:skin_index')]"
+      ]
+    },
+    "controller.render.npcstudio.bright": {
+      "arrays": {
+        "textures": {
+          "Array.skins": [
+            "Texture.skin0",
+            "Texture.skin1",
+            "Texture.skin2",
+            "Texture.skin3",
+            "Texture.skin4",
+            "Texture.skin5",
+            "Texture.skin6",
+            "Texture.skin7",
+            "Texture.skin8",
+            "Texture.skin9",
+            "Texture.skin10",
+            "Texture.skin11",
+            "Texture.skin12",
+            "Texture.skin13",
+            "Texture.skin14",
+            "Texture.skin15",
+            "Texture.skin16",
+            "Texture.skin17",
+            "Texture.skin18",
+            "Texture.skin19",
+            "Texture.skin20",
+            "Texture.skin21",
+            "Texture.skin22",
+            "Texture.skin23",
+            "Texture.skin24",
+            "Texture.skin25",
+            "Texture.skin26",
+            "Texture.skin27",
+            "Texture.skin28",
+            "Texture.skin29",
+            "Texture.skin30",
+            "Texture.skin31"
+          ]
+        },
+        "geometries": {
+          "Array.geos": [
+            "Geometry.default",
+            "Geometry.slim",
+            "Geometry.prop"
+          ]
+        }
+      },
+      "geometry": "Array.geos[math.mod(math.floor(query.property('npcstudio:flags') / 64), 2) == 1 ? 2 : (query.property('npcstudio:slim') ? 1 : 0)]",
+      "materials": [
+        {
+          "*": "Material.default"
+        }
+      ],
+      "textures": [
+        "Array.skins[query.property('npcstudio:skin_index')]"
+      ],
+      "ignore_lighting": true
+    },
+    "controller.render.npcstudio.outline": {
+      "arrays": {
+        "geometries": {
+          "Array.outline": [
+            "Geometry.outline",
+            "Geometry.outline_slim"
+          ]
+        }
+      },
+      "geometry": "Array.outline[query.property('npcstudio:slim') ? 1 : 0]",
+      "materials": [
+        {
+          "*": "Material.outline"
+        }
+      ],
+      "textures": [
+        "Texture.outline"
+      ],
+      "ignore_lighting": true
+    },
+    "controller.render.npcstudio.cape": {
+      "arrays": {
+        "textures": {
+          "Array.capes": [
+            "Texture.cape1",
+            "Texture.cape2",
+            "Texture.cape3",
+            "Texture.cape4",
+            "Texture.cape5",
+            "Texture.cape6",
+            "Texture.cape7",
+            "Texture.cape8"
+          ]
+        }
+      },
+      "geometry": "Geometry.cape",
+      "materials": [
+        {
+          "*": "Material.default"
+        }
+      ],
+      "textures": [
+        "Array.capes[math.mod(math.floor(query.property('npcstudio:flags') / 4), 16) - 1]"
       ]
     }
   }

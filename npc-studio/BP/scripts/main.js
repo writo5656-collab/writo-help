@@ -9,24 +9,28 @@
  * See LICENSE.md in this pack for full terms.
  */
 import { ItemStack, EquipmentSlot, EntityComponentTypes, CommandPermissionLevel, CustomCommandStatus } from "@minecraft/server";
-import { world, system, safeOn, msg, sfx, actionbar, NPC_ID, CAMERA_ID, WAND_ID, CAMERA_TOOL_ID, MOB_TOOL_ID, HANDBOOK_ID, MOB_TAG, TOOL_IDS, isLocked } from "./core.js";
+import { world, system, safeOn, msg, sfx, actionbar, NPC_ID, CAMERA_ID, WAND_ID, CAMERA_TOOL_ID, MOB_TOOL_ID, HANDBOOK_ID, MONITOR_ID, STAMP_ID, ROTATOR_ID, TELEPORTER_ID, MOB_TAG, TOOL_IDS, isLocked } from "./core.js";
+import { peek } from "./studio.js";
+import { stampCopy, stampPaste, rotateToMe, teleportLook } from "./props.js";
 import { openHandbook } from "./handbook.js";
 import { openMainMenu, openManageMenu, getLookedAtNPC, startLookLoop } from "./npc.js";
 import { openCameraToolMenu, openCameraPanel, camState, viewThrough, exitView, isViewing } from "./camera.js";
 import { openMobToolMenu, openMobManageMenu, tryRide, tryDismount } from "./mobs.js";
 import { quickEquip } from "./wardrobe.js";
 import { isInGizmo, endGizmo, gizmoHotbar, gizmoToolUse, restoreAfterRejoin, cleanupGizmos } from "./poseEditor.js";
-import { inCinema, exitCinema, restoreCinemaAfterRejoin, cinemaHotbar } from "./cinema.js";
+import { inCinema, exitCinema, restoreCinemaAfterRejoin, cinemaHotbar, cinemaTap } from "./cinema.js";
 import { isStudioTempItem, purgeTempItems } from "./hotbar.js";
 import { startMountLoop, reapplyMobPoses } from "./mount.js";
 import { inFlyCam, flyCamLock, flyCamZoom } from "./flycam.js";
 import { applyPose, expandPreset, pushUndo } from "./rig.js";
+import { dropPlayer } from "./selection.js";
+import { restoreFog } from "./fog.js";
 import { ALL_POSES, QUICK_CYCLE } from "./poses.js";
 
-const STARTER_ITEMS = [WAND_ID, CAMERA_TOOL_ID, MOB_TOOL_ID, HANDBOOK_ID];
+const STARTER_ITEMS = [WAND_ID, CAMERA_TOOL_ID, MONITOR_ID, MOB_TOOL_ID, HANDBOOK_ID];
 
 system.run(() => {
-  world.sendMessage("§8[§bNPC Studio V2§8] §7Studio loaded — grab your baton and roll camera. §8by NoxeelMC");
+  world.sendMessage("§8[§bNPC Studio V3§8] §7Studio loaded — grab your baton and roll camera. §8by NoxeelMC");
 });
 
 startLookLoop();
@@ -71,17 +75,18 @@ safeOn(() => world.afterEvents.playerSpawn, (ev) => {
   const player = ev.player;
   restoreAfterRejoin(player);
   restoreCinemaAfterRejoin(player);
+  restoreFog(player);
   system.runTimeout(reapplyMobPoses, 60);
   if (!ev.initialSpawn) return;
   system.runTimeout(() => {
     if (!player.isValid) return;
     try {
-      player.onScreenDisplay.setTitle("§l§bNPC STUDIO §fV2", { subtitle: "§fwelcome to §bStudio Mode", fadeInDuration: 10, stayDuration: 60, fadeOutDuration: 20 });
+      player.onScreenDisplay.setTitle("§l§bNPC STUDIO §fV3", { subtitle: "§fwelcome to §bStudio Mode", fadeInDuration: 10, stayDuration: 60, fadeOutDuration: 20 });
       player.playSound("random.levelup", { pitch: 0.8, volume: 0.6 });
     } catch {
       /* ignore */
     }
-    msg(player, "§b§l» WELCOME TO NPC STUDIO V2");
+    msg(player, "§b§l» WELCOME TO NPC STUDIO V3");
     msg(player, "§fYou're the director now. §7Tap the air with the §bDirector's Baton§7 to start. New here? Open the §bHandbook§7.");
     const inv = player.getComponent("minecraft:inventory")?.container;
     if (!inv) return;
@@ -99,6 +104,8 @@ safeOn(() => world.afterEvents.playerSpawn, (ev) => {
   }, 40);
 }, "playerSpawn");
 
+safeOn(() => world.afterEvents.playerLeave, (ev) => dropPlayer({ id: ev.playerId }), "playerLeave");
+
 // ---------- right-click with a tool ----------
 safeOn(() => world.beforeEvents.itemUse, (ev) => {
   const itemId = ev.itemStack?.typeId;
@@ -110,7 +117,7 @@ safeOn(() => world.beforeEvents.itemUse, (ev) => {
       if (itemId === "npcstudio:cam_lock") {
         if (!flyCamLock(player, false)) exitCinema(player);
       } else if (itemId === "npcstudio:cam_exit") {
-        exitCinema(player);
+        if (!cinemaTap(player)) exitCinema(player);
       } else if (isInGizmo(player)) {
         gizmoToolUse(player, itemId);
       } else {
@@ -134,6 +141,16 @@ safeOn(() => world.beforeEvents.itemUse, (ev) => {
       openMobToolMenu(player);
     } else if (itemId === HANDBOOK_ID) {
       openHandbook(player);
+    } else if (itemId === MONITOR_ID) {
+      peek(player);
+    } else if (itemId === STAMP_ID) {
+      const npc = getLookedAtNPC(player);
+      if (npc) stampCopy(player, npc);
+      else stampPaste(player);
+    } else if (itemId === ROTATOR_ID) {
+      rotateToMe(player, getLookedAtNPC(player));
+    } else if (itemId === TELEPORTER_ID) {
+      teleportLook(player);
     }
   });
 }, "itemUse");
@@ -161,6 +178,8 @@ safeOn(() => world.beforeEvents.playerInteractWithEntity, (ev) => {
     system.run(() => {
       if (isInGizmo(player)) return;
       if (sneaking && held && !TOOL_IDS.includes(held.typeId)) return quickEquip(player, target, held);
+      if (held?.typeId === STAMP_ID) return stampCopy(player, target);
+      if (held?.typeId === ROTATOR_ID) return rotateToMe(player, target);
       if (!held || held.typeId === WAND_ID) openManageMenu(player, target);
     });
   }

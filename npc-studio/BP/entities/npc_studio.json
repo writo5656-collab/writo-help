@@ -277,6 +277,15 @@
           ],
           "default": 0,
           "client_sync": true
+        },
+        "npcstudio:flags": {
+          "type": "int",
+          "range": [
+            0,
+            255
+          ],
+          "default": 0,
+          "client_sync": true
         }
       }
     },

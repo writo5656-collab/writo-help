@@ -7,7 +7,7 @@
       },
       {
         "binding_type": "view",
-        "source_property_name": "((#hud_title_text_string - 'npcs:') = #hud_title_text_string)",
+        "source_property_name": "(((#hud_title_text_string - 'npcs:') = #hud_title_text_string) and ((#hud_title_text_string - 'npcg:') = #hud_title_text_string))",
         "target_property_name": "#visible"
       }
     ]
@@ -20,6 +20,9 @@
         "value": [
           {
             "npcstudio_corner@hud.npcstudio_corner": {}
+          },
+          {
+            "npcstudio_guides@hud.npcstudio_guides": {}
           }
         ]
       }
@@ -73,6 +76,94 @@
             }
           ],
           "font_scale_factor": 0.75
+        }
+      }
+    ]
+  },
+  "npcstudio_guides": {
+    "type": "panel",
+    "size": [
+      "100%",
+      "100%"
+    ],
+    "layer": 29,
+    "bindings": [
+      {
+        "binding_name": "#hud_title_text_string"
+      },
+      {
+        "binding_type": "view",
+        "source_property_name": "(not ((#hud_title_text_string - 'npcg:thirds') = #hud_title_text_string))",
+        "target_property_name": "#visible"
+      }
+    ],
+    "controls": [
+      {
+        "v1": {
+          "type": "image",
+          "texture": "textures/ui/npcstudio/guide_line",
+          "size": [
+            1,
+            "100%"
+          ],
+          "offset": [
+            "33.33%",
+            0
+          ],
+          "anchor_from": "top_left",
+          "anchor_to": "top_left",
+          "layer": 1
+        }
+      },
+      {
+        "v2": {
+          "type": "image",
+          "texture": "textures/ui/npcstudio/guide_line",
+          "size": [
+            1,
+            "100%"
+          ],
+          "offset": [
+            "66.66%",
+            0
+          ],
+          "anchor_from": "top_left",
+          "anchor_to": "top_left",
+          "layer": 1
+        }
+      },
+      {
+        "h1": {
+          "type": "image",
+          "texture": "textures/ui/npcstudio/guide_line",
+          "size": [
+            "100%",
+            1
+          ],
+          "offset": [
+            0,
+            "33.33%"
+          ],
+          "anchor_from": "top_left",
+          "anchor_to": "top_left",
+          "layer": 1
+        }
+      },
+      {
+        "h2": {
+          "type": "image",
+          "texture": "textures/ui/npcstudio/guide_line",
+          "size": [
+            "100%",
+            1
+          ],
+          "offset": [
+            0,
+            "66.66%"
+          ],
+          "anchor_from": "top_left",
+          "anchor_to": "top_left",
+          "layer": 1
         }
       }
     ]

@@ -7,18 +7,26 @@
         "default": "entity_alphatest"
       },
       "textures": {
-        "default": "textures/entity/npcstudio/camera_marker"
+        "blue": "textures/entity/npcstudio/cam_blue",
+        "green": "textures/entity/npcstudio/cam_green",
+        "grey": "textures/entity/npcstudio/cam_grey"
       },
       "geometry": {
         "default": "geometry.npcstudio.camera"
       },
+      "animations": {
+        "aim": "animation.npcstudio.camera.aim"
+      },
+      "scripts": {
+        "scale": "query.property('npcstudio:hidden') ? 0.0 : 1.0",
+        "animate": [
+          "aim"
+        ]
+      },
       "render_controllers": [
         "controller.render.npcstudio.camera"
       ],
-      "enable_attachables": false,
-      "scripts": {
-        "scale": "query.property('npcstudio:hidden') ? 0.0 : 0.6"
-      }
+      "enable_attachables": false
     }
   }
 }

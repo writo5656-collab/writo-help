@@ -12,7 +12,10 @@ const MOB_TYPES = [
   ["chicken", "Chicken"], ["rabbit", "Rabbit"], ["villager_v2", "Villager"], ["iron_golem", "Iron Golem"],
   ["snow_golem", "Snow Golem"], ["allay", "Allay"], ["zombie", "Zombie"], ["skeleton", "Skeleton"], ["spider", "Spider"],
   ["creeper", "Creeper"], ["enderman", "Enderman"], ["witch", "Witch"], ["piglin", "Piglin"], ["warden", "Warden"],
-  ["ender_dragon", "Ender Dragon"], ["axolotl", "Axolotl"], ["frog", "Frog"], ["panda", "Panda"], ["polar_bear", "Polar Bear"]
+  ["ender_dragon", "Ender Dragon"], ["axolotl", "Axolotl"], ["frog", "Frog"], ["panda", "Panda"], ["polar_bear", "Polar Bear"],
+  // V3: vehicle / decoration props (from the Java NPC Studio's prop list)
+  ["boat", "Boat", true], ["chest_boat", "Chest Boat", true], ["minecart", "Minecart", true], ["chest_minecart", "Chest Minecart"],
+  ["armor_stand", "Armor Stand"]
 ].map(([id, label, rideable]) => ({ id: `minecraft:${id}`, label, rideable: !!rideable }));
 
 const freeze = (mob, on) => freezeMob(mob, on);

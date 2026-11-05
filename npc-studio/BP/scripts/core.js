@@ -13,7 +13,11 @@ export const CAMERA_TOOL_ID = "npcstudio:camera_tool";
 export const MOB_TOOL_ID = "npcstudio:mob_tool";
 export const MOB_TAG = "npcstudio_mob";
 export const HANDBOOK_ID = "npcstudio:handbook";
-export const TOOL_IDS = [WAND_ID, CAMERA_TOOL_ID, MOB_TOOL_ID, HANDBOOK_ID];
+export const MONITOR_ID = "npcstudio:monitor";
+export const STAMP_ID = "npcstudio:stamp";
+export const ROTATOR_ID = "npcstudio:rotator";
+export const TELEPORTER_ID = "npcstudio:teleporter";
+export const TOOL_IDS = [WAND_ID, CAMERA_TOOL_ID, MOB_TOOL_ID, HANDBOOK_ID, MONITOR_ID, STAMP_ID, ROTATOR_ID, TELEPORTER_ID];
 export const CAM_PRESET = "npcstudio:cam_free";
 
 // Every feature button uses NPC Studio's own drawn icon set (tools/make_icons.py).
@@ -162,27 +166,50 @@ function showWithRetry(form, player, tries = 0) {
  * Button menu where each button carries its own callback — no fragile index math.
  * menu(title, body).btn(text, icon, fn).back(fn).show(player)
  */
-// Button labels: just the name, in a strong colour that reads well on grey buttons.
-// Descriptions ("\n..." lines, "§8(...)" hints, trailing "(...)") are removed — the Handbook explains features.
-const CONTRAST = { a: "2", b: "3", c: "4", e: "6", d: "5", f: "0", "7": "8" };
+// Button labels: just the name. V3 panel: light text on dark buttons, so most colour codes are
+// removed; §b (cyan) = active / on, §c (red) = delete. §a (green, "active" in V2) becomes cyan.
+// Descriptions ("\n..." lines, "§8(...)" hints, trailing "(...)") are removed: the Handbook explains features.
 export function cleanLabel(text) {
   if (typeof text !== "string") return text; // translated/raw labels (skin names)
   let t = text.split("\n")[0].replace(/§r/g, "");
   t = t.replace(/\s+(§[0-9a-fl])*§8.*$/, ""); // "Name §8(hint)"
   t = t.replace(/\s*\([^)]*\)\s*$/, ""); // "Name (hint)"
-  t = t.replace(/§([abcdef7])/g, (_, c) => `§${CONTRAST[c]}`);
-  if (!/^(§[0-9a-fl])+/.test(t)) t = `§0${t}`;
-  else if (/^§l/.test(t)) t = `§0${t}`;
-  t = t.replace(/§3/g, "§0"); // names are black; only green (active) and red (delete) keep a colour
+  t = t.replace(/§a/g, "§b").replace(/§([^bcl])/g, "");
   return t.trim();
 }
 
+// V3 side panel: an invisible tag at the start of the title tells RP/ui/server_form.json to draw
+// the menu as the docked dark panel (list or icon grid, with or without tabs).
+const PANEL_TAGS = { list: "§n§p§s§r", listTabs: "§n§p§t§r", grid: "§n§p§g§r", gridTabs: "§n§p§h§r" };
+export const TAB_MARK = "§u§r";
+export const SWITCH = (on) => ICON(on ? "switch_on" : "switch_off");
+
+/**
+ * Button menu where each button carries its own callback — no fragile index math.
+ * menu(title, body).btn(text, icon, fn).back(fn).show(player)
+ *   .grid()                      icon grid instead of a list
+ *   .tabs(names, active, onTab)  tab row (must come before any btn)
+ */
 export function menu(title, body) {
-  const form = new ActionFormData().title(title);
+  const form = new ActionFormData();
   if (body) form.body(body);
   const actions = [];
   let onBack;
+  let grid = false;
+  let hasTabs = false;
   const api = {
+    grid() {
+      grid = true;
+      return api;
+    },
+    tabs(names, active, onTab) {
+      hasTabs = true;
+      names.forEach((n, i) => {
+        form.button(`${TAB_MARK}${i === active ? "§b" : ""}${n}`);
+        actions.push(() => onTab(i));
+      });
+      return api;
+    },
     btn(text, icon, fn) {
       const label = cleanLabel(text);
       if (icon) form.button(label, icon);
@@ -192,11 +219,13 @@ export function menu(title, body) {
     },
     back(fn) {
       onBack = fn;
-      form.button("§8Back", ICON("back"));
+      form.button("Back", ICON("back"));
       actions.push(fn);
       return api;
     },
     show(player) {
+      const tag = grid ? (hasTabs ? PANEL_TAGS.gridTabs : PANEL_TAGS.grid) : hasTabs ? PANEL_TAGS.listTabs : PANEL_TAGS.list;
+      form.title(tag + title);
       return showWithRetry(form, player)
         .then((res) => {
           if (res.canceled) return;

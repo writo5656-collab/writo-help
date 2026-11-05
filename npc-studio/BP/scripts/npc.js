@@ -17,6 +17,7 @@ import { openShotsMenu } from "./shots.js";
 import { openRideMenu, isMounted } from "./mount.js";
 import { openHandbook } from "./handbook.js";
 import { openCameraToolMenu, flyCam } from "./camera.js";
+import { openStudio, openStudioFor } from "./panel.js";
 
 // ---------- spawning ----------
 function initNpc(npc, skin, rot, name) {
@@ -100,7 +101,7 @@ export function listPresets() {
   return world.getDynamicPropertyIds().filter((k) => k.startsWith(PRESET_PREFIX)).map((k) => k.slice(PRESET_PREFIX.length)).sort();
 }
 
-function savePreset(player, npc, name) {
+export function savePreset(player, npc, name) {
   const data = {
     v: 3,
     skinIndex: npc.getProperty("npcstudio:skin_index"),
@@ -232,7 +233,7 @@ export function getLookedAtNPC(player) {
   return undefined;
 }
 
-function pickNpc(player, title, onPick, back) {
+export function pickNpc(player, title, onPick, back) {
   const npcs = npcsNear(player, 64).sort((a, b) => a.location.x - b.location.x);
   if (npcs.length === 0) return msg(player, "§cNo NPCs within 64 blocks.");
   const m = menu(title);
@@ -246,98 +247,10 @@ function pickNpc(player, title, onPick, back) {
 // =====================================================================================
 export function openManageMenu(player, npc, back) {
   if (!npc.isValid) return;
-  try {
-    npc.addEffect("glowing", 200, { amplifier: 0, showParticles: false });
-  } catch {
-    /* cosmetic */
-  }
-  const self = () => openManageMenu(player, npc, back);
-  if (isLocked(npc)) {
-    return menu(npcLabel(npc), "§cThis NPC is locked (protected from edits).")
-      .btn("Unlock", ICON("lock"), () => {
-        npc.setProperty("npcstudio:locked", false);
-        self();
-      })
-      .show(player);
-  }
-  const anim = getAnim(npc);
-  const keys = getTimeline(npc).keys.length;
-  const body = [
-    `§7Skin: §f${skinPlainName(npc.getProperty("npcstudio:skin_index") ?? 0)} §7(${npc.getProperty("npcstudio:slim") ? "slim" : "classic"} arms)`,
-    `§7Size: §f${Math.round(getScale(npc) * 100)}%   §7Loop anim: §f${anim ? LOOP_ANIMS[anim - 1] : "none"}   §7Keyframes: §f${keys}`,
-    `§7Looks at players: §f${isLooking(npc) ? "yes" : "no"}`
-  ].join("\n");
-  menu(npcLabel(npc), body)
-    .btn("§lPose Editor §r§8(Blender-style)", ICON("pose_manual"), () => openPoseEditor(player, npc, self))
-    .btn("Pose Library (45+ poses)", ICON("pose_preset"), () => openPoseLibrary(player, npc, self))
-    .btn("§lWardrobe §r§8(armor, enchants, trims)", ICON("equip"), () => openWardrobe(player, npc, self))
-    .btn("Skin & Size", npcHead(npc), () => openSkinSize(player, npc, self))
-    .btn("Animation §8(loops + keyframes)", ICON("animate"), () =>
-      menu("Animation")
-        .btn(`Looping Animation: ${anim ? LOOP_ANIMS[anim - 1] : "none"}`, ICON("animate"), () => openLoopAnims(player, npc, self))
-        .btn(`Keyframe Animator (${keys} keys)`, ICON("record"), () => openAnimator(player, npc, self))
-        .back(self)
-        .show(player)
-    )
-    .btn(isLooking(npc) ? "§aLooking At Players §r§8(tap to stop)" : "Look At Players §8(head follows you)", ICON("eye"), () => {
-      setLookAtPlayers(npc, !isLooking(npc));
-      self();
-    })
-    .btn(isMounted(npc) ? "§aRiding §r§8(adjust / dismount)" : "Ride a Mob §8(horse, camel, wolf...)", ICON("ride"), () => openRideMenu(player, npc, self))
-    .btn("Cinematic Shot Of This NPC", ICON("film"), () => openShotsMenu(player, self, npc))
-    .btn("Move / Turn", ICON("move"), () => openMoveMenu(player, npc, self))
-    .btn("Rename", ICON("rename"), () =>
-      modal("Rename NPC").text("n", "Name (use § codes for colours)", "NPC", npc.nameTag || "").show(player, (v) => {
-        const n = String(v.n ?? "").trim();
-        if (n) npc.nameTag = n;
-        self();
-      }, self)
-    )
-    .btn("Clone (exact copy)", ICON("clone"), () => {
-      cloneNpc(player, npc);
-      self();
-    })
-    .btn("Save as Preset", ICON("save"), () =>
-      modal("Save Preset").text("n", "Preset name", "knight_guard").show(player, ({ n }) => {
-        n = String(n ?? "").trim().slice(0, 40);
-        if (n) savePreset(player, npc, n);
-        self();
-      }, self)
-    )
-    .btn("Lock", ICON("lock"), () => {
-      npc.setProperty("npcstudio:locked", true);
-      msg(player, "§aLocked.");
-    })
-    .btn("§cDelete", ICON("delete"), () =>
-      confirm(player, "Delete NPC?", `Delete ${npcLabel(npc)}? This can't be undone.`, "Delete", () => {
-        npc.remove();
-        msg(player, "§aDeleted.");
-      }, self)
-    )
-    .back(back ?? (() => openMainMenu(player)))
-    .show(player);
+  openStudioFor(player, npc); // V3: everything about an NPC lives in the Studio panel
 }
 
-function openSkinSize(player, npc, back) {
-  const self = () => openSkinSize(player, npc, back);
-  const slim = !!npc.getProperty("npcstudio:slim");
-  menu("Skin & Size", `§7Skin: §f${skinPlainName(npc.getProperty("npcstudio:skin_index") ?? 0)}\n§7Arms: §f${slim ? "Slim (3px, Alex)" : "Classic (4px, Steve)"}\n§7Size: §f${Math.round(getScale(npc) * 100)}%`)
-    .btn("Change Skin", ICON("skin"), () =>
-      pickSkin(player, "Choose Skin", (i) => {
-        setSkin(npc, i);
-        self();
-      }, self)
-    )
-    .btn(`Arm Model: ${slim ? "Slim" : "Classic"} §8(tap to switch)`, ICON("skin"), () => {
-      npc.setProperty("npcstudio:slim", !slim);
-      self();
-    })
-    .btn("Size / Height", ICON("scale"), () => openScaleMenu(player, npc, self))
-    .back(back)
-    .show(player);
-}
-
-function openMoveMenu(player, npc, back, stepIdx = 1) {
+export function openMoveMenu(player, npc, back, stepIdx = 1) {
   if (!npc.isValid) return;
   const STEPS = [0.1, 0.5, 1, 2];
   const step = STEPS[stepIdx];
@@ -388,38 +301,16 @@ function openMoveMenu(player, npc, back, stepIdx = 1) {
 // MAIN MENU
 // =====================================================================================
 export function openMainMenu(player) {
-  const self = () => openMainMenu(player);
-  menu("§lNPC Studio V2")
-    .btn("Spawn NPC", ICON("spawn"), () => openSpawnMenu(player, self))
-    .btn("Edit An NPC", ICON("manage"), () => {
-      const npc = getLookedAtNPC(player);
-      if (npc) return openManageMenu(player, npc, self);
-      pickNpc(player, "Pick an NPC", (n) => openManageMenu(player, n, self), self);
-    })
-    .btn("§lCinematic Shots §r§8(30 camera moves)", ICON("film"), () => openShotsMenu(player, self))
-    .btn("§lFly Cam §r§8(joystick camera, tap to lock)", ICON("flycam"), () => flyCam(player, "camera"))
-    .btn("Cameras (place & paths)", ICON("camera"), () => openCameraToolMenu(player, self))
-    .btn("Scene: Play All NPC Animations", ICON("play"), () => {
-      playAllTimelines(player);
-    })
-    .btn("Scene: Stop All Animations", ICON("clear_x"), () => {
-      stopAllTimelines(player);
-      msg(player, "§7Stopped.");
-    })
-    .btn("Presets", ICON("preset"), () => openPresetsMenu(player, self))
-    .btn("Bulk Tools (many NPCs)", ICON("bulkequip"), () => openBulkMenu(player, self))
-    .btn("World Controls", ICON("world"), () => openWorldMenu(player, self))
-    .btn("Handbook", ICON("debug"), () => openHandbook(player, self))
-    .show(player);
+  openStudio(player);
 }
 
-function openSpawnMenu(player, back) {
+export function openSpawnMenu(player, back) {
   modal("Spawn NPCs")
     .slider("count", "How many? (grid in front of you)", 1, 50, 1, 1)
     .show(player, ({ count }) => pickSkin(player, count > 1 ? `Choose Skin (x${count})` : "Choose Skin", (i) => spawnNpcs(player, i, count), back), back);
 }
 
-function openPresetsMenu(player, back) {
+export function openPresetsMenu(player, back) {
   const self = () => openPresetsMenu(player, back);
   const names = listPresets();
   const m = menu("Presets", names.length ? "§7Save presets from an NPC's menu. Tap one to use it." : "§7No presets yet. Open an NPC > Save as Preset.");
@@ -463,7 +354,7 @@ function openPresetsMenu(player, back) {
   m.back(back).show(player);
 }
 
-function openBulkMenu(player, back) {
+export function openBulkMenu(player, back) {
   const self = () => openBulkMenu(player, back);
   const radius = (fn) => () => modal("Radius").slider("r", "Every NPC within (blocks)", 5, 100, 5, 20).show(player, ({ r }) => fn(npcsNear(player, r).filter((n) => !isLocked(n))), self);
   menu("Bulk Tools", "§7Locked NPCs are always skipped.")
@@ -511,32 +402,3 @@ function openBulkMenu(player, back) {
     .back(back)
     .show(player);
 }
-
-function openWorldMenu(player, back) {
-  const dim = player.dimension;
-  const run = (cmd, label) => () => {
-    try {
-      dim.runCommand(cmd);
-      msg(player, `§a${label}`);
-    } catch (e) {
-      msg(player, `§c${e}`);
-    }
-    openWorldMenu(player, back);
-  };
-  menu("World Controls")
-    .btn("Sunrise", ICON("sunset"), run("time set 23000", "Sunrise."))
-    .btn("Day", ICON("day"), run("time set 1000", "Day."))
-    .btn("Noon", ICON("day"), run("time set 6000", "Noon."))
-    .btn("Sunset", ICON("sunset"), run("time set 12000", "Sunset."))
-    .btn("Night", ICON("night"), run("time set 13000", "Night."))
-    .btn("Midnight", ICON("midnight"), run("time set 18000", "Midnight."))
-    .btn("Freeze Time", ICON("freeze"), run("gamerule dodaylightcycle false", "Time frozen."))
-    .btn("Unfreeze Time", ICON("freeze"), run("gamerule dodaylightcycle true", "Time runs again."))
-    .btn("Clear Weather", ICON("sun"), run("weather clear 999999", "Clear."))
-    .btn("Rain", ICON("rain"), run("weather rain 999999", "Rain."))
-    .btn("Thunderstorm", ICON("thunder"), run("weather thunder 999999", "Thunder."))
-    .btn("Lock Weather", ICON("freeze"), run("gamerule doweathercycle false", "Weather locked."))
-    .back(back)
-    .show(player);
-}
-

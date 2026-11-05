@@ -130,6 +130,7 @@ export function startMountLoop() {
         mounted.delete(id);
         continue;
       }
+      if (npc.getDynamicProperty("npcstudio:hidden_at") !== undefined) continue; // hidden for a Layer Shot
       const d = getJson(npc, MOUNT_KEY, undefined);
       const mob = d ? world.getEntity(d.id) : undefined;
       if (!mob?.isValid) {

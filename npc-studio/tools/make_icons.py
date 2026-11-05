@@ -629,6 +629,170 @@ def tool_axis():
     finish([(x, PAL["red"]), (y, PAL["green"]), (z, PAL["blue"])], "tool_axis")
 
 
+# ---------------------------------------------------------------- V3 icons
+@icon
+def switch_on():
+    track, dt = mask(); dt.rounded_rectangle([2, 9, 29, 23], radius=7, fill=255)
+    knob, dk = mask(); dk.ellipse([17, 10, 28, 22], fill=255)
+    finish([(ImageChops.subtract(track, knob), PAL["cyan"]), (knob, PAL["white"])], "switch_on")
+
+
+@icon
+def switch_off():
+    track, dt = mask(); dt.rounded_rectangle([2, 9, 29, 23], radius=7, fill=255)
+    knob, dk = mask(); dk.ellipse([3, 10, 14, 22], fill=255)
+    finish([(ImageChops.subtract(track, knob), PAL["dark"]), (knob, PAL["gray"])], "switch_off")
+
+
+@icon
+def monitor():
+    frame, df = mask(); df.rectangle([2, 4, 29, 22], fill=255)
+    scr, ds = mask(); ds.rectangle([5, 7, 26, 19], fill=255)
+    stand, dd = mask(); dd.rectangle([13, 23, 18, 26], fill=255); dd.rectangle([8, 27, 23, 29], fill=255)
+    ground, dg = mask(); dg.rectangle([5, 15, 26, 19], fill=255)
+    finish([(ImageChops.subtract(frame, scr), PAL["dark"]), (ImageChops.subtract(scr, ground), PAL["cyan"]), (ground, PAL["green"]), (stand, PAL["gray"])], "monitor")
+
+
+@icon
+def photo():
+    body, db = mask(); db.rectangle([3, 9, 28, 26], fill=255); db.rectangle([10, 5, 20, 9], fill=255)
+    lens, dl = mask(); dl.ellipse([10, 11, 21, 22], fill=255)
+    glass, dg = mask(); dg.ellipse([13, 14, 18, 19], fill=255)
+    flash, dh = mask(); dh.rectangle([23, 11, 26, 13], fill=255)
+    finish([(ImageChops.subtract(body, lens), PAL["dark"]), (ImageChops.subtract(lens, glass), PAL["gray"]), (glass, PAL["cyan"]), (flash, PAL["yellow"])], "photo")
+
+
+@icon
+def layers():
+    a, da = mask(); da.polygon([(16, 3), (30, 10), (16, 17), (2, 10)], fill=255)
+    b, db = mask(); db.polygon([(16, 10), (30, 17), (16, 24), (2, 17)], fill=255)
+    c, dc = mask(); dc.polygon([(16, 17), (30, 24), (16, 31), (2, 24)], fill=255)
+    finish([(c, PAL["green"]), (ImageChops.subtract(b, a), PAL["cyan"]), (a, PAL["white"])], "layers")
+
+
+@icon
+def fog():
+    m1, d1 = mask(); d1.rounded_rectangle([3, 7, 28, 11], radius=2, fill=255)
+    m2, d2 = mask(); d2.rounded_rectangle([7, 14, 31, 18], radius=2, fill=255)
+    m3, d3 = mask(); d3.rounded_rectangle([1, 21, 24, 25], radius=2, fill=255)
+    finish([(m1, PAL["white"]), (m2, PAL["gray"]), (m3, PAL["cyan"])], "fog")
+
+
+@icon
+def backdrop():
+    scr, ds = mask(); ds.rectangle([2, 3, 29, 24], fill=255)
+    legs, dl = mask(); dl.line([(8, 24), (5, 30)], fill=255, width=2); dl.line([(23, 24), (26, 30)], fill=255, width=2)
+    finish([(scr, PAL["green"]), (legs, PAL["gray"])] + person_layers(ox=6, oy=6, sc=0.6), "backdrop")
+
+
+@icon
+def outline():
+    box, db = mask(); db.rectangle([3, 2, 28, 30], fill=255)
+    inner, di = mask(); di.rectangle([5, 4, 26, 28], fill=255)
+    finish(person_layers(ox=0, oy=1, sc=0.95) + [(ImageChops.subtract(box, inner), PAL["cyan"])], "outline")
+
+
+@icon
+def bright():
+    sun, ds = mask(); ds.ellipse([9, 9, 22, 22], fill=255)
+    rays, dr = mask()
+    for a in range(0, 360, 45):
+        x, y = 15.5 + math.cos(math.radians(a)) * 12, 15.5 + math.sin(math.radians(a)) * 12
+        dr.ellipse([x - 2, y - 2, x + 2, y + 2], fill=255)
+    finish([(rays, PAL["yellow"]), (sun, PAL["white"])], "bright")
+
+
+@icon
+def cape():
+    m, d = mask(); d.polygon([(9, 3), (22, 3), (27, 29), (16, 25), (4, 29)], fill=255)
+    collar, dc = mask(); dc.rectangle([9, 3, 22, 6], fill=255)
+    finish([(ImageChops.subtract(m, collar), PAL["red"]), (collar, PAL["gold"])], "cape")
+
+
+@icon
+def crowd():
+    finish(person_layers(ox=-8, oy=4, sc=0.75) + person_layers(ox=8, oy=4, sc=0.75) + person_layers(ox=0, oy=0, sc=0.85, shirt=(240, 150, 55)), "crowd")
+
+
+@icon
+def scene():
+    ground, dg = mask(); dg.polygon([(2, 22), (16, 15), (30, 22), (16, 29)], fill=255)
+    tree, dt = mask(); dt.ellipse([3, 5, 12, 14], fill=255)
+    trunk, dk = mask(); dk.rectangle([7, 14, 8, 20], fill=255)
+    finish([(ground, PAL["green"]), (tree, (60, 140, 60)), (trunk, (110, 75, 40))] + person_layers(ox=8, oy=-2, sc=0.6), "scene")
+
+
+@icon
+def prop():
+    top, dt = mask(); dt.polygon([(16, 4), (28, 10), (16, 16), (4, 10)], fill=255)
+    left, dl = mask(); dl.polygon([(4, 10), (16, 16), (16, 29), (4, 23)], fill=255)
+    rightf, dr = mask(); dr.polygon([(16, 16), (28, 10), (28, 23), (16, 29)], fill=255)
+    finish([(top, (120, 190, 80)), (left, (130, 95, 60)), (rightf, (100, 72, 45))], "prop")
+
+
+@icon
+def particle():
+    m, d = mask()
+    for x, y, r in [(9, 10, 4), (21, 7, 3), (22, 20, 5), (10, 23, 3), (16, 15, 2)]:
+        d.polygon([(x, y - r - 2), (x + r, y), (x, y + r + 2), (x - r, y)], fill=255)
+    finish([(m, PAL["yellow"])], "particle")
+
+
+@icon
+def stamp():
+    handle, dh = mask(); dh.ellipse([11, 2, 20, 10], fill=255); dh.rectangle([14, 9, 17, 16], fill=255)
+    base, db = mask(); db.rectangle([5, 16, 26, 22], fill=255)
+    ink, di = mask(); di.rectangle([7, 23, 24, 26], fill=255)
+    finish([(handle, PAL["gray"]), (base, PAL["dark"]), (ink, PAL["cyan"])], "stamp")
+
+
+@icon
+def rotator():
+    m, d = arc_arrow(True)
+    head, dh = mask(); dh.rectangle([12, 12, 19, 19], fill=255)
+    finish([(m, PAL["cyan"]), (head, SKIN_C)], "rotator")
+
+
+@icon
+def teleporter():
+    m, d = mask(); d.ellipse([4, 4, 27, 27], fill=255)
+    core, dc = mask(); dc.ellipse([11, 11, 20, 20], fill=255)
+    finish([(ImageChops.subtract(m, core), PAL["purple"]), (core, PAL["cyan"])], "teleporter")
+
+
+@icon
+def rules():
+    page, dp = mask(); dp.rectangle([6, 3, 25, 29], fill=255)
+    lines, dl = mask()
+    for y in (9, 14, 19, 24): dl.rectangle([10, y, 21, y + 1], fill=255)
+    finish([(ImageChops.subtract(page, lines), PAL["white"]), (lines, PAL["dark"])], "rules")
+
+
+@icon
+def guides():
+    box, db = mask(); db.rectangle([2, 5, 29, 26], fill=255)
+    inner, di = mask(); di.rectangle([4, 7, 27, 24], fill=255)
+    grid, dg = mask()
+    for x in (11, 20): dg.rectangle([x, 7, x, 24], fill=255)
+    for y in (12, 18): dg.rectangle([4, y, 27, y], fill=255)
+    finish([(ImageChops.subtract(box, inner), PAL["gray"]), (grid, PAL["cyan"])], "guides")
+
+
+@icon
+def nametag():
+    tag, dt = mask(); dt.polygon([(3, 10), (23, 10), (29, 16), (23, 22), (3, 22)], fill=255)
+    hole, dh = mask(); dh.ellipse([22, 14, 25, 17], fill=255)
+    txt, dx = mask(); dx.rectangle([7, 14, 17, 15], fill=255); dx.rectangle([7, 17, 14, 18], fill=255)
+    finish([(ImageChops.subtract(ImageChops.subtract(tag, hole), txt), PAL["gold"]), (txt, PAL["dark"])], "nametag")
+
+
+@icon
+def tools():
+    h, dh = mask(); dh.rectangle([4, 4, 14, 10], fill=255); dh.rectangle([8, 10, 11, 28], fill=255)
+    w, dw = mask(); dw.polygon([(20, 4), (27, 4), (27, 10), (24, 13), (24, 28), (21, 28), (21, 13), (18, 10)], fill=255)
+    finish([(h, PAL["gray"]), (w, PAL["cyan"])], "tools")
+
+
 ITEM_ICONS = {  # hotbar tool item -> icon it reuses
     "tool_select": "tool_select", "tool_rotate": "turn", "tool_move": "move", "tool_axis": "tool_axis",
     "tool_undo": "undo", "tool_reset": "clear", "tool_done": "done",

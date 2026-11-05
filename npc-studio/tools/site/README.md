@@ -1,13 +1,13 @@
 <div align="center">
 
-# 🎬 NPC Studio V2 — Skin Pack Builder
+# 🎬 NPC Studio V3 — Skin Pack Builder
 
 **Put your own skins on NPC Studio NPCs. Drop in skins, preview them in 3D, download one pack.**
 
 [![Open the Builder](https://img.shields.io/badge/OPEN%20THE%20BUILDER-3fd0e8?style=for-the-badge&logoColor=white)](https://noxeelmc-art.github.io/npc-studio-skins/)
 [![YouTube](https://img.shields.io/badge/YouTube-NoxeelMC-e62117?style=for-the-badge&logo=youtube&logoColor=white)](https://youtube.com/@NoxeelMC)
 [![Discord](https://img.shields.io/badge/Discord-Join-5865f2?style=for-the-badge&logo=discord&logoColor=white)](DISCORD_LINK_HERE)
-[![CurseForge](https://img.shields.io/badge/CurseForge-NPC%20Studio%20V2-f16436?style=for-the-badge&logo=curseforge&logoColor=white)](CURSEFORGE_LINK_HERE)
+[![CurseForge](https://img.shields.io/badge/CurseForge-NPC%20Studio%20V3-f16436?style=for-the-badge&logo=curseforge&logoColor=white)](CURSEFORGE_LINK_HERE)
 
 ![Minecraft Bedrock](https://img.shields.io/badge/Minecraft-Bedrock-62b47a?style=flat-square)
 ![Free](https://img.shields.io/badge/price-free-2ea44f?style=flat-square)
@@ -38,7 +38,13 @@
 
 > 💡 Got a `.zip` instead of `.mcpack`? Rename it so it ends in `.mcpack`, then open it.
 
-## 🎥 What's new in NPC Studio V2
+## 🎥 What's new in NPC Studio V3
+
+- 🗂️ **Studio Panel** with six tabs and **live editors** that change the NPC as you drag
+- 🔷 **Cyan outline**, 📐 **pyramid cameras**, 🖥️ **Camera Monitor**, 📸 **Photo Mode**
+- 🟩 **Green screen + Layer Shot**, 🌫️ **Depth Fog**, 🧱 **props**, 👥 **crowds**, 🧣 **capes**
+
+### NPC Studio V2
 
 - 🛡️ **Armor trims & enchant glint** — Trim Studio, or copy your own trimmed armor onto an NPC
 - 🎯 **Pose Mode** — a Blender-style gizmo: look at a body part, rotate or move it, sneak to finish
@@ -51,8 +57,8 @@
 
 ## ❓ FAQ
 
-<details><summary><b>Do I need NPC Studio V2?</b></summary>
-Yes. This page only makes the skin pack; the NPCs come from the NPC Studio V2 add-on.
+<details><summary><b>Do I need NPC Studio V3?</b></summary>
+Yes. This page only makes the skin pack; the NPCs come from the NPC Studio add-on.
 </details>
 <details><summary><b>My skins don't show in game</b></summary>
 Make sure the skin pack is active and sits <b>above</b> NPC Studio in your world's Resource Packs.

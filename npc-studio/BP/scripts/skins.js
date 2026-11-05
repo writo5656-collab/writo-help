@@ -40,21 +40,13 @@ export function setSkin(npc, i, autoSlim = true) {
   }
 }
 
-/** Pick a skin; calls onPick(index). */
+/** Pick a skin; calls onPick(index). V3: one grid of heads (12 premade + 20 custom slots). */
 export function pickSkin(player, title, onPick, back) {
-  const m = menu(title, "§7Want your own skins? See §fCustom Skin Slots§7 below.");
-  m.btn("§lPremade skins", headIcon(0), () => {
-    const mm = menu("Premade Skins");
-    PREMADE.forEach((_, i) => mm.btn(skinLabel(i), headIcon(i), () => onPick(i)));
-    mm.back(() => pickSkin(player, title, onPick, back)).show(player);
-  });
-  m.btn("§lCustom skin slots (1-20)", headIcon(PREMADE.length), () => {
-    const mm = menu("Custom Skin Slots");
-    for (let i = PREMADE.length; i < SKIN_COUNT; i++) mm.btn(skinLabel(i), headIcon(i), () => onPick(i));
-    mm.back(() => pickSkin(player, title, onPick, back)).show(player);
-  });
-  m.btn("How to add my own skins", ICON("debug"), () => showSkinHelp(player, () => pickSkin(player, title, onPick, back)));
-  m.btn("Rename a custom slot", ICON("rename"), () => renameSlot(player, () => pickSkin(player, title, onPick, back)));
+  const self = () => pickSkin(player, title, onPick, back);
+  const m = menu(title, "§7Custom slots come from your own skin pack (Skin Pack Builder).").grid();
+  for (let i = 0; i < SKIN_COUNT; i++) m.btn(skinLabel(i), headIcon(i), () => onPick(i));
+  m.btn("My Skins?", ICON("debug"), () => showSkinHelp(player, self));
+  m.btn("Rename Slot", ICON("rename"), () => renameSlot(player, self));
   if (back) m.back(back);
   m.show(player);
 }
@@ -65,13 +57,13 @@ function showSkinHelp(player, back) {
     [
       "§fMinecraft doesn't let add-ons load pictures while the game is running, so skins have to come in a resource pack. It only takes a minute:",
       "",
-      "§e1.§f Open §bSkin Pack Builder§f (link on the NPC Studio page) in your browser.",
+      "§e1.§f Open §bnoxeelmc-art.github.io/npc-studio-skins§f in your browser (free Skin Pack Builder).",
       "§e2.§f Pick up to 20 skin PNGs (normal 64x64 Minecraft skins) and name them.",
       "§e3.§f Tap §aDownload .mcpack§f and open it — Minecraft imports it.",
       "§e4.§f Activate it in this world's Resource Packs, §lABOVE§r§f NPC Studio.",
       "",
       "§7Your skins show up as Custom Slots 1-20 with the names you chose. Update the pack any time — NPCs keep their slot.",
-      "§7Slim (Alex-style) arms: Manage NPC > Skin & Size > Arm Model."
+      "§7Slim (Alex-style) arms: Studio panel > Display > Slim arms."
     ].join("\n")
   )
     .back(back)

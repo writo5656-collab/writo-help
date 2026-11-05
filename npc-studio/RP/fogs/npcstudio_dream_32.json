@@ -1,0 +1,22 @@
+{
+ "format_version": "1.16.100",
+ "minecraft:fog_settings": {
+  "description": {
+   "identifier": "npcstudio:fog_dream_32"
+  },
+  "distance": {
+   "air": {
+    "fog_start": 2.56,
+    "fog_end": 32.0,
+    "fog_color": "#F5B8E8",
+    "render_distance_type": "fixed"
+   },
+   "weather": {
+    "fog_start": 2.56,
+    "fog_end": 32.0,
+    "fog_color": "#F5B8E8",
+    "render_distance_type": "fixed"
+   }
+  }
+ }
+}

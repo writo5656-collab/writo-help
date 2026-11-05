@@ -11,6 +11,33 @@
           "type": "bool",
           "default": false,
           "client_sync": true
+        },
+        "npcstudio:cam_state": {
+          "type": "int",
+          "range": [
+            0,
+            2
+          ],
+          "default": 0,
+          "client_sync": true
+        },
+        "npcstudio:cam_fov": {
+          "type": "int",
+          "range": [
+            10,
+            130
+          ],
+          "default": 70,
+          "client_sync": true
+        },
+        "npcstudio:cam_pitch": {
+          "type": "float",
+          "range": [
+            -90.0,
+            90.0
+          ],
+          "default": 0.0,
+          "client_sync": true
         }
       }
     },

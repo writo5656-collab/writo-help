@@ -1,0 +1,27 @@
+{
+  "format_version": "1.10.0",
+  "minecraft:client_entity": {
+    "description": {
+      "identifier": "npcstudio:backdrop",
+      "materials": {
+        "default": "entity_alphatest"
+      },
+      "textures": {
+        "green": "textures/entity/npcstudio/backdrop_green",
+        "black": "textures/entity/npcstudio/backdrop_black",
+        "white": "textures/entity/npcstudio/backdrop_white",
+        "blue": "textures/entity/npcstudio/backdrop_blue"
+      },
+      "geometry": {
+        "default": "geometry.npcstudio.backdrop"
+      },
+      "scripts": {
+        "scale": "query.property('npcstudio:size')"
+      },
+      "render_controllers": [
+        "controller.render.npcstudio.backdrop"
+      ],
+      "enable_attachables": false
+    }
+  }
+}

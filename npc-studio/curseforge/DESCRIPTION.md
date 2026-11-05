@@ -1,4 +1,4 @@
-# 🎬 NPC Studio V2
+# 🎬 NPC Studio V3
 
 **Build Minecraft thumbnails and cinematic shots entirely in-game.**
 Spawn NPCs, pose them, dress them, put them on horses and film it all. No commands, no outside tools, everything is in clean in-game menus.
@@ -11,6 +11,16 @@ By **NoxeelMC** · 📺 [youtube.com/@NoxeelMC](https://youtube.com/@NoxeelMC)
 Drop in your skin PNGs, preview them on a 3D character, and download a ready-to-import pack. It runs in your browser, nothing gets uploaded.
 
 ### 👉 [noxeelmc-art.github.io/npc-studio-skins](https://noxeelmc-art.github.io/npc-studio-skins/)
+
+---
+
+## 🆕 New in V3
+- 🗂️ **Studio Panel**: one dark panel on the left with six tabs (Display, Pose, Presets, World, Camera, Layers)
+- 🎛️ **Live editors**: drag a slider and the NPC changes while the menu stays open
+- 🔷 **Cyan outline** on the selected NPC · 📐 **pyramid cameras** that show the real shot size
+- 🖥️ **Camera Monitor** to peek through cameras · 📸 **Photo Mode** for clean screenshots
+- 🟩 **Green screen + Layer Shot**: NPC on green and background without NPCs, from the same camera
+- 🌫️ **Depth Fog** · 🧱 **block, item & particle props** · 👥 **crowds** · 🎬 **scene presets** · 🧣 **capes**
 
 ---
 
@@ -28,7 +38,7 @@ Drop in your skin PNGs, preview them on a 3D character, and download a ready-to-
 - Precise sliders, mirror left/right, copy/paste poses, undo/redo, your own pose library
 
 ### 🛡️ Armor & items
-- **Armor trims + enchant glint** with Trim Studio (every pattern, every material)
+- **Armor trims + enchant glint** with the Trim Studio fitting room: see every pattern and colour on the NPC as you pick it
 - **Copy My Outfit:** the NPC gets your exact armor, with enchants, trims, names and dye
 - **Search Item:** type a name like "totem" or "diamond sword", and items from other add-ons work too
 
@@ -57,9 +67,9 @@ An in-game book that explains every feature, handed to every new player.
 ---
 
 ## 🚀 Getting started
-1. Import the `.mcaddon` and activate **NPC Studio V2** on your world (both packs)
-2. Join the world. You get the **Director's Baton**, **Cine Camera**, **Beast Whistle** and the **Handbook**
-3. Tap the air with a tool to open its menu, or tap an NPC, camera or mob to edit it
+1. Import the `.mcaddon` and activate **NPC Studio V3** on your world (both packs)
+2. Join the world. You get the **Director's Baton**, **Cine Camera**, **Camera Monitor**, **Beast Whistle** and the **Handbook**
+3. Tap the air with the Baton to open the **Studio Panel**, or tap an NPC to edit it
 
 **Commands:** `/npcstudio:npc` · `/npcstudio:exitcam` · `/npcstudio:lockcam` · `/npcstudio:cameras` · `/npcstudio:handbook`
 

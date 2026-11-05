@@ -40,6 +40,18 @@
     },
     "npcstudio_handbook": {
       "textures": "textures/items/npcstudio_handbook"
+    },
+    "npcstudio_monitor": {
+      "textures": "textures/items/npcstudio_monitor"
+    },
+    "npcstudio_stamp": {
+      "textures": "textures/items/npcstudio_stamp"
+    },
+    "npcstudio_rotator": {
+      "textures": "textures/items/npcstudio_rotator"
+    },
+    "npcstudio_teleporter": {
+      "textures": "textures/items/npcstudio_teleporter"
     }
   }
 }

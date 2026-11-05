@@ -1,0 +1,27 @@
+{
+  "format_version": "1.10.0",
+  "render_controllers": {
+    "controller.render.npcstudio.backdrop": {
+      "arrays": {
+        "textures": {
+          "Array.bd": [
+            "Texture.green",
+            "Texture.black",
+            "Texture.white",
+            "Texture.blue"
+          ]
+        }
+      },
+      "geometry": "Geometry.default",
+      "materials": [
+        {
+          "*": "Material.default"
+        }
+      ],
+      "textures": [
+        "Array.bd[query.property('npcstudio:color')]"
+      ],
+      "ignore_lighting": true
+    }
+  }
+}
