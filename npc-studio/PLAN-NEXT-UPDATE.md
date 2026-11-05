@@ -1,4 +1,4 @@
-# NPC Studio — next update plan (nothing built yet)
+# NPC Studio V3 — update plan (nothing built yet)
 
 Everything NoxeelMC asked for, checked against what Minecraft Bedrock can and can't do.
 We build it all at once after the list is approved.
@@ -155,7 +155,27 @@ Things it has that fit Bedrock:
 
 ---
 
-## Open questions for NoxeelMC
-1. Public name: **NPC Studio V3**?
-2. Which of the #9 table do you want in this update (all ✅ ones, or pick)?
-3. Outline colour: one colour for everyone (cyan like the logo) or a different colour per player?
+## 10. New editor panel (NoxeelMC's mockup `art/reference/panel-mockup.html`) ✅
+**Ask:** replace the grey Minecraft menu boxes with a Java-style editor: a dark side panel on the
+left with tabs (Display · Pose · Presets · World · Camera), the world visible on the right.
+
+**How:** restyle the add-on's menus with a custom UI file (the same trick as the Pose Mode corner
+readout). The menus keep working the same way underneath, they just *look* like the mockup:
+- Docked left panel, dark theme with cyan accent (matches the new logo), tabs on top.
+- Toggles and on/off buttons work in one tap; numbers (size, FOV, time) open a slider pop-up.
+- Icons and NPC heads on every row, NPC names, camera names, search results (all dynamic).
+- ☰ handle hides the panel so you can walk/look; Pose Mode and Fly Cam close it and bring it
+  back on the same tab when done ("Keep this pose? Yes / No" step from the mockup).
+- Extra tab **Layers** for #8 (hide/show, green screen, Photo Mode, Layer Shot).
+- If Mojang ever changes their menu system and the custom look breaks, the menus fall back to
+  the normal grey ones and everything still works.
+
+**Why not floating panels like Effortless Building?** Their panels are 3D objects in the world,
+with every word drawn into a picture beforehand (8.9 MB of pictures). That can't show NPC names,
+camera names, item search or your own preset names, and it gets in the way of camera shots.
+The side panel can show all of that.
+
+## Decisions
+- Public name: **NPC Studio V3**
+- Build **all ✅ features** from #9
+- Outline: **cyan for everyone**

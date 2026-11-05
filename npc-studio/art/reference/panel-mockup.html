@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>NPC Studio panel mockup</title>
+<link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#eceef2;--ink:#14171d;--sub:#4a5160;--pn:#161a23;--pn2:#1f2430;--ln:#2e3545;--ac:#3aa0ff;--tx:#dfe6f2;--ok:#2fbf71;--hot:#ffb020;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0d0f14;--ink:#e8ecf4;--sub:#9aa3b5}}
+:root[data-theme="dark"]{--bg:#0d0f14;--ink:#e8ecf4;--sub:#9aa3b5}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 system-ui,sans-serif;padding:12px}
+h1{font:400 26px/1.1 'VT323',monospace,monospace;margin:0 0 4px}
+p.s{margin:0 0 10px;color:var(--sub);max-width:70ch}
+.bar{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 10px}
+.bar button{font:inherit;background:var(--pn2);color:var(--tx);border:1px solid var(--ln);border-radius:6px;padding:7px 12px}
+.bar button.on{background:var(--ac);color:#04111f;border-color:var(--ac)}
+#wrap{width:100%;overflow:hidden}
+#stage{width:880px;height:400px;transform-origin:0 0;position:relative;border-radius:14px;overflow:hidden;border:3px solid #000;font-family:'VT323',monospace;font-size:17px;color:var(--tx);user-select:none;-webkit-user-select:none}
+#view{position:absolute;inset:0;background:linear-gradient(#8fb8f5 0 55%,#6fae4a 55%);touch-action:none}
+#npc{position:absolute;left:600px;top:105px;width:80px;height:180px}
+#npc i{position:absolute;display:block}
+#npc i.sel{outline:3px solid #ffe14d;outline-offset:1px;z-index:2}
+#p0{left:20px;top:0;width:40px;height:40px;background:#9b6b4a;box-shadow:inset 0 12px #3b2a20;transform-origin:50% 100%}
+#p1{left:20px;top:42px;width:40px;height:62px;background:#2aa6a8}
+#p2{left:0;top:42px;width:20px;height:60px;background:#9b6b4a;transform-origin:50% 8px}
+#p3{left:60px;top:42px;width:20px;height:60px;background:#9b6b4a;transform-origin:50% 8px}
+#p4{left:20px;top:104px;width:20px;height:64px;background:#3a3d9a;transform-origin:50% 0}
+#p5{left:40px;top:104px;width:20px;height:64px;background:#33368a;transform-origin:50% 0}
+.sh{position:absolute;left:585px;top:278px;width:110px;height:22px;background:#0003;border-radius:50%}
+#panel{position:absolute;left:0;top:0;bottom:0;width:340px;background:var(--pn);border-right:2px solid #000;transition:transform .18s;display:flex;flex-direction:column;z-index:3}
+#panel.shut{transform:translateX(-340px)}
+#handle{position:absolute;left:340px;top:150px;width:34px;height:70px;background:var(--pn);border:2px solid #000;border-left:0;border-radius:0 8px 8px 0;color:var(--tx);font:inherit;font-size:22px;transition:left .18s;z-index:3}
+#panel.shut+#handle{left:0}
+.tabs{display:flex;border-bottom:2px solid var(--ln)}
+.tabs button{flex:1;font:inherit;background:none;border:0;color:#8e99ad;padding:6px 0;border-bottom:3px solid transparent}
+.tabs button.on{color:var(--ac);border-color:var(--ac)}
+#body{flex:1;overflow:hidden;padding:8px 10px}
+.row{display:flex;align-items:center;gap:6px;margin:0 0 6px}
+.row label{width:58px;color:#aab4c6;flex:none}
+.btn{flex:1;background:#0c0f15;border:2px solid var(--ln);color:var(--tx);text-align:center;padding:1px 4px;font:inherit;min-width:0;white-space:nowrap;overflow:hidden}
+.btn.go{border-color:var(--ac);color:var(--ac)}
+.btn.on{background:var(--ac);color:#04111f;border-color:var(--ac)}
+.tg{width:22px;height:22px;border:2px solid var(--ln);background:#0c0f15}.tg.on{background:#fff}
+.slots{display:flex;gap:5px}.slot{width:40px;height:34px;border:2px solid var(--ln);background:#0c0f15;text-align:center;line-height:30px;color:#9aa6bb;font-size:15px}
+.slot.has{border-color:var(--ac);color:#c58cff}
+.h2{color:var(--ac);margin:6px 0 4px}
+.sl{flex:1;height:6px;background:#0c0f15;border:1px solid var(--ln);position:relative}.sl b{position:absolute;top:-6px;width:10px;height:16px;background:var(--ac)}
+[data-act]{cursor:pointer}
+.tap [data-act]{outline:2px dashed var(--hot);outline-offset:1px}
+.tap [data-live]{outline:2px dashed var(--ok);outline-offset:-3px}
+#cap{position:absolute;left:0;right:0;bottom:0;background:#000d;color:#fff;padding:5px 12px;font-size:18px;min-height:30px;z-index:9;text-align:center}
+#hot{position:absolute;left:50%;bottom:40px;transform:translateX(-50%);display:none;gap:4px;z-index:4;margin-left:0}
+#hot div{width:52px;height:46px;background:#000a;border:2px solid #555;color:#fff;text-align:center;font-size:15px;line-height:1.05;padding-top:4px}
+#hot div.on{border-color:#ffe14d;color:#ffe14d}
+#hot span{display:block;font-size:13px;color:#9ab}
+#ro{position:absolute;right:10px;top:8px;text-align:right;font-size:20px;color:#fff;text-shadow:1px 1px #000;display:none;z-index:4;line-height:1.1}
+.fx{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none;z-index:8;transition:opacity .25s}
+#fm{position:absolute;inset:0;background:#0007;display:none;align-items:center;justify-content:center;z-index:7}
+.win{width:300px;max-height:330px;overflow:hidden;background:#c6c6c6;border:3px solid #000;box-shadow:inset 3px 3px #fff,inset -3px -3px #555;color:#222;padding:8px 10px}
+.win h3{margin:0 0 6px;font:inherit;text-align:center;color:#333}
+.win button{display:block;width:100%;margin:0 0 5px;padding:3px;background:#bdbdbd;border:2px solid #555;border-top-color:#fff;border-left-color:#fff;font:inherit;color:#111}
+.win .hint{font-size:15px;color:#555;text-align:center}
+.note{margin:12px 0 0;display:grid;gap:8px;max-width:78ch}
+.note div{border-left:4px solid var(--ac);padding:2px 10px;color:var(--sub)}
+.note b{color:var(--ink)}
+</style></head><body>
+<h1>NPC Studio panel – phone mockup</h1>
+<p class="s">Tap through it like in-game. Try: Pose tab → Rotate → drag on the world → Done → Yes. Or Camera tab → Fly Cam. Turn on the tap map to see which parts are forms (orange) and which are live (green).</p>
+<div class="bar"><button id="tm">Show tap map</button><button id="th">Light/dark page</button></div>
+<div id="wrap"><div id="stage">
+<div id="view" data-live="1"><div class="sh"></div><div id="npc"><i id="p0"></i><i id="p1"></i><i id="p2"></i><i id="p3"></i><i id="p4"></i><i id="p5"></i></div></div>
+<div id="ro"></div><div id="hot"></div><div class="fx" id="fx"></div>
+<div id="panel"><div class="tabs" id="tabs"></div><div id="body"></div></div>
+<button id="handle" data-act="handle" data-live="1">&#9776;</button>
+<div id="fm"><div class="win" id="win"></div></div>
+<div id="cap">Tap anything in the panel.</div>
+</div></div>
+<div class="note">
+<div><b>Tabs follow your real menus.</b> Display = Skin &amp; Size, Wardrobe, Animation. Pose = Pose Editor. Presets = presets, saved poses, bulk tools. World and Camera are the same as now.</div>
+<div><b>Gizmo flow.</b> Rotate or Move closes the panel and starts your Pose Mode: hotbar tools, corner readout, yellow frame on the part. Done or sneak asks Keep this pose? Yes keeps it, No undoes it, and the panel returns on Pose.</div>
+<div><b>In this demo the drag is flat (2D).</b> In the addon it is your look direction in 3D. The confirm step before the panel returns is new; today Done just ends the mode.</div>
+</div>
+<script>
+const $=s=>document.querySelector(s),st=$('#stage'),cap=$('#cap'),panel=$('#panel');
+let K=1;function fit(){const w=$('#wrap').clientWidth;K=Math.min(1,w/880);st.style.transform='scale('+K+')';$('#wrap').style.height=(400*K+6)+'px'}
+addEventListener('resize',fit);fit();
+const T=['Display','Pose','Presets','World','Camera'],B=['Head','Body','Right Arm','Left Arm','Right Leg','Left Leg','Whole Body'];
+let tab=0,tog={look:0,slim:0},anim='None',pose={sel:0,mode:'Rotate',axis:'Free',rot:B.map(()=>[0,0,0]),pos:B.map(()=>[0,0,0])},bak=null,hist=[],cams=['Camera 1'],mode='panel';
+const say=(a,b)=>cap.textContent=a+(b?'  \u2192  '+b:'');
+const sh=p=>p.classList.contains('shut');
+function render(){
+ const rt=pose.rot[pose.sel];
+ const ap=(i)=>{const e=$('#p'+i),r=pose.rot[i],p=pose.pos[i];e.style.transform=`translate(${p[0]}px,${-p[1]}px) rotate(${r[2]}deg)`};
+ for(let i=0;i<6;i++)ap(i);
+ const w=pose.rot[6],q=pose.pos[6];$('#npc').style.transform=`translate(${q[0]}px,${-q[1]}px) rotate(${w[2]}deg)`;
+ for(let i=0;i<6;i++)$('#p'+i).classList.toggle('sel',mode=='pose'&&pose.sel==i);
+ $('#npc').style.outline=(mode=='pose'&&pose.sel==6)?'3px solid #ffe14d':'none';
+ if(mode=='pose'){const v=pose.mode=='Rotate'?rt:pose.pos[pose.sel],c=['#f55','#5f5','#69f'];
+  $('#ro').innerHTML=`${B[pose.sel]}<br>${pose.mode} \u00b7 Axis ${pose.axis}<br>`+['X','Y','Z'].map((a,i)=>`<span style="color:${c[i]}">${a} ${Math.round(v[i])}</span>`).join(' ')}
+}
+const SL=['1 Select','2 Rotate','3 Move','4 Axis','5 Undo','6 Reset','9 Done'];
+function hot(){const h=$('#hot');h.style.display=mode=='pose'?'flex':'none';
+ h.innerHTML=SL.map((s,i)=>`<div data-act="hb:${i}" data-live="1" class="${(i==1&&pose.mode=='Rotate')||(i==2&&pose.mode=='Move')?'on':''}">${s.slice(2)}<span>${s[0]}</span></div>`).join('');
+ $('#ro').style.display=mode=='pose'?'block':'none'}
+function rows(a){return a.map(x=>`<div class="row"><div class="btn go" data-act="f:${x}">${x}</div></div>`).join('')}
+function body(){const b=$('#body');
+ if(tab==0)b.innerHTML=`<div class="row"><label>Skin</label><div class="btn" data-act="f:skin">Choose \u00b7 Steve</div></div>
+ <div class="row"><label>Arms</label><div class="btn ${tog.slim?'':'on'}" data-act="arm">Classic</div><div class="btn ${tog.slim?'on':''}" data-act="arm">Slim</div></div>
+ <div class="row"><label>Size</label><div class="sl"><b style="left:55%"></b></div><div class="btn" style="flex:none;width:52px" data-act="f:size">94%</div></div>
+ <div class="row"><label>Nametag</label><div class="btn" data-act="f:name">Rename</div></div>
+ <div class="row"><label>Look at me</label><div class="tg ${tog.look?'on':''}" data-act="look"></div><label style="margin-left:6px;width:30px">Anim</label><div class="btn" data-act="f:anim">${anim} \u25be</div></div>
+ <div class="h2">Wardrobe</div><div class="slots">${['Head','Chest','Legs','Boots','Hand','Off'].map((x,i)=>`<div class="slot ${i==4?'has':''}" data-act="f:slot:${x}">${x[0]}${x[1]}</div>`).join('')}</div>
+ <div class="row" style="margin-top:7px"><div class="btn go" data-act="f:outfit">Copy my outfit</div><div class="btn go" data-act="f:trim">Trim Studio</div></div>`;
+ else if(tab==1)b.innerHTML=`<div class="row"><div class="btn on" data-act="gz:Rotate">Rotate</div><div class="btn on" data-act="gz:Move">Move</div></div>
+ <div class="h2">Body part (tap to pose it)</div><div style="display:flex;flex-wrap:wrap;gap:5px">${B.map((x,i)=>`<div class="btn" style="flex:none;padding:1px 7px" data-act="part:${i}">${x}</div>`).join('')}</div>
+ <div class="row" style="margin-top:8px"><div class="btn go" data-act="f:library">Pose Library</div><div class="btn go" data-act="f:mypose">My Saved Poses</div></div>
+ <div class="row"><div class="btn" data-act="say:Undo">Undo</div><div class="btn" data-act="say:Redo">Redo</div><div class="btn" data-act="say:Mirror">Mirror</div></div>
+ <div class="row"><div class="btn" data-act="say:Copy">Copy</div><div class="btn" data-act="say:Paste">Paste</div><div class="btn" data-act="say:Reset">Reset</div></div>
+ <div class="row"><div class="btn go" data-act="f:sliders">Exact sliders</div><div class="btn go" data-act="f:nudge">Nudge pad</div></div>`;
+ else if(tab==2)b.innerHTML=rows(['Presets (saved NPCs)','My Saved Poses','Save as Preset','Clone (exact copy)','Bulk Tools (many NPCs)','Lock NPC']);
+ else if(tab==3)b.innerHTML=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">`+['Sunrise','Day','Noon','Sunset','Night','Midnight','Freeze Time','Clear Weather','Rain','Thunder'].map(x=>`<div class="btn" data-act="say:${x}">${x}</div>`).join('')+`</div>`;
+ else b.innerHTML=`<div class="row"><div class="btn on" data-act="fly">Fly Cam</div><div class="btn" data-act="f:path">Fly Cam Path</div></div>`+rows(['+ Place Camera At My View','Cinematic Shots (30)','Shot Sequence'])+`<div class="h2">Cameras</div>`+cams.map(c=>`<div class="row"><div class="btn" data-act="f:cam:${c}">${c}</div></div>`).join('')}
+function tabs(){$('#tabs').innerHTML=T.map((x,i)=>`<button class="${i==tab?'on':''}" data-act="tab:${i}">${x}</button>`).join('')}
+let cb=null;
+function form(t,btns,hint,kind,fn){cb=fn||null;$('#win').innerHTML=`<h3>${t}</h3>`+btns.map(x=>`<button data-act="pick:${x}">${x}</button>`).join('')+`<div class="hint">${hint||''}</div>`;$('#fm').style.display='flex';say('Form open ('+kind+')','world is blocked until you choose')}
+const SK=['Steve','Alex','Dream','Technoblade','Warden'],AN=['None','Breathing','Walking','Running','Jumping','Waving','Talking','Dancing','Clapping','Push-ups'];
+const FM={skin:['Premade Skins',SK,'12 premade + 20 custom slots, each with its face','ActionFormData'],anim:['Looping Animation',AN,'19 loops in the addon (10 shown)','ModalFormData dropdown'],library:['Pose Library',['Basic','Action','Sit & Lie','Emotes','Fun'],'45+ poses in 5 groups','ActionFormData'],outfit:['Copy My Outfit',['Copy armor + hands','Cancel'],'Stand 3+ blocks away','ActionFormData'],trim:['Trim Studio',['Pattern','Colour','Armor piece','Glint on/off','Apply'],'Same flow as today','ModalFormData'],mypose:['My Saved Poses',['+ Save Current Pose','Apply','Apply Mirrored','Delete'],'','ActionFormData'],sliders:['Exact Sliders',['Rotate X / Y / Z','Move X / Y / Z','Save'],'Sliders are native form controls','ModalFormData sliders'],nudge:['Nudge Pad',['Rotate X +','Rotate X -','Move Up','Move Down','Done'],'','ActionFormData'],name:['Rename',['Save name'],'Text field','ModalFormData textField'],size:['Size / Height',['Player Size','Baby','Giant','Custom %'],'10% to 500%','ModalFormData slider']};
+function openF(k,x){let f=FM[k];if(k=='slot')f=['Wardrobe: '+x,['Armor (pick tier)','Search Item','Enchant This Item','Quick Glint','Clear Slot'],'Item list opens next, with icons','ActionFormData'];
+ if(k=='cam')f=['Camera: '+x,['Re-frame With Fly Cam','Move & Turn','Lens / FOV','Aim At / Follow','Shake','Exit Camera View'],'','ActionFormData'];
+ if(!f)f=[k,['Open','Back'],'Opens the matching form','ActionFormData'];
+ form(f[0],f[1],f[2],f[3],v=>{if(k=='skin')say('Skin: '+v,'NPC reloads with that skin');else if(k=='anim'){anim=v;body();say('Animation: '+v)}else say('Picked '+v,'panel stays open on the same tab')})}
+function closeF(){$('#fm').style.display='none'}
+function enterPose(m){if(m)pose.mode=m;bak=JSON.stringify([pose.rot,pose.pos]);mode='pose';panel.classList.add('shut');hot();render();say('Pose Mode','panel hidden. Drag on the world. Hotbar 1-9 are your tools')}
+function leave(keep){closeF();if(!keep){const [r,p]=JSON.parse(bak);pose.rot=r;pose.pos=p}mode='panel';hot();render();tab=1;tabs();body();panel.classList.remove('shut');say(keep?'Pose kept':'Pose undone','panel is back on the Pose tab')}
+function done(){form('Keep this pose?',['Yes, keep it','No, undo it'],'Sneak = done. Jump = cancel everything.','ActionFormData',v=>leave(v[0]=='Y'))}
+let dr=null;
+$('#view').addEventListener('pointerdown',e=>{if(mode=='pose'){dr={x:e.clientX,y:e.clientY};$('#view').setPointerCapture(e.pointerId)}
+ else if(mode=='fly'){$('#fx').style.opacity=.9;setTimeout(()=>$('#fx').style.opacity=0,160);mode='panel';form('Keep this camera?',['Yes, save as Camera '+(cams.length+1),'No, try again'],'Tap = lock the shot. Panel returns on Camera.','ActionFormData',v=>{if(v[0]=='Y')cams.push('Camera '+(cams.length+1));tab=4;tabs();body();panel.classList.remove('shut');say(v[0]=='Y'?'Camera saved':'Discarded','back in the Camera tab')})}
+ else say('World tap',sh(panel)?'live':'blocked while the panel is open')});
+$('#view').addEventListener('pointermove',e=>{if(!dr||mode!='pose')return;const dx=(e.clientX-dr.x)/K,dy=(e.clientY-dr.y)/K;dr={x:e.clientX,y:e.clientY};
+ const v=pose.mode=='Rotate'?pose.rot[pose.sel]:pose.pos[pose.sel],s=pose.mode=='Rotate'?1:.5,a=pose.axis;
+ if(a=='Free'||a=='Z')v[2]+=(pose.mode=='Rotate'?dx:dx)*s;if(a=='Free'||a=='Y')v[1]+=(pose.mode=='Rotate'?dx:-dy)*s;if(a=='Free'||a=='X')v[0]+=(pose.mode=='Rotate'?dy:dx)*s;render()});
+addEventListener('pointerup',()=>dr=null);
+document.addEventListener('click',e=>{const el=e.target.closest('[data-act]');if(!el)return;const a=el.dataset.act,s=a.split(':');
+ if(s[0]=='tab'){tab=+s[1];tabs();body();say('Tab: '+T[tab])}
+ else if(s[0]=='f')openF(s[1],s[2]);
+ else if(s[0]=='pick'){const f=cb;closeF();cb=null;f?f(a.slice(5)):say('Closed')}
+ else if(s[0]=='gz'){pose.sel=pose.sel>5?0:pose.sel;enterPose(s[1])}
+ else if(s[0]=='part'){pose.sel=+s[1];enterPose('Rotate')}
+ else if(s[0]=='hb'){const i=+s[1];if(i==0)pose.sel=(pose.sel+1)%7;else if(i==1)pose.mode='Rotate';else if(i==2)pose.mode='Move';else if(i==3)pose.axis=['Free','X','Y','Z'][(['Free','X','Y','Z'].indexOf(pose.axis)+1)%4];else if(i==4){const [r,p]=JSON.parse(bak);pose.rot[pose.sel]=r[pose.sel];pose.pos[pose.sel]=p[pose.sel]}else if(i==5){pose.rot[pose.sel]=[0,0,0];pose.pos[pose.sel]=[0,0,0]}else done();hot();render();say(SL[i].slice(2),'live hotbar tool, no form')}
+ else if(s[0]=='fly'){form('Fly Cam',['Start','Start & don\u2019t show again'],'Explains once, then you fly the camera','ActionFormData',()=>{mode='fly';panel.classList.add('shut');say('Fly Cam','no text while filming. Tap the world to lock the shot')})}
+ else if(s[0]=='arm'){tog.slim^=1;body();say('Arm model: '+(tog.slim?'Slim':'Classic'))}
+ else if(s[0]=='look'){tog.look^=1;body();say('Look at players '+(tog.look?'on':'off'),'toggle')}
+ else if(s[0]=='say')say(s[1],'runs instantly, no form needed');
+ else if(s[0]=='handle'){panel.classList.toggle('shut');say(sh(panel)?'Panel hidden':'Panel open',sh(panel)?'world is live':'form is open again')}
+});
+$('#tm').onclick=e=>{st.classList.toggle('tap');e.target.classList.toggle('on')};
+$('#th').onclick=()=>{const r=document.documentElement,d=getComputedStyle(r).getPropertyValue('--bg').trim()=='#0d0f14';r.dataset.theme=d?'light':'dark'};
+tabs();body();render();
+</script></body></html>
