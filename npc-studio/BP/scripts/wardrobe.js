@@ -17,6 +17,7 @@
  *
  * Copyright (c) 2026 NoxeelMC. All rights reserved. See LICENSE.md.
  */
+import { trimPage } from "./live.js";
 import { EquipmentSlot, ItemStack, ItemTypes, EntityComponentTypes, EnchantmentTypes } from "@minecraft/server";
 import { world, system, menu, modal, confirm, msg, sfx, ICON, niceId, isLocked, npcsNear, getJson, TOOL_IDS, NPC_FAMILY } from "./core.js";
 import { TRIM_DATA, MATERIAL_LABELS, isTrimmable, trimTablePath, glintTablePath } from "./trimdata.js";
@@ -382,7 +383,7 @@ export function openWardrobe(player, npc, back) {
   const m = menu(`Wardrobe: ${npc.nameTag || "NPC"}`, `${lines}\n\n§7Tip: trim & enchant armor normally (smithing table / anvil), wear it, then use §fCopy My Outfit§7 — the NPC gets exact copies.`)
     .btn("Copy My Outfit\n§8armor + hands, keeps enchants & trims", ICON("copy_outfit"), () => copyOutfit(player, npc, true, self))
     .btn("Give Item In My Hand\n§8exact copy, auto-picks the slot", ICON("equip"), () => giveHeld(player, npc, self))
-    .btn("Trim Studio\n§8add armor trims from a menu", ICON("trim"), () => openTrimStudio(player, npc, self))
+    .btn("Trim Studio\n§8add armor trims from a menu", ICON("trim"), () => trimPage(player, npc, self))
     .btn("Full Armor Sets", ICON("armor_set"), () => openArmorSets(player, npc, self));
   for (const def of SLOTS) m.btn(`${def.key}\n§8${describeEquip(getEquip(npc, def.key)).replace(/§./g, "")}`, def.icon, () => openSlotMenu(player, npc, def.key, self));
   m.btn("Clear Everything", ICON("clear_x"), () =>
@@ -442,7 +443,7 @@ function openSlotMenu(player, npc, slotKey, back) {
   });
   m.btn("Search Item", ICON("fov"), () => openItemSearch(player, npc, slotKey, self));
   if (cur) {
-    if (ARMOR_KEYS.includes(slotKey) && isTrimmable(cur.id)) m.btn("Add / Change Trim", ICON("trim"), () => openTrimStudio(player, npc, self, [slotKey]));
+    if (ARMOR_KEYS.includes(slotKey) && isTrimmable(cur.id)) m.btn("Add / Change Trim", ICON("trim"), () => trimPage(player, npc, self, [slotKey]));
     m.btn("Enchant This Item...", ICON("enchant"), () => openEnchantEditor(player, npc, slotKey, self));
     m.btn("Quick Glint (shiny)", ICON("enchant"), () => {
       msg(player, equipGlint(npc, slotKey, cur.id) ? "§bGlint added." : "§cThis item can't glow from the menu — enchant it yourself and use Give Item In My Hand.");

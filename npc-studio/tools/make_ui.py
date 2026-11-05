@@ -38,6 +38,7 @@ TAB_MARK = "§u§r"
 TXT = [0.93, 0.93, 0.93]
 SUB = [0.63, 0.63, 0.65]
 CYAN = [0.15, 0.83, 0.96]
+CAP = [0.80, 0.80, 0.82]
 
 
 def coll(name, override=None):
@@ -85,20 +86,25 @@ def label_from_button(size, offset, anchor, align, scale=1.0, strip_tab=False):
             "bindings": [coll(BTN), view(expr, "#text")]}
 
 
-# ---------- V3.1 editor layout (the website editor) ----------
+# ---------- V3.2 editor layout (the website editor, Java NPC Studio rows) ----------
 # Every NPC Studio form has the same fixed button layout, so nothing depends on the title except
 # "is this ours" (the §n§p tag, proven to work in game):
 #   0-5     tabs                    (top of the left panel)
-#   6-17    NPC heads               (right rail, empty label = hidden)
-#   18-25   tools                   (bottom bar: 4 left, 4 right, empty label = hidden)
-#   26-125  rows                    (left panel, scrolling; empty label = hidden)
-# Row look comes from a tag at the start of the row's own label:
-#   §h§r section header (open)   §i§r section header (folded)   §w§r switch row   (none) normal row
-TAB0, RAIL0, RAILN, BAR0, BARN, ROW0, ROWN = 0, 6, 12, 18, 8, 26, 100
-HDR_OPEN, HDR_SHUT, SW = "§h§r", "§i§r", "§w§r"
+#   6-29    NPC heads               (right rail, scrolls; first slot = Spawn; empty label = hidden)
+#   30-37   tools                   (bottom bar: 4 left, 4 right, empty label = hidden)
+#   38-229  rows, 4 buttons each    (left panel, scrolling; empty label = hidden)
+# A row is [main, a, b, c]; the tag at the start of each label picks its look (see core.js):
+#   main: (none) button · §h§r/§i§r section · §w§r checkbox · §f§r field · §s§r slider · §t§r stepper
+#   a: §k§r small (minus / previous)   b: §p§r small (plus) · §y§r wide value   c: §v§r value · §m§r small · §z§r Choose
+TAB0, RAIL0, RAILN, BAR0, BARN, ROW0, ROWN = 0, 6, 24, 30, 8, 38, 48
+HDR_OPEN, HDR_SHUT, CHECK, FIELD, SLIDE, STEP = "§h§r", "§i§r", "§w§r", "§f§r", "§s§r", "§t§r"
+A_SMALL, B_SMALL, B_WIDE, C_VALUE, C_SMALL, C_CHOOSE = "§k§r", "§p§r", "§y§r", "§v§r", "§m§r", "§z§r"
+CAPTIONS = [CHECK, FIELD, SLIDE, STEP]
 PANEL_W = "34%"
 BAR_H = 24
-RAIL_W = 28
+RAIL_W = 32
+LABEL_COL = "38%"          # caption column (Java NPC Studio: label column, then the control)
+CTRL_COL = "62%"
 
 
 def has(mark):
@@ -111,6 +117,118 @@ def lacks(mark):
 
 def shown():
     return f"(not ({BTN} = ''))"
+
+
+def any_of(marks):
+    return "(" + " or ".join(has(m) for m in marks) + ")"
+
+
+def none_of(marks):
+    return "(" + " and ".join(lacks(m) for m in marks) + ")"
+
+
+def strip(marks):
+    e = BTN
+    for m in marks:
+        e = f"({e} - '{m}')"
+    return e
+
+
+def details():
+    return {"binding_type": "collection_details", "binding_collection_name": "form_buttons"}
+
+
+def text_label(size, offset, anchor, align, marks, color=TXT, scale=1.0, layer=6):
+    return {"type": "label", "layer": layer, "size": size, "offset": offset, "anchor_from": anchor, "anchor_to": anchor,
+            "text": "#text", "text_alignment": align, "color": color, "shadow": False, "font_scale_factor": scale,
+            "bindings": [coll(BTN), view(strip(marks), "#text")]}
+
+
+def variant(mark, size, offset, anchor, texture, label=None, with_icon=False, wrap=None):
+    """One look of an aux slot: shown only when the slot's label starts with its tag."""
+    inner = [{"button@common.button": dict(btn(texture, size=("100%", "100%")))}]
+    if with_icon:
+        inner.append({"icon": icon([8, 8], [0, 0], "center")})
+    if label:
+        inner.append({"label": text_label(["100% - 4px", 10], [0, 0], "center", "center", AUX_MARKS, **label)})
+    ctrl = {"type": "panel", "size": list(size), "offset": offset, "anchor_from": anchor, "anchor_to": anchor, "layer": 8,
+            "controls": inner}
+    if wrap:  # a column panel on the right, the control sits at its left edge
+        ctrl = {"type": "panel", "size": [wrap, "100%"], "anchor_from": "right_middle", "anchor_to": "right_middle",
+                "controls": [{"c": ctrl}]}
+    return {"type": "panel", "size": ["100%", "100%"], "bindings": [coll(BTN), view(has(mark))], "controls": [{"c": ctrl}]}
+
+
+AUX_MARKS = None  # set below
+
+
+def row_control(i):
+    k = ROW0 + 4 * i
+    return {f"r{i}@server_form.npcs_row": {"collection_index": k, "controls": [
+        {"main@server_form.npcs_main": {}},
+        {"a@server_form.npcs_aux_a": {"collection_index": k + 1}},
+        {"b@server_form.npcs_aux_b": {"collection_index": k + 2}},
+        {"c@server_form.npcs_aux_c": {"collection_index": k + 3}}
+    ]}}
+
+
+def row_templates():
+    global AUX_MARKS
+    AUX_MARKS = [A_SMALL, B_SMALL, B_WIDE, C_VALUE, C_SMALL, C_CHOOSE]
+    hdr = [HDR_OPEN, HDR_SHUT]
+    main_marks = hdr + CAPTIONS
+    t = {}
+    t["npcs_row"] = {"type": "panel", "size": ["100%", 20], "bindings": [coll(BTN), view(shown())], "controls": []}
+    is_plain = none_of(main_marks)
+    is_hdr = any_of(hdr)
+    is_cap = any_of(CAPTIONS)
+    has_tex = "(not ((#texture = '') or (#texture = 'loading')))"
+    t["npcs_main"] = {"type": "panel", "size": ["100%", "100%"], "controls": [
+        # button row: raised; section header: flat with a hairline; caption rows: flat, the control does the work
+        {"btn_row@common.button": dict(btn("row", size=("100% - 6px", 18)), anchor_from="center", anchor_to="center",
+                                      bindings=[details(), coll(BTN), view(is_plain)])},
+        {"btn_hdr@common.button": dict(btn("hdr", size=("100% - 6px", 18)), anchor_from="center", anchor_to="center",
+                                      bindings=[details(), coll(BTN), view(is_hdr)])},
+        {"btn_cap@common.button": dict(btn("cap", size=("100% - 6px", 18)), anchor_from="center", anchor_to="center",
+                                      bindings=[details(), coll(BTN), view(is_cap)])},
+        {"icon_l": dict(icon([14, 14], [8, 0], "left_middle"), bindings=[
+            coll("#form_button_texture", "#texture"), coll("#form_button_texture_file_system", "#texture_file_system"),
+            coll(BTN), view(f"({has_tex} and (not {is_cap}))")])},
+        # checkbox: on the right edge, lined up with the value boxes
+        {"check": dict(icon([12, 12], [-5, 0], "right_middle"), bindings=[
+            coll("#form_button_texture", "#texture"), coll("#form_button_texture_file_system", "#texture_file_system"),
+            coll(BTN), view(f"({has_tex} and {has(CHECK)})")])},
+        # slider track (the button picture is the track, drawn by tools/make_ui.py)
+        {"track": dict(icon([f"{CTRL_COL} - 66px", 8], [-50, 0], "right_middle"), bindings=[
+            coll("#form_button_texture", "#texture"), coll("#form_button_texture_file_system", "#texture_file_system"),
+            coll(BTN), view(f"({has_tex} and {has(SLIDE)})")])},
+        {"chev_open": {"type": "image", "texture": "textures/ui/npcstudio/panel/chev_open", "size": [8, 8], "layer": 6,
+                       "offset": [-8, 0], "anchor_from": "right_middle", "anchor_to": "right_middle",
+                       "bindings": [coll(BTN), view(has(HDR_OPEN))]}},
+        {"chev_shut": {"type": "image", "texture": "textures/ui/npcstudio/panel/chev_shut", "size": [8, 8], "layer": 6,
+                       "offset": [-8, 0], "anchor_from": "right_middle", "anchor_to": "right_middle",
+                       "bindings": [coll(BTN), view(has(HDR_SHUT))]}},
+        {"label_row": dict(text_label(["100% - 56px", 10], [28, 0], "left_middle", "left", main_marks),
+                           bindings=[coll(BTN), view(strip(main_marks), "#text"), view(f"({is_plain} or {is_hdr})")])},
+        {"label_cap": dict(text_label([f"{LABEL_COL} - 10px", 10], [10, 0], "left_middle", "left", main_marks, color=CAP),
+                           bindings=[coll(BTN), view(strip(main_marks), "#text"), view(any_of([FIELD, SLIDE, STEP]))])},
+        {"label_chk": dict(text_label(["100% - 36px", 10], [10, 0], "left_middle", "left", main_marks, color=CAP),
+                           bindings=[coll(BTN), view(strip(main_marks), "#text"), view(has(CHECK))])}
+    ]}
+    small = (12, 14)
+    t["npcs_aux_a"] = {"type": "panel", "size": ["100%", "100%"], "bindings": [coll(BTN), view(shown())], "controls": [
+        {"small": variant(A_SMALL, small, [0, 0], "left_middle", "small", with_icon=True, wrap=f"{CTRL_COL} - 2px")}
+    ]}
+    t["npcs_aux_b"] = {"type": "panel", "size": ["100%", "100%"], "bindings": [coll(BTN), view(shown())], "controls": [
+        {"small": variant(B_SMALL, small, [-36, 0], "right_middle", "small", with_icon=True)},
+        {"wide": variant(B_WIDE, [f"{CTRL_COL} - 34px", 14], [-18, 0], "right_middle", "value", label={"scale": 0.85})}
+    ]}
+    t["npcs_aux_c"] = {"type": "panel", "size": ["100%", "100%"], "bindings": [coll(BTN), view(shown())], "controls": [
+        {"value": variant(C_VALUE, (30, 14), [-4, 0], "right_middle", "value", label={"scale": 0.75})},
+        {"small": variant(C_SMALL, small, [-4, 0], "right_middle", "small", with_icon=True)},
+        {"choose": variant(C_CHOOSE, [f"{CTRL_COL} - 10px", 14], [-4, 0], "right_middle", "choose", label={"scale": 0.85})}
+    ]}
+    return t
 
 
 def build():
@@ -184,60 +302,44 @@ def build():
         "$scrolling_pane_offset": [0, 0],
         "$scroll_bar_right_padding_size": [0, 0]
     }
-    rows = [{f"r{i}@server_form.npcs_row": {"collection_index": ROW0 + i}} for i in range(ROWN)]
+    rows = [row_control(i) for i in range(ROWN)]
     d["npcs_rows"] = {
         "type": "stack_panel", "orientation": "vertical", "size": ["100%", "100%c"],
         "anchor_from": "top_left", "anchor_to": "top_left", "collection_name": "form_buttons",
         "controls": [
-            {"body": {"type": "label", "size": ["100% - 12px", "default"], "offset": [6, 0], "text": "#form_text", "color": SUB,
+            {"body": {"type": "label", "size": ["100% - 16px", "default"], "offset": [8, 0], "text": "#form_text", "color": SUB,
                       "shadow": False, "font_scale_factor": 0.85, "layer": 4}},
-            {"pad": {"type": "panel", "size": ["100%", 3]}}
-        ] + rows + [{"pad_end": {"type": "panel", "size": ["100%", 6]}}]
+            {"pad": {"type": "panel", "size": ["100%", 4]}}
+        ] + rows + [{"pad_end": {"type": "panel", "size": ["100%", 8]}}]
     }
-    clean = f"((({BTN} - '{HDR_OPEN}') - '{HDR_SHUT}') - '{SW}')"
-    d["npcs_row"] = {
-        "type": "panel", "size": ["100%", 20],
-        "bindings": [coll(BTN), view(shown())],
-        "controls": [
-            # normal rows and switch rows: a raised button; headers: flat with a hairline
-            {"btn_row@common.button": dict(btn("row", size=("100% - 6px", 18)), anchor_from="center", anchor_to="center",
-                                          bindings=[{"binding_type": "collection_details", "binding_collection_name": "form_buttons"}, coll(BTN), view(f"({lacks(HDR_OPEN)} and {lacks(HDR_SHUT)})")])},
-            {"btn_hdr@common.button": dict(btn("hdr", size=("100% - 6px", 18)), anchor_from="center", anchor_to="center",
-                                          bindings=[{"binding_type": "collection_details", "binding_collection_name": "form_buttons"}, coll(BTN), view(f"(not ({lacks(HDR_OPEN)} and {lacks(HDR_SHUT)}))")])},
-            {"icon_l": dict(icon([14, 14], [7, 0], "left_middle"), bindings=[
-                coll("#form_button_texture", "#texture"), coll("#form_button_texture_file_system", "#texture_file_system"),
-                coll(BTN), view(f"((not ((#texture = '') or (#texture = 'loading'))) and {lacks(SW)})")])},
-            {"icon_r": dict(icon([20, 12], [-6, 0], "right_middle"), bindings=[
-                coll("#form_button_texture", "#texture"), coll("#form_button_texture_file_system", "#texture_file_system"),
-                coll(BTN), view(f"((not ((#texture = '') or (#texture = 'loading'))) and {has(SW)})")])},
-            {"chev_open": {"type": "image", "texture": "textures/ui/npcstudio/panel/chev_open", "size": [8, 8], "layer": 6,
-                           "offset": [-8, 0], "anchor_from": "right_middle", "anchor_to": "right_middle",
-                           "bindings": [coll(BTN), view(has(HDR_OPEN))]}},
-            {"chev_shut": {"type": "image", "texture": "textures/ui/npcstudio/panel/chev_shut", "size": [8, 8], "layer": 6,
-                           "offset": [-8, 0], "anchor_from": "right_middle", "anchor_to": "right_middle",
-                           "bindings": [coll(BTN), view(has(HDR_SHUT))]}},
-            {"label": {"type": "label", "layer": 6, "size": ["100% - 52px", 10], "offset": [26, 0],
-                       "anchor_from": "left_middle", "anchor_to": "left_middle", "text": "#text", "text_alignment": "left",
-                       "color": TXT, "shadow": False, "bindings": [coll(BTN), view(clean, "#text")]}}
-        ]
-    }
+    d.update(row_templates())
 
-    # ---------- right rail: NPC heads ----------
+    # ---------- right rail: NPC heads (scrolls; Spawn is the first slot so it never moves) ----------
     slots = [{f"h{i}@server_form.npcs_head": {"collection_index": RAIL0 + i}} for i in range(RAILN)]
     d["npcs_rail"] = {
         "type": "image", "texture": "textures/ui/npcstudio/panel/panel_bg",
         "size": [RAIL_W, f"100% - {BAR_H}px"], "anchor_from": "top_right", "anchor_to": "top_right", "layer": 2,
-        "controls": [{"stack": {"type": "stack_panel", "orientation": "vertical", "size": [RAIL_W, "100%c"], "offset": [0, 3],
-                                "anchor_from": "top_middle", "anchor_to": "top_middle",
-                                "collection_name": "form_buttons", "controls": slots}}]
+        "controls": [{"scroll@server_form.npcs_rail_scroll": {}}]
     }
+    d["npcs_rail_scroll@common.scrolling_panel"] = {
+        "anchor_to": "top_left", "anchor_from": "top_left", "offset": [0, 2],
+        "$show_background": False, "size": ["100%", "100% - 4px"],
+        "$scrolling_content": "server_form.npcs_rail_list",
+        "$scroll_size": [2, "100% - 4px"],
+        "$scrolling_pane_size": ["100% - 3px", "100%"],
+        "$scrolling_pane_offset": [0, 0],
+        "$scroll_bar_right_padding_size": [0, 0]
+    }
+    d["npcs_rail_list"] = {"type": "stack_panel", "orientation": "vertical", "size": ["100%", "100%c"],
+                           "anchor_from": "top_left", "anchor_to": "top_left",
+                           "collection_name": "form_buttons", "controls": slots}
     d["npcs_head"] = {
-        "type": "panel", "size": [RAIL_W, RAIL_W - 4],
+        "type": "panel", "size": ["100%", 28],
         "bindings": [coll(BTN), view(shown())],
         "controls": [
-            {"button@common.button": dict(btn("tile", size=(RAIL_W - 6, RAIL_W - 6)), anchor_from="center", anchor_to="center")},
-            {"icon": icon([RAIL_W - 12, RAIL_W - 12], [0, 0], "center")},
-            {"sel": {"type": "image", "texture": "textures/ui/npcstudio/panel/sel_ring", "size": [RAIL_W - 6, RAIL_W - 6], "layer": 7,
+            {"button@common.button": dict(btn("tile", size=(24, 24)), anchor_from="center", anchor_to="center")},
+            {"icon": icon([18, 18], [0, 0], "center")},
+            {"sel": {"type": "image", "texture": "textures/ui/npcstudio/panel/sel_ring", "size": [24, 24], "layer": 7,
                      "bindings": [coll(BTN), view(has("§b"))]}}
         ]
     }
@@ -295,6 +397,21 @@ def textures():
     nine("tool_hover", (44, 44, 47, 255), (80, 80, 86, 255))
     nine("tool_pressed", (30, 70, 82, 255), (39, 211, 245, 255))
     nine("bar_bg", (15, 15, 16, 245), None)
+    # Java-style controls: flat caption rows, small square buttons, inset value boxes, "Choose" buttons
+    nine("cap", (0, 0, 0, 0), None)
+    nine("cap_hover", (255, 255, 255, 10), None)
+    nine("cap_pressed", (255, 255, 255, 18), None)
+    nine("small", (44, 44, 47, 255), (66, 66, 71, 255))
+    nine("small_hover", (58, 58, 62, 255), (96, 96, 103, 255))
+    nine("small_pressed", (30, 70, 82, 255), (39, 211, 245, 255))
+    nine("value", (14, 14, 15, 255), (58, 58, 62, 255))
+    nine("value_hover", (20, 20, 22, 255), (96, 96, 103, 255))
+    nine("value_pressed", (14, 30, 36, 255), (39, 211, 245, 255))
+    nine("choose", (52, 52, 56, 255), (74, 74, 80, 255))
+    nine("choose_hover", (64, 64, 69, 255), (110, 110, 118, 255))
+    nine("choose_pressed", (30, 70, 82, 255), (39, 211, 245, 255))
+    small_icons()
+    slider_tracks()
     nine("sel_ring", (0, 0, 0, 0), (39, 211, 245, 255))
     nine("tab", (16, 21, 30, 0), None)
     nine("tab_hover", (35, 35, 37, 255), None)
@@ -313,6 +430,49 @@ def textures():
         g.line([(4, 4), (11, 11)], fill=fg, width=2)
         g.line([(11, 4), (4, 11)], fill=fg, width=2)
         img.save(os.path.join(TEX, f"{name}.png"))
+
+
+ICONS = os.path.join(ROOT, "RP", "textures", "ui", "npcstudio")
+INK = (214, 214, 219, 255)
+ACCENT = (39, 211, 245, 255)
+
+
+def small_icons():
+    """16px pixel icons for the row controls (one stroke, one colour, like the rest of the panel)."""
+    def save(name, draw):
+        img = Image.new("RGBA", (16, 16), (0, 0, 0, 0))
+        draw(ImageDraw.Draw(img))
+        img.save(os.path.join(ICONS, f"icon_{name}.png"))
+    save("dec", lambda g: g.rectangle([3, 7, 12, 8], fill=INK))
+    save("inc", lambda g: (g.rectangle([3, 7, 12, 8], fill=INK), g.rectangle([7, 3, 8, 12], fill=INK)))
+    save("prev", lambda g: [g.rectangle([9 - i, 3 + i, 10 - i, 12 - i], fill=INK) for i in range(5)])
+    save("next", lambda g: [g.rectangle([5 + i, 3 + i, 6 + i, 12 - i], fill=INK) for i in range(5)])
+
+    def box(g, on):
+        if on:
+            g.rectangle([1, 1, 14, 14], fill=ACCENT)
+            for x, y in [(4, 8), (5, 9), (6, 10), (7, 9), (8, 8), (9, 7), (10, 6), (11, 5)]:
+                g.rectangle([x, y, x, y + 1], fill=(14, 14, 15, 255))
+        else:
+            g.rectangle([1, 1, 14, 14], fill=(14, 14, 15, 255), outline=(110, 110, 118, 255))
+    save("check_on", lambda g: box(g, True))
+    save("check_off", lambda g: box(g, False))
+
+
+def slider_tracks():
+    """21 track pictures (0%, 5% ... 100%): a thin rail, the cyan filled part and a light knob."""
+    out = os.path.join(ICONS, "slider")
+    os.makedirs(out, exist_ok=True)
+    W, H = 48, 8
+    for n in range(21):
+        img = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+        g = ImageDraw.Draw(img)
+        knob = round((W - 3) * n / 20)
+        g.rectangle([0, 3, W - 1, 4], fill=(66, 66, 71, 255))
+        if knob > 0:
+            g.rectangle([0, 3, knob, 4], fill=ACCENT)
+        g.rectangle([knob, 0, knob + 2, H - 1], fill=(237, 237, 240, 255))
+        img.save(os.path.join(out, f"s{n:02d}.png"))
 
 
 if __name__ == "__main__":

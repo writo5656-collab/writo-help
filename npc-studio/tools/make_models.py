@@ -294,7 +294,7 @@ def make_prop():
 # its far side shows around the edges, like the Java NPC Studio outline. 3 thicknesses, classic/slim,
 # and an "armored" set that sits outside armor.
 # ----------------------------------------------------------------------------------------------
-SIL_THICK = [0.35, 0.6, 1.0]
+SIL_THICK = [0.15, 0.3, 0.55]  # V3.2: thin by default, just enough to notice
 ARMOR_EXTRA = 1.0
 
 
@@ -320,7 +320,7 @@ def make_silhouette():
                     "visible_bounds_width": 2, "visible_bounds_height": 3, "visible_bounds_offset": [0, 1.5, 0]},
                     "bones": bones})
     save_geo("npcstudio_silhouette.geo.json", geos)
-    Image.new("RGBA", (4, 4), (39, 211, 245, 255)).save(os.path.join(TEX, "outline_sil.png"))
+    Image.new("RGBA", (4, 4), (64, 228, 255, 255)).save(os.path.join(TEX, "outline_sil.png"))
     mats = os.path.join(RP, "materials")
     os.makedirs(mats, exist_ok=True)
     with open(os.path.join(mats, "entity.material"), "w") as f:

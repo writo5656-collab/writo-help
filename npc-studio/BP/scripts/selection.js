@@ -50,7 +50,7 @@ export function setCape(npc, n) {
 // ---------- outline look (shared by everyone, stored per NPC; set from the editor) ----------
 export const THICKNESS = ["Thin", "Medium", "Thick"];
 export const OUTLINE_STYLES = ["Silhouette", "Wireframe"];
-const outlineLook = { thick: 1, style: 0 }; // world default, changed in the editor
+const outlineLook = { thick: 0, style: 0 }; // world default (thin silhouette), changed in the editor
 export function getOutlineLook() {
   return { ...outlineLook };
 }

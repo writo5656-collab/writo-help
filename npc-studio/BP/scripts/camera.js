@@ -8,7 +8,7 @@
 import { EasingType } from "@minecraft/server";
 import { enterCinema, exitCinema, inCinema } from "./cinema.js";
 import { startFlyCam } from "./flycam.js";
-import { liveCamera } from "./live.js";
+import { cameraPage } from "./live.js";
 import { world, system, menu, modal, msg, ICON, CAMERA_ID, CAM_PRESET, NPC_FAMILY, MOB_TAG, catmull, lerp, wrapDeg, getJson, setJson, EASE, npcLabel } from "./core.js";
 
 const FOVS = [30, 40, 50, 60, 70, 80, 90, 100, 110];
@@ -116,7 +116,7 @@ export function openLiveCamera(player, marker, back) {
     msg(player, "§cThis camera is locked. Unlock it first.");
     return back?.();
   }
-  liveCamera(player, marker, {
+  cameraPage(player, marker, {
     state: camState,
     save: saveState,
     view: (m) => viewThrough(player, camState(m), false, lookTargets.get(m.id), { quiet: true })

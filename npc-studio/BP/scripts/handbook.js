@@ -21,16 +21,17 @@ export const CHAPTERS = [
         "§bCamera§f — Fly Cam, cameras, Peek, shots",
         "§bLayers§f — green screen, hide/show, Photo Mode",
         "",
-        "§7Switches flip with one tap. The ☰ / X closes the panel so you can move."
+        "§7Checkboxes flip with one tap. The X closes the panel so you can move."
       ]),
-      P("scale", "Live Editors", [
-        "Size, exact pose sliders, Trim Studio, time, fog and camera lens open a §bgrey live editor§f.",
+      P("scale", "Sliders In The Panel", [
+        "Size, pose, Trim Studio, time, fog and the camera lens are rows in the panel: §b-§f and §b+§f change the value, §b<§f and §b>§f step through choices.",
         "",
-        "§7Drag a slider and the NPC or world changes right away. The editor stays open until you close it."
+        "§7The NPC changes right away and the panel stays on the left, so you see the result on the right. Tap a value box to type an exact number.",
+        "§7Pose tab: pick the part, pick the step (Fine, Normal, Big), then Tilt, Turn, Roll and Move."
       ]),
       P("trim", "Trim Studio (Fitting Room)", [
         "The camera moves close to the NPC. Change pattern, material, armor and glint and see each change on the NPC immediately.",
-        "§7'Turn the view' walks the camera around the NPC."
+        "§7'Turn view' walks the camera around the NPC. Done or X puts your camera back."
       ]),
       P("outline", "Cyan Outline", [
         "The NPC you're editing gets a cyan outline that every player sees, so you always know which one is selected.",

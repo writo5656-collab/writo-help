@@ -1,3 +1,12 @@
+## NPC Studio V3.2: editing inside the panel
+
+- Sliders live in the panel now: size, pose, Trim Studio, time, fog and camera lens no longer open a grey popup that hides your NPC
+- Java NPC Studio style rows: a label column, then a Choose button, a checkbox, a - / + slider with a value box, or < / > steppers
+- Pose tab: pick a body part and a step size, then Tilt, Turn, Roll and Move it while you watch
+- Tap any value box to type an exact number
+- NPC heads on the right scroll, so 20+ NPCs all fit; the Spawn button sits at the top and never moves
+- Thinner, brighter cyan outline (Thin is the new default, Medium and Thick still in Display, Outline)
+
 ## NPC Studio V3: the studio update
 
 **New look**

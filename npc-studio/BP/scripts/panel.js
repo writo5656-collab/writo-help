@@ -1,15 +1,14 @@
 /**
  * NPC Studio V3.1 — panel.js : the Studio editor (website layout).
  *   Display · Pose · Presets · World · Camera · Layers
- * Opened by the Director's Baton, tapping an NPC, /npcstudio:npc. Switches flip in one tap; anything
- * with a number opens a live editor (live.js) so the NPC changes while you drag.
+ * Opened by the Director's Baton, tapping an NPC, /npcstudio:npc. Checkboxes flip in one tap; sliders and
+ * steppers (- / +) change the NPC right away and redraw the panel, so the world stays in view.
  * Copyright (c) 2026 NoxeelMC. All rights reserved. See LICENSE.md.
  */
 import { menu, modal, msg, confirm, ICON, npcLabel, npcsNear, isLocked, setEditorHooks, NPC_FAMILY } from "./core.js";
-import { getScale, getAnim, readPose, applyPose, mirrorPose, pushUndo, undo, redo, historySize, BONES, getRot } from "./rig.js";
+import { getAnim, readPose, applyPose, mirrorPose, pushUndo, undo, redo, historySize } from "./rig.js";
 import { LOOP_ANIMS } from "./poses.js";
 import { pickSkin, setSkin, skinPlainName, npcHead } from "./skins.js";
-import { openTrimStudio } from "./wardrobe.js";
 import { openWardrobe } from "./wardrobe.js";
 import { openPoseEditor, openPoseLibrary, openLoopAnims, startGizmo } from "./poseEditor.js";
 import { openAnimator, playAllTimelines, stopAllTimelines } from "./animator.js";
@@ -25,8 +24,7 @@ import {
   select, selectMany, clearSelection, getSelection, isBright, setBright, getCape, setCape, CAPE_NAMES, isProp, areOutlinesHidden, setOutlinesHidden,
   getOutlineLook, setOutlineLook, THICKNESS, OUTLINE_STYLES, refreshOutline
 } from "./selection.js";
-import { liveSize, livePose, liveTrim, liveTime, liveFog } from "./live.js";
-import { getFog, setFog, presetName } from "./fog.js";
+import { poseRows, resetPart, transformRows, trimPage, timeRows, fogRows, setPoseBone } from "./live.js";
 import {
   peek, photoMode, layerShot, placeBackdrop, removeBackdrop, getBackdrop, BACKDROP_COLORS, npcsHidden, setNpcsHidden,
   camerasHidden, setCamerasHidden, nameTagsHidden, setNameTagsHidden, guidesOn, setGuides
@@ -53,17 +51,18 @@ setEditorHooks({
     const near = npcsNear(player, 48)
       .filter((n) => n.id !== cur?.id)
       .sort((a, b) => dist(player, a) - dist(player, b))
-      .slice(0, cur ? 10 : 11);
+      .slice(0, cur ? 22 : 23);
     const list = cur?.isValid ? [cur, ...near] : near;
-    const slots = list.map((n) => ({
+    // Spawn sits first so it never moves when the list grows; the rail scrolls
+    const slots = [{ label: "Spawn", icon: ICON("plus"), fn: () => openSpawnMenu(player, () => openStudio(player)) }];
+    for (const n of list) slots.push({
       label: (n.id === cur?.id ? "§b" : "") + npcLabel(n),
       icon: npcHead(n),
       fn: () => {
         select(player, n);
         openStudio(player, lastTab.get(player.id) === 1 ? 1 : 0);
       }
-    }));
-    slots.push({ label: "Spawn", icon: ICON("plus"), fn: () => openSpawnMenu(player, () => openStudio(player)) });
+    });
     return slots;
   },
   bar: (player) => {
@@ -98,7 +97,7 @@ export function openStudio(player, tab) {
   const body = npc
     ? `§7Editing §f${npcLabel(npc)}${sel > 1 ? `§7 +${sel - 1} more` : ""}${isLocked(npc) ? " §c(locked)" : ""}`
     : "§7No NPC selected. Tap an NPC with the Baton, or a head on the right.";
-  const m = menu("NPC Studio", body);
+  const m = menu("NPC Studio", body).reopen(self);
   if (npc && isLocked(npc) && (tab === 0 || tab === 1)) {
     m.btn("Unlock This NPC", ICON("lock"), () => {
       npc.setProperty("npcstudio:locked", false);
@@ -154,8 +153,8 @@ function displayTab(player, m, npc, self) {
   if (!npc) return noNpc(m, player, self);
   if (isProp(npc)) {
     m.section("prop", "Prop", ICON("prop"));
-    m.field("Size", `${Math.round(getScale(npc) * 100)}%`, ICON("scale"), () => liveSize(player, npc, self));
-    m.btn("Turn The Prop", ICON("turn"), () => livePose(player, npc, "right_arm", self));
+    transformRows(m, npc);
+    m.btn("Turn The Prop", ICON("turn"), () => (setPoseBone(player, "right_arm"), openStudio(player, 1)));
     m.btn("Move / Turn", ICON("move"), () => openMoveMenu(player, npc, self));
     m.btn("Clone", ICON("clone"), () => (cloneNpc(player, npc), self()));
     return;
@@ -167,28 +166,26 @@ function displayTab(player, m, npc, self) {
   m.field("Skin", skinPlainName(npc.getProperty("npcstudio:skin_index") ?? 0), npcHead(npc), () =>
     pickSkin(player, "Choose Skin", (i) => (setSkin(npc, i), self()), self)
   );
-  m.field("Cape", cape ? CAPE_NAMES[cape - 1] : "None", ICON("cape"), () => openCapes(player, npc, self));
+  m.cycle("Cape", cape ? CAPE_NAMES[cape - 1] : "None", (d) => setCape(npc, (cape + d + 9) % 9));
   m.field("Name tag", npc.getDynamicProperty("npcstudio:real_name") !== undefined ? "Hidden" : npcLabel(npc), ICON("nametag"), () => openNameTag(player, npc, self));
+  m.field("Animation", anim ? LOOP_ANIMS[anim - 1] : "None", ICON("animate"), () => openLoopAnims(player, npc, self));
   m.toggle("Slim arms", slim, () => (npc.setProperty("npcstudio:slim", !slim), self()));
   m.toggle("Look at me", isLooking(npc), () => (setLookAtPlayers(npc, !isLooking(npc)), self()));
   m.toggle("Bright", isBright(npc), () => (setBright(npc, !isBright(npc)), self()));
-  m.field("Animation", anim ? LOOP_ANIMS[anim - 1] : "None", ICON("animate"), () => openLoopAnims(player, npc, self));
+
+  m.section("tr", "Transform", ICON("move"));
+  transformRows(m, npc);
+  m.btn("Move / Turn", ICON("move"), () => openMoveMenu(player, npc, self));
 
   m.section("inv", "Inventory", ICON("equip"));
   m.btn("Wardrobe", ICON("equip"), () => openWardrobe(player, npc, self));
-  m.btn("Trim Studio", ICON("trim"), () => liveTrim(player, npc, self));
-
-  m.section("tr", "Transform", ICON("move"));
-  const r = getRot(npc, "root");
-  m.field("Size", `${Math.round(getScale(npc) * 100)}%`, ICON("scale"), () => liveSize(player, npc, self));
-  m.field("Rotation", `${Math.round(r[0])} ${Math.round(r[1])} ${Math.round(r[2])}`, ICON("turn"), () => livePose(player, npc, "root", self));
-  m.btn("Move / Turn", ICON("move"), () => openMoveMenu(player, npc, self));
+  m.btn("Trim Studio", ICON("trim"), () => trimPage(player, npc, self));
 
   const look = getOutlineLook();
   m.section("ol", "Outline", ICON("outline"));
   m.toggle("Show outline", !areOutlinesHidden(), () => (setOutlinesHidden(!areOutlinesHidden()), self()));
-  m.field("Thickness", THICKNESS[look.thick], ICON("outline"), () => (setOutlineLook({ thick: (look.thick + 1) % 3 }), self()));
-  m.field("Style", OUTLINE_STYLES[look.style], ICON("outline"), () => (setOutlineLook({ style: 1 - look.style }), self()));
+  m.cycle("Thickness", THICKNESS[look.thick], (d) => setOutlineLook({ thick: (look.thick + d + 3) % 3 }));
+  m.cycle("Style", OUTLINE_STYLES[look.style], () => setOutlineLook({ style: 1 - look.style }));
 
   m.section("more", "More", ICON("manage"));
   m.btn("Keyframe Animator", ICON("record"), () => openAnimator(player, npc, self));
@@ -200,14 +197,6 @@ function displayTab(player, m, npc, self) {
     msg(player, "§aLocked.");
     self();
   });
-}
-
-function openCapes(player, npc, back) {
-  const cur = getCape(npc);
-  const m = menu("Cape");
-  m.btn(cur === 0 ? "§bNone" : "None", ICON("clear_x"), () => (setCape(npc, 0), back()));
-  CAPE_NAMES.forEach((n, i) => m.btn(cur === i + 1 ? `§b${n}` : n, ICON("cape"), () => (setCape(npc, i + 1), back())));
-  m.back(back).show(player);
 }
 
 const TAG_COLORS = [["White", "§f"], ["Cyan", "§b"], ["Gold", "§6"], ["Red", "§c"], ["Green", "§a"], ["Purple", "§d"], ["Yellow", "§e"], ["Grey", "§7"], ["Blue", "§9"]];
@@ -252,6 +241,9 @@ function openNameTag(player, npc, back) {
 function poseTab(player, m, npc, self) {
   if (!npc) return noNpc(m, player, self);
   const h = historySize(npc);
+  m.section("part", "Body part", ICON("sliders"));
+  poseRows(m, player, npc);
+  m.btn("Reset This Part", ICON("clear_x"), () => (resetPart(player, npc), self()));
   m.section("tools", "Pose tools", ICON("gizmo"));
   m.btn("Pose Mode (Gizmo)", ICON("gizmo"), () => startGizmo(player, npc, () => openStudio(player, 1)));
   m.btn("Pose Library", ICON("pose_preset"), () => openPoseLibrary(player, npc, self));
@@ -267,11 +259,6 @@ function poseTab(player, m, npc, self) {
     applyPose(npc, {});
     self();
   });
-  m.section("parts", "Body part sliders", ICON("sliders"));
-  for (const b of BONES) {
-    const r = getRot(npc, b.key);
-    m.field(b.label, `${Math.round(r[0])} ${Math.round(r[1])} ${Math.round(r[2])}`, ICON("pose_manual"), () => livePose(player, npc, b.key, self));
-  }
   m.section("adv", "More", ICON("pose_manual"));
   m.btn("Copy / Paste / Saved Poses", ICON("pose_manual"), () => openPoseEditor(player, npc, self));
 }
@@ -307,7 +294,6 @@ function presetsTab(player, m, npc, self) {
 // World
 // =====================================================================================
 function worldTab(player, m, npc, self) {
-  const fog = getFog(player);
   const run = (cmd) => () => {
     try {
       player.dimension.runCommand(cmd);
@@ -317,14 +303,13 @@ function worldTab(player, m, npc, self) {
     self();
   };
   m.section("time", "Time and weather", ICON("day"));
-  m.btn("Time & Weather Sliders", ICON("day"), () => liveTime(player, self));
+  timeRows(m, player, self);
   m.btn("Sunrise", ICON("sunset"), run("time set 23000"));
   m.btn("Noon", ICON("day"), run("time set 6000"));
   m.btn("Sunset", ICON("sunset"), run("time set 12000"));
   m.btn("Night", ICON("night"), run("time set 18000"));
   m.section("fog", "Depth fog", ICON("fog"));
-  m.toggle("Depth fog", fog.on, () => (setFog(player, { on: !fog.on }), self()));
-  m.field("Look", `${presetName(fog.preset)}, ${fog.dist} blocks`, ICON("fog"), () => liveFog(player, self));
+  fogRows(m, player, self);
   m.section("scene", "Scene", ICON("rules"));
   m.btn("Studio World Rules", ICON("rules"), () => openStudioRules(player, self));
   m.btn("Play All Animations", ICON("play"), () => (playAllTimelines(player), self()));

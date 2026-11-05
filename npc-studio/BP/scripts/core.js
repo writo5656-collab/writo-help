@@ -178,15 +178,23 @@ export function cleanLabel(text) {
   return t.trim();
 }
 
-// V3.1 editor: every NPC Studio menu uses one fixed button layout that RP/ui/server_form.json draws
+// V3.2 editor: every NPC Studio menu uses one fixed button layout that RP/ui/server_form.json draws
 // like the website editor (tools/make_ui.py):
-//   0-5 tabs · 6-17 NPC heads (right rail) · 18-25 bottom tools · 26+ rows in the left panel
-// An empty label hides a slot. Row tags: §h§r open section, §i§r folded section, §w§r switch row.
+//   0-5 tabs · 6-29 NPC heads (right rail, scrolls) · 30-37 bottom tools · 38+ rows, 4 buttons per row
+// Each row is [main, a, b, c]. An empty label hides a slot. The tag at the start of a label picks the look:
+//   main: (none) button row · §h§r open section · §i§r folded section · §w§r checkbox row
+//         §f§r field caption · §s§r slider caption (icon = track picture) · §t§r stepper caption
+//   a:    §k§r small button left of the control column (minus / previous)
+//   b:    §p§r small button (plus) · §y§r wide value box (stepper)
+//   c:    §v§r value box · §m§r small button (next) · §z§r "Choose" button (field)
 const EDITOR_TAG = "§n§p§s§r";
 export const TAB_MARK = "§u§r";
-const HDR_OPEN = "§h§r", HDR_SHUT = "§i§r", SW = "§w§r";
-const RAIL_N = 12, BAR_N = 8, ROW_MAX = 100;
-export const SWITCH = (on) => ICON(on ? "switch_on" : "switch_off");
+const HDR_OPEN = "§h§r", HDR_SHUT = "§i§r", CHECK = "§w§r", FIELD = "§f§r", SLIDE = "§s§r", STEP = "§t§r";
+const A_SMALL = "§k§r", B_SMALL = "§p§r", B_WIDE = "§y§r", C_VALUE = "§v§r", C_SMALL = "§m§r", C_CHOOSE = "§z§r";
+const RAIL_N = 24, BAR_N = 8, ROW_N = 48;
+export const CHECKBOX = (on) => ICON(on ? "check_on" : "check_off");
+export const SWITCH = CHECKBOX;
+const TRACK = (frac) => `textures/ui/npcstudio/slider/s${String(clamp(Math.round(frac * 20), 0, 20)).padStart(2, "0")}`;
 
 /** panel.js fills these in: default tabs, the NPC heads on the right and the bottom tools. */
 const hooks = { tabs: (_player) => null, rail: (_player) => [], bar: (_player) => [] };
@@ -205,26 +213,52 @@ function toggleFold(player, id) {
   else s.add(id);
 }
 
+/** Marks a button action that keeps the player on the same screen (no onLeave). */
+export function keep(fn) {
+  fn.stay = true;
+  return fn;
+}
+
+/** Numbers on value boxes: whole numbers stay whole, others get up to 2 decimals. */
+export function fmtNum(v) {
+  return Number.isInteger(v) ? String(v) : String(Math.round(v * 100) / 100);
+}
+
 /**
  * menu(title, body)
- *   .section(id, title, icon)          foldable section header; rows after it belong to it
- *   .btn(text, icon, fn)               normal row
- *   .field(label, value, icon, fn)     "Label  value" row
- *   .toggle(text, on, fn)              row with a switch on the right
- *   .tabs(names, active, onTab)        own tab row (default: the Studio tabs)
- *   .back(fn) · .grid() (kept for old callers, rows are used everywhere) · .show(player)
+ *   .section(id, title, icon)              foldable section header; rows after it belong to it
+ *   .btn(text, icon, fn)                   button row
+ *   .field(label, value, icon, fn)         caption + "Choose" button showing the value
+ *   .toggle(text, on, fn)                  caption + checkbox
+ *   .slider(label, value, opts, set)       caption, -, track, +, value box; opts {min,max,step,unit}
+ *   .cycle(label, value, step)             caption, <, value, >; step(dir) with dir = -1 / +1
+ *   .reopen(fn)                            how to redraw after a slider / cycle tap (default: show again)
+ *   .onLeave(fn)                           runs when the player leaves this screen (close, or any other button)
+ *   .tabs(names, active, onTab) · .back(fn) · .grid() (kept for old callers) · .show(player)
+ * Sliders and steppers redraw the same screen at once, so the NPC changes in the world while the
+ * panel stays open on the left.
  */
 export function menu(title, body) {
-  const rows = []; // {kind, text, icon, fn, sec}
+  const rows = []; // {kind, text, icon, fn, sec, a, b, c}
   let section = null;
   let ownTabs = null;
   let page = 0;
+  let redraw = null;
+  let leave = null;
   const api = {
     grid() {
       return api;
     },
     tabs(names, active, onTab) {
       ownTabs = { names, active, onTab };
+      return api;
+    },
+    reopen(fn) {
+      redraw = fn;
+      return api;
+    },
+    onLeave(fn) {
+      leave = fn;
       return api;
     },
     section(id, text, icon) {
@@ -236,12 +270,43 @@ export function menu(title, body) {
       rows.push({ kind: "row", text: cleanLabel(text), icon, fn, sec: section });
       return api;
     },
-    field(label, value, icon, fn) {
-      rows.push({ kind: "row", text: `§7${label}  §f${String(value).replace(/§./g, "")}`, icon, fn, sec: section });
+    field(label, value, _icon, fn) {
+      const v = String(value).replace(/§./g, "") || "None";
+      rows.push({ kind: "row", text: FIELD + label, fn, sec: section, c: { text: C_CHOOSE + v, fn } });
       return api;
     },
     toggle(text, on, fn) {
-      rows.push({ kind: "sw", text: (on ? "§b" : "") + cleanLabel(text).replace(/^§b/, ""), icon: SWITCH(on), fn, sec: section });
+      rows.push({ kind: "row", text: CHECK + (on ? "§b" : "") + cleanLabel(text).replace(/^§b/, ""), icon: CHECKBOX(on), fn, sec: section });
+      return api;
+    },
+    slider(label, value, opts, set) {
+      const { min, max, step, unit = "" } = opts;
+      const v = clamp(value, min, max);
+      const to = (n) => keep(() => stay(() => set(clamp(Math.round(n / step) * step, min, max))));
+      const exact = keep(() =>
+        modal(label)
+          .text("v", `${label} (${fmtNum(min)} to ${fmtNum(max)})`, fmtNum(v), fmtNum(v))
+          .show(lastPlayer, ({ v: t }) => {
+            const n = parseFloat(String(t ?? "").replace(",", "."));
+            if (Number.isFinite(n)) set(clamp(n, min, max));
+            again();
+          }, again));
+      rows.push({
+        kind: "row", text: SLIDE + label, icon: TRACK((v - min) / (max - min || 1)), fn: exact, sec: section,
+        a: { text: A_SMALL + " ", icon: ICON("dec"), fn: to(v - step) },
+        b: { text: B_SMALL + " ", icon: ICON("inc"), fn: to(v + step) },
+        c: { text: C_VALUE + fmtNum(v) + unit, fn: exact }
+      });
+      return api;
+    },
+    cycle(label, value, step) {
+      const go = (d) => keep(() => stay(() => step(d)));
+      rows.push({
+        kind: "row", text: STEP + label, fn: go(1), sec: section,
+        a: { text: A_SMALL + " ", icon: ICON("prev"), fn: go(-1) },
+        b: { text: B_WIDE + (String(value).replace(/§./g, "") || "None"), fn: go(1) },
+        c: { text: C_SMALL + " ", icon: ICON("next"), fn: go(1) }
+      });
       return api;
     },
     back(fn) {
@@ -250,6 +315,7 @@ export function menu(title, body) {
       return api;
     },
     show(player) {
+      lastPlayer = player;
       const form = new ActionFormData().title(EDITOR_TAG + title);
       if (body) form.body(body);
       const actions = [];
@@ -258,45 +324,78 @@ export function menu(title, body) {
         else form.button(label);
         actions.push(fn);
       };
+      const slot = (s) => add(s ? s.text : "", s?.icon, s?.fn);
       // 0-5 tabs
       const t = ownTabs ?? hooks.tabs(player);
       for (let i = 0; i < 6; i++) {
         const name = t?.names?.[i];
         add(name ? `${TAB_MARK}${i === t.active ? "§b" : ""}${name}` : "", undefined, name ? () => t.onTab(i) : undefined);
       }
-      // 6-17 NPC heads, 18-25 tools
+      // 6-29 NPC heads, 30-37 tools
       const rail = hooks.rail(player) ?? [];
       for (let i = 0; i < RAIL_N; i++) add(rail[i] ? rail[i].label || " " : "", rail[i]?.icon, rail[i]?.fn);
       const bar = hooks.bar(player) ?? [];
       for (let i = 0; i < BAR_N; i++) add(bar[i] ? bar[i].label || " " : "", bar[i]?.icon, bar[i]?.fn);
-      // 26+ rows (folded sections hide their rows)
+      // 38+ rows, 4 buttons each (folded sections hide their rows)
       const visible = rows.filter((r) => r.kind === "hdr" || !r.sec || !isFolded(player, r.sec));
-      const per = ROW_MAX - 2;
+      const per = ROW_N - 2;
       const pages = Math.max(1, Math.ceil(visible.length / per));
       page = Math.min(page, pages - 1);
       const slice = visible.slice(page * per, page * per + per);
-      if (page > 0) add("Previous page", ICON("back"), () => ((page -= 1), api.show(player)));
+      const row = (r) => {
+        slot(r);
+        slot(r.a);
+        slot(r.b);
+        slot(r.c);
+      };
+      if (page > 0) row({ text: "Previous page", icon: ICON("back"), fn: keep(() => stay(() => (page -= 1), true)) });
       for (const r of slice) {
         if (r.kind === "hdr") {
           const shut = isFolded(player, r.id);
-          add(`${shut ? HDR_SHUT : HDR_OPEN}${r.text}`, r.icon, () => {
-            toggleFold(player, r.id);
-            api.show(player);
-          });
-        } else add(r.kind === "sw" ? SW + r.text : r.text || " ", r.icon, r.fn);
+          row({ text: `${shut ? HDR_SHUT : HDR_OPEN}${r.text}`, icon: r.icon, fn: keep(() => stay(() => toggleFold(player, r.id), true)) });
+        } else row({ ...r, text: r.text || " " });
       }
-      if (page < pages - 1) add("Next page", ICON("play"), () => ((page += 1), api.show(player)));
+      if (page < pages - 1) row({ text: "Next page", icon: ICON("play"), fn: keep(() => stay(() => (page += 1), true)) });
       return showWithRetry(form, player)
         .then((res) => {
-          if (res.canceled) return;
+          if (res.canceled) {
+            if (res.cancelationReason !== "UserBusy") runLeave();
+            return;
+          }
           const fn = actions[res.selection];
-          if (!fn) return;
+          if (!fn) return runLeave();
           sfx(player, "click");
+          if (!fn.stay) runLeave();
           fn();
         })
         .catch((e) => console.warn(`[NPC Studio] menu "${title}" error: ${e}`));
     }
   };
+  // slider / stepper / fold taps stay on this screen; everything else leaves it
+  let lastPlayer = null;
+  function again() {
+    if (!lastPlayer) return;
+    if (redraw) redraw();
+    else api.show(lastPlayer);
+  }
+  function stay(change, sameMenu = false) {
+    try {
+      change();
+    } catch (e) {
+      console.warn(`[NPC Studio] ${title}: ${e}`);
+    }
+    if (sameMenu) api.show(lastPlayer);
+    else again();
+  }
+  function runLeave() {
+    const fn = leave;
+    leave = null;
+    try {
+      fn?.();
+    } catch (e) {
+      console.warn(`[NPC Studio] ${title} leave: ${e}`);
+    }
+  }
   return api;
 }
 

@@ -16,7 +16,7 @@ Drop in your skin PNGs, preview them on a 3D character, and download a ready-to-
 
 ## 🆕 New in V3
 - 🗂️ **Studio Panel**: one dark panel on the left with six tabs (Display, Pose, Presets, World, Camera, Layers)
-- 🎛️ **Live editors**: drag a slider and the NPC changes while the menu stays open
+- 🎛️ **Sliders in the panel**: size, pose, trims, time, fog and camera lens change while the panel stays on the left
 - 🔷 **Cyan outline** on the selected NPC · 📐 **pyramid cameras** that show the real shot size
 - 🖥️ **Camera Monitor** to peek through cameras · 📸 **Photo Mode** for clean screenshots
 - 🟩 **Green screen + Layer Shot**: NPC on green and background without NPCs, from the same camera
