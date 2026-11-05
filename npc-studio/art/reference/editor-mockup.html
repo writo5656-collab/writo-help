@@ -1,0 +1,628 @@
+<title>NPC Studio Editor Mockup</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&family=Pixelify+Sans:wght@400;500&display=swap">
+<style>
+/* Layout: page header, then a 16:9 "game screen" stage that scales to fit, then the Bedrock notes. */
+:root{
+  /* page (outside the game screen) — graphite, light/dark */
+  --pg:#fafafa; --pg-card:#ffffff; --pg-raise:#f4f4f5; --pg-tx:#171717; --pg-tx2:#525252; --pg-tx3:#737373; --pg-line:rgba(23,23,23,.08); --pg-acc:#0b7fa0;
+  --f-ui:'Geist',system-ui,sans-serif; --f-mono:'Geist Mono',ui-monospace,monospace; --f-game:'Pixelify Sans','Geist',system-ui,sans-serif;
+  /* in-game panel (always dark: it's the game) */
+  --g0:#0f0f10; --g1:#141415; --g2:#19191b; --g3:#232325; --g4:#2c2c2f;
+  --gt1:#ededed; --gt2:#a1a1a6; --gt3:#85858b; --gline:rgba(237,237,237,.08); --gline2:rgba(237,237,237,.14);
+  --cy:#27d3f5; --cy-ink:#04222b; --cam:#3dff6e; --neg:#e5484d; --ok:#4cc38a; --warn:#e5a03a;
+  --ease:cubic-bezier(.22,1,.36,1);
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--pg:#141415;--pg-card:#19191b;--pg-raise:#232325;--pg-tx:#ededed;--pg-tx2:#a1a1a6;--pg-tx3:#85858b;--pg-line:rgba(237,237,237,.08);--pg-acc:#27d3f5;color-scheme:dark}}
+:root[data-theme="dark"]{--pg:#141415;--pg-card:#19191b;--pg-raise:#232325;--pg-tx:#ededed;--pg-tx2:#a1a1a6;--pg-tx3:#85858b;--pg-line:rgba(237,237,237,.08);--pg-acc:#27d3f5;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--pg);color:var(--pg-tx);font:14px/20px var(--f-ui);padding-block:24px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.wrap{max-width:1280px;margin:0 auto;display:grid;gap:24px}
+.top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:16px}
+.top h1{margin:0;font:500 28px/1.15 var(--f-ui);text-wrap:balance}
+.top p{margin:4px 0 0;color:var(--pg-tx2);max-width:62ch}
+.check{display:flex;align-items:center;gap:8px;height:36px;padding:0 12px;border-radius:8px;border:1px solid var(--pg-line);background:var(--pg-card);color:var(--pg-tx);font:500 14px var(--f-ui);cursor:pointer;transition:background-color .15s var(--ease)}
+.check[aria-pressed="true"]{background:var(--pg-raise)}
+.check i{width:28px;height:16px;border-radius:8px;background:var(--pg-raise);border:1px solid var(--pg-line);position:relative}
+.check i::after{content:"";position:absolute;top:2px;left:2px;width:10px;height:10px;border-radius:5px;background:var(--pg-tx3);transition:transform .15s var(--ease),background-color .15s var(--ease)}
+.check[aria-pressed="true"] i::after{transform:translateX(12px);background:var(--pg-acc)}
+
+/* ---------- game screen ---------- */
+#fit{width:100%;overflow:hidden;border-radius:16px}
+#stage{position:relative;width:1280px;height:720px;transform-origin:0 0;overflow:hidden;border-radius:16px;background:#7da9e6;font-family:var(--f-game);color:var(--gt1);user-select:none;-webkit-user-select:none}
+#view{position:absolute;left:0;top:0;width:1280px;height:720px;display:block;touch-action:none;cursor:grab}
+#view:active{cursor:grabbing}
+
+/* panel */
+#panel{position:absolute;left:0;top:0;bottom:56px;width:380px;background:color-mix(in srgb,var(--g1) 94%,transparent);border-right:1px solid var(--gline);display:flex;flex-direction:column;z-index:3;transition:transform .3s var(--ease)}
+#stage.hideui #panel{transform:translateX(-392px)}
+.tabs{display:flex;height:40px;border-bottom:1px solid var(--gline);padding:0 4px}
+.tabs button{flex:1;background:none;border:0;color:var(--gt3);font:500 14px var(--f-game);padding:0;cursor:pointer;position:relative;transition:color .15s var(--ease)}
+.tabs button:hover{color:var(--gt1)}
+.tabs button[aria-selected="true"]{color:var(--gt1)}
+.tabs button[aria-selected="true"]::after{content:"";position:absolute;left:12px;right:12px;bottom:-1px;height:2px;border-radius:1px;background:var(--cy)}
+#pbody{flex:1;overflow-y:auto;padding:8px 0 16px;scrollbar-width:thin;scrollbar-color:var(--g4) transparent}
+.sec{border-bottom:1px solid var(--gline)}
+.sec>summary{list-style:none;display:flex;align-items:center;gap:8px;height:40px;padding:0 16px;color:var(--gt1);font:500 15px var(--f-game);cursor:pointer}
+.sec>summary::-webkit-details-marker{display:none}
+.sec>summary svg{width:16px;height:16px;color:var(--gt3);transition:transform .2s var(--ease)}
+.sec>summary .chev{margin-left:auto}
+.sec[open]>summary .chev{transform:rotate(180deg)}
+.sec .in{padding:0 16px 16px;display:grid;gap:8px}
+.row{display:grid;grid-template-columns:84px 1fr;align-items:center;gap:8px;min-height:32px}
+.row>label,.row>.lab{color:var(--gt2);font-size:14px}
+.ctl{display:flex;gap:4px;align-items:center;min-width:0}
+.btn{height:32px;padding:0 12px;border-radius:8px;border:1px solid var(--gline2);background:var(--g3);color:var(--gt1);font:400 14px var(--f-game);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:8px;transition:background-color .15s var(--ease),border-color .15s var(--ease),transform .12s var(--ease);white-space:nowrap;min-width:0}
+.btn:hover{background:var(--g4)}
+.btn:active{transform:scale(.97)}
+.btn.grow{flex:1}
+.btn.on{border-color:var(--cy);color:var(--cy)}
+.btn.primary{background:var(--gt1);color:var(--g1);border-color:transparent}
+.btn.icon{width:32px;padding:0}
+.btn.danger:hover{border-color:var(--neg);color:var(--neg)}
+.btn svg{width:16px;height:16px}
+.head{width:20px;height:20px;image-rendering:pixelated;border-radius:2px}
+input[type=text],input[type=number],select{height:32px;border-radius:8px;border:1px solid var(--gline2);background:var(--g0);color:var(--gt1);font:400 14px var(--f-game);padding:0 8px;min-width:0;width:100%}
+input[type=number]{font-family:var(--f-mono);font-size:13px;font-variant-numeric:tabular-nums}
+input:focus-visible,select:focus-visible,button:focus-visible,summary:focus-visible{outline:2px solid var(--cy);outline-offset:1px}
+.seg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:4px}
+.chk{width:20px;height:20px;border-radius:4px;border:1px solid var(--gline2);background:var(--g0);cursor:pointer;display:grid;place-items:center;padding:0}
+.chk[aria-checked="true"]{background:var(--cy);border-color:var(--cy)}
+.chk[aria-checked="true"]::after{content:"";width:10px;height:6px;border-left:2px solid var(--cy-ink);border-bottom:2px solid var(--cy-ink);transform:translateY(-1px) rotate(-45deg)}
+.sl{display:grid;grid-template-columns:20px 1fr 52px 32px;gap:8px;align-items:center}
+.sl .ax{font:500 13px var(--f-mono);color:var(--gt3)}
+.sl .ax.x{color:#e5484d}.sl .ax.y{color:#4cc38a}.sl .ax.z{color:#3e8ef7}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:20px;background:transparent;min-width:0}
+input[type=range]::-webkit-slider-runnable-track{height:4px;border-radius:2px;background:var(--g4)}
+input[type=range]::-moz-range-track{height:4px;border-radius:2px;background:var(--g4)}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:12px;height:12px;border-radius:6px;background:var(--gt1);margin-top:-4px}
+input[type=range]::-moz-range-thumb{width:12px;height:12px;border:0;border-radius:6px;background:var(--gt1)}
+.val{font:400 13px var(--f-mono);color:var(--gt2);text-align:right;font-variant-numeric:tabular-nums}
+.slots{display:grid;grid-template-columns:repeat(6,1fr);gap:4px}
+.slot{aspect-ratio:1;border-radius:8px;border:1px solid var(--gline2);background:var(--g0);display:grid;place-items:center;cursor:pointer;position:relative;transition:border-color .15s var(--ease)}
+.slot svg{width:20px;height:20px;color:var(--gt3)}
+.slot.has{border-color:var(--gline2);background:var(--g3)}
+.slot.has svg{color:var(--gt1)}
+.slot.sel{border-color:var(--cy)}
+.slot .dot{position:absolute;right:4px;top:4px;width:6px;height:6px;border-radius:3px;background:#a46bea}
+.pop{display:none;border:1px solid var(--gline2);background:var(--g2);border-radius:10px;padding:8px;gap:4px}
+.pop.show{display:grid}
+.hint{color:var(--gt3);font-size:13px;line-height:18px}
+.tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:4px}
+.tile{height:56px;border-radius:8px;border:1px solid var(--gline2);background:var(--g3);color:var(--gt1);font:400 13px var(--f-game);display:grid;place-items:center;gap:0;cursor:pointer;padding:4px}
+.tile:hover{background:var(--g4)}
+.tile.on{border-color:var(--cy)}
+
+/* right NPC list */
+#rail{position:absolute;right:0;top:0;bottom:56px;width:56px;overflow-y:auto;scrollbar-width:none;background:color-mix(in srgb,var(--g1) 94%,transparent);border-left:1px solid var(--gline);display:flex;flex-direction:column;align-items:center;gap:8px;padding:8px 0;z-index:3;transition:transform .3s var(--ease)}
+#stage.hideui #rail{transform:translateX(68px)}
+#rail button{flex:none;width:40px;height:40px;border-radius:8px;border:1px solid var(--gline2);background:var(--g3);padding:4px;cursor:pointer;display:grid;place-items:center;transition:border-color .15s var(--ease)}
+#rail button.on{border-color:var(--cy);box-shadow:inset 0 0 0 1px var(--cy)}
+#rail button img{width:28px;height:28px;image-rendering:pixelated;border-radius:2px}
+#rail .add svg{width:16px;height:16px;color:var(--gt2)}
+#rail .div{width:24px;height:1px;background:var(--gline2)}
+
+/* bottom bar */
+#bar{position:absolute;left:0;right:0;bottom:0;height:56px;background:var(--g0);border-top:1px solid var(--gline);display:flex;align-items:center;gap:8px;padding:0 12px;z-index:4;transition:transform .3s var(--ease)}
+#stage.hideui #bar{transform:translateY(64px)}
+#bar .grp{display:flex;gap:4px;align-items:center}
+#bar .sp{flex:1}
+.hot{display:flex;gap:4px;padding:4px;border-radius:10px;background:rgba(0,0,0,.35);border:1px solid var(--gline)}
+.hot button{width:40px;height:40px;border-radius:6px;border:1px solid var(--gline2);background:var(--g2);display:grid;place-items:center;cursor:pointer;position:relative}
+.hot button.on{border-color:var(--gt1)}
+.hot button img{width:28px;height:28px;image-rendering:pixelated}
+.hot .empty{width:40px;height:40px;border-radius:6px;border:1px solid var(--gline);background:rgba(0,0,0,.25)}
+.tip{position:absolute;bottom:52px;left:50%;transform:translateX(-50%);white-space:nowrap;background:var(--g2);border:1px solid var(--gline2);border-radius:6px;padding:4px 8px;font:400 13px var(--f-game);color:var(--gt1);opacity:0;pointer-events:none;transition:opacity .15s var(--ease)}
+.hot button:hover .tip,.hot button:focus-visible .tip{opacity:1}
+.mode{font:500 13px var(--f-mono);letter-spacing:.01em}
+
+/* camera preview */
+#pip{position:absolute;right:68px;bottom:68px;width:304px;height:171px;border-radius:10px;overflow:hidden;border:1px solid var(--gline2);z-index:2;pointer-events:none;transition:opacity .3s var(--ease)}
+#pip .lab{position:absolute;top:8px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:12px;height:24px;padding:0 10px;border-radius:6px;background:rgba(15,15,16,.72);font:500 14px var(--f-game);pointer-events:auto}
+#pip .lab button{background:none;border:0;color:var(--gt1);font:500 16px var(--f-game);cursor:pointer;padding:0 2px}
+#pip .thirds{position:absolute;inset:0;background:linear-gradient(90deg,transparent calc(33.33% - .5px),rgba(255,255,255,.35) 0 calc(33.33% + .5px),transparent 0 calc(66.66% - .5px),rgba(255,255,255,.35) 0 calc(66.66% + .5px),transparent 0),linear-gradient(transparent calc(33.33% - .5px),rgba(255,255,255,.35) 0 calc(33.33% + .5px),transparent 0 calc(66.66% - .5px),rgba(255,255,255,.35) 0 calc(66.66% + .5px),transparent 0)}
+#stage.hideui #pip{opacity:0}
+
+/* status line */
+#status{position:absolute;left:392px;top:12px;height:28px;display:flex;align-items:center;padding:0 12px;border-radius:8px;background:rgba(15,15,16,.72);font:400 14px var(--f-game);color:var(--gt1);z-index:2;pointer-events:none;transition:opacity .2s var(--ease)}
+#stage.hideui #status{opacity:0}
+#flash{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none;z-index:9;transition:opacity .25s var(--ease)}
+#count{position:absolute;inset:0;display:none;place-items:center;font:500 120px var(--f-game);color:#fff;text-shadow:0 4px 0 rgba(0,0,0,.35);z-index:8;pointer-events:none}
+
+/* Bedrock check overlay */
+.tag{position:absolute;z-index:6;display:none;align-items:center;gap:8px;max-width:280px;padding:6px 10px;border-radius:8px;background:rgba(15,15,16,.9);border:1px solid var(--gline2);font:400 13px/18px var(--f-ui);color:var(--gt1);pointer-events:none}
+.tag b{font-weight:500}
+.tag i{width:8px;height:8px;border-radius:4px;flex:none}
+.tag.same i{background:var(--ok)}.tag.diff i{background:var(--warn)}.tag.no i{background:var(--neg)}
+#stage.bedrock .tag{display:flex}
+#stage.bedrock .zone{outline:2px dashed rgba(229,160,58,.7);outline-offset:-2px}
+
+/* notes below */
+.legend{display:flex;flex-wrap:wrap;gap:16px;color:var(--pg-tx2);font-size:13px}
+.legend span{display:inline-flex;align-items:center;gap:8px}
+.legend i{width:8px;height:8px;border-radius:4px}
+.notes{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px}
+.note{background:var(--pg-card);border:1px solid var(--pg-line);border-radius:12px;padding:16px 20px;min-width:0}
+.note h3{margin:0 0 4px;font:500 15px/22px var(--f-ui);display:flex;align-items:center;gap:8px}
+.note h3 i{width:8px;height:8px;border-radius:4px;flex:none}
+.note p{margin:0;color:var(--pg-tx2)}
+.k-same{background:var(--ok)}.k-diff{background:var(--warn)}.k-no{background:var(--neg)}
+h2{margin:8px 0 0;font:500 20px/28px var(--f-ui)}
+.small{color:var(--pg-tx3);font-size:13px;margin:0}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="wrap">
+  <div class="top">
+    <div>
+      <h1>NPC Studio editor, redesigned</h1>
+      <p>A Java-style workbench for Bedrock: sections you can fold, NPC heads on the right, tools at the bottom and a thin outline you can resize. Drag the world to look around. On a phone, turn it sideways.</p>
+    </div>
+    <button class="check" id="bedrockBtn" aria-pressed="false"><i aria-hidden="true"></i>Show what Bedrock allows</button>
+  </div>
+
+  <div id="fit"><div id="stage">
+    <canvas id="view" aria-label="3D scene: drag to orbit, scroll to zoom"></canvas>
+    <div id="status">Selected: Knight</div>
+
+    <aside id="panel" class="zone">
+      <div class="tabs" role="tablist" id="tabs"></div>
+      <div id="pbody"></div>
+    </aside>
+
+    <nav id="rail" class="zone" aria-label="NPCs in this scene"></nav>
+
+    <div id="pip" class="zone"><canvas id="pipc" width="608" height="342" style="width:100%;height:100%;display:block"></canvas><div class="thirds"></div>
+      <div class="lab"><button id="camPrev" aria-label="Previous camera">‹</button><span id="camName">Camera 1</span><button id="camNext" aria-label="Next camera">›</button></div></div>
+
+    <div id="bar" class="zone">
+      <div class="grp">
+        <button class="btn icon" id="tMove" title="Move tool" aria-label="Move tool"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M2 12h20M12 2l-3 3M12 2l3 3M12 22l-3-3M12 22l3-3M2 12l3-3M2 12l3 3M22 12l-3-3M22 12l-3 3"/></svg></button>
+        <button class="btn icon" id="tCam" title="Place camera at my view" aria-label="Place camera"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3z"/><circle cx="12" cy="13" r="3"/></svg></button>
+        <button class="btn" id="tSpace"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8 12 3 3 8v8l9 5 9-5z"/><path d="m3 8 9 5 9-5M12 13v8"/></svg><span class="mode" id="spaceLab">Local</span></button>
+        <button class="btn icon" id="tPhoto" title="Photo Mode" aria-label="Photo Mode"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 3v4M21 12h-4M12 21v-4M3 12h4"/></svg></button>
+      </div>
+      <div class="sp"></div>
+      <div class="hot" id="hot"></div>
+      <div class="sp"></div>
+      <div class="grp">
+        <button class="btn icon" id="tUndo" aria-label="Undo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg></button>
+        <button class="btn icon" id="tRedo" aria-label="Redo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 14 5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/></svg></button>
+        <button class="btn icon" id="tSave" aria-label="Save preset"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg></button>
+        <button class="btn icon danger" id="tDel" aria-label="Delete NPC"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg></button>
+      </div>
+    </div>
+
+    <!-- Bedrock check tags -->
+    <div class="tag diff" style="left:16px;top:52px"><i></i><span><b>Panel: works, differently.</b> It's a menu: while it's open you can't walk or turn. Fold/unfold redraws instantly.</span></div>
+    <div class="tag diff" style="left:16px;top:300px"><i></i><span><b>Sliders and text boxes:</b> styled like this, but values apply when you tap Apply. Live dragging only in Mojang's grey editor.</span></div>
+    <div class="tag diff" style="right:68px;top:12px"><i></i><span><b>NPC list:</b> works while the panel is open (it's part of the same menu).</span></div>
+    <div class="tag no" style="right:68px;bottom:248px"><i></i><span><b>Live camera preview: not possible.</b> Bedrock can't draw a second view. The Preview Viewer switches your screen to the camera instead.</span></div>
+    <div class="tag diff" style="left:580px;top:150px"><i></i><span><b>Thin outline:</b> needs a custom material (tested in game first). Thickness: 3 sizes.</span></div>
+    <div class="tag same" style="left:470px;bottom:64px"><i></i><span><b>Hotbar with 2 items: works.</b> Baton opens everything, Preview Viewer peeks.</span></div>
+    <div class="tag diff" style="left:16px;bottom:64px"><i></i><span><b>Bottom tools:</b> part of the menu while it's open.</span></div>
+
+    <div id="count"></div><div id="flash"></div>
+  </div></div>
+
+  <div class="legend" aria-label="Legend for Show what Bedrock allows">
+    <span><i class="k-same"></i>Works the same in Bedrock</span>
+    <span><i class="k-diff"></i>Works, but differently</span>
+    <span><i class="k-no"></i>Not possible in Bedrock</span>
+  </div>
+
+  <h2>What this means for the add-on</h2>
+  <div class="notes">
+    <div class="note"><h3><i class="k-diff"></i>The panel is a menu</h3><p>Bedrock only takes taps inside menus. So the panel, the NPC list and the bottom tools all live in one full-screen menu, with the world showing through the middle. Close it (X or back) to walk; your hotbar is the toolbar then.</p></div>
+    <div class="note"><h3><i class="k-diff"></i>Folding sections</h3><p>Each section header is a button. Tapping it reopens the menu with that section folded, without any animation, so it feels instant.</p></div>
+    <div class="note"><h3><i class="k-diff"></i>Sliders, number boxes, text</h3><p>Two options: this look with an Apply button, or Mojang's grey live editor where the NPC moves while you drag. Pick per section; Transform and Pose suit live dragging.</p></div>
+    <div class="note"><h3><i class="k-diff"></i>Thin outline</h3><p>The Java outline is a slightly bigger copy of the NPC drawn only from behind. Bedrock needs a custom material for that, which I'd test first. Thickness comes in thin, medium and thick.</p></div>
+    <div class="note"><h3><i class="k-no"></i>Live camera preview</h3><p>No add-on can draw a second view on screen. The Preview Viewer item switches your whole screen to Camera 1 (tap for the next one) and back.</p></div>
+    <div class="note"><h3><i class="k-same"></i>Only two items</h3><p>Director's Baton opens the editor (tap an NPC to edit it). Preview Viewer looks through cameras. The other tools move into the editor's bottom bar and tabs.</p></div>
+  </div>
+  <p class="small">Design pass guided by unslop by Damir Sokolovsky (@heydamir), CC BY 4.0.</p>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(() => {
+const $ = (s) => document.querySelector(s);
+const stage = $('#stage');
+
+/* ---------- scaling ---------- */
+let K = 1;
+function fit(){const w=$('#fit').clientWidth;K=Math.min(1,w/1280);stage.style.transform=`scale(${K})`;$('#fit').style.height=(720*K)+'px'}
+addEventListener('resize',fit);fit();
+
+/* ---------- pixel heads ---------- */
+const SKINS = {
+  Steve:{skin:'#b5835a',hair:'#3b2716',eye:'#5a4fcf',shirt:'#24a6a8',pants:'#3a3d9a'},
+  Alex:{skin:'#f0c7a0',hair:'#e0782b',eye:'#2e8b57',shirt:'#6aa84f',pants:'#7a5230'},
+  Knight:{skin:'#c99a74',hair:'#9aa3ad',eye:'#2d2d2d',shirt:'#8a939c',pants:'#5c646d',helm:1},
+  Mage:{skin:'#e2b58f',hair:'#5b2c86',eye:'#c7a1ff',shirt:'#6c3aa0',pants:'#3f2160',hood:1},
+  Assassin:{skin:'#d6a57c',hair:'#1b1b1f',eye:'#e33',shirt:'#26262c',pants:'#1b1b20',hood:1},
+  NoxeelMC:{skin:'#f1c9a5',hair:'#1fb6e0',eye:'#0b5e73',shirt:'#1478c8',pants:'#0e3d6b'}
+};
+function faceCanvas(s){const c=document.createElement('canvas');c.width=c.height=8;const g=c.getContext('2d');
+  g.fillStyle=s.skin;g.fillRect(0,0,8,8);g.fillStyle=s.hair;g.fillRect(0,0,8,2);g.fillRect(0,2,1,2);g.fillRect(7,2,1,2);
+  if(s.helm){g.fillStyle=s.hair;g.fillRect(0,0,8,8);g.fillStyle='#2b3036';g.fillRect(1,3,6,1);g.fillRect(3,4,2,3);return c}
+  if(s.hood){g.fillStyle=s.hair;g.fillRect(0,0,8,3);g.fillRect(0,0,1,8);g.fillRect(7,0,1,8)}
+  g.fillStyle='#fff';g.fillRect(1,4,2,1);g.fillRect(5,4,2,1);g.fillStyle=s.eye;g.fillRect(2,4,1,1);g.fillRect(5,4,1,1);g.fillStyle='rgba(0,0,0,.25)';g.fillRect(3,6,2,1);return c}
+const headURL = {}; for (const k in SKINS) headURL[k] = faceCanvas(SKINS[k]).toDataURL();
+
+/* ---------- item icons (16px pixel art) ---------- */
+function pix(rows, pal){const c=document.createElement('canvas');c.width=c.height=16;const g=c.getContext('2d');
+  rows.forEach((r,y)=>[...r].forEach((ch,x)=>{if(pal[ch]){g.fillStyle=pal[ch];g.fillRect(x,y,1,1)}}));return c.toDataURL()}
+const BATON = pix(['................','.............KK.','............KCWK','...........KCCK.','..........KCCK..','.........KMMK...','........KMMK....','.......KMMK.....','......KMMK......','.....KMMK.......','....KDDK........','...KDDK.........','..KDDK..........','..KKK...........','................','................'],{K:'#14181f',C:'#3ad0f0',W:'#fff',M:'#8a96b0',D:'#46506a'});
+const VIEWER = pix(['................','.KKKKKKKKKKKKKK.','.KDDDDDDDDDDDDK.','.KDBBBBBBBBBBDK.','.KDBBBBBWWBBBDK.','.KDBBBBBBBBBBDK.','.KDBBBBKBBBBBDK.','.KDGGGKSKGGGGDK.','.KDGGGGKGGGGGDK.','.KDDDDDDDDDGDDK.','.KKKKKKKKKKKKKK.','......KMMK......','......KMMK......','....KKKKKKKK....','....KLLLLLLK....','....KKKKKKKK....'],{K:'#14181f',D:'#2b3240',B:'#78b4f5',W:'#fff',G:'#50be50',S:'#e8be96',M:'#46506a',L:'#8a96b0'});
+
+/* ---------- three.js scene ---------- */
+const canvas = $('#view');
+const renderer = new THREE.WebGLRenderer({canvas, antialias:true});
+renderer.setPixelRatio(Math.min(2, devicePixelRatio));
+renderer.setSize(1280, 720, false);
+const scene = new THREE.Scene();
+const SKY = new THREE.Color('#86b4ee');
+scene.background = SKY.clone();
+const cam = new THREE.PerspectiveCamera(50, 1280/720, 0.1, 400);
+const orbit = {yaw: 0.65, pitch: 0.22, dist: 7.2, target: new THREE.Vector3(0.6, 1.0, 0)};
+function placeCam(){cam.position.set(orbit.target.x + Math.sin(orbit.yaw)*Math.cos(orbit.pitch)*orbit.dist, orbit.target.y + Math.sin(orbit.pitch)*orbit.dist, orbit.target.z + Math.cos(orbit.yaw)*Math.cos(orbit.pitch)*orbit.dist);cam.lookAt(orbit.target)}
+placeCam();
+scene.add(new THREE.HemisphereLight(0xdfeeff, 0x5a7a3a, 0.75));
+const sun = new THREE.DirectionalLight(0xffffff, 0.75); sun.position.set(5, 10, 6); scene.add(sun);
+
+// ground: grass texture
+const gcan = document.createElement('canvas'); gcan.width = gcan.height = 64; const gg = gcan.getContext('2d');
+for (let y=0;y<64;y++) for (let x=0;x<64;x++){const v=Math.random();gg.fillStyle=v<.33?'#5f9a3c':v<.66?'#6aa645':'#578f36';gg.fillRect(x,y,1,1)}
+const gtex = new THREE.CanvasTexture(gcan); gtex.magFilter = THREE.NearestFilter; gtex.wrapS = gtex.wrapT = THREE.RepeatWrapping; gtex.repeat.set(80,80);
+const ground = new THREE.Mesh(new THREE.PlaneGeometry(160,160), new THREE.MeshLambertMaterial({map:gtex}));
+ground.rotation.x = -Math.PI/2; scene.add(ground);
+// a few trees
+const trees = new THREE.Group();
+for (const [x,z] of [[-9,-12],[-14,-6],[10,-14],[16,-9],[-4,-20],[6,-24]]){
+  const t=new THREE.Mesh(new THREE.BoxGeometry(.5,3,.5),new THREE.MeshLambertMaterial({color:'#6b4a2b'}));t.position.set(x,1.5,z);
+  const l=new THREE.Mesh(new THREE.BoxGeometry(3,2.6,3),new THREE.MeshLambertMaterial({color:'#3d7a34'}));l.position.set(x,3.6,z);trees.add(t,l)}
+scene.add(trees);
+
+// NPC builder: Minecraft proportions (1 unit = 1 block, 16 px)
+const P = 1/16;
+const OUTLINE_MAT = new THREE.MeshBasicMaterial({color: '#27d3f5', side: THREE.BackSide});
+function part(w,h,d,color,pivot,offset,faceTex){
+  const g = new THREE.Group(); g.position.set(pivot[0]*P,pivot[1]*P,pivot[2]*P);
+  const mats = faceTex ? [0,1,2,3,4,5].map(i => i===4 ? new THREE.MeshLambertMaterial({map:faceTex}) : new THREE.MeshLambertMaterial({color})) : new THREE.MeshLambertMaterial({color});
+  const m = new THREE.Mesh(new THREE.BoxGeometry(w*P,h*P,d*P), mats); m.position.set(offset[0]*P,offset[1]*P,offset[2]*P);
+  const o = new THREE.Mesh(new THREE.BoxGeometry(w*P,h*P,d*P), OUTLINE_MAT); o.position.copy(m.position); o.userData.size=[w,h,d]; o.visible=false;
+  g.add(m,o); g.userData={mesh:m,outline:o}; return g;
+}
+function makeNPC(name){
+  const s = SKINS[name];
+  const ft = new THREE.CanvasTexture(faceCanvas(s)); ft.magFilter = THREE.NearestFilter;
+  const root = new THREE.Group();
+  const legR = part(4,12,4,s.pants,[-1.9,12,0],[0,-6,0]);
+  const legL = part(4,12,4,s.pants,[1.9,12,0],[0,-6,0]);
+  const body = part(8,12,4,s.shirt,[0,18,0],[0,0,0]);
+  const head = part(8,8,8,s.skin,[0,24,0],[0,4,0],ft);
+  const armR = part(4,12,4,s.skin,[-6,22,0],[0,-4,0]);
+  const armL = part(4,12,4,s.skin,[6,22,0],[0,-4,0]);
+  root.add(legR,legL,body,head,armR,armL);
+  root.userData = {name, parts:{head,body,armR,armL,legR,legL}, skin:name, slim:false, cape:null, armor:null};
+  return root;
+}
+function setOutline(npc, on, t){
+  for (const p of Object.values(npc.userData.parts)){
+    const o = p.userData.outline; o.visible = on;
+    const [w,h,d] = o.userData.size, sx = p.userData.mesh.scale.x; o.scale.set(sx*(w+2*t/sx)/w,(h+2*t)/h,(d+2*t)/d);
+  }
+}
+function applyArms(npc){const s=npc.userData.slim?3:4;for(const k of ['armR','armL']){npc.userData.parts[k].userData.mesh.scale.x=s/4}refreshScene()}
+
+const npcs = [];
+const layout = [['Knight',0,0,0],['Mage',-2.4,-1.2,0.5],['Steve',2.6,-1.8,-0.4],['Alex',-1.2,-4.5,0.2],['Assassin',1.6,-5,-0.6]];
+for (const [n,x,z,ry] of layout){const m=makeNPC(n);m.position.set(x,0,z);m.rotation.y=ry;scene.add(m);npcs.push(m)}
+// a nice default pose for the selected one
+const K0 = npcs[0];
+K0.userData.parts.armR.rotation.x = -1.1; K0.userData.parts.armR.rotation.z = 0.15;
+K0.userData.parts.armL.rotation.x = 0.3; K0.userData.parts.legR.rotation.x = 0.25; K0.userData.parts.legL.rotation.x = -0.25;
+npcs[1].userData.parts.armR.rotation.z = 1.2; npcs[1].userData.parts.armL.rotation.z = -1.2;
+// sword in the knight's hand
+const sword = new THREE.Group();
+const blade = new THREE.Mesh(new THREE.BoxGeometry(1.2*P,14*P,0.6*P), new THREE.MeshLambertMaterial({color:'#9fe9f0'})); blade.position.y=-14*P;
+const guard = new THREE.Mesh(new THREE.BoxGeometry(5*P,1.2*P,1.2*P), new THREE.MeshLambertMaterial({color:'#4a3220'})); guard.position.y=-7*P;
+sword.add(blade, guard); sword.rotation.x = Math.PI/2; sword.position.set(0,-10*P,-1*P);
+K0.userData.parts.armR.add(sword);
+
+// gizmo (axes at the selected NPC's feet)
+const gizmo = new THREE.Group();
+for (const [c, dir] of [['#e5484d',[1,0,0]],['#4cc38a',[0,1,0]],['#3e8ef7',[0,0,1]]]){
+  const g = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0,0,0), new THREE.Vector3(...dir).multiplyScalar(0.9)]);
+  const l = new THREE.Line(g, new THREE.LineBasicMaterial({color:c, depthTest:false})); l.renderOrder=10; gizmo.add(l);
+}
+scene.add(gizmo);
+
+// pyramid camera
+function frustumLines(color, fov){
+  const half = Math.tan(THREE.MathUtils.degToRad(fov/2)) * 0.9, d = 0.9, w = half, h = half*9/16;
+  const A=[-w,-h,-d],B=[w,-h,-d],C=[w,h,-d],D=[-w,h,-d],O=[0,0,0],T1=[-0.18,h+0.08,-d],T2=[0.18,h+0.08,-d],T3=[0,h+0.24,-d];
+  const pts=[O,A,O,B,O,C,O,D,A,B,B,C,C,D,D,A,T1,T2,T2,T3,T3,T1].map(p=>new THREE.Vector3(...p));
+  return new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineBasicMaterial({color}));
+}
+const cams = [
+  {name:'Camera 1', pos:new THREE.Vector3(3.4,1.7,3.6), look:new THREE.Vector3(0,1.1,0), fov:55},
+  {name:'Camera 2', pos:new THREE.Vector3(-4.2,2.6,2.2), look:new THREE.Vector3(-0.6,1,-1), fov:70},
+  {name:'Camera 3', pos:new THREE.Vector3(0.3,6.5,5.5), look:new THREE.Vector3(0,0.5,-1.5), fov:45}
+];
+let camSel = 0;
+function rebuildCams(){
+  for (const c of cams){ if (c.obj) scene.remove(c.obj); c.obj = frustumLines(c===cams[camSel]?'#3dff6e':'#36a8ff', c.fov); c.obj.position.copy(c.pos); c.obj.lookAt(c.look); c.obj.rotateY(Math.PI); scene.add(c.obj); }
+}
+rebuildCams();
+const pipCam = new THREE.PerspectiveCamera(55, 16/9, 0.1, 400);
+const pipRenderer = new THREE.WebGLRenderer({canvas: $('#pipc'), antialias:true});
+pipRenderer.setPixelRatio(1); pipRenderer.setSize(608,342,false);
+
+// backdrop (green screen box seen from inside)
+const backdrop = new THREE.Mesh(new THREE.BoxGeometry(40,40,40), new THREE.MeshBasicMaterial({color:'#00ff00', side:THREE.BackSide}));
+backdrop.position.y = 20 + 0.01; backdrop.visible = false; scene.add(backdrop);
+
+/* ---------- state ---------- */
+const S = {sel: 0, tab: 0, outline: true, thick: 0.6, space: 'Local', fog: false, fogLook: 'Depth white', fogDist: 32, time: 6000,
+  showNpcs: true, showCams: true, showTags: true, backdrop: 'None', open: {}, hot: 0, inv: {Head:'netherite', Chest:'netherite', Legs:'netherite', Feet:'netherite', Hand:'sword', Off:null}, slotOpen: null, history: []};
+const sel = () => npcs[S.sel];
+
+function refreshScene(){
+  npcs.forEach((n,i) => setOutline(n, S.outline && i===S.sel && !stage.classList.contains('photo'), S.thick));
+  npcs.forEach(n => n.visible = S.showNpcs);
+  cams.forEach(c => c.obj.visible = S.showCams && !stage.classList.contains('photo'));
+  const s = sel(); gizmo.position.copy(s.position); gizmo.visible = !stage.classList.contains('photo');
+  gizmo.rotation.y = S.space === 'Local' ? s.rotation.y : 0;
+  backdrop.visible = S.backdrop !== 'None'; backdrop.material.color.set({ 'Green screen':'#00ff00', Black:'#000000', White:'#ffffff'}[S.backdrop] || '#00ff00');
+  ground.visible = trees.visible = S.backdrop === 'None';
+  backdrop.position.set(s.position.x, 20.01, s.position.z);
+  // time of day
+  const t = S.time/24000, day = Math.max(0, Math.sin(t*Math.PI*2 + Math.PI/2*0) );
+  const k = Math.max(.12, Math.cos((t-0.25)*Math.PI*2)*.5+.5);
+  const sky = new THREE.Color('#0e1530').lerp(new THREE.Color('#86b4ee'), k);
+  scene.background = S.backdrop === 'None' ? sky : null;
+  sun.intensity = 0.25 + 0.6*k;
+  if (S.fog){const fc = {"Depth white":'#ffffff',"Depth black":'#05070a',"Haze":'#c9dcf2',"Sunset":'#f39a5b',"Night":'#16244a'}[S.fogLook]; scene.fog = new THREE.Fog(fc, S.fogDist*0.08, S.fogDist); if (S.backdrop==='None') scene.background = new THREE.Color(fc);} else scene.fog = null;
+  $('#status').textContent = `Selected: ${s.userData.name}`;
+}
+
+/* ---------- panel ---------- */
+const TABS = ['Display','Pose','Presets','World','Camera','Layers'];
+const ico = {
+  user:'<path d="M20 21a8 8 0 0 0-16 0"/><circle cx="12" cy="7" r="4"/>',
+  box:'<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/>',
+  move:'<path d="M5 9l-3 3 3 3M9 5l3-3 3 3M15 19l-3 3-3-3M19 9l3 3-3 3M2 12h20M12 2v20"/>',
+  ring:'<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/>',
+  copy:'<rect x="8" y="8" width="13" height="13" rx="2"/><path d="M4 16V5a1 1 0 0 1 1-1h11"/>',
+  sun:'<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
+  cloud:'<path d="M17.5 19a4.5 4.5 0 1 0-1.4-8.8A6 6 0 0 0 4 12a4 4 0 0 0 1 7.9z"/>',
+  cam:'<path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3z"/><circle cx="12" cy="13" r="3"/>',
+  eye:'<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',
+  layers:'<path d="m12 2 10 5-10 5L2 7z"/><path d="m2 17 10 5 10-5M2 12l10 5 10-5"/>',
+  chev:'<path d="m6 9 6 6 6-6"/>',
+  reset:'<path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/>',
+  helm:'<path d="M5 14v-3a7 7 0 0 1 14 0v3"/><path d="M5 14h4v4H5zM15 14h4v4h-4z"/>',
+  chest:'<path d="M7 3 3 6v4l2 1v10h14V11l2-1V6l-4-3-2 3h-6z"/>',
+  legs:'<path d="M6 3h12v6l-2 12h-3l-1-9-1 9H8L6 9z"/>',
+  boots:'<path d="M6 4h5v10l6 2v4H6z"/>',
+  sword:'<path d="M14.5 17.5 3 6V3h3l11.5 11.5M13 19l6-6M16 16l4 4M19 21l2-2"/>',
+  shield:'<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>',
+  trash:'<path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/>',
+  palette:'<circle cx="12" cy="12" r="9"/><circle cx="8" cy="10" r="1"/><circle cx="12" cy="7.5" r="1"/><circle cx="16" cy="10" r="1"/>'
+};
+const svg = (n) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ico[n]}</svg>`;
+function sec(id, title, icon, inner){
+  const open = S.open[id] !== false;
+  return `<details class="sec" data-sec="${id}" ${open?'open':''}><summary>${svg(icon)}${title}<span class="chev">${svg('chev')}</span></summary><div class="in">${inner}</div></details>`;
+}
+function slider(id, ax, min, max, step, val){
+  return `<div class="sl"><span class="ax ${ax.toLowerCase()}">${ax}</span><input type="range" id="${id}" min="${min}" max="${max}" step="${step}" value="${val}" aria-label="${id}"><span class="val" id="${id}v">${(+val).toFixed(step<1?1:0)}</span><button class="btn icon" data-reset="${id}" aria-label="Reset">${svg('reset')}</button></div>`;
+}
+const deg = (r) => Math.round(THREE.MathUtils.radToDeg(r));
+const SLOT_ICON = {Head:'helm', Chest:'chest', Legs:'legs', Feet:'boots', Hand:'sword', Off:'shield'};
+
+function renderTabs(){ $('#tabs').innerHTML = TABS.map((t,i)=>`<button role="tab" aria-selected="${i===S.tab}" data-tab="${i}">${t}</button>`).join(''); }
+function renderPanel(){
+  const n = sel(), u = n.userData, b = $('#pbody');
+  let h = '';
+  if (S.tab === 0){
+    h += sec('model','Model settings','user',`
+      <div class="row"><span class="lab">Skin</span><div class="ctl"><img class="head" src="${headURL[u.skin]}" alt=""><button class="btn grow" data-act="skin">${u.skin}</button></div></div>
+      <div class="row"><span class="lab">Cape</span><div class="ctl"><button class="btn grow" data-act="cape">${u.cape || 'None'}</button><button class="btn icon danger" data-act="nocape" aria-label="Remove cape">${svg('trash')}</button></div></div>
+      <div class="row"><label for="ntag">Name tag</label><div class="ctl"><input type="text" id="ntag" value="${u.name}"><button class="btn icon" aria-label="Hide name">${svg('eye')}</button><button class="btn icon" aria-label="Name colour">${svg('palette')}</button></div></div>
+      <div class="row"><span class="lab">Slim arms</span><div class="ctl"><button class="chk" role="checkbox" aria-checked="${u.slim}" data-act="slim" aria-label="Slim arms"></button></div></div>
+      <div class="row"><span class="lab">Look at me</span><div class="ctl"><button class="chk" role="checkbox" aria-checked="false" data-act="noop" aria-label="Look at players"></button></div></div>
+      <div class="row"><span class="lab">Bright</span><div class="ctl"><button class="chk" role="checkbox" aria-checked="false" data-act="noop" aria-label="NPC Bright"></button></div></div>
+      <div class="row"><label for="anim">Animation</label><select id="anim"><option>Idle</option><option>Breathing</option><option>Walking</option><option>Waving</option><option>Sword swing</option></select></div>`);
+    h += sec('inv','Inventory','box',`
+      <div class="slots">${Object.keys(SLOT_ICON).map(k=>`<button class="slot ${S.inv[k]?'has':''} ${S.slotOpen===k?'sel':''}" data-slot="${k}" aria-label="${k} slot">${svg(SLOT_ICON[k])}${S.inv[k] && k!=='Hand' && k!=='Off'?'<span class="dot"></span>':''}</button>`).join('')}</div>
+      <div class="pop ${S.slotOpen?'show':''}" id="slotPop">
+        <div class="row"><span class="lab">${S.slotOpen||''}</span><div class="ctl"><button class="btn grow" data-act="pick">${S.inv[S.slotOpen]||'Empty'}</button></div></div>
+        <div class="row"><span class="lab">Enchanted</span><div class="ctl"><button class="chk" role="checkbox" aria-checked="true" data-act="noop" aria-label="Enchanted"></button></div></div>
+        <div class="row"><label for="tmat">Trim</label><div class="ctl"><select id="tmat"><option>Gold</option><option>Diamond</option><option>Amethyst</option><option>Redstone</option></select><select aria-label="Pattern"><option>Silence</option><option>Rib</option><option>Eye</option><option>Ward</option></select></div></div>
+        <button class="btn danger" data-act="clearslot">Clear</button>
+      </div>`);
+    h += sec('tr','Transform','move',`
+      <div class="row"><span class="lab">Position</span><div class="ctl"><input type="number" step="0.1" id="px" value="${n.position.x.toFixed(2)}" aria-label="Position X"><input type="number" step="0.1" id="py" value="${n.position.y.toFixed(2)}" aria-label="Position Y"><input type="number" step="0.1" id="pz" value="${n.position.z.toFixed(2)}" aria-label="Position Z"></div></div>
+      <div class="lab hint">Rotation</div>
+      ${slider('rx','X',-180,180,1,deg(n.rotation.x))}${slider('ry','Y',-180,180,1,deg(n.rotation.y))}${slider('rz','Z',-180,180,1,deg(n.rotation.z))}
+      <div class="lab hint">Size</div>
+      ${slider('sz','S',10,500,5,Math.round(n.scale.x*100))}`);
+    h += sec('ol','Outline','ring',`
+      <div class="row"><span class="lab">Show</span><div class="ctl"><button class="chk" role="checkbox" aria-checked="${S.outline}" data-act="outline" aria-label="Show outline"></button></div></div>
+      <div class="row"><span class="lab">Thickness</span><div class="seg">${[['Thin',.35],['Medium',.6],['Thick',1]].map(([l,v])=>`<button class="btn ${S.thick===v?'on':''}" data-thick="${v}">${l}</button>`).join('')}</div></div>
+      <p class="hint">Everyone sees it. Hidden while filming.</p>`);
+  } else if (S.tab === 1){
+    const P = u.parts;
+    h += sec('bones','Body part','user',`<div class="tiles">${[['Head','head'],['Body','body'],['R arm','armR'],['L arm','armL'],['R leg','legR'],['L leg','legL']].map(([l,k])=>`<button class="tile ${S.bone===k?'on':''}" data-bone="${k}">${l}</button>`).join('')}</div>`);
+    const p = P[S.bone||'armR'];
+    h += sec('rot','Rotate','reset',`${slider('bx','X',-180,180,1,deg(p.rotation.x))}${slider('by','Y',-180,180,1,deg(p.rotation.y))}${slider('bz','Z',-180,180,1,deg(p.rotation.z))}`);
+    h += sec('lib','Pose library','layers',`<div class="tiles">${['Idle','Wave','Fight','Point','Victory','Sit','Fly','Kneel'].map(x=>`<button class="tile" data-pose="${x}">${x}</button>`).join('')}</div>`);
+  } else if (S.tab === 2){
+    h += sec('dup','Duplicate','copy',`
+      <div class="seg">${['Line','Square','Circle'].map(x=>`<button class="btn ${S.dupShape===x?'on':''}" data-shape="${x}">${x}</button>`).join('')}</div>
+      <div class="row"><label for="dupn">Count</label><input type="number" id="dupn" min="2" max="60" value="${S.dupN||9}"></div>
+      <div class="row"><label for="dupg">Spacing</label><input type="number" id="dupg" min="1" max="4" step="0.25" value="${S.dupG||1.25}"></div>
+      ${slider('noise','R',0,180,5,S.noise||0)}<p class="hint" style="margin:-4px 0 0">Random turn in degrees</p>
+      <button class="btn primary" data-act="dup">Create copies</button>`);
+    h += sec('pre','Presets','box',`<div class="tiles">${['Castle guard','Wizard','Boss','Villager'].map(x=>`<button class="tile">${x}</button>`).join('')}</div><button class="btn">Save as preset</button>`);
+  } else if (S.tab === 3){
+    h += sec('time','Time and weather','sun',`${slider('time','T',0,24000,250,S.time)}<div class="seg">${['Clear','Rain','Thunder'].map(x=>`<button class="btn">${x}</button>`).join('')}</div>`);
+    h += sec('fog','Depth fog','cloud',`
+      <div class="row"><span class="lab">On</span><div class="ctl"><button class="chk" role="checkbox" aria-checked="${S.fog}" data-act="fog" aria-label="Depth fog"></button></div></div>
+      <div class="row"><label for="fogl">Look</label><select id="fogl">${['Depth white','Depth black','Haze','Sunset','Night'].map(x=>`<option ${x===S.fogLook?'selected':''}>${x}</option>`).join('')}</select></div>
+      ${slider('fogd','D',6,128,2,S.fogDist)}`);
+  } else if (S.tab === 4){
+    h += sec('cams','Cameras','cam',`<div class="tiles" style="grid-template-columns:repeat(3,1fr)">${cams.map((c,i)=>`<button class="tile ${i===camSel?'on':''}" data-cam="${i}">${c.name}</button>`).join('')}</div>`);
+    h += sec('lens','Lens','ring',`${slider('fov','F',20,110,1,cams[camSel].fov)}<p class="hint" style="margin:-4px 0 0">The green frame grows and shrinks with the FOV</p>`);
+    h += sec('shots','Shots','film',`<div class="tiles">${['Orbit','Dolly','Crane','Fly-by'].map(x=>`<button class="tile">${x}</button>`).join('')}</div>`);
+  } else {
+    const tg = (id, label, on) => `<div class="row"><span class="lab">${label}</span><div class="ctl"><button class="chk" role="checkbox" aria-checked="${on}" data-toggle="${id}" aria-label="${label}"></button></div></div>`;
+    h += sec('show','Show','eye', tg('showNpcs','NPCs',S.showNpcs) + tg('showCams','Cameras',S.showCams) + tg('outline','Outline',S.outline));
+    h += sec('bd','Backdrop','layers',`<div class="seg">${['None','Green screen','Black','White'].map(x=>`<button class="btn ${S.backdrop===x?'on':''}" data-bd="${x}">${x==='Green screen'?'Green':x}</button>`).join('')}</div>`);
+    h += sec('photo','Photo','cam',`<button class="btn primary" data-act="photo">Photo Mode</button><p class="hint">3, 2, 1, then everything hides for your screenshot</p>`);
+  }
+  b.innerHTML = h;
+}
+ico.film = '<rect x="2" y="4" width="20" height="16" rx="2"/><path d="M7 4v16M17 4v16M2 9h5M2 15h5M17 9h5M17 15h5"/>';
+
+function renderRail(){
+  $('#rail').innerHTML = npcs.map((n,i)=>`<button class="${i===S.sel?'on':''}" data-npc="${i}" aria-label="Select ${n.userData.name}"><img src="${headURL[n.userData.skin]}" alt=""></button>`).join('') + `<span class="div"></span><button class="add" data-act="spawn" aria-label="Spawn NPC">${svg('plus')}</button>`;
+}
+ico.plus = '<path d="M12 5v14M5 12h14"/>';
+function renderHot(){
+  const items = [{img:BATON, name:"Director's Baton"},{img:VIEWER, name:'Preview Viewer'}];
+  $('#hot').innerHTML = items.map((it,i)=>`<button class="${i===S.hot?'on':''}" data-hot="${i}" aria-label="${it.name}"><img src="${it.img}" alt=""><span class="tip">${it.name}</span></button>`).join('') + '<span class="empty"></span>'.repeat(7);
+}
+function all(){ renderTabs(); renderPanel(); renderRail(); renderHot(); refreshScene(); }
+
+/* ---------- interactions ---------- */
+const skinOrder = Object.keys(SKINS);
+function rebuildNPC(i){
+  const old = npcs[i], n = makeNPC(old.userData.skin);
+  n.position.copy(old.position); n.rotation.copy(old.rotation); n.scale.copy(old.scale);
+  for (const k in old.userData.parts) n.userData.parts[k].rotation.copy(old.userData.parts[k].rotation);
+  n.userData.slim = old.userData.slim; n.userData.cape = old.userData.cape; n.userData.name = old.userData.name;
+  if (old.userData.parts.armR.children.includes(sword)) n.userData.parts.armR.add(sword);
+  scene.remove(old); scene.add(n); npcs[i] = n; applyArms(n); addCape(n);
+}
+function addCape(n){
+  if (n.userData.capeMesh){ n.userData.parts.body.remove(n.userData.capeMesh); n.userData.capeMesh = null; }
+  if (!n.userData.cape) return;
+  const c = new THREE.Mesh(new THREE.BoxGeometry(10*P,16*P,1*P), new THREE.MeshLambertMaterial({color: {Crimson:'#b8202c', Ocean:'#1e5fb8', Royal:'#6a2bb0'}[n.userData.cape]}));
+  c.position.set(0,-2*P,3*P); c.rotation.x = 0.12; n.userData.parts.body.add(c); n.userData.capeMesh = c;
+}
+stage.addEventListener('click', (e) => {
+  const t = e.target.closest('[data-tab],[data-npc],[data-act],[data-slot],[data-thick],[data-bone],[data-pose],[data-shape],[data-cam],[data-toggle],[data-bd],[data-hot],[data-reset]');
+  if (!t) return;
+  const d = t.dataset, n = sel();
+  if (d.tab !== undefined){ S.tab = +d.tab; renderTabs(); renderPanel(); return; }
+  if (d.npc !== undefined){ S.sel = +d.npc; S.slotOpen = null; renderRail(); renderPanel(); refreshScene(); return; }
+  if (d.hot !== undefined){ S.hot = +d.hot; renderHot(); if (S.hot === 1) peekFlash(); return; }
+  if (d.slot){ S.slotOpen = S.slotOpen === d.slot ? null : d.slot; renderPanel(); return; }
+  if (d.thick){ S.thick = +d.thick; renderPanel(); refreshScene(); return; }
+  if (d.bone){ S.bone = d.bone; renderPanel(); return; }
+  if (d.shape){ S.dupShape = d.shape; renderPanel(); return; }
+  if (d.cam !== undefined){ camSel = +d.cam; rebuildCams(); renderPanel(); refreshScene(); $('#camName').textContent = cams[camSel].name; return; }
+  if (d.toggle){ S[d.toggle] = !S[d.toggle]; renderPanel(); refreshScene(); return; }
+  if (d.bd){ S.backdrop = d.bd; renderPanel(); refreshScene(); return; }
+  if (d.reset){ const el = $('#'+d.reset); el.value = d.reset === 'sz' ? 100 : 0; el.dispatchEvent(new Event('input', {bubbles:true})); return; }
+  if (d.pose){ const P = n.userData.parts; for (const k in P) P[k].rotation.set(0,0,0);
+    const R = THREE.MathUtils.degToRad;
+    ({Wave:()=>{P.armL.rotation.z=R(-160)},Fight:()=>{P.armR.rotation.x=R(-70);P.armL.rotation.x=R(-40);P.legR.rotation.x=R(-15);P.legL.rotation.x=R(15)},Point:()=>{P.armR.rotation.x=R(-90)},Victory:()=>{P.armR.rotation.z=R(150);P.armL.rotation.z=R(-150)},Sit:()=>{P.legR.rotation.x=R(-85);P.legL.rotation.x=R(-85)},Fly:()=>{P.armR.rotation.z=R(170);P.armL.rotation.z=R(-170)},Kneel:()=>{P.legR.rotation.x=R(-90)},Idle:()=>{}})[d.pose]();
+    renderPanel(); return; }
+  const act = d.act;
+  if (act === 'skin'){ const i = (skinOrder.indexOf(n.userData.skin)+1) % skinOrder.length; n.userData.skin = skinOrder[i]; rebuildNPC(S.sel); renderPanel(); renderRail(); refreshScene(); }
+  else if (act === 'cape'){ const L=['Crimson','Ocean','Royal']; n.userData.cape = L[(L.indexOf(n.userData.cape)+1)%L.length]; addCape(n); renderPanel(); }
+  else if (act === 'nocape'){ n.userData.cape = null; addCape(n); renderPanel(); }
+  else if (act === 'slim'){ n.userData.slim = !n.userData.slim; applyArms(n); renderPanel(); }
+  else if (act === 'outline'){ S.outline = !S.outline; renderPanel(); refreshScene(); }
+  else if (act === 'fog'){ S.fog = !S.fog; renderPanel(); refreshScene(); }
+  else if (act === 'clearslot'){ S.inv[S.slotOpen] = null; if (S.slotOpen === 'Hand' && sword.parent) sword.parent.remove(sword); renderPanel(); }
+  else if (act === 'photo'){ photo(); }
+  else if (act === 'dup'){ duplicate(); }
+  else if (act === 'spawn'){ const names = skinOrder; const nm = names[npcs.length % names.length]; const m = makeNPC(nm); m.position.set((Math.random()-.5)*6, 0, -2-Math.random()*4); scene.add(m); npcs.push(m); S.sel = npcs.length-1; renderRail(); renderPanel(); refreshScene(); }
+  else if (act === 'noop'){ t.setAttribute('aria-checked', t.getAttribute('aria-checked') !== 'true'); }
+});
+stage.addEventListener('toggle', (e) => { const s = e.target.closest?.('[data-sec]'); if (s) S.open[s.dataset.sec] = s.open; }, true);
+stage.addEventListener('input', (e) => {
+  const id = e.target.id, v = +e.target.value, n = sel(), R = THREE.MathUtils.degToRad;
+  const out = $('#'+id+'v'); if (out) out.textContent = id === 'time' || id === 'sz' || id === 'fogd' ? Math.round(v) : v.toFixed(0);
+  if (id === 'rx') n.rotation.x = R(v); if (id === 'ry') n.rotation.y = R(v); if (id === 'rz') n.rotation.z = R(v);
+  if (id === 'sz') n.scale.setScalar(v/100);
+  if (id === 'px') n.position.x = v; if (id === 'py') n.position.y = v; if (id === 'pz') n.position.z = v;
+  const p = n.userData.parts[S.bone||'armR']; if (id === 'bx') p.rotation.x = R(v); if (id === 'by') p.rotation.y = R(v); if (id === 'bz') p.rotation.z = R(v);
+  if (id === 'time') S.time = v; if (id === 'fogd') S.fogDist = v; if (id === 'fogl') S.fogLook = e.target.value;
+  if (id === 'fov'){ cams[camSel].fov = v; rebuildCams(); }
+  if (id === 'noise') S.noise = v; if (id === 'dupn') S.dupN = v; if (id === 'dupg') S.dupG = v;
+  if (id === 'ntag'){ n.userData.name = e.target.value || 'NPC'; }
+  refreshScene();
+});
+stage.addEventListener('change', (e) => { if (e.target.id === 'fogl'){ S.fogLook = e.target.value; refreshScene(); } });
+
+function duplicate(){
+  const src = sel(), n = Math.min(60, S.dupN || 9), g = S.dupG || 1.25, shape = S.dupShape || 'Square';
+  const cols = Math.ceil(Math.sqrt(n));
+  for (let i = 0; i < n; i++){
+    const m = makeNPC(src.userData.skin);
+    let x, z, ry = src.rotation.y;
+    if (shape === 'Line'){ x = (i+1)*g; z = 0; }
+    else if (shape === 'Circle'){ const r = Math.max(g*1.5, g*n/(2*Math.PI)), a = i/n*Math.PI*2; x = Math.cos(a)*r; z = Math.sin(a)*r - r; ry = -a + Math.PI/2; }
+    else { x = ((i % cols) - (cols-1)/2)*g; z = -(Math.floor(i/cols)+1)*g; }
+    m.position.set(src.position.x + x, 0, src.position.z + z);
+    m.rotation.y = ry + THREE.MathUtils.degToRad((Math.random()*2-1)*(S.noise||0));
+    for (const k in src.userData.parts) m.userData.parts[k].rotation.copy(src.userData.parts[k].rotation);
+    scene.add(m); npcs.push(m);
+  }
+  renderRail(); refreshScene();
+}
+
+function peekFlash(){
+  // Preview Viewer: the whole screen becomes the selected camera for a moment
+  const c = cams[camSel]; const from = {yaw:orbit.yaw,pitch:orbit.pitch,dist:orbit.dist,target:orbit.target.clone()};
+  stage.classList.add('hideui','photo'); refreshScene(); peeking = true;
+  setTimeout(()=>{ peeking = false; stage.classList.remove('hideui','photo'); S.hot = 0; renderHot(); refreshScene(); }, 2200);
+}
+let peeking = false;
+function photo(){
+  const el = $('#count'); let n = 3; el.style.display = 'grid';
+  const tick = () => { if (n > 0){ el.textContent = n--; setTimeout(tick, 600); } else {
+    el.style.display = 'none'; stage.classList.add('hideui','photo'); refreshScene();
+    $('#flash').style.opacity = .9; setTimeout(()=> $('#flash').style.opacity = 0, 120);
+    setTimeout(()=>{ stage.classList.remove('hideui','photo'); refreshScene(); }, 2200); } };
+  tick();
+}
+$('#camPrev').onclick = () => { camSel = (camSel + cams.length - 1) % cams.length; rebuildCams(); $('#camName').textContent = cams[camSel].name; refreshScene(); if (S.tab===4) renderPanel(); };
+$('#camNext').onclick = () => { camSel = (camSel + 1) % cams.length; rebuildCams(); $('#camName').textContent = cams[camSel].name; refreshScene(); if (S.tab===4) renderPanel(); };
+$('#tSpace').onclick = () => { S.space = S.space === 'Local' ? 'World' : 'Local'; $('#spaceLab').textContent = S.space; refreshScene(); };
+$('#tPhoto').onclick = photo;
+$('#tCam').onclick = () => { cams.push({name:`Camera ${cams.length+1}`, pos: cam.position.clone(), look: orbit.target.clone(), fov: 60}); camSel = cams.length-1; rebuildCams(); $('#camName').textContent = cams[camSel].name; refreshScene(); if (S.tab===4) renderPanel(); };
+$('#tDel').onclick = () => { if (npcs.length < 2) return; scene.remove(sel()); npcs.splice(S.sel,1); S.sel = 0; all(); };
+$('#bedrockBtn').onclick = (e) => { const on = stage.classList.toggle('bedrock'); e.currentTarget.setAttribute('aria-pressed', on); };
+
+// orbit
+let drag = null;
+canvas.addEventListener('pointerdown', (e) => { drag = {x:e.clientX, y:e.clientY, yaw:orbit.yaw, pitch:orbit.pitch}; canvas.setPointerCapture(e.pointerId); });
+canvas.addEventListener('pointermove', (e) => { if (!drag) return; orbit.yaw = drag.yaw - (e.clientX-drag.x)/K*0.006; orbit.pitch = Math.max(0.02, Math.min(1.2, drag.pitch + (e.clientY-drag.y)/K*0.004)); placeCam(); });
+addEventListener('pointerup', () => drag = null);
+canvas.addEventListener('wheel', (e) => { e.preventDefault(); orbit.dist = Math.max(3, Math.min(20, orbit.dist * (e.deltaY > 0 ? 1.08 : 0.93))); placeCam(); }, {passive:false});
+
+/* ---------- render loop ---------- */
+function frame(){
+  if (peeking){ const c = cams[camSel]; cam.position.copy(c.pos); cam.fov = c.fov; cam.updateProjectionMatrix(); cam.lookAt(c.look); }
+  else { cam.fov = 50; cam.updateProjectionMatrix(); placeCam(); }
+  renderer.render(scene, cam);
+  // camera preview: hide editor-only things
+  const c = cams[camSel]; pipCam.position.copy(c.pos); pipCam.fov = c.fov; pipCam.updateProjectionMatrix(); pipCam.lookAt(c.look);
+  const vis = [gizmo.visible, ...cams.map(x=>x.obj.visible)]; gizmo.visible = false; cams.forEach(x=>x.obj.visible=false);
+  const ol = npcs.map(n => Object.values(n.userData.parts).map(p => p.userData.outline.visible)); npcs.forEach(n => Object.values(n.userData.parts).forEach(p => p.userData.outline.visible = false));
+  pipRenderer.render(scene, pipCam);
+  gizmo.visible = vis[0]; cams.forEach((x,i)=>x.obj.visible=vis[i+1]); npcs.forEach((n,i) => Object.values(n.userData.parts).forEach((p,j) => p.userData.outline.visible = ol[i][j]));
+  requestAnimationFrame(frame);
+}
+all();
+frame();
+})();
+</script>
