@@ -56,6 +56,17 @@ const CATALOG = {
   ]
 };
 
+/** Picture for a slot tile: the worn item when we know its icon, else the slot's default icon. */
+export function equipIcon(npc, slotKey) {
+  const id = getEquip(npc, slotKey)?.id;
+  const def = SLOTS.find((s) => s.key === slotKey);
+  if (!id) return def?.icon;
+  for (const groups of Object.values(CATALOG)) for (const g of groups) for (const it of g.items ?? []) if (it.id === id) return it.icon;
+  const m = /^minecraft:(\w+?)_(helmet|chestplate|leggings|boots)$/.exec(id);
+  if (m) return TIER_ICON(m[1], m[2]);
+  return `textures/items/${id.replace(/^minecraft:/, "")}`;
+}
+
 // ---------- equipment cache (our own record of what the NPC wears; reading it back isn't possible) ----------
 const cacheKey = (slotKey) => `npcstudio:equip_${slotKey.toLowerCase()}`;
 export function getEquip(npc, slotKey) {
@@ -414,7 +425,7 @@ function openArmorSets(player, npc, back) {
   m.back(back).show(player);
 }
 
-function openSlotMenu(player, npc, slotKey, back) {
+export function openSlotMenu(player, npc, slotKey, back) {
   const self = () => openSlotMenu(player, npc, slotKey, back);
   const cur = getEquip(npc, slotKey);
   const m = menu(`${slotKey} Slot`, `Currently: ${describeEquip(cur)}`);

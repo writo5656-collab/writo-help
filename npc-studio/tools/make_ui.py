@@ -97,9 +97,9 @@ def label_from_button(size, offset, anchor, align, scale=1.0, strip_tab=False):
 #   main: (none) button · §h§r/§i§r section · §w§r checkbox · §f§r field · §s§r slider · §t§r stepper
 #   a: §k§r small (minus / previous)   b: §p§r small (plus) · §y§r wide value   c: §v§r value · §m§r small · §z§r Choose
 TAB0, RAIL0, RAILN, BAR0, BARN, ROW0, ROWN = 0, 6, 24, 30, 8, 38, 48
-HDR_OPEN, HDR_SHUT, CHECK, FIELD, SLIDE, STEP = "§h§r", "§i§r", "§w§r", "§f§r", "§s§r", "§t§r"
+PLAIN, HDR, HDR_OPEN, HDR_SHUT, TILE = "§o§r", "§j§r", "§h§r", "§i§r", "§e§r"
+CAP, CHECK, FIELD, SLIDE, STEP = "§q§r", "§w§r", "§f§r", "§s§r", "§t§r"
 A_SMALL, B_SMALL, B_WIDE, C_VALUE, C_SMALL, C_CHOOSE = "§k§r", "§p§r", "§y§r", "§v§r", "§m§r", "§z§r"
-CAPTIONS = [CHECK, FIELD, SLIDE, STEP]
 PANEL_W = "34%"
 BAR_H = 24
 RAIL_W = 32
@@ -119,12 +119,8 @@ def shown():
     return f"(not ({BTN} = ''))"
 
 
-def any_of(marks):
-    return "(" + " or ".join(has(m) for m in marks) + ")"
-
-
-def none_of(marks):
-    return "(" + " and ".join(lacks(m) for m in marks) + ")"
+def details():
+    return {"binding_type": "collection_details", "binding_collection_name": "form_buttons"}
 
 
 def strip(marks):
@@ -134,100 +130,107 @@ def strip(marks):
     return e
 
 
-def details():
-    return {"binding_type": "collection_details", "binding_collection_name": "form_buttons"}
+HAS_TEX = "(not ((#texture = '') or (#texture = 'loading')))"
 
 
-def text_label(size, offset, anchor, align, marks, color=TXT, scale=1.0, layer=6):
+def tex_bindings(cond):
+    return [coll("#form_button_texture", "#texture"), coll("#form_button_texture_file_system", "#texture_file_system"),
+            coll(BTN), view(f"({HAS_TEX} and {cond})")]
+
+
+def text_label(size, offset, anchor, align, marks, cond, color=TXT, scale=1.0, layer=6):
+    """A label showing the slot's text without its tags. cond: ONE simple has(...) check."""
     return {"type": "label", "layer": layer, "size": size, "offset": offset, "anchor_from": anchor, "anchor_to": anchor,
             "text": "#text", "text_alignment": align, "color": color, "shadow": False, "font_scale_factor": scale,
-            "bindings": [coll(BTN), view(strip(marks), "#text")]}
+            "bindings": [coll(BTN), view(strip(marks), "#text"), view(cond)]}
 
 
-def variant(mark, size, offset, anchor, texture, label=None, with_icon=False, wrap=None):
-    """One look of an aux slot: shown only when the slot's label starts with its tag."""
-    inner = [{"button@common.button": dict(btn(texture, size=("100%", "100%")))}]
-    if with_icon:
-        inner.append({"icon": icon([8, 8], [0, 0], "center")})
-    if label:
-        inner.append({"label": text_label(["100% - 4px", 10], [0, 0], "center", "center", AUX_MARKS, **label)})
-    ctrl = {"type": "panel", "size": list(size), "offset": offset, "anchor_from": anchor, "anchor_to": anchor, "layer": 8,
-            "controls": inner}
-    if wrap:  # a column panel on the right, the control sits at its left edge
-        ctrl = {"type": "panel", "size": [wrap, "100%"], "anchor_from": "right_middle", "anchor_to": "right_middle",
-                "controls": [{"c": ctrl}]}
-    return {"type": "panel", "size": ["100%", "100%"], "bindings": [coll(BTN), view(has(mark))], "controls": [{"c": ctrl}]}
+def plain_button(name, texture, size, cond, anchor="center", offset=(0, 0)):
+    """common.button + collection binding, shown when cond is true (the details binding must stay)."""
+    return {f"{name}@common.button": dict(btn(texture, size=size), anchor_from=anchor, anchor_to=anchor, offset=list(offset),
+                                          bindings=[details(), coll(BTN), view(cond)])}
 
 
-AUX_MARKS = None  # set below
+ALL_MARKS = [PLAIN, HDR_OPEN, HDR_SHUT, HDR, CAP, CHECK, FIELD, SLIDE, STEP, TILE,
+             A_SMALL, B_SMALL, B_WIDE, C_VALUE, C_SMALL, C_CHOOSE, "§b"]
+
+
+def tile(offset_x):
+    """Square slot tile (inventory). Same look in all four slots, only the x position differs."""
+    return [
+        plain_button("tile", "tile", (18, 18), has(TILE), anchor="left_middle", offset=(offset_x, 0)),
+        {"tile_icon": dict(icon([14, 14], [offset_x + 2, 0], "left_middle"), bindings=tex_bindings(has(TILE)))},
+        {"tile_on": {"type": "image", "texture": "textures/ui/npcstudio/panel/sel_ring", "size": [18, 18], "layer": 7,
+                     "offset": [offset_x, 0], "anchor_from": "left_middle", "anchor_to": "left_middle",
+                     "bindings": [coll(BTN), view(has(f"{TILE}§b"))]}}
+    ]
 
 
 def row_control(i):
+    """One row = 4 collection slots, all direct children of the rows stack (Bedrock only reads
+    collection_index there). The main slot is 20 tall; a, b and c are 0 tall and draw on top of it."""
     k = ROW0 + 4 * i
-    return {f"r{i}@server_form.npcs_row": {"collection_index": k, "controls": [
-        {"main@server_form.npcs_main": {}},
-        {"a@server_form.npcs_aux_a": {"collection_index": k + 1}},
-        {"b@server_form.npcs_aux_b": {"collection_index": k + 2}},
-        {"c@server_form.npcs_aux_c": {"collection_index": k + 3}}
-    ]}}
+    return [
+        {f"r{i}@server_form.npcs_main": {"collection_index": k}},
+        {f"r{i}a@server_form.npcs_aux_a": {"collection_index": k + 1}},
+        {f"r{i}b@server_form.npcs_aux_b": {"collection_index": k + 2}},
+        {f"r{i}c@server_form.npcs_aux_c": {"collection_index": k + 3}}
+    ]
+
+
+def aux(controls):
+    return {"type": "panel", "size": ["100%", 0], "bindings": [coll(BTN), view(shown())], "controls": [
+        {"over": {"type": "panel", "size": ["100%", 20], "offset": [0, -20], "anchor_from": "top_left", "anchor_to": "top_left",
+                  "layer": 8, "controls": controls}}]}
+
+
+def small_btn(name, mark, anchor, offset):
+    dx = -2 if anchor.startswith("right") else 2
+    return [plain_button(name, "small", (12, 14), has(mark), anchor=anchor, offset=offset),
+            {f"{name}_icon": dict(icon([8, 8], [offset[0] + dx, 0], anchor), layer=7, bindings=tex_bindings(has(mark)))}]
+
+
+def control_column(controls):
+    """A panel covering the control column (right of the captions); children anchor to its left edge."""
+    return [{"col": {"type": "panel", "size": [f"{CTRL_COL} - 2px", "100%"], "anchor_from": "right_middle",
+                     "anchor_to": "right_middle", "controls": controls}}]
+
+
+def value_btn(name, mark, size, offset, scale):
+    return [plain_button(name, "value" if mark != C_CHOOSE else "choose", size, has(mark), anchor="right_middle", offset=offset),
+            {f"{name}_text": dict(text_label([size[0], 10], offset, "right_middle", "center", ALL_MARKS, has(mark), scale=scale), layer=7)}]
 
 
 def row_templates():
-    global AUX_MARKS
-    AUX_MARKS = [A_SMALL, B_SMALL, B_WIDE, C_VALUE, C_SMALL, C_CHOOSE]
-    hdr = [HDR_OPEN, HDR_SHUT]
-    main_marks = hdr + CAPTIONS
     t = {}
-    t["npcs_row"] = {"type": "panel", "size": ["100%", 20], "bindings": [coll(BTN), view(shown())], "controls": []}
-    is_plain = none_of(main_marks)
-    is_hdr = any_of(hdr)
-    is_cap = any_of(CAPTIONS)
-    has_tex = "(not ((#texture = '') or (#texture = 'loading')))"
-    t["npcs_main"] = {"type": "panel", "size": ["100%", "100%"], "controls": [
+    t["npcs_main"] = {"type": "panel", "size": ["100%", 20], "bindings": [coll(BTN), view(shown())], "controls": [
         # button row: raised; section header: flat with a hairline; caption rows: flat, the control does the work
-        {"btn_row@common.button": dict(btn("row", size=("100% - 6px", 18)), anchor_from="center", anchor_to="center",
-                                      bindings=[details(), coll(BTN), view(is_plain)])},
-        {"btn_hdr@common.button": dict(btn("hdr", size=("100% - 6px", 18)), anchor_from="center", anchor_to="center",
-                                      bindings=[details(), coll(BTN), view(is_hdr)])},
-        {"btn_cap@common.button": dict(btn("cap", size=("100% - 6px", 18)), anchor_from="center", anchor_to="center",
-                                      bindings=[details(), coll(BTN), view(is_cap)])},
-        {"icon_l": dict(icon([14, 14], [8, 0], "left_middle"), bindings=[
-            coll("#form_button_texture", "#texture"), coll("#form_button_texture_file_system", "#texture_file_system"),
-            coll(BTN), view(f"({has_tex} and (not {is_cap}))")])},
-        # checkbox: on the right edge, lined up with the value boxes
-        {"check": dict(icon([12, 12], [-5, 0], "right_middle"), bindings=[
-            coll("#form_button_texture", "#texture"), coll("#form_button_texture_file_system", "#texture_file_system"),
-            coll(BTN), view(f"({has_tex} and {has(CHECK)})")])},
-        # slider track (the button picture is the track, drawn by tools/make_ui.py)
-        {"track": dict(icon([f"{CTRL_COL} - 66px", 8], [-50, 0], "right_middle"), bindings=[
-            coll("#form_button_texture", "#texture"), coll("#form_button_texture_file_system", "#texture_file_system"),
-            coll(BTN), view(f"({has_tex} and {has(SLIDE)})")])},
+        plain_button("btn_row", "row", ("100% - 6px", 18), has(PLAIN)),
+        plain_button("btn_hdr", "hdr", ("100% - 6px", 18), has(HDR)),
+        plain_button("btn_cap", "cap", ("100% - 6px", 18), has(CAP)),
+        {"icon_row": dict(icon([14, 14], [8, 0], "left_middle"), bindings=tex_bindings(has(PLAIN)))},
+        {"icon_hdr": dict(icon([12, 12], [8, 0], "left_middle"), bindings=tex_bindings(has(HDR)))},
+        {"check": dict(icon([12, 12], [-5, 0], "right_middle"), bindings=tex_bindings(has(CHECK)))},
+        {"track": dict(icon([f"{CTRL_COL} - 66px", 8], [-50, 0], "right_middle"), bindings=tex_bindings(has(SLIDE)))},
         {"chev_open": {"type": "image", "texture": "textures/ui/npcstudio/panel/chev_open", "size": [8, 8], "layer": 6,
                        "offset": [-8, 0], "anchor_from": "right_middle", "anchor_to": "right_middle",
                        "bindings": [coll(BTN), view(has(HDR_OPEN))]}},
         {"chev_shut": {"type": "image", "texture": "textures/ui/npcstudio/panel/chev_shut", "size": [8, 8], "layer": 6,
                        "offset": [-8, 0], "anchor_from": "right_middle", "anchor_to": "right_middle",
                        "bindings": [coll(BTN), view(has(HDR_SHUT))]}},
-        {"label_row": dict(text_label(["100% - 56px", 10], [28, 0], "left_middle", "left", main_marks),
-                           bindings=[coll(BTN), view(strip(main_marks), "#text"), view(f"({is_plain} or {is_hdr})")])},
-        {"label_cap": dict(text_label([f"{LABEL_COL} - 10px", 10], [10, 0], "left_middle", "left", main_marks, color=CAP),
-                           bindings=[coll(BTN), view(strip(main_marks), "#text"), view(any_of([FIELD, SLIDE, STEP]))])},
-        {"label_chk": dict(text_label(["100% - 36px", 10], [10, 0], "left_middle", "left", main_marks, color=CAP),
-                           bindings=[coll(BTN), view(strip(main_marks), "#text"), view(has(CHECK))])}
-    ]}
-    small = (12, 14)
-    t["npcs_aux_a"] = {"type": "panel", "size": ["100%", "100%"], "bindings": [coll(BTN), view(shown())], "controls": [
-        {"small": variant(A_SMALL, small, [0, 0], "left_middle", "small", with_icon=True, wrap=f"{CTRL_COL} - 2px")}
-    ]}
-    t["npcs_aux_b"] = {"type": "panel", "size": ["100%", "100%"], "bindings": [coll(BTN), view(shown())], "controls": [
-        {"small": variant(B_SMALL, small, [-36, 0], "right_middle", "small", with_icon=True)},
-        {"wide": variant(B_WIDE, [f"{CTRL_COL} - 34px", 14], [-18, 0], "right_middle", "value", label={"scale": 0.85})}
-    ]}
-    t["npcs_aux_c"] = {"type": "panel", "size": ["100%", "100%"], "bindings": [coll(BTN), view(shown())], "controls": [
-        {"value": variant(C_VALUE, (30, 14), [-4, 0], "right_middle", "value", label={"scale": 0.75})},
-        {"small": variant(C_SMALL, small, [-4, 0], "right_middle", "small", with_icon=True)},
-        {"choose": variant(C_CHOOSE, [f"{CTRL_COL} - 10px", 14], [-4, 0], "right_middle", "choose", label={"scale": 0.85})}
-    ]}
+        {"label_row": text_label(["100% - 56px", 10], [28, 0], "left_middle", "left", ALL_MARKS[:-1], has(PLAIN))},
+        {"label_hdr": text_label(["100% - 56px", 10], [26, 0], "left_middle", "left", ALL_MARKS, has(HDR), color=CYAN)},
+        {"label_field": text_label([f"{LABEL_COL} - 10px", 10], [10, 0], "left_middle", "left", ALL_MARKS[:-1], has(FIELD), color=CAP)},
+        {"label_slide": text_label([f"{LABEL_COL} - 10px", 10], [10, 0], "left_middle", "left", ALL_MARKS[:-1], has(SLIDE), color=CAP)},
+        {"label_step": text_label([f"{LABEL_COL} - 10px", 10], [10, 0], "left_middle", "left", ALL_MARKS[:-1], has(STEP), color=CAP)},
+        {"label_chk": text_label(["100% - 36px", 10], [10, 0], "left_middle", "left", ALL_MARKS[:-1], has(CHECK), color=CAP)}
+    ] + tile(4)}
+    t["npcs_aux_a"] = aux(control_column(small_btn("small", A_SMALL, "left_middle", [0, 0])) + tile(26))
+    t["npcs_aux_b"] = aux(small_btn("small", B_SMALL, "right_middle", [-36, 0])
+                          + value_btn("wide", B_WIDE, [f"{CTRL_COL} - 34px", 14], [-18, 0], 0.85) + tile(48))
+    t["npcs_aux_c"] = aux(small_btn("small", C_SMALL, "right_middle", [-4, 0])
+                          + value_btn("value", C_VALUE, [30, 14], [-4, 0], 0.75)
+                          + value_btn("choose", C_CHOOSE, [f"{CTRL_COL} - 10px", 14], [-4, 0], 0.85) + tile(70))
     return t
 
 
@@ -245,7 +248,7 @@ def build():
     d["main_screen_content"] = {
         "type": "panel", "size": ["100%", "100%"],
         "controls": [{"server_form_factory": {"type": "factory", "control_ids": {
-            "long_form": "@server_form.npcs_router", "custom_form": "@server_form.custom_form"}}}]
+            "long_form": "@server_form.npcs_router", "custom_form": "@server_form.npcs_custom_router"}}}]
     }
     d["npcs_router"] = {"type": "panel", "size": ["100%", "100%"], "controls": [
         {"vanilla@server_form.npcs_vanilla_wrap": {}},
@@ -254,6 +257,53 @@ def build():
     d["npcs_vanilla_wrap"] = {"type": "panel", "size": ["100%", "100%"],
                               "bindings": [global_title(), view(NO_PANEL)],
                               "controls": [{"long_form@server_form.long_form": {}}]}
+
+    # ---------- NPC Studio input forms (text boxes, sliders, toggles): same dark left panel, no grey box ----------
+    d["npcs_custom_router"] = {"type": "panel", "size": ["100%", "100%"], "controls": [
+        {"vanilla": {"type": "panel", "size": ["100%", "100%"], "bindings": [global_title(), view(NO_PANEL)],
+                     "controls": [{"custom_form@server_form.custom_form": {}}]}},
+        {"studio@server_form.npcs_custom": {"bindings": [global_title(), view(HAS_PANEL)]}}
+    ]}
+    d["npcs_custom"] = {
+        "type": "image", "texture": "textures/ui/npcstudio/panel/panel_bg", "layer": 2,
+        "size": [PANEL_W, "100%"], "anchor_from": "top_left", "anchor_to": "top_left",
+        "controls": [
+            {"title": {"type": "label", "text": "#title_text", "color": CYAN, "shadow": False, "layer": 4,
+                       "size": ["100% - 30px", 10], "offset": [10, 6], "anchor_from": "top_left", "anchor_to": "top_left",
+                       "bindings": [global_title(), view(CLEAN_TITLE, "#title_text")]}},
+            {"close@common.button": dict(btn("close", size=(14, 14), mapping="button.menu_exit", collection=False),
+                                         anchor_from="top_right", anchor_to="top_right", offset=[-3, 3])},
+            {"rule": {"type": "image", "texture": "textures/ui/npcstudio/panel/rule", "size": ["100%", 1],
+                      "offset": [0, 20], "anchor_from": "top_left", "anchor_to": "top_left", "layer": 3}},
+            {"scroll@server_form.npcs_custom_scroll": {}}
+        ]
+    }
+    d["npcs_custom_scroll@common.scrolling_panel"] = {
+        "anchor_to": "top_left", "anchor_from": "top_left", "offset": [0, 22],
+        "$show_background": False, "size": ["100%", "100% - 23px"],
+        "$scrolling_content": "server_form.npcs_custom_content",
+        "$scroll_size": [4, "100% - 4px"],
+        "$scrolling_pane_size": ["100% - 6px", "100%"],
+        "$scrolling_pane_offset": [0, 0],
+        "$scroll_bar_right_padding_size": [0, 0]
+    }
+    d["npcs_custom_content"] = {
+        "type": "stack_panel", "orientation": "vertical", "size": ["100% - 12px", "100%c"], "offset": [6, 0],
+        "anchor_from": "top_left", "anchor_to": "top_left",
+        "controls": [
+            {"generated_form@server_form.generated_contents": {}},
+            {"gap": {"type": "panel", "size": ["100%", 6]}},
+            {"submit": {"type": "panel", "size": ["100%", 20],
+                        "bindings": [{"binding_name": "#submit_button_visible", "binding_name_override": "#visible"}],
+                        "controls": [
+                            {"button@common.button": dict(btn("small", size=("100%", 18), mapping="button.submit_custom_form", collection=False),
+                                                          anchor_from="center", anchor_to="center")},
+                            {"label": {"type": "label", "text": "#submit_text", "color": TXT, "shadow": False, "layer": 6,
+                                       "size": ["100%", 10], "text_alignment": "center", "anchor_from": "center", "anchor_to": "center",
+                                       "bindings": [{"binding_name": "#submit_text"}]}}]}},
+            {"pad_end": {"type": "panel", "size": ["100%", 8]}}
+        ]
+    }
 
     d["npcs_editor"] = {
         "type": "panel", "size": ["100%", "100%"], "layer": 2,
@@ -287,7 +337,7 @@ def build():
         "bindings": [coll(BTN), view(shown())],
         "controls": [
             {"button@common.button": btn("tab")},
-            {"label": label_from_button(["100%", 10], [0, 0], "center", "center", 0.85, strip_tab=True)},
+            {"label": label_from_button(["100% - 2px", 10], [0, 0], "center", "center", 0.7, strip_tab=True)},
             {"bar": {"type": "image", "texture": "textures/ui/npcstudio/panel/tab_bar", "size": ["100% - 8px", 2], "layer": 6,
                      "anchor_from": "bottom_middle", "anchor_to": "bottom_middle",
                      "bindings": [coll(BTN), view(has("§b"))]}}
@@ -302,13 +352,15 @@ def build():
         "$scrolling_pane_offset": [0, 0],
         "$scroll_bar_right_padding_size": [0, 0]
     }
-    rows = [row_control(i) for i in range(ROWN)]
+    rows = [c for i in range(ROWN) for c in row_control(i)]
     d["npcs_rows"] = {
         "type": "stack_panel", "orientation": "vertical", "size": ["100%", "100%c"],
         "anchor_from": "top_left", "anchor_to": "top_left", "collection_name": "form_buttons",
         "controls": [
-            {"body": {"type": "label", "size": ["100% - 16px", "default"], "offset": [8, 0], "text": "#form_text", "color": SUB,
-                      "shadow": False, "font_scale_factor": 0.85, "layer": 4}},
+            {"body_box": {"type": "panel", "size": ["100%", "100%c"], "controls": [
+                {"body": {"type": "label", "size": ["100% - 16px", "default"], "offset": [8, 2], "text": "#form_text", "color": SUB,
+                          "anchor_from": "top_left", "anchor_to": "top_left",
+                          "shadow": False, "font_scale_factor": 0.85, "layer": 4}}]}},
             {"pad": {"type": "panel", "size": ["100%", 4]}}
         ] + rows + [{"pad_end": {"type": "panel", "size": ["100%", 8]}}]
     }

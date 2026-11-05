@@ -304,10 +304,22 @@ export function openMainMenu(player) {
   openStudio(player);
 }
 
+const SPAWN_COUNTS = [1, 2, 3, 4, 5, 6, 8, 10, 12, 16, 20, 25, 30, 40, 50];
+const spawnCount = new Map(); // player.id -> index
+/** Spawn page in the panel: how many, then pick the skin. */
 export function openSpawnMenu(player, back) {
-  modal("Spawn NPCs")
-    .slider("count", "How many? (grid in front of you)", 1, 50, 1, 1)
-    .show(player, ({ count }) => pickSkin(player, count > 1 ? `Choose Skin (x${count})` : "Choose Skin", (i) => spawnNpcs(player, i, count), back), back);
+  const self = () => openSpawnMenu(player, back);
+  const ci = spawnCount.get(player.id) ?? 0;
+  const count = SPAWN_COUNTS[ci];
+  menu("Spawn NPCs", "§7They appear in a grid in front of you")
+    .reopen(self)
+    .section("spawn", "Spawn", ICON("spawn"))
+    .cycle("How many", String(count), (d) => spawnCount.set(player.id, Math.max(0, Math.min(SPAWN_COUNTS.length - 1, ci + d))))
+    .btn("Choose Skin And Spawn", ICON("skin"), () =>
+      pickSkin(player, count > 1 ? `Choose Skin (x${count})` : "Choose Skin", (i) => spawnNpcs(player, i, count), back)
+    )
+    .back(back)
+    .show(player);
 }
 
 export function openPresetsMenu(player, back) {

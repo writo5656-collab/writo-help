@@ -181,15 +181,17 @@ export function cleanLabel(text) {
 // V3.2 editor: every NPC Studio menu uses one fixed button layout that RP/ui/server_form.json draws
 // like the website editor (tools/make_ui.py):
 //   0-5 tabs · 6-29 NPC heads (right rail, scrolls) · 30-37 bottom tools · 38+ rows, 4 buttons per row
-// Each row is [main, a, b, c]. An empty label hides a slot. The tag at the start of a label picks the look:
-//   main: (none) button row · §h§r open section · §i§r folded section · §w§r checkbox row
-//         §f§r field caption · §s§r slider caption (icon = track picture) · §t§r stepper caption
-//   a:    §k§r small button left of the control column (minus / previous)
-//   b:    §p§r small button (plus) · §y§r wide value box (stepper)
-//   c:    §v§r value box · §m§r small button (next) · §z§r "Choose" button (field)
+// Each row is [main, a, b, c]. An empty label hides a slot. The tag at the start of a label picks the look.
+// Every look has ONE tag of its own, because Bedrock's UI gets long and/or conditions wrong:
+//   main: §o§r button row · §j§r§h§r open section · §j§r§i§r folded section · §e§r slot tile
+//         §q§r + §w§r checkbox · §f§r field · §s§r slider (icon = track picture) · §t§r stepper
+//   a:    §k§r small button left of the control column (minus / previous) · §e§r tile
+//   b:    §p§r small button (plus) · §y§r wide value box (stepper) · §e§r tile
+//   c:    §v§r value box · §m§r small button (next) · §z§r "Choose" button (field) · §e§r tile
 const EDITOR_TAG = "§n§p§s§r";
 export const TAB_MARK = "§u§r";
-const HDR_OPEN = "§h§r", HDR_SHUT = "§i§r", CHECK = "§w§r", FIELD = "§f§r", SLIDE = "§s§r", STEP = "§t§r";
+const PLAIN = "§o§r", HDR_OPEN = "§j§r§h§r", HDR_SHUT = "§j§r§i§r", TILE = "§e§r";
+const CHECK = "§q§r§w§r", FIELD = "§q§r§f§r", SLIDE = "§q§r§s§r", STEP = "§q§r§t§r";
 const A_SMALL = "§k§r", B_SMALL = "§p§r", B_WIDE = "§y§r", C_VALUE = "§v§r", C_SMALL = "§m§r", C_CHOOSE = "§z§r";
 const RAIL_N = 24, BAR_N = 8, ROW_N = 48;
 export const CHECKBOX = (on) => ICON(on ? "check_on" : "check_off");
@@ -267,7 +269,16 @@ export function menu(title, body) {
       return api;
     },
     btn(text, icon, fn) {
-      rows.push({ kind: "row", text: cleanLabel(text), icon, fn, sec: section });
+      const label = cleanLabel(text);
+      // translated labels (skin names) are RawMessages: put the tag in front as plain text
+      const tagged = typeof label === "string" ? PLAIN + (label || " ") : { rawtext: [{ text: PLAIN }, label] };
+      rows.push({ kind: "row", text: tagged, icon, fn, sec: section });
+      return api;
+    },
+    /** Up to 4 square tiles in one row: [{ icon, on, fn }] (inventory slots). */
+    tiles(items) {
+      const t = items.slice(0, 4).map((it) => ({ text: TILE + (it.on ? "§b" : "") + (it.label ?? "slot"), icon: it.icon, fn: it.fn }));
+      rows.push({ kind: "row", ...t[0], sec: section, a: t[1], b: t[2], c: t[3] });
       return api;
     },
     field(label, value, _icon, fn) {
@@ -311,7 +322,7 @@ export function menu(title, body) {
     },
     back(fn) {
       section = null;
-      rows.push({ kind: "row", text: "Back", icon: ICON("back"), fn, sec: null });
+      rows.push({ kind: "row", text: PLAIN + "Back", icon: ICON("back"), fn, sec: null });
       return api;
     },
     show(player) {
@@ -348,14 +359,14 @@ export function menu(title, body) {
         slot(r.b);
         slot(r.c);
       };
-      if (page > 0) row({ text: "Previous page", icon: ICON("back"), fn: keep(() => stay(() => (page -= 1), true)) });
+      if (page > 0) row({ text: PLAIN + "Previous page", icon: ICON("back"), fn: keep(() => stay(() => (page -= 1), true)) });
       for (const r of slice) {
         if (r.kind === "hdr") {
           const shut = isFolded(player, r.id);
           row({ text: `${shut ? HDR_SHUT : HDR_OPEN}${r.text}`, icon: r.icon, fn: keep(() => stay(() => toggleFold(player, r.id), true)) });
-        } else row({ ...r, text: r.text || " " });
+        } else row({ ...r, text: r.text || PLAIN + " " });
       }
-      if (page < pages - 1) row({ text: "Next page", icon: ICON("play"), fn: keep(() => stay(() => (page += 1), true)) });
+      if (page < pages - 1) row({ text: PLAIN + "Next page", icon: ICON("play"), fn: keep(() => stay(() => (page += 1), true)) });
       return showWithRetry(form, player)
         .then((res) => {
           if (res.canceled) {
@@ -404,8 +415,10 @@ export function menu(title, body) {
  * shifts the others. Only input controls are used (no labels) to keep indices stable.
  */
 export function modal(title) {
-  const form = new ModalFormData().title(title);
+  // the editor tag puts this form in the dark left panel too (RP/ui/server_form.json, npcs_custom)
+  const form = new ModalFormData().title(EDITOR_TAG + title);
   const names = [];
+  let submitText = null;
   const api = {
     slider(name, label, min, max, step, def) {
       form.slider(label, min, max, { valueStep: step, defaultValue: clamp(def ?? min, min, max) });
@@ -428,10 +441,12 @@ export function modal(title) {
       return api;
     },
     submit(text) {
+      submitText = text;
       form.submitButton(text);
       return api;
     },
     show(player, onSubmit, onCancel) {
+      if (!submitText) form.submitButton("Apply");
       return showWithRetry(form, player)
         .then((res) => {
           if (res.canceled) {

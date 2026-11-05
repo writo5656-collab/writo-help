@@ -9,7 +9,7 @@ import { menu, modal, msg, confirm, ICON, npcLabel, npcsNear, isLocked, setEdito
 import { getAnim, readPose, applyPose, mirrorPose, pushUndo, undo, redo, historySize } from "./rig.js";
 import { LOOP_ANIMS } from "./poses.js";
 import { pickSkin, setSkin, skinPlainName, npcHead } from "./skins.js";
-import { openWardrobe } from "./wardrobe.js";
+import { openWardrobe, openSlotMenu, getEquip, equipIcon, SLOTS } from "./wardrobe.js";
 import { openPoseEditor, openPoseLibrary, openLoopAnims, startGizmo } from "./poseEditor.js";
 import { openAnimator, playAllTimelines, stopAllTimelines } from "./animator.js";
 import { openShotsMenu } from "./shots.js";
@@ -178,6 +178,9 @@ function displayTab(player, m, npc, self) {
   m.btn("Move / Turn", ICON("move"), () => openMoveMenu(player, npc, self));
 
   m.section("inv", "Inventory", ICON("equip"));
+  const slot = (def) => ({ icon: equipIcon(npc, def.key), on: !!getEquip(npc, def.key), fn: () => openSlotMenu(player, npc, def.key, self) });
+  m.tiles(SLOTS.slice(0, 4).map(slot));
+  m.tiles(SLOTS.slice(4).map(slot));
   m.btn("Wardrobe", ICON("equip"), () => openWardrobe(player, npc, self));
   m.btn("Trim Studio", ICON("trim"), () => trimPage(player, npc, self));
 

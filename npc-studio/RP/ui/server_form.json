@@ -36,7 +36,7 @@
      "type": "factory",
      "control_ids": {
       "long_form": "@server_form.npcs_router",
-      "custom_form": "@server_form.custom_form"
+      "custom_form": "@server_form.npcs_custom_router"
      }
     }
    }
@@ -76,6 +76,320 @@
   "controls": [
    {
     "long_form@server_form.long_form": {}
+   }
+  ]
+ },
+ "npcs_custom_router": {
+  "type": "panel",
+  "size": [
+   "100%",
+   "100%"
+  ],
+  "controls": [
+   {
+    "vanilla": {
+     "type": "panel",
+     "size": [
+      "100%",
+      "100%"
+     ],
+     "bindings": [
+      {
+       "binding_name": "#title_text"
+      },
+      {
+       "binding_type": "view",
+       "source_property_name": "((#title_text - '§n§p') = #title_text)",
+       "target_property_name": "#visible"
+      }
+     ],
+     "controls": [
+      {
+       "custom_form@server_form.custom_form": {}
+      }
+     ]
+    }
+   },
+   {
+    "studio@server_form.npcs_custom": {
+     "bindings": [
+      {
+       "binding_name": "#title_text"
+      },
+      {
+       "binding_type": "view",
+       "source_property_name": "(not ((#title_text - '§n§p') = #title_text))",
+       "target_property_name": "#visible"
+      }
+     ]
+    }
+   }
+  ]
+ },
+ "npcs_custom": {
+  "type": "image",
+  "texture": "textures/ui/npcstudio/panel/panel_bg",
+  "layer": 2,
+  "size": [
+   "34%",
+   "100%"
+  ],
+  "anchor_from": "top_left",
+  "anchor_to": "top_left",
+  "controls": [
+   {
+    "title": {
+     "type": "label",
+     "text": "#title_text",
+     "color": [
+      0.15,
+      0.83,
+      0.96
+     ],
+     "shadow": false,
+     "layer": 4,
+     "size": [
+      "100% - 30px",
+      10
+     ],
+     "offset": [
+      10,
+      6
+     ],
+     "anchor_from": "top_left",
+     "anchor_to": "top_left",
+     "bindings": [
+      {
+       "binding_name": "#title_text"
+      },
+      {
+       "binding_type": "view",
+       "source_property_name": "((((#title_text - '§n§p§s§r') - '§n§p§t§r') - '§n§p§g§r') - '§n§p§h§r')",
+       "target_property_name": "#title_text"
+      }
+     ]
+    }
+   },
+   {
+    "close@common.button": {
+     "size": [
+      14,
+      14
+     ],
+     "$pressed_button_name": "button.menu_exit",
+     "layer": 1,
+     "controls": [
+      {
+       "default": {
+        "type": "image",
+        "texture": "textures/ui/npcstudio/panel/close",
+        "size": [
+         "100%",
+         "100%"
+        ]
+       }
+      },
+      {
+       "hover": {
+        "type": "image",
+        "texture": "textures/ui/npcstudio/panel/close_hover",
+        "size": [
+         "100%",
+         "100%"
+        ]
+       }
+      },
+      {
+       "pressed": {
+        "type": "image",
+        "texture": "textures/ui/npcstudio/panel/close_pressed",
+        "size": [
+         "100%",
+         "100%"
+        ]
+       }
+      }
+     ],
+     "anchor_from": "top_right",
+     "anchor_to": "top_right",
+     "offset": [
+      -3,
+      3
+     ]
+    }
+   },
+   {
+    "rule": {
+     "type": "image",
+     "texture": "textures/ui/npcstudio/panel/rule",
+     "size": [
+      "100%",
+      1
+     ],
+     "offset": [
+      0,
+      20
+     ],
+     "anchor_from": "top_left",
+     "anchor_to": "top_left",
+     "layer": 3
+    }
+   },
+   {
+    "scroll@server_form.npcs_custom_scroll": {}
+   }
+  ]
+ },
+ "npcs_custom_scroll@common.scrolling_panel": {
+  "anchor_to": "top_left",
+  "anchor_from": "top_left",
+  "offset": [
+   0,
+   22
+  ],
+  "$show_background": false,
+  "size": [
+   "100%",
+   "100% - 23px"
+  ],
+  "$scrolling_content": "server_form.npcs_custom_content",
+  "$scroll_size": [
+   4,
+   "100% - 4px"
+  ],
+  "$scrolling_pane_size": [
+   "100% - 6px",
+   "100%"
+  ],
+  "$scrolling_pane_offset": [
+   0,
+   0
+  ],
+  "$scroll_bar_right_padding_size": [
+   0,
+   0
+  ]
+ },
+ "npcs_custom_content": {
+  "type": "stack_panel",
+  "orientation": "vertical",
+  "size": [
+   "100% - 12px",
+   "100%c"
+  ],
+  "offset": [
+   6,
+   0
+  ],
+  "anchor_from": "top_left",
+  "anchor_to": "top_left",
+  "controls": [
+   {
+    "generated_form@server_form.generated_contents": {}
+   },
+   {
+    "gap": {
+     "type": "panel",
+     "size": [
+      "100%",
+      6
+     ]
+    }
+   },
+   {
+    "submit": {
+     "type": "panel",
+     "size": [
+      "100%",
+      20
+     ],
+     "bindings": [
+      {
+       "binding_name": "#submit_button_visible",
+       "binding_name_override": "#visible"
+      }
+     ],
+     "controls": [
+      {
+       "button@common.button": {
+        "size": [
+         "100%",
+         18
+        ],
+        "$pressed_button_name": "button.submit_custom_form",
+        "layer": 1,
+        "controls": [
+         {
+          "default": {
+           "type": "image",
+           "texture": "textures/ui/npcstudio/panel/small",
+           "size": [
+            "100%",
+            "100%"
+           ]
+          }
+         },
+         {
+          "hover": {
+           "type": "image",
+           "texture": "textures/ui/npcstudio/panel/small_hover",
+           "size": [
+            "100%",
+            "100%"
+           ]
+          }
+         },
+         {
+          "pressed": {
+           "type": "image",
+           "texture": "textures/ui/npcstudio/panel/small_pressed",
+           "size": [
+            "100%",
+            "100%"
+           ]
+          }
+         }
+        ],
+        "anchor_from": "center",
+        "anchor_to": "center"
+       }
+      },
+      {
+       "label": {
+        "type": "label",
+        "text": "#submit_text",
+        "color": [
+         0.93,
+         0.93,
+         0.93
+        ],
+        "shadow": false,
+        "layer": 6,
+        "size": [
+         "100%",
+         10
+        ],
+        "text_alignment": "center",
+        "anchor_from": "center",
+        "anchor_to": "center",
+        "bindings": [
+         {
+          "binding_name": "#submit_text"
+         }
+        ]
+       }
+      }
+     ]
+    }
+   },
+   {
+    "pad_end": {
+     "type": "panel",
+     "size": [
+      "100%",
+      8
+     ]
+    }
    }
   ]
  },
@@ -311,7 +625,7 @@
      "type": "label",
      "layer": 6,
      "size": [
-      "100%",
+      "100% - 2px",
       10
      ],
      "offset": [
@@ -328,7 +642,7 @@
       0.93
      ],
      "shadow": false,
-     "font_scale_factor": 0.85,
+     "font_scale_factor": 0.7,
      "bindings": [
       {
        "binding_name": "#form_button_text",
@@ -412,25 +726,38 @@
   "collection_name": "form_buttons",
   "controls": [
    {
-    "body": {
-     "type": "label",
+    "body_box": {
+     "type": "panel",
      "size": [
-      "100% - 16px",
-      "default"
+      "100%",
+      "100%c"
      ],
-     "offset": [
-      8,
-      0
-     ],
-     "text": "#form_text",
-     "color": [
-      0.63,
-      0.63,
-      0.65
-     ],
-     "shadow": false,
-     "font_scale_factor": 0.85,
-     "layer": 4
+     "controls": [
+      {
+       "body": {
+        "type": "label",
+        "size": [
+         "100% - 16px",
+         "default"
+        ],
+        "offset": [
+         8,
+         2
+        ],
+        "text": "#form_text",
+        "color": [
+         0.63,
+         0.63,
+         0.65
+        ],
+        "anchor_from": "top_left",
+        "anchor_to": "top_left",
+        "shadow": false,
+        "font_scale_factor": 0.85,
+        "layer": 4
+       }
+      }
+     ]
     }
    },
    {
@@ -443,1203 +770,963 @@
     }
    },
    {
-    "r0@server_form.npcs_row": {
-     "collection_index": 38,
-     "controls": [
-      {
-       "main@server_form.npcs_main": {}
-      },
-      {
-       "a@server_form.npcs_aux_a": {
-        "collection_index": 39
-       }
-      },
-      {
-       "b@server_form.npcs_aux_b": {
-        "collection_index": 40
-       }
-      },
-      {
-       "c@server_form.npcs_aux_c": {
-        "collection_index": 41
-       }
-      }
-     ]
+    "r0@server_form.npcs_main": {
+     "collection_index": 38
     }
    },
    {
-    "r1@server_form.npcs_row": {
-     "collection_index": 42,
-     "controls": [
-      {
-       "main@server_form.npcs_main": {}
-      },
-      {
-       "a@server_form.npcs_aux_a": {
-        "collection_index": 43
-       }
-      },
-      {
-       "b@server_form.npcs_aux_b": {
-        "collection_index": 44
-       }
-      },
-      {
-       "c@server_form.npcs_aux_c": {
-        "collection_index": 45
-       }
-      }
-     ]
+    "r0a@server_form.npcs_aux_a": {
+     "collection_index": 39
     }
    },
    {
-    "r2@server_form.npcs_row": {
-     "collection_index": 46,
-     "controls": [
-      {
-       "main@server_form.npcs_main": {}
-      },
-      {
-       "a@server_form.npcs_aux_a": {
-        "collection_index": 47
-       }
-      },
-      {
-       "b@server_form.npcs_aux_b": {
-        "collection_index": 48
-       }
-      },
-      {
-       "c@server_form.npcs_aux_c": {
-        "collection_index": 49
-       }
-      }
-     ]
+    "r0b@server_form.npcs_aux_b": {
+     "collection_index": 40
     }
    },
    {
-    "r3@server_form.npcs_row": {
-     "collection_index": 50,
-     "controls": [
-      {
-       "main@server_form.npcs_main": {}
-      },
-      {
-       "a@server_form.npcs_aux_a": {
-        "collection_index": 51
-       }
-      },
-      {
-       "b@server_form.npcs_aux_b": {
-        "collection_index": 52
-       }
-      },
-      {
-       "c@server_form.npcs_aux_c": {
-        "collection_index": 53
-       }
-      }
-     ]
+    "r0c@server_form.npcs_aux_c": {
+     "collection_index": 41
     }
    },
    {
-    "r4@server_form.npcs_row": {
-     "collection_index": 54,
-     "controls": [
-      {
-       "main@server_form.npcs_main": {}
-      },
-      {
-       "a@server_form.npcs_aux_a": {
-        "collection_index": 55
-       }
-      },
-      {
-       "b@server_form.npcs_aux_b": {
-        "collection_index": 56
-       }
-      },
-      {
-       "c@server_form.npcs_aux_c": {
-        "collection_index": 57
-       }
-      }
-     ]
+    "r1@server_form.npcs_main": {
+     "collection_index": 42
     }
    },
    {
-    "r5@server_form.npcs_row": {
-     "collection_index": 58,
-     "controls": [
-      {
-       "main@server_form.npcs_main": {}
-      },
-      {
-       "a@server_form.npcs_aux_a": {
-        "collection_index": 59
-       }
-      },
-      {
-       "b@server_form.npcs_aux_b": {
-        "collection_index": 60
-       }
-      },
-      {
-       "c@server_form.npcs_aux_c": {
-        "collection_index": 61
-       }
-      }
-     ]
+    "r1a@server_form.npcs_aux_a": {
+     "collection_index": 43
     }
    },
    {
-    "r6@server_form.npcs_row": {
-     "collection_index": 62,
-     "controls": [
-      {
-       "main@server_form.npcs_main": {}
-      },
-      {
-       "a@server_form.npcs_aux_a": {
-        "collection_index": 63
-       }
-      },
-      {
-       "b@server_form.npcs_aux_b": {
-        "collection_index": 64
-       }
-      },
-      {
-       "c@server_form.npcs_aux_c": {
-        "collection_index": 65
-       }
-      }
-     ]
+    "r1b@server_form.npcs_aux_b": {
+     "collection_index": 44
     }
    },
    {
-    "r7@server_form.npcs_row": {
-     "collection_index": 66,
-     "controls": [
-      {
-       "main@server_form.npcs_main": {}
-      },
-      {
-       "a@server_form.npcs_aux_a": {
-        "collection_index": 67
-       }
-      },
-      {
-       "b@server_form.npcs_aux_b": {
-        "collection_index": 68
-       }
-      },
-      {
-       "c@server_form.npcs_aux_c": {
-        "collection_index": 69
-       }
-      }
-     ]
+    "r1c@server_form.npcs_aux_c": {
+     "collection_index": 45
     }
    },
    {
-    "r8@server_form.npcs_row": {
-     "collection_index": 70,
-     "controls": [
-      {
-       "main@server_form.npcs_main": {}
-      },
-      {
-       "a@server_form.npcs_aux_a": {
-        "collection_index": 71
-       }
-      },
-      {
-       "b@server_form.npcs_aux_b": {
-        "collection_index": 72
-       }
-      },
-      {
-       "c@server_form.npcs_aux_c": {
-        "collection_index": 73
-       }
-      }
-     ]
+    "r2@server_form.npcs_main": {
+     "collection_index": 46
     }
    },
    {
-    "r9@server_form.npcs_row": {
-     "collection_index": 74,
-     "controls": [
-      {
-       "main@server_form.npcs_main": {}
-      },
-      {
-       "a@server_form.npcs_aux_a": {
-        "collection_index": 75
-       }
-      },
-      {
-       "b@server_form.npcs_aux_b": {
-        "collection_index": 76
-       }
-      },
-      {
-       "c@server_form.npcs_aux_c": {
-        "collection_index": 77
-       }
-      }
-     ]
+    "r2a@server_form.npcs_aux_a": {
+     "collection_index": 47
     }
    },
    {
-    "r10@server_form.npcs_row": {
-     "collection_index": 78,
-     "controls": [
-      {
-       "main@server_form.npcs_main": {}
-      },
-      {
-       "a@server_form.npcs_aux_a": {
-        "collection_index": 79
-       }
-      },
-      {
-       "b@server_form.npcs_aux_b": {
-        "collection_index": 80
-       }
-      },
-      {
-       "c@server_form.npcs_aux_c": {
-        "collection_index": 81
-       }
-      }
-     ]
+    "r2b@server_form.npcs_aux_b": {
+     "collection_index": 48
     }
    },
    {
-    "r11@server_form.npcs_row": {
-     "collection_index": 82,
-     "controls": [
-      {
-       "main@server_form.npcs_main": {}
-      },
-      {
-       "a@server_form.npcs_aux_a": {
-        "collection_index": 83
-       }
-      },
-      {
-       "b@server_form.npcs_aux_b": {
-        "collection_index": 84
-       }
-      },
-      {
-       "c@server_form.npcs_aux_c": {
-        "collection_index": 85
-       }
-      }
-     ]
+    "r2c@server_form.npcs_aux_c": {
+     "collection_index": 49
     }
    },
    {
-    "r12@server_form.npcs_row": {
-     "collection_index": 86,
-     "controls": [
-      {
-       "main@server_form.npcs_main": {}
-      },
-      {
-       "a@server_form.npcs_aux_a": {
-        "collection_index": 87
-       }
-      },
-      {
-       "b@server_form.npcs_aux_b": {
-        "collection_index": 88
-       }
-      },
-      {
-       "c@server_form.npcs_aux_c": {
-        "collection_index": 89
-       }
-      }
-     ]
+    "r3@server_form.npcs_main": {
+     "collection_index": 50
     }
    },
    {
-    "r13@server_form.npcs_row": {
-     "collection_index": 90,
-     "controls": [
-      {
-       "main@server_form.npcs_main": {}
-      },
-      {
-       "a@server_form.npcs_aux_a": {
-        "collection_index": 91
-       }
-      },
-      {
-       "b@server_form.npcs_aux_b": {
-        "collection_index": 92
-       }
-      },
-      {
-       "c@server_form.npcs_aux_c": {
-        "collection_index": 93
-       }
-      }
-     ]
+    "r3a@server_form.npcs_aux_a": {
+     "collection_index": 51
     }
    },
    {
-    "r14@server_form.npcs_row": {
-     "collection_index": 94,
-     "controls": [
-      {
-       "main@server_form.npcs_main": {}
-      },
-      {
-       "a@server_form.npcs_aux_a": {
-        "collection_index": 95
-       }
-      },
-      {
-       "b@server_form.npcs_aux_b": {
-        "collection_index": 96
-       }
-      },
-      {
-       "c@server_form.npcs_aux_c": {
-        "collection_index": 97
-       }
-      }
-     ]
+    "r3b@server_form.npcs_aux_b": {
+     "collection_index": 52
     }
    },
    {
-    "r15@server_form.npcs_row": {
-     "collection_index": 98,
-     "controls": [
-      {
-       "main@server_form.npcs_main": {}
-      },
-      {
-       "a@server_form.npcs_aux_a": {
-        "collection_index": 99
-       }
-      },
-      {
-       "b@server_form.npcs_aux_b": {
-        "collection_index": 100
-       }
-      },
-      {
-       "c@server_form.npcs_aux_c": {
-        "collection_index": 101
-       }
-      }
-     ]
+    "r3c@server_form.npcs_aux_c": {
+     "collection_index": 53
     }
    },
    {
-    "r16@server_form.npcs_row": {
-     "collection_index": 102,
-     "controls": [
-      {
-       "main@server_form.npcs_main": {}
-      },
-      {
-       "a@server_form.npcs_aux_a": {
-        "collection_index": 103
-       }
-      },
-      {
-       "b@server_form.npcs_aux_b": {
-        "collection_index": 104
-       }
-      },
-      {
-       "c@server_form.npcs_aux_c": {
-        "collection_index": 105
-       }
-      }
-     ]
+    "r4@server_form.npcs_main": {
+     "collection_index": 54
     }
    },
    {
-    "r17@server_form.npcs_row": {
-     "collection_index": 106,
-     "controls": [
-      {
-       "main@server_form.npcs_main": {}
-      },
-      {
-       "a@server_form.npcs_aux_a": {
-        "collection_index": 107
-       }
-      },
-      {
-       "b@server_form.npcs_aux_b": {
-        "collection_index": 108
-       }
-      },
-      {
-       "c@server_form.npcs_aux_c": {
-        "collection_index": 109
-       }
-      }
-     ]
+    "r4a@server_form.npcs_aux_a": {
+     "collection_index": 55
     }
    },
    {
-    "r18@server_form.npcs_row": {
-     "collection_index": 110,
-     "controls": [
-      {
-       "main@server_form.npcs_main": {}
-      },
-      {
-       "a@server_form.npcs_aux_a": {
-        "collection_index": 111
-       }
-      },
-      {
-       "b@server_form.npcs_aux_b": {
-        "collection_index": 112
-       }
-      },
-      {
-       "c@server_form.npcs_aux_c": {
-        "collection_index": 113
-       }
-      }
-     ]
+    "r4b@server_form.npcs_aux_b": {
+     "collection_index": 56
     }
    },
    {
-    "r19@server_form.npcs_row": {
-     "collection_index": 114,
-     "controls": [
-      {
-       "main@server_form.npcs_main": {}
-      },
-      {
-       "a@server_form.npcs_aux_a": {
-        "collection_index": 115
-       }
-      },
-      {
-       "b@server_form.npcs_aux_b": {
-        "collection_index": 116
-       }
-      },
-      {
-       "c@server_form.npcs_aux_c": {
-        "collection_index": 117
-       }
-      }
-     ]
+    "r4c@server_form.npcs_aux_c": {
+     "collection_index": 57
     }
    },
    {
-    "r20@server_form.npcs_row": {
-     "collection_index": 118,
-     "controls": [
-      {
-       "main@server_form.npcs_main": {}
-      },
-      {
-       "a@server_form.npcs_aux_a": {
-        "collection_index": 119
-       }
-      },
-      {
-       "b@server_form.npcs_aux_b": {
-        "collection_index": 120
-       }
-      },
-      {
-       "c@server_form.npcs_aux_c": {
-        "collection_index": 121
-       }
-      }
-     ]
+    "r5@server_form.npcs_main": {
+     "collection_index": 58
     }
    },
    {
-    "r21@server_form.npcs_row": {
-     "collection_index": 122,
-     "controls": [
-      {
-       "main@server_form.npcs_main": {}
-      },
-      {
-       "a@server_form.npcs_aux_a": {
-        "collection_index": 123
-       }
-      },
-      {
-       "b@server_form.npcs_aux_b": {
-        "collection_index": 124
-       }
-      },
-      {
-       "c@server_form.npcs_aux_c": {
-        "collection_index": 125
-       }
-      }
-     ]
+    "r5a@server_form.npcs_aux_a": {
+     "collection_index": 59
     }
    },
    {
-    "r22@server_form.npcs_row": {
-     "collection_index": 126,
-     "controls": [
-      {
-       "main@server_form.npcs_main": {}
-      },
-      {
-       "a@server_form.npcs_aux_a": {
-        "collection_index": 127
-       }
-      },
-      {
-       "b@server_form.npcs_aux_b": {
-        "collection_index": 128
-       }
-      },
-      {
-       "c@server_form.npcs_aux_c": {
-        "collection_index": 129
-       }
-      }
-     ]
+    "r5b@server_form.npcs_aux_b": {
+     "collection_index": 60
     }
    },
    {
-    "r23@server_form.npcs_row": {
-     "collection_index": 130,
-     "controls": [
-      {
-       "main@server_form.npcs_main": {}
-      },
-      {
-       "a@server_form.npcs_aux_a": {
-        "collection_index": 131
-       }
-      },
-      {
-       "b@server_form.npcs_aux_b": {
-        "collection_index": 132
-       }
-      },
-      {
-       "c@server_form.npcs_aux_c": {
-        "collection_index": 133
-       }
-      }
-     ]
+    "r5c@server_form.npcs_aux_c": {
+     "collection_index": 61
     }
    },
    {
-    "r24@server_form.npcs_row": {
-     "collection_index": 134,
-     "controls": [
-      {
-       "main@server_form.npcs_main": {}
-      },
-      {
-       "a@server_form.npcs_aux_a": {
-        "collection_index": 135
-       }
-      },
-      {
-       "b@server_form.npcs_aux_b": {
-        "collection_index": 136
-       }
-      },
-      {
-       "c@server_form.npcs_aux_c": {
-        "collection_index": 137
-       }
-      }
-     ]
+    "r6@server_form.npcs_main": {
+     "collection_index": 62
     }
    },
    {
-    "r25@server_form.npcs_row": {
-     "collection_index": 138,
-     "controls": [
-      {
-       "main@server_form.npcs_main": {}
-      },
-      {
-       "a@server_form.npcs_aux_a": {
-        "collection_index": 139
-       }
-      },
-      {
-       "b@server_form.npcs_aux_b": {
-        "collection_index": 140
-       }
-      },
-      {
-       "c@server_form.npcs_aux_c": {
-        "collection_index": 141
-       }
-      }
-     ]
+    "r6a@server_form.npcs_aux_a": {
+     "collection_index": 63
     }
    },
    {
-    "r26@server_form.npcs_row": {
-     "collection_index": 142,
-     "controls": [
-      {
-       "main@server_form.npcs_main": {}
-      },
-      {
-       "a@server_form.npcs_aux_a": {
-        "collection_index": 143
-       }
-      },
-      {
-       "b@server_form.npcs_aux_b": {
-        "collection_index": 144
-       }
-      },
-      {
-       "c@server_form.npcs_aux_c": {
-        "collection_index": 145
-       }
-      }
-     ]
+    "r6b@server_form.npcs_aux_b": {
+     "collection_index": 64
     }
    },
    {
-    "r27@server_form.npcs_row": {
-     "collection_index": 146,
-     "controls": [
-      {
-       "main@server_form.npcs_main": {}
-      },
-      {
-       "a@server_form.npcs_aux_a": {
-        "collection_index": 147
-       }
-      },
-      {
-       "b@server_form.npcs_aux_b": {
-        "collection_index": 148
-       }
-      },
-      {
-       "c@server_form.npcs_aux_c": {
-        "collection_index": 149
-       }
-      }
-     ]
+    "r6c@server_form.npcs_aux_c": {
+     "collection_index": 65
     }
    },
    {
-    "r28@server_form.npcs_row": {
-     "collection_index": 150,
-     "controls": [
-      {
-       "main@server_form.npcs_main": {}
-      },
-      {
-       "a@server_form.npcs_aux_a": {
-        "collection_index": 151
-       }
-      },
-      {
-       "b@server_form.npcs_aux_b": {
-        "collection_index": 152
-       }
-      },
-      {
-       "c@server_form.npcs_aux_c": {
-        "collection_index": 153
-       }
-      }
-     ]
+    "r7@server_form.npcs_main": {
+     "collection_index": 66
     }
    },
    {
-    "r29@server_form.npcs_row": {
-     "collection_index": 154,
-     "controls": [
-      {
-       "main@server_form.npcs_main": {}
-      },
-      {
-       "a@server_form.npcs_aux_a": {
-        "collection_index": 155
-       }
-      },
-      {
-       "b@server_form.npcs_aux_b": {
-        "collection_index": 156
-       }
-      },
-      {
-       "c@server_form.npcs_aux_c": {
-        "collection_index": 157
-       }
-      }
-     ]
+    "r7a@server_form.npcs_aux_a": {
+     "collection_index": 67
     }
    },
    {
-    "r30@server_form.npcs_row": {
-     "collection_index": 158,
-     "controls": [
-      {
-       "main@server_form.npcs_main": {}
-      },
-      {
-       "a@server_form.npcs_aux_a": {
-        "collection_index": 159
-       }
-      },
-      {
-       "b@server_form.npcs_aux_b": {
-        "collection_index": 160
-       }
-      },
-      {
-       "c@server_form.npcs_aux_c": {
-        "collection_index": 161
-       }
-      }
-     ]
+    "r7b@server_form.npcs_aux_b": {
+     "collection_index": 68
     }
    },
    {
-    "r31@server_form.npcs_row": {
-     "collection_index": 162,
-     "controls": [
-      {
-       "main@server_form.npcs_main": {}
-      },
-      {
-       "a@server_form.npcs_aux_a": {
-        "collection_index": 163
-       }
-      },
-      {
-       "b@server_form.npcs_aux_b": {
-        "collection_index": 164
-       }
-      },
-      {
-       "c@server_form.npcs_aux_c": {
-        "collection_index": 165
-       }
-      }
-     ]
+    "r7c@server_form.npcs_aux_c": {
+     "collection_index": 69
     }
    },
    {
-    "r32@server_form.npcs_row": {
-     "collection_index": 166,
-     "controls": [
-      {
-       "main@server_form.npcs_main": {}
-      },
-      {
-       "a@server_form.npcs_aux_a": {
-        "collection_index": 167
-       }
-      },
-      {
-       "b@server_form.npcs_aux_b": {
-        "collection_index": 168
-       }
-      },
-      {
-       "c@server_form.npcs_aux_c": {
-        "collection_index": 169
-       }
-      }
-     ]
+    "r8@server_form.npcs_main": {
+     "collection_index": 70
     }
    },
    {
-    "r33@server_form.npcs_row": {
-     "collection_index": 170,
-     "controls": [
-      {
-       "main@server_form.npcs_main": {}
-      },
-      {
-       "a@server_form.npcs_aux_a": {
-        "collection_index": 171
-       }
-      },
-      {
-       "b@server_form.npcs_aux_b": {
-        "collection_index": 172
-       }
-      },
-      {
-       "c@server_form.npcs_aux_c": {
-        "collection_index": 173
-       }
-      }
-     ]
+    "r8a@server_form.npcs_aux_a": {
+     "collection_index": 71
     }
    },
    {
-    "r34@server_form.npcs_row": {
-     "collection_index": 174,
-     "controls": [
-      {
-       "main@server_form.npcs_main": {}
-      },
-      {
-       "a@server_form.npcs_aux_a": {
-        "collection_index": 175
-       }
-      },
-      {
-       "b@server_form.npcs_aux_b": {
-        "collection_index": 176
-       }
-      },
-      {
-       "c@server_form.npcs_aux_c": {
-        "collection_index": 177
-       }
-      }
-     ]
+    "r8b@server_form.npcs_aux_b": {
+     "collection_index": 72
     }
    },
    {
-    "r35@server_form.npcs_row": {
-     "collection_index": 178,
-     "controls": [
-      {
-       "main@server_form.npcs_main": {}
-      },
-      {
-       "a@server_form.npcs_aux_a": {
-        "collection_index": 179
-       }
-      },
-      {
-       "b@server_form.npcs_aux_b": {
-        "collection_index": 180
-       }
-      },
-      {
-       "c@server_form.npcs_aux_c": {
-        "collection_index": 181
-       }
-      }
-     ]
+    "r8c@server_form.npcs_aux_c": {
+     "collection_index": 73
     }
    },
    {
-    "r36@server_form.npcs_row": {
-     "collection_index": 182,
-     "controls": [
-      {
-       "main@server_form.npcs_main": {}
-      },
-      {
-       "a@server_form.npcs_aux_a": {
-        "collection_index": 183
-       }
-      },
-      {
-       "b@server_form.npcs_aux_b": {
-        "collection_index": 184
-       }
-      },
-      {
-       "c@server_form.npcs_aux_c": {
-        "collection_index": 185
-       }
-      }
-     ]
+    "r9@server_form.npcs_main": {
+     "collection_index": 74
     }
    },
    {
-    "r37@server_form.npcs_row": {
-     "collection_index": 186,
-     "controls": [
-      {
-       "main@server_form.npcs_main": {}
-      },
-      {
-       "a@server_form.npcs_aux_a": {
-        "collection_index": 187
-       }
-      },
-      {
-       "b@server_form.npcs_aux_b": {
-        "collection_index": 188
-       }
-      },
-      {
-       "c@server_form.npcs_aux_c": {
-        "collection_index": 189
-       }
-      }
-     ]
+    "r9a@server_form.npcs_aux_a": {
+     "collection_index": 75
     }
    },
    {
-    "r38@server_form.npcs_row": {
-     "collection_index": 190,
-     "controls": [
-      {
-       "main@server_form.npcs_main": {}
-      },
-      {
-       "a@server_form.npcs_aux_a": {
-        "collection_index": 191
-       }
-      },
-      {
-       "b@server_form.npcs_aux_b": {
-        "collection_index": 192
-       }
-      },
-      {
-       "c@server_form.npcs_aux_c": {
-        "collection_index": 193
-       }
-      }
-     ]
+    "r9b@server_form.npcs_aux_b": {
+     "collection_index": 76
     }
    },
    {
-    "r39@server_form.npcs_row": {
-     "collection_index": 194,
-     "controls": [
-      {
-       "main@server_form.npcs_main": {}
-      },
-      {
-       "a@server_form.npcs_aux_a": {
-        "collection_index": 195
-       }
-      },
-      {
-       "b@server_form.npcs_aux_b": {
-        "collection_index": 196
-       }
-      },
-      {
-       "c@server_form.npcs_aux_c": {
-        "collection_index": 197
-       }
-      }
-     ]
+    "r9c@server_form.npcs_aux_c": {
+     "collection_index": 77
     }
    },
    {
-    "r40@server_form.npcs_row": {
-     "collection_index": 198,
-     "controls": [
-      {
-       "main@server_form.npcs_main": {}
-      },
-      {
-       "a@server_form.npcs_aux_a": {
-        "collection_index": 199
-       }
-      },
-      {
-       "b@server_form.npcs_aux_b": {
-        "collection_index": 200
-       }
-      },
-      {
-       "c@server_form.npcs_aux_c": {
-        "collection_index": 201
-       }
-      }
-     ]
+    "r10@server_form.npcs_main": {
+     "collection_index": 78
     }
    },
    {
-    "r41@server_form.npcs_row": {
-     "collection_index": 202,
-     "controls": [
-      {
-       "main@server_form.npcs_main": {}
-      },
-      {
-       "a@server_form.npcs_aux_a": {
-        "collection_index": 203
-       }
-      },
-      {
-       "b@server_form.npcs_aux_b": {
-        "collection_index": 204
-       }
-      },
-      {
-       "c@server_form.npcs_aux_c": {
-        "collection_index": 205
-       }
-      }
-     ]
+    "r10a@server_form.npcs_aux_a": {
+     "collection_index": 79
     }
    },
    {
-    "r42@server_form.npcs_row": {
-     "collection_index": 206,
-     "controls": [
-      {
-       "main@server_form.npcs_main": {}
-      },
-      {
-       "a@server_form.npcs_aux_a": {
-        "collection_index": 207
-       }
-      },
-      {
-       "b@server_form.npcs_aux_b": {
-        "collection_index": 208
-       }
-      },
-      {
-       "c@server_form.npcs_aux_c": {
-        "collection_index": 209
-       }
-      }
-     ]
+    "r10b@server_form.npcs_aux_b": {
+     "collection_index": 80
     }
    },
    {
-    "r43@server_form.npcs_row": {
-     "collection_index": 210,
-     "controls": [
-      {
-       "main@server_form.npcs_main": {}
-      },
-      {
-       "a@server_form.npcs_aux_a": {
-        "collection_index": 211
-       }
-      },
-      {
-       "b@server_form.npcs_aux_b": {
-        "collection_index": 212
-       }
-      },
-      {
-       "c@server_form.npcs_aux_c": {
-        "collection_index": 213
-       }
-      }
-     ]
+    "r10c@server_form.npcs_aux_c": {
+     "collection_index": 81
     }
    },
    {
-    "r44@server_form.npcs_row": {
-     "collection_index": 214,
-     "controls": [
-      {
-       "main@server_form.npcs_main": {}
-      },
-      {
-       "a@server_form.npcs_aux_a": {
-        "collection_index": 215
-       }
-      },
-      {
-       "b@server_form.npcs_aux_b": {
-        "collection_index": 216
-       }
-      },
-      {
-       "c@server_form.npcs_aux_c": {
-        "collection_index": 217
-       }
-      }
-     ]
+    "r11@server_form.npcs_main": {
+     "collection_index": 82
     }
    },
    {
-    "r45@server_form.npcs_row": {
-     "collection_index": 218,
-     "controls": [
-      {
-       "main@server_form.npcs_main": {}
-      },
-      {
-       "a@server_form.npcs_aux_a": {
-        "collection_index": 219
-       }
-      },
-      {
-       "b@server_form.npcs_aux_b": {
-        "collection_index": 220
-       }
-      },
-      {
-       "c@server_form.npcs_aux_c": {
-        "collection_index": 221
-       }
-      }
-     ]
+    "r11a@server_form.npcs_aux_a": {
+     "collection_index": 83
     }
    },
    {
-    "r46@server_form.npcs_row": {
-     "collection_index": 222,
-     "controls": [
-      {
-       "main@server_form.npcs_main": {}
-      },
-      {
-       "a@server_form.npcs_aux_a": {
-        "collection_index": 223
-       }
-      },
-      {
-       "b@server_form.npcs_aux_b": {
-        "collection_index": 224
-       }
-      },
-      {
-       "c@server_form.npcs_aux_c": {
-        "collection_index": 225
-       }
-      }
-     ]
+    "r11b@server_form.npcs_aux_b": {
+     "collection_index": 84
     }
    },
    {
-    "r47@server_form.npcs_row": {
-     "collection_index": 226,
-     "controls": [
-      {
-       "main@server_form.npcs_main": {}
-      },
-      {
-       "a@server_form.npcs_aux_a": {
-        "collection_index": 227
-       }
-      },
-      {
-       "b@server_form.npcs_aux_b": {
-        "collection_index": 228
-       }
-      },
-      {
-       "c@server_form.npcs_aux_c": {
-        "collection_index": 229
-       }
-      }
-     ]
+    "r11c@server_form.npcs_aux_c": {
+     "collection_index": 85
+    }
+   },
+   {
+    "r12@server_form.npcs_main": {
+     "collection_index": 86
+    }
+   },
+   {
+    "r12a@server_form.npcs_aux_a": {
+     "collection_index": 87
+    }
+   },
+   {
+    "r12b@server_form.npcs_aux_b": {
+     "collection_index": 88
+    }
+   },
+   {
+    "r12c@server_form.npcs_aux_c": {
+     "collection_index": 89
+    }
+   },
+   {
+    "r13@server_form.npcs_main": {
+     "collection_index": 90
+    }
+   },
+   {
+    "r13a@server_form.npcs_aux_a": {
+     "collection_index": 91
+    }
+   },
+   {
+    "r13b@server_form.npcs_aux_b": {
+     "collection_index": 92
+    }
+   },
+   {
+    "r13c@server_form.npcs_aux_c": {
+     "collection_index": 93
+    }
+   },
+   {
+    "r14@server_form.npcs_main": {
+     "collection_index": 94
+    }
+   },
+   {
+    "r14a@server_form.npcs_aux_a": {
+     "collection_index": 95
+    }
+   },
+   {
+    "r14b@server_form.npcs_aux_b": {
+     "collection_index": 96
+    }
+   },
+   {
+    "r14c@server_form.npcs_aux_c": {
+     "collection_index": 97
+    }
+   },
+   {
+    "r15@server_form.npcs_main": {
+     "collection_index": 98
+    }
+   },
+   {
+    "r15a@server_form.npcs_aux_a": {
+     "collection_index": 99
+    }
+   },
+   {
+    "r15b@server_form.npcs_aux_b": {
+     "collection_index": 100
+    }
+   },
+   {
+    "r15c@server_form.npcs_aux_c": {
+     "collection_index": 101
+    }
+   },
+   {
+    "r16@server_form.npcs_main": {
+     "collection_index": 102
+    }
+   },
+   {
+    "r16a@server_form.npcs_aux_a": {
+     "collection_index": 103
+    }
+   },
+   {
+    "r16b@server_form.npcs_aux_b": {
+     "collection_index": 104
+    }
+   },
+   {
+    "r16c@server_form.npcs_aux_c": {
+     "collection_index": 105
+    }
+   },
+   {
+    "r17@server_form.npcs_main": {
+     "collection_index": 106
+    }
+   },
+   {
+    "r17a@server_form.npcs_aux_a": {
+     "collection_index": 107
+    }
+   },
+   {
+    "r17b@server_form.npcs_aux_b": {
+     "collection_index": 108
+    }
+   },
+   {
+    "r17c@server_form.npcs_aux_c": {
+     "collection_index": 109
+    }
+   },
+   {
+    "r18@server_form.npcs_main": {
+     "collection_index": 110
+    }
+   },
+   {
+    "r18a@server_form.npcs_aux_a": {
+     "collection_index": 111
+    }
+   },
+   {
+    "r18b@server_form.npcs_aux_b": {
+     "collection_index": 112
+    }
+   },
+   {
+    "r18c@server_form.npcs_aux_c": {
+     "collection_index": 113
+    }
+   },
+   {
+    "r19@server_form.npcs_main": {
+     "collection_index": 114
+    }
+   },
+   {
+    "r19a@server_form.npcs_aux_a": {
+     "collection_index": 115
+    }
+   },
+   {
+    "r19b@server_form.npcs_aux_b": {
+     "collection_index": 116
+    }
+   },
+   {
+    "r19c@server_form.npcs_aux_c": {
+     "collection_index": 117
+    }
+   },
+   {
+    "r20@server_form.npcs_main": {
+     "collection_index": 118
+    }
+   },
+   {
+    "r20a@server_form.npcs_aux_a": {
+     "collection_index": 119
+    }
+   },
+   {
+    "r20b@server_form.npcs_aux_b": {
+     "collection_index": 120
+    }
+   },
+   {
+    "r20c@server_form.npcs_aux_c": {
+     "collection_index": 121
+    }
+   },
+   {
+    "r21@server_form.npcs_main": {
+     "collection_index": 122
+    }
+   },
+   {
+    "r21a@server_form.npcs_aux_a": {
+     "collection_index": 123
+    }
+   },
+   {
+    "r21b@server_form.npcs_aux_b": {
+     "collection_index": 124
+    }
+   },
+   {
+    "r21c@server_form.npcs_aux_c": {
+     "collection_index": 125
+    }
+   },
+   {
+    "r22@server_form.npcs_main": {
+     "collection_index": 126
+    }
+   },
+   {
+    "r22a@server_form.npcs_aux_a": {
+     "collection_index": 127
+    }
+   },
+   {
+    "r22b@server_form.npcs_aux_b": {
+     "collection_index": 128
+    }
+   },
+   {
+    "r22c@server_form.npcs_aux_c": {
+     "collection_index": 129
+    }
+   },
+   {
+    "r23@server_form.npcs_main": {
+     "collection_index": 130
+    }
+   },
+   {
+    "r23a@server_form.npcs_aux_a": {
+     "collection_index": 131
+    }
+   },
+   {
+    "r23b@server_form.npcs_aux_b": {
+     "collection_index": 132
+    }
+   },
+   {
+    "r23c@server_form.npcs_aux_c": {
+     "collection_index": 133
+    }
+   },
+   {
+    "r24@server_form.npcs_main": {
+     "collection_index": 134
+    }
+   },
+   {
+    "r24a@server_form.npcs_aux_a": {
+     "collection_index": 135
+    }
+   },
+   {
+    "r24b@server_form.npcs_aux_b": {
+     "collection_index": 136
+    }
+   },
+   {
+    "r24c@server_form.npcs_aux_c": {
+     "collection_index": 137
+    }
+   },
+   {
+    "r25@server_form.npcs_main": {
+     "collection_index": 138
+    }
+   },
+   {
+    "r25a@server_form.npcs_aux_a": {
+     "collection_index": 139
+    }
+   },
+   {
+    "r25b@server_form.npcs_aux_b": {
+     "collection_index": 140
+    }
+   },
+   {
+    "r25c@server_form.npcs_aux_c": {
+     "collection_index": 141
+    }
+   },
+   {
+    "r26@server_form.npcs_main": {
+     "collection_index": 142
+    }
+   },
+   {
+    "r26a@server_form.npcs_aux_a": {
+     "collection_index": 143
+    }
+   },
+   {
+    "r26b@server_form.npcs_aux_b": {
+     "collection_index": 144
+    }
+   },
+   {
+    "r26c@server_form.npcs_aux_c": {
+     "collection_index": 145
+    }
+   },
+   {
+    "r27@server_form.npcs_main": {
+     "collection_index": 146
+    }
+   },
+   {
+    "r27a@server_form.npcs_aux_a": {
+     "collection_index": 147
+    }
+   },
+   {
+    "r27b@server_form.npcs_aux_b": {
+     "collection_index": 148
+    }
+   },
+   {
+    "r27c@server_form.npcs_aux_c": {
+     "collection_index": 149
+    }
+   },
+   {
+    "r28@server_form.npcs_main": {
+     "collection_index": 150
+    }
+   },
+   {
+    "r28a@server_form.npcs_aux_a": {
+     "collection_index": 151
+    }
+   },
+   {
+    "r28b@server_form.npcs_aux_b": {
+     "collection_index": 152
+    }
+   },
+   {
+    "r28c@server_form.npcs_aux_c": {
+     "collection_index": 153
+    }
+   },
+   {
+    "r29@server_form.npcs_main": {
+     "collection_index": 154
+    }
+   },
+   {
+    "r29a@server_form.npcs_aux_a": {
+     "collection_index": 155
+    }
+   },
+   {
+    "r29b@server_form.npcs_aux_b": {
+     "collection_index": 156
+    }
+   },
+   {
+    "r29c@server_form.npcs_aux_c": {
+     "collection_index": 157
+    }
+   },
+   {
+    "r30@server_form.npcs_main": {
+     "collection_index": 158
+    }
+   },
+   {
+    "r30a@server_form.npcs_aux_a": {
+     "collection_index": 159
+    }
+   },
+   {
+    "r30b@server_form.npcs_aux_b": {
+     "collection_index": 160
+    }
+   },
+   {
+    "r30c@server_form.npcs_aux_c": {
+     "collection_index": 161
+    }
+   },
+   {
+    "r31@server_form.npcs_main": {
+     "collection_index": 162
+    }
+   },
+   {
+    "r31a@server_form.npcs_aux_a": {
+     "collection_index": 163
+    }
+   },
+   {
+    "r31b@server_form.npcs_aux_b": {
+     "collection_index": 164
+    }
+   },
+   {
+    "r31c@server_form.npcs_aux_c": {
+     "collection_index": 165
+    }
+   },
+   {
+    "r32@server_form.npcs_main": {
+     "collection_index": 166
+    }
+   },
+   {
+    "r32a@server_form.npcs_aux_a": {
+     "collection_index": 167
+    }
+   },
+   {
+    "r32b@server_form.npcs_aux_b": {
+     "collection_index": 168
+    }
+   },
+   {
+    "r32c@server_form.npcs_aux_c": {
+     "collection_index": 169
+    }
+   },
+   {
+    "r33@server_form.npcs_main": {
+     "collection_index": 170
+    }
+   },
+   {
+    "r33a@server_form.npcs_aux_a": {
+     "collection_index": 171
+    }
+   },
+   {
+    "r33b@server_form.npcs_aux_b": {
+     "collection_index": 172
+    }
+   },
+   {
+    "r33c@server_form.npcs_aux_c": {
+     "collection_index": 173
+    }
+   },
+   {
+    "r34@server_form.npcs_main": {
+     "collection_index": 174
+    }
+   },
+   {
+    "r34a@server_form.npcs_aux_a": {
+     "collection_index": 175
+    }
+   },
+   {
+    "r34b@server_form.npcs_aux_b": {
+     "collection_index": 176
+    }
+   },
+   {
+    "r34c@server_form.npcs_aux_c": {
+     "collection_index": 177
+    }
+   },
+   {
+    "r35@server_form.npcs_main": {
+     "collection_index": 178
+    }
+   },
+   {
+    "r35a@server_form.npcs_aux_a": {
+     "collection_index": 179
+    }
+   },
+   {
+    "r35b@server_form.npcs_aux_b": {
+     "collection_index": 180
+    }
+   },
+   {
+    "r35c@server_form.npcs_aux_c": {
+     "collection_index": 181
+    }
+   },
+   {
+    "r36@server_form.npcs_main": {
+     "collection_index": 182
+    }
+   },
+   {
+    "r36a@server_form.npcs_aux_a": {
+     "collection_index": 183
+    }
+   },
+   {
+    "r36b@server_form.npcs_aux_b": {
+     "collection_index": 184
+    }
+   },
+   {
+    "r36c@server_form.npcs_aux_c": {
+     "collection_index": 185
+    }
+   },
+   {
+    "r37@server_form.npcs_main": {
+     "collection_index": 186
+    }
+   },
+   {
+    "r37a@server_form.npcs_aux_a": {
+     "collection_index": 187
+    }
+   },
+   {
+    "r37b@server_form.npcs_aux_b": {
+     "collection_index": 188
+    }
+   },
+   {
+    "r37c@server_form.npcs_aux_c": {
+     "collection_index": 189
+    }
+   },
+   {
+    "r38@server_form.npcs_main": {
+     "collection_index": 190
+    }
+   },
+   {
+    "r38a@server_form.npcs_aux_a": {
+     "collection_index": 191
+    }
+   },
+   {
+    "r38b@server_form.npcs_aux_b": {
+     "collection_index": 192
+    }
+   },
+   {
+    "r38c@server_form.npcs_aux_c": {
+     "collection_index": 193
+    }
+   },
+   {
+    "r39@server_form.npcs_main": {
+     "collection_index": 194
+    }
+   },
+   {
+    "r39a@server_form.npcs_aux_a": {
+     "collection_index": 195
+    }
+   },
+   {
+    "r39b@server_form.npcs_aux_b": {
+     "collection_index": 196
+    }
+   },
+   {
+    "r39c@server_form.npcs_aux_c": {
+     "collection_index": 197
+    }
+   },
+   {
+    "r40@server_form.npcs_main": {
+     "collection_index": 198
+    }
+   },
+   {
+    "r40a@server_form.npcs_aux_a": {
+     "collection_index": 199
+    }
+   },
+   {
+    "r40b@server_form.npcs_aux_b": {
+     "collection_index": 200
+    }
+   },
+   {
+    "r40c@server_form.npcs_aux_c": {
+     "collection_index": 201
+    }
+   },
+   {
+    "r41@server_form.npcs_main": {
+     "collection_index": 202
+    }
+   },
+   {
+    "r41a@server_form.npcs_aux_a": {
+     "collection_index": 203
+    }
+   },
+   {
+    "r41b@server_form.npcs_aux_b": {
+     "collection_index": 204
+    }
+   },
+   {
+    "r41c@server_form.npcs_aux_c": {
+     "collection_index": 205
+    }
+   },
+   {
+    "r42@server_form.npcs_main": {
+     "collection_index": 206
+    }
+   },
+   {
+    "r42a@server_form.npcs_aux_a": {
+     "collection_index": 207
+    }
+   },
+   {
+    "r42b@server_form.npcs_aux_b": {
+     "collection_index": 208
+    }
+   },
+   {
+    "r42c@server_form.npcs_aux_c": {
+     "collection_index": 209
+    }
+   },
+   {
+    "r43@server_form.npcs_main": {
+     "collection_index": 210
+    }
+   },
+   {
+    "r43a@server_form.npcs_aux_a": {
+     "collection_index": 211
+    }
+   },
+   {
+    "r43b@server_form.npcs_aux_b": {
+     "collection_index": 212
+    }
+   },
+   {
+    "r43c@server_form.npcs_aux_c": {
+     "collection_index": 213
+    }
+   },
+   {
+    "r44@server_form.npcs_main": {
+     "collection_index": 214
+    }
+   },
+   {
+    "r44a@server_form.npcs_aux_a": {
+     "collection_index": 215
+    }
+   },
+   {
+    "r44b@server_form.npcs_aux_b": {
+     "collection_index": 216
+    }
+   },
+   {
+    "r44c@server_form.npcs_aux_c": {
+     "collection_index": 217
+    }
+   },
+   {
+    "r45@server_form.npcs_main": {
+     "collection_index": 218
+    }
+   },
+   {
+    "r45a@server_form.npcs_aux_a": {
+     "collection_index": 219
+    }
+   },
+   {
+    "r45b@server_form.npcs_aux_b": {
+     "collection_index": 220
+    }
+   },
+   {
+    "r45c@server_form.npcs_aux_c": {
+     "collection_index": 221
+    }
+   },
+   {
+    "r46@server_form.npcs_main": {
+     "collection_index": 222
+    }
+   },
+   {
+    "r46a@server_form.npcs_aux_a": {
+     "collection_index": 223
+    }
+   },
+   {
+    "r46b@server_form.npcs_aux_b": {
+     "collection_index": 224
+    }
+   },
+   {
+    "r46c@server_form.npcs_aux_c": {
+     "collection_index": 225
+    }
+   },
+   {
+    "r47@server_form.npcs_main": {
+     "collection_index": 226
+    }
+   },
+   {
+    "r47a@server_form.npcs_aux_a": {
+     "collection_index": 227
+    }
+   },
+   {
+    "r47b@server_form.npcs_aux_b": {
+     "collection_index": 228
+    }
+   },
+   {
+    "r47c@server_form.npcs_aux_c": {
+     "collection_index": 229
     }
    },
    {
@@ -1653,7 +1740,7 @@
    }
   ]
  },
- "npcs_row": {
+ "npcs_main": {
   "type": "panel",
   "size": [
    "100%",
@@ -1670,14 +1757,6 @@
     "source_property_name": "(not (#form_button_text = ''))",
     "target_property_name": "#visible"
    }
-  ],
-  "controls": []
- },
- "npcs_main": {
-  "type": "panel",
-  "size": [
-   "100%",
-   "100%"
   ],
   "controls": [
    {
@@ -1728,6 +1807,10 @@
      ],
      "anchor_from": "center",
      "anchor_to": "center",
+     "offset": [
+      0,
+      0
+     ],
      "bindings": [
       {
        "binding_type": "collection_details",
@@ -1740,7 +1823,7 @@
       },
       {
        "binding_type": "view",
-       "source_property_name": "(((#form_button_text - '§h§r') = #form_button_text) and ((#form_button_text - '§i§r') = #form_button_text) and ((#form_button_text - '§w§r') = #form_button_text) and ((#form_button_text - '§f§r') = #form_button_text) and ((#form_button_text - '§s§r') = #form_button_text) and ((#form_button_text - '§t§r') = #form_button_text))",
+       "source_property_name": "(not ((#form_button_text - '§o§r') = #form_button_text))",
        "target_property_name": "#visible"
       }
      ]
@@ -1794,6 +1877,10 @@
      ],
      "anchor_from": "center",
      "anchor_to": "center",
+     "offset": [
+      0,
+      0
+     ],
      "bindings": [
       {
        "binding_type": "collection_details",
@@ -1806,7 +1893,7 @@
       },
       {
        "binding_type": "view",
-       "source_property_name": "((not ((#form_button_text - '§h§r') = #form_button_text)) or (not ((#form_button_text - '§i§r') = #form_button_text)))",
+       "source_property_name": "(not ((#form_button_text - '§j§r') = #form_button_text))",
        "target_property_name": "#visible"
       }
      ]
@@ -1860,6 +1947,10 @@
      ],
      "anchor_from": "center",
      "anchor_to": "center",
+     "offset": [
+      0,
+      0
+     ],
      "bindings": [
       {
        "binding_type": "collection_details",
@@ -1872,14 +1963,14 @@
       },
       {
        "binding_type": "view",
-       "source_property_name": "((not ((#form_button_text - '§w§r') = #form_button_text)) or (not ((#form_button_text - '§f§r') = #form_button_text)) or (not ((#form_button_text - '§s§r') = #form_button_text)) or (not ((#form_button_text - '§t§r') = #form_button_text)))",
+       "source_property_name": "(not ((#form_button_text - '§q§r') = #form_button_text))",
        "target_property_name": "#visible"
       }
      ]
     }
    },
    {
-    "icon_l": {
+    "icon_row": {
      "type": "image",
      "layer": 5,
      "size": [
@@ -1912,7 +2003,47 @@
       },
       {
        "binding_type": "view",
-       "source_property_name": "((not ((#texture = '') or (#texture = 'loading'))) and (not ((not ((#form_button_text - '§w§r') = #form_button_text)) or (not ((#form_button_text - '§f§r') = #form_button_text)) or (not ((#form_button_text - '§s§r') = #form_button_text)) or (not ((#form_button_text - '§t§r') = #form_button_text)))))",
+       "source_property_name": "((not ((#texture = '') or (#texture = 'loading'))) and (not ((#form_button_text - '§o§r') = #form_button_text)))",
+       "target_property_name": "#visible"
+      }
+     ]
+    }
+   },
+   {
+    "icon_hdr": {
+     "type": "image",
+     "layer": 5,
+     "size": [
+      12,
+      12
+     ],
+     "offset": [
+      8,
+      0
+     ],
+     "anchor_from": "left_middle",
+     "anchor_to": "left_middle",
+     "bindings": [
+      {
+       "binding_name": "#form_button_texture",
+       "binding_type": "collection",
+       "binding_collection_name": "form_buttons",
+       "binding_name_override": "#texture"
+      },
+      {
+       "binding_name": "#form_button_texture_file_system",
+       "binding_type": "collection",
+       "binding_collection_name": "form_buttons",
+       "binding_name_override": "#texture_file_system"
+      },
+      {
+       "binding_name": "#form_button_text",
+       "binding_type": "collection",
+       "binding_collection_name": "form_buttons"
+      },
+      {
+       "binding_type": "view",
+       "source_property_name": "((not ((#texture = '') or (#texture = 'loading'))) and (not ((#form_button_text - '§j§r') = #form_button_text)))",
        "target_property_name": "#visible"
       }
      ]
@@ -2087,19 +2218,61 @@
       },
       {
        "binding_type": "view",
-       "source_property_name": "((((((#form_button_text - '§h§r') - '§i§r') - '§w§r') - '§f§r') - '§s§r') - '§t§r')",
+       "source_property_name": "((((((((((((((((#form_button_text - '§o§r') - '§h§r') - '§i§r') - '§j§r') - '§q§r') - '§w§r') - '§f§r') - '§s§r') - '§t§r') - '§e§r') - '§k§r') - '§p§r') - '§y§r') - '§v§r') - '§m§r') - '§z§r')",
        "target_property_name": "#text"
       },
       {
        "binding_type": "view",
-       "source_property_name": "((((#form_button_text - '§h§r') = #form_button_text) and ((#form_button_text - '§i§r') = #form_button_text) and ((#form_button_text - '§w§r') = #form_button_text) and ((#form_button_text - '§f§r') = #form_button_text) and ((#form_button_text - '§s§r') = #form_button_text) and ((#form_button_text - '§t§r') = #form_button_text)) or ((not ((#form_button_text - '§h§r') = #form_button_text)) or (not ((#form_button_text - '§i§r') = #form_button_text))))",
+       "source_property_name": "(not ((#form_button_text - '§o§r') = #form_button_text))",
        "target_property_name": "#visible"
       }
      ]
     }
    },
    {
-    "label_cap": {
+    "label_hdr": {
+     "type": "label",
+     "layer": 6,
+     "size": [
+      "100% - 56px",
+      10
+     ],
+     "offset": [
+      26,
+      0
+     ],
+     "anchor_from": "left_middle",
+     "anchor_to": "left_middle",
+     "text": "#text",
+     "text_alignment": "left",
+     "color": [
+      0.15,
+      0.83,
+      0.96
+     ],
+     "shadow": false,
+     "font_scale_factor": 1.0,
+     "bindings": [
+      {
+       "binding_name": "#form_button_text",
+       "binding_type": "collection",
+       "binding_collection_name": "form_buttons"
+      },
+      {
+       "binding_type": "view",
+       "source_property_name": "(((((((((((((((((#form_button_text - '§o§r') - '§h§r') - '§i§r') - '§j§r') - '§q§r') - '§w§r') - '§f§r') - '§s§r') - '§t§r') - '§e§r') - '§k§r') - '§p§r') - '§y§r') - '§v§r') - '§m§r') - '§z§r') - '§b')",
+       "target_property_name": "#text"
+      },
+      {
+       "binding_type": "view",
+       "source_property_name": "(not ((#form_button_text - '§j§r') = #form_button_text))",
+       "target_property_name": "#visible"
+      }
+     ]
+    }
+   },
+   {
+    "label_field": {
      "type": "label",
      "layer": 6,
      "size": [
@@ -2114,11 +2287,7 @@
      "anchor_to": "left_middle",
      "text": "#text",
      "text_alignment": "left",
-     "color": [
-      0.8,
-      0.8,
-      0.82
-     ],
+     "color": "§q§r",
      "shadow": false,
      "font_scale_factor": 1.0,
      "bindings": [
@@ -2129,12 +2298,88 @@
       },
       {
        "binding_type": "view",
-       "source_property_name": "((((((#form_button_text - '§h§r') - '§i§r') - '§w§r') - '§f§r') - '§s§r') - '§t§r')",
+       "source_property_name": "((((((((((((((((#form_button_text - '§o§r') - '§h§r') - '§i§r') - '§j§r') - '§q§r') - '§w§r') - '§f§r') - '§s§r') - '§t§r') - '§e§r') - '§k§r') - '§p§r') - '§y§r') - '§v§r') - '§m§r') - '§z§r')",
        "target_property_name": "#text"
       },
       {
        "binding_type": "view",
-       "source_property_name": "((not ((#form_button_text - '§f§r') = #form_button_text)) or (not ((#form_button_text - '§s§r') = #form_button_text)) or (not ((#form_button_text - '§t§r') = #form_button_text)))",
+       "source_property_name": "(not ((#form_button_text - '§f§r') = #form_button_text))",
+       "target_property_name": "#visible"
+      }
+     ]
+    }
+   },
+   {
+    "label_slide": {
+     "type": "label",
+     "layer": 6,
+     "size": [
+      "38% - 10px",
+      10
+     ],
+     "offset": [
+      10,
+      0
+     ],
+     "anchor_from": "left_middle",
+     "anchor_to": "left_middle",
+     "text": "#text",
+     "text_alignment": "left",
+     "color": "§q§r",
+     "shadow": false,
+     "font_scale_factor": 1.0,
+     "bindings": [
+      {
+       "binding_name": "#form_button_text",
+       "binding_type": "collection",
+       "binding_collection_name": "form_buttons"
+      },
+      {
+       "binding_type": "view",
+       "source_property_name": "((((((((((((((((#form_button_text - '§o§r') - '§h§r') - '§i§r') - '§j§r') - '§q§r') - '§w§r') - '§f§r') - '§s§r') - '§t§r') - '§e§r') - '§k§r') - '§p§r') - '§y§r') - '§v§r') - '§m§r') - '§z§r')",
+       "target_property_name": "#text"
+      },
+      {
+       "binding_type": "view",
+       "source_property_name": "(not ((#form_button_text - '§s§r') = #form_button_text))",
+       "target_property_name": "#visible"
+      }
+     ]
+    }
+   },
+   {
+    "label_step": {
+     "type": "label",
+     "layer": 6,
+     "size": [
+      "38% - 10px",
+      10
+     ],
+     "offset": [
+      10,
+      0
+     ],
+     "anchor_from": "left_middle",
+     "anchor_to": "left_middle",
+     "text": "#text",
+     "text_alignment": "left",
+     "color": "§q§r",
+     "shadow": false,
+     "font_scale_factor": 1.0,
+     "bindings": [
+      {
+       "binding_name": "#form_button_text",
+       "binding_type": "collection",
+       "binding_collection_name": "form_buttons"
+      },
+      {
+       "binding_type": "view",
+       "source_property_name": "((((((((((((((((#form_button_text - '§o§r') - '§h§r') - '§i§r') - '§j§r') - '§q§r') - '§w§r') - '§f§r') - '§s§r') - '§t§r') - '§e§r') - '§k§r') - '§p§r') - '§y§r') - '§v§r') - '§m§r') - '§z§r')",
+       "target_property_name": "#text"
+      },
+      {
+       "binding_type": "view",
+       "source_property_name": "(not ((#form_button_text - '§t§r') = #form_button_text))",
        "target_property_name": "#visible"
       }
      ]
@@ -2156,11 +2401,7 @@
      "anchor_to": "left_middle",
      "text": "#text",
      "text_alignment": "left",
-     "color": [
-      0.8,
-      0.8,
-      0.82
-     ],
+     "color": "§q§r",
      "shadow": false,
      "font_scale_factor": 1.0,
      "bindings": [
@@ -2171,12 +2412,151 @@
       },
       {
        "binding_type": "view",
-       "source_property_name": "((((((#form_button_text - '§h§r') - '§i§r') - '§w§r') - '§f§r') - '§s§r') - '§t§r')",
+       "source_property_name": "((((((((((((((((#form_button_text - '§o§r') - '§h§r') - '§i§r') - '§j§r') - '§q§r') - '§w§r') - '§f§r') - '§s§r') - '§t§r') - '§e§r') - '§k§r') - '§p§r') - '§y§r') - '§v§r') - '§m§r') - '§z§r')",
        "target_property_name": "#text"
       },
       {
        "binding_type": "view",
        "source_property_name": "(not ((#form_button_text - '§w§r') = #form_button_text))",
+       "target_property_name": "#visible"
+      }
+     ]
+    }
+   },
+   {
+    "tile@common.button": {
+     "size": [
+      18,
+      18
+     ],
+     "$pressed_button_name": "button.form_button_click",
+     "layer": 1,
+     "controls": [
+      {
+       "default": {
+        "type": "image",
+        "texture": "textures/ui/npcstudio/panel/tile",
+        "size": [
+         "100%",
+         "100%"
+        ]
+       }
+      },
+      {
+       "hover": {
+        "type": "image",
+        "texture": "textures/ui/npcstudio/panel/tile_hover",
+        "size": [
+         "100%",
+         "100%"
+        ]
+       }
+      },
+      {
+       "pressed": {
+        "type": "image",
+        "texture": "textures/ui/npcstudio/panel/tile_pressed",
+        "size": [
+         "100%",
+         "100%"
+        ]
+       }
+      }
+     ],
+     "$button_bindings": [
+      {
+       "binding_type": "collection_details",
+       "binding_collection_name": "form_buttons"
+      }
+     ],
+     "anchor_from": "left_middle",
+     "anchor_to": "left_middle",
+     "offset": [
+      4,
+      0
+     ],
+     "bindings": [
+      {
+       "binding_type": "collection_details",
+       "binding_collection_name": "form_buttons"
+      },
+      {
+       "binding_name": "#form_button_text",
+       "binding_type": "collection",
+       "binding_collection_name": "form_buttons"
+      },
+      {
+       "binding_type": "view",
+       "source_property_name": "(not ((#form_button_text - '§e§r') = #form_button_text))",
+       "target_property_name": "#visible"
+      }
+     ]
+    }
+   },
+   {
+    "tile_icon": {
+     "type": "image",
+     "layer": 5,
+     "size": [
+      14,
+      14
+     ],
+     "offset": [
+      6,
+      0
+     ],
+     "anchor_from": "left_middle",
+     "anchor_to": "left_middle",
+     "bindings": [
+      {
+       "binding_name": "#form_button_texture",
+       "binding_type": "collection",
+       "binding_collection_name": "form_buttons",
+       "binding_name_override": "#texture"
+      },
+      {
+       "binding_name": "#form_button_texture_file_system",
+       "binding_type": "collection",
+       "binding_collection_name": "form_buttons",
+       "binding_name_override": "#texture_file_system"
+      },
+      {
+       "binding_name": "#form_button_text",
+       "binding_type": "collection",
+       "binding_collection_name": "form_buttons"
+      },
+      {
+       "binding_type": "view",
+       "source_property_name": "((not ((#texture = '') or (#texture = 'loading'))) and (not ((#form_button_text - '§e§r') = #form_button_text)))",
+       "target_property_name": "#visible"
+      }
+     ]
+    }
+   },
+   {
+    "tile_on": {
+     "type": "image",
+     "texture": "textures/ui/npcstudio/panel/sel_ring",
+     "size": [
+      18,
+      18
+     ],
+     "layer": 7,
+     "offset": [
+      4,
+      0
+     ],
+     "anchor_from": "left_middle",
+     "anchor_to": "left_middle",
+     "bindings": [
+      {
+       "binding_name": "#form_button_text",
+       "binding_type": "collection",
+       "binding_collection_name": "form_buttons"
+      },
+      {
+       "binding_type": "view",
+       "source_property_name": "(not ((#form_button_text - '§e§r§b') = #form_button_text))",
        "target_property_name": "#visible"
       }
      ]
@@ -2188,7 +2568,7 @@
   "type": "panel",
   "size": [
    "100%",
-   "100%"
+   0
   ],
   "bindings": [
    {
@@ -2204,27 +2584,22 @@
   ],
   "controls": [
    {
-    "small": {
+    "over": {
      "type": "panel",
      "size": [
       "100%",
-      "100%"
+      20
      ],
-     "bindings": [
-      {
-       "binding_name": "#form_button_text",
-       "binding_type": "collection",
-       "binding_collection_name": "form_buttons"
-      },
-      {
-       "binding_type": "view",
-       "source_property_name": "(not ((#form_button_text - '§k§r') = #form_button_text))",
-       "target_property_name": "#visible"
-      }
+     "offset": [
+      0,
+      -20
      ],
+     "anchor_from": "top_left",
+     "anchor_to": "top_left",
+     "layer": 8,
      "controls": [
       {
-       "c": {
+       "col": {
         "type": "panel",
         "size": [
          "62% - 2px",
@@ -2234,105 +2609,253 @@
         "anchor_to": "right_middle",
         "controls": [
          {
-          "c": {
-           "type": "panel",
+          "small@common.button": {
            "size": [
             12,
             14
            ],
-           "offset": [
-            0,
-            0
-           ],
-           "anchor_from": "left_middle",
-           "anchor_to": "left_middle",
-           "layer": 8,
+           "$pressed_button_name": "button.form_button_click",
+           "layer": 1,
            "controls": [
             {
-             "button@common.button": {
+             "default": {
+              "type": "image",
+              "texture": "textures/ui/npcstudio/panel/small",
               "size": [
                "100%",
                "100%"
-              ],
-              "$pressed_button_name": "button.form_button_click",
-              "layer": 1,
-              "controls": [
-               {
-                "default": {
-                 "type": "image",
-                 "texture": "textures/ui/npcstudio/panel/small",
-                 "size": [
-                  "100%",
-                  "100%"
-                 ]
-                }
-               },
-               {
-                "hover": {
-                 "type": "image",
-                 "texture": "textures/ui/npcstudio/panel/small_hover",
-                 "size": [
-                  "100%",
-                  "100%"
-                 ]
-                }
-               },
-               {
-                "pressed": {
-                 "type": "image",
-                 "texture": "textures/ui/npcstudio/panel/small_pressed",
-                 "size": [
-                  "100%",
-                  "100%"
-                 ]
-                }
-               }
-              ],
-              "$button_bindings": [
-               {
-                "binding_type": "collection_details",
-                "binding_collection_name": "form_buttons"
-               }
               ]
              }
             },
             {
-             "icon": {
+             "hover": {
               "type": "image",
-              "layer": 5,
+              "texture": "textures/ui/npcstudio/panel/small_hover",
               "size": [
-               8,
-               8
-              ],
-              "offset": [
-               0,
-               0
-              ],
-              "anchor_from": "center",
-              "anchor_to": "center",
-              "bindings": [
-               {
-                "binding_name": "#form_button_texture",
-                "binding_type": "collection",
-                "binding_collection_name": "form_buttons",
-                "binding_name_override": "#texture"
-               },
-               {
-                "binding_name": "#form_button_texture_file_system",
-                "binding_type": "collection",
-                "binding_collection_name": "form_buttons",
-                "binding_name_override": "#texture_file_system"
-               },
-               {
-                "binding_type": "view",
-                "source_property_name": "(not ((#texture = '') or (#texture = 'loading')))",
-                "target_property_name": "#visible"
-               }
+               "100%",
+               "100%"
+              ]
+             }
+            },
+            {
+             "pressed": {
+              "type": "image",
+              "texture": "textures/ui/npcstudio/panel/small_pressed",
+              "size": [
+               "100%",
+               "100%"
               ]
              }
             }
+           ],
+           "$button_bindings": [
+            {
+             "binding_type": "collection_details",
+             "binding_collection_name": "form_buttons"
+            }
+           ],
+           "anchor_from": "left_middle",
+           "anchor_to": "left_middle",
+           "offset": [
+            0,
+            0
+           ],
+           "bindings": [
+            {
+             "binding_type": "collection_details",
+             "binding_collection_name": "form_buttons"
+            },
+            {
+             "binding_name": "#form_button_text",
+             "binding_type": "collection",
+             "binding_collection_name": "form_buttons"
+            },
+            {
+             "binding_type": "view",
+             "source_property_name": "(not ((#form_button_text - '§k§r') = #form_button_text))",
+             "target_property_name": "#visible"
+            }
            ]
           }
+         },
+         {
+          "small_icon": {
+           "type": "image",
+           "layer": 7,
+           "size": [
+            8,
+            8
+           ],
+           "offset": [
+            2,
+            0
+           ],
+           "anchor_from": "left_middle",
+           "anchor_to": "left_middle",
+           "bindings": [
+            {
+             "binding_name": "#form_button_texture",
+             "binding_type": "collection",
+             "binding_collection_name": "form_buttons",
+             "binding_name_override": "#texture"
+            },
+            {
+             "binding_name": "#form_button_texture_file_system",
+             "binding_type": "collection",
+             "binding_collection_name": "form_buttons",
+             "binding_name_override": "#texture_file_system"
+            },
+            {
+             "binding_name": "#form_button_text",
+             "binding_type": "collection",
+             "binding_collection_name": "form_buttons"
+            },
+            {
+             "binding_type": "view",
+             "source_property_name": "((not ((#texture = '') or (#texture = 'loading'))) and (not ((#form_button_text - '§k§r') = #form_button_text)))",
+             "target_property_name": "#visible"
+            }
+           ]
+          }
+         }
+        ]
+       }
+      },
+      {
+       "tile@common.button": {
+        "size": [
+         18,
+         18
+        ],
+        "$pressed_button_name": "button.form_button_click",
+        "layer": 1,
+        "controls": [
+         {
+          "default": {
+           "type": "image",
+           "texture": "textures/ui/npcstudio/panel/tile",
+           "size": [
+            "100%",
+            "100%"
+           ]
+          }
+         },
+         {
+          "hover": {
+           "type": "image",
+           "texture": "textures/ui/npcstudio/panel/tile_hover",
+           "size": [
+            "100%",
+            "100%"
+           ]
+          }
+         },
+         {
+          "pressed": {
+           "type": "image",
+           "texture": "textures/ui/npcstudio/panel/tile_pressed",
+           "size": [
+            "100%",
+            "100%"
+           ]
+          }
+         }
+        ],
+        "$button_bindings": [
+         {
+          "binding_type": "collection_details",
+          "binding_collection_name": "form_buttons"
+         }
+        ],
+        "anchor_from": "left_middle",
+        "anchor_to": "left_middle",
+        "offset": [
+         26,
+         0
+        ],
+        "bindings": [
+         {
+          "binding_type": "collection_details",
+          "binding_collection_name": "form_buttons"
+         },
+         {
+          "binding_name": "#form_button_text",
+          "binding_type": "collection",
+          "binding_collection_name": "form_buttons"
+         },
+         {
+          "binding_type": "view",
+          "source_property_name": "(not ((#form_button_text - '§e§r') = #form_button_text))",
+          "target_property_name": "#visible"
+         }
+        ]
+       }
+      },
+      {
+       "tile_icon": {
+        "type": "image",
+        "layer": 5,
+        "size": [
+         14,
+         14
+        ],
+        "offset": [
+         28,
+         0
+        ],
+        "anchor_from": "left_middle",
+        "anchor_to": "left_middle",
+        "bindings": [
+         {
+          "binding_name": "#form_button_texture",
+          "binding_type": "collection",
+          "binding_collection_name": "form_buttons",
+          "binding_name_override": "#texture"
+         },
+         {
+          "binding_name": "#form_button_texture_file_system",
+          "binding_type": "collection",
+          "binding_collection_name": "form_buttons",
+          "binding_name_override": "#texture_file_system"
+         },
+         {
+          "binding_name": "#form_button_text",
+          "binding_type": "collection",
+          "binding_collection_name": "form_buttons"
+         },
+         {
+          "binding_type": "view",
+          "source_property_name": "((not ((#texture = '') or (#texture = 'loading'))) and (not ((#form_button_text - '§e§r') = #form_button_text)))",
+          "target_property_name": "#visible"
+         }
+        ]
+       }
+      },
+      {
+       "tile_on": {
+        "type": "image",
+        "texture": "textures/ui/npcstudio/panel/sel_ring",
+        "size": [
+         18,
+         18
+        ],
+        "layer": 7,
+        "offset": [
+         26,
+         0
+        ],
+        "anchor_from": "left_middle",
+        "anchor_to": "left_middle",
+        "bindings": [
+         {
+          "binding_name": "#form_button_text",
+          "binding_type": "collection",
+          "binding_collection_name": "form_buttons"
+         },
+         {
+          "binding_type": "view",
+          "source_property_name": "(not ((#form_button_text - '§e§r§b') = #form_button_text))",
+          "target_property_name": "#visible"
          }
         ]
        }
@@ -2346,7 +2869,7 @@
   "type": "panel",
   "size": [
    "100%",
-   "100%"
+   0
   ],
   "bindings": [
    {
@@ -2362,155 +2885,207 @@
   ],
   "controls": [
    {
-    "small": {
+    "over": {
      "type": "panel",
      "size": [
       "100%",
-      "100%"
+      20
      ],
-     "bindings": [
-      {
-       "binding_name": "#form_button_text",
-       "binding_type": "collection",
-       "binding_collection_name": "form_buttons"
-      },
-      {
-       "binding_type": "view",
-       "source_property_name": "(not ((#form_button_text - '§p§r') = #form_button_text))",
-       "target_property_name": "#visible"
-      }
+     "offset": [
+      0,
+      -20
      ],
+     "anchor_from": "top_left",
+     "anchor_to": "top_left",
+     "layer": 8,
      "controls": [
       {
-       "c": {
-        "type": "panel",
+       "small@common.button": {
         "size": [
          12,
          14
         ],
-        "offset": [
-         -36,
-         0
-        ],
-        "anchor_from": "right_middle",
-        "anchor_to": "right_middle",
-        "layer": 8,
+        "$pressed_button_name": "button.form_button_click",
+        "layer": 1,
         "controls": [
          {
-          "button@common.button": {
+          "default": {
+           "type": "image",
+           "texture": "textures/ui/npcstudio/panel/small",
            "size": [
             "100%",
             "100%"
-           ],
-           "$pressed_button_name": "button.form_button_click",
-           "layer": 1,
-           "controls": [
-            {
-             "default": {
-              "type": "image",
-              "texture": "textures/ui/npcstudio/panel/small",
-              "size": [
-               "100%",
-               "100%"
-              ]
-             }
-            },
-            {
-             "hover": {
-              "type": "image",
-              "texture": "textures/ui/npcstudio/panel/small_hover",
-              "size": [
-               "100%",
-               "100%"
-              ]
-             }
-            },
-            {
-             "pressed": {
-              "type": "image",
-              "texture": "textures/ui/npcstudio/panel/small_pressed",
-              "size": [
-               "100%",
-               "100%"
-              ]
-             }
-            }
-           ],
-           "$button_bindings": [
-            {
-             "binding_type": "collection_details",
-             "binding_collection_name": "form_buttons"
-            }
            ]
           }
          },
          {
-          "icon": {
+          "hover": {
            "type": "image",
-           "layer": 5,
+           "texture": "textures/ui/npcstudio/panel/small_hover",
            "size": [
-            8,
-            8
-           ],
-           "offset": [
-            0,
-            0
-           ],
-           "anchor_from": "center",
-           "anchor_to": "center",
-           "bindings": [
-            {
-             "binding_name": "#form_button_texture",
-             "binding_type": "collection",
-             "binding_collection_name": "form_buttons",
-             "binding_name_override": "#texture"
-            },
-            {
-             "binding_name": "#form_button_texture_file_system",
-             "binding_type": "collection",
-             "binding_collection_name": "form_buttons",
-             "binding_name_override": "#texture_file_system"
-            },
-            {
-             "binding_type": "view",
-             "source_property_name": "(not ((#texture = '') or (#texture = 'loading')))",
-             "target_property_name": "#visible"
-            }
+            "100%",
+            "100%"
+           ]
+          }
+         },
+         {
+          "pressed": {
+           "type": "image",
+           "texture": "textures/ui/npcstudio/panel/small_pressed",
+           "size": [
+            "100%",
+            "100%"
            ]
           }
          }
+        ],
+        "$button_bindings": [
+         {
+          "binding_type": "collection_details",
+          "binding_collection_name": "form_buttons"
+         }
+        ],
+        "anchor_from": "right_middle",
+        "anchor_to": "right_middle",
+        "offset": [
+         -36,
+         0
+        ],
+        "bindings": [
+         {
+          "binding_type": "collection_details",
+          "binding_collection_name": "form_buttons"
+         },
+         {
+          "binding_name": "#form_button_text",
+          "binding_type": "collection",
+          "binding_collection_name": "form_buttons"
+         },
+         {
+          "binding_type": "view",
+          "source_property_name": "(not ((#form_button_text - '§p§r') = #form_button_text))",
+          "target_property_name": "#visible"
+         }
         ]
        }
-      }
-     ]
-    }
-   },
-   {
-    "wide": {
-     "type": "panel",
-     "size": [
-      "100%",
-      "100%"
-     ],
-     "bindings": [
-      {
-       "binding_name": "#form_button_text",
-       "binding_type": "collection",
-       "binding_collection_name": "form_buttons"
       },
       {
-       "binding_type": "view",
-       "source_property_name": "(not ((#form_button_text - '§y§r') = #form_button_text))",
-       "target_property_name": "#visible"
-      }
-     ],
-     "controls": [
+       "small_icon": {
+        "type": "image",
+        "layer": 7,
+        "size": [
+         8,
+         8
+        ],
+        "offset": [
+         -38,
+         0
+        ],
+        "anchor_from": "right_middle",
+        "anchor_to": "right_middle",
+        "bindings": [
+         {
+          "binding_name": "#form_button_texture",
+          "binding_type": "collection",
+          "binding_collection_name": "form_buttons",
+          "binding_name_override": "#texture"
+         },
+         {
+          "binding_name": "#form_button_texture_file_system",
+          "binding_type": "collection",
+          "binding_collection_name": "form_buttons",
+          "binding_name_override": "#texture_file_system"
+         },
+         {
+          "binding_name": "#form_button_text",
+          "binding_type": "collection",
+          "binding_collection_name": "form_buttons"
+         },
+         {
+          "binding_type": "view",
+          "source_property_name": "((not ((#texture = '') or (#texture = 'loading'))) and (not ((#form_button_text - '§p§r') = #form_button_text)))",
+          "target_property_name": "#visible"
+         }
+        ]
+       }
+      },
       {
-       "c": {
-        "type": "panel",
+       "wide@common.button": {
         "size": [
          "62% - 34px",
          14
+        ],
+        "$pressed_button_name": "button.form_button_click",
+        "layer": 1,
+        "controls": [
+         {
+          "default": {
+           "type": "image",
+           "texture": "textures/ui/npcstudio/panel/value",
+           "size": [
+            "100%",
+            "100%"
+           ]
+          }
+         },
+         {
+          "hover": {
+           "type": "image",
+           "texture": "textures/ui/npcstudio/panel/value_hover",
+           "size": [
+            "100%",
+            "100%"
+           ]
+          }
+         },
+         {
+          "pressed": {
+           "type": "image",
+           "texture": "textures/ui/npcstudio/panel/value_pressed",
+           "size": [
+            "100%",
+            "100%"
+           ]
+          }
+         }
+        ],
+        "$button_bindings": [
+         {
+          "binding_type": "collection_details",
+          "binding_collection_name": "form_buttons"
+         }
+        ],
+        "anchor_from": "right_middle",
+        "anchor_to": "right_middle",
+        "offset": [
+         -18,
+         0
+        ],
+        "bindings": [
+         {
+          "binding_type": "collection_details",
+          "binding_collection_name": "form_buttons"
+         },
+         {
+          "binding_name": "#form_button_text",
+          "binding_type": "collection",
+          "binding_collection_name": "form_buttons"
+         },
+         {
+          "binding_type": "view",
+          "source_property_name": "(not ((#form_button_text - '§y§r') = #form_button_text))",
+          "target_property_name": "#visible"
+         }
+        ]
+       }
+      },
+      {
+       "wide_text": {
+        "type": "label",
+        "layer": 7,
+        "size": [
+         "62% - 34px",
+         10
         ],
         "offset": [
          -18,
@@ -2518,92 +3093,169 @@
         ],
         "anchor_from": "right_middle",
         "anchor_to": "right_middle",
-        "layer": 8,
+        "text": "#text",
+        "text_alignment": "center",
+        "color": [
+         0.93,
+         0.93,
+         0.93
+        ],
+        "shadow": false,
+        "font_scale_factor": 0.85,
+        "bindings": [
+         {
+          "binding_name": "#form_button_text",
+          "binding_type": "collection",
+          "binding_collection_name": "form_buttons"
+         },
+         {
+          "binding_type": "view",
+          "source_property_name": "(((((((((((((((((#form_button_text - '§o§r') - '§h§r') - '§i§r') - '§j§r') - '§q§r') - '§w§r') - '§f§r') - '§s§r') - '§t§r') - '§e§r') - '§k§r') - '§p§r') - '§y§r') - '§v§r') - '§m§r') - '§z§r') - '§b')",
+          "target_property_name": "#text"
+         },
+         {
+          "binding_type": "view",
+          "source_property_name": "(not ((#form_button_text - '§y§r') = #form_button_text))",
+          "target_property_name": "#visible"
+         }
+        ]
+       }
+      },
+      {
+       "tile@common.button": {
+        "size": [
+         18,
+         18
+        ],
+        "$pressed_button_name": "button.form_button_click",
+        "layer": 1,
         "controls": [
          {
-          "button@common.button": {
+          "default": {
+           "type": "image",
+           "texture": "textures/ui/npcstudio/panel/tile",
            "size": [
             "100%",
             "100%"
-           ],
-           "$pressed_button_name": "button.form_button_click",
-           "layer": 1,
-           "controls": [
-            {
-             "default": {
-              "type": "image",
-              "texture": "textures/ui/npcstudio/panel/value",
-              "size": [
-               "100%",
-               "100%"
-              ]
-             }
-            },
-            {
-             "hover": {
-              "type": "image",
-              "texture": "textures/ui/npcstudio/panel/value_hover",
-              "size": [
-               "100%",
-               "100%"
-              ]
-             }
-            },
-            {
-             "pressed": {
-              "type": "image",
-              "texture": "textures/ui/npcstudio/panel/value_pressed",
-              "size": [
-               "100%",
-               "100%"
-              ]
-             }
-            }
-           ],
-           "$button_bindings": [
-            {
-             "binding_type": "collection_details",
-             "binding_collection_name": "form_buttons"
-            }
            ]
           }
          },
          {
-          "label": {
-           "type": "label",
-           "layer": 6,
+          "hover": {
+           "type": "image",
+           "texture": "textures/ui/npcstudio/panel/tile_hover",
            "size": [
-            "100% - 4px",
-            10
-           ],
-           "offset": [
-            0,
-            0
-           ],
-           "anchor_from": "center",
-           "anchor_to": "center",
-           "text": "#text",
-           "text_alignment": "center",
-           "color": [
-            0.93,
-            0.93,
-            0.93
-           ],
-           "shadow": false,
-           "font_scale_factor": 0.85,
-           "bindings": [
-            {
-             "binding_name": "#form_button_text",
-             "binding_type": "collection",
-             "binding_collection_name": "form_buttons"
-            },
-            {
-             "binding_type": "view",
-             "source_property_name": "((((((#form_button_text - '§k§r') - '§p§r') - '§y§r') - '§v§r') - '§m§r') - '§z§r')",
-             "target_property_name": "#text"
-            }
+            "100%",
+            "100%"
            ]
           }
+         },
+         {
+          "pressed": {
+           "type": "image",
+           "texture": "textures/ui/npcstudio/panel/tile_pressed",
+           "size": [
+            "100%",
+            "100%"
+           ]
+          }
+         }
+        ],
+        "$button_bindings": [
+         {
+          "binding_type": "collection_details",
+          "binding_collection_name": "form_buttons"
+         }
+        ],
+        "anchor_from": "left_middle",
+        "anchor_to": "left_middle",
+        "offset": [
+         48,
+         0
+        ],
+        "bindings": [
+         {
+          "binding_type": "collection_details",
+          "binding_collection_name": "form_buttons"
+         },
+         {
+          "binding_name": "#form_button_text",
+          "binding_type": "collection",
+          "binding_collection_name": "form_buttons"
+         },
+         {
+          "binding_type": "view",
+          "source_property_name": "(not ((#form_button_text - '§e§r') = #form_button_text))",
+          "target_property_name": "#visible"
+         }
+        ]
+       }
+      },
+      {
+       "tile_icon": {
+        "type": "image",
+        "layer": 5,
+        "size": [
+         14,
+         14
+        ],
+        "offset": [
+         50,
+         0
+        ],
+        "anchor_from": "left_middle",
+        "anchor_to": "left_middle",
+        "bindings": [
+         {
+          "binding_name": "#form_button_texture",
+          "binding_type": "collection",
+          "binding_collection_name": "form_buttons",
+          "binding_name_override": "#texture"
+         },
+         {
+          "binding_name": "#form_button_texture_file_system",
+          "binding_type": "collection",
+          "binding_collection_name": "form_buttons",
+          "binding_name_override": "#texture_file_system"
+         },
+         {
+          "binding_name": "#form_button_text",
+          "binding_type": "collection",
+          "binding_collection_name": "form_buttons"
+         },
+         {
+          "binding_type": "view",
+          "source_property_name": "((not ((#texture = '') or (#texture = 'loading'))) and (not ((#form_button_text - '§e§r') = #form_button_text)))",
+          "target_property_name": "#visible"
+         }
+        ]
+       }
+      },
+      {
+       "tile_on": {
+        "type": "image",
+        "texture": "textures/ui/npcstudio/panel/sel_ring",
+        "size": [
+         18,
+         18
+        ],
+        "layer": 7,
+        "offset": [
+         48,
+         0
+        ],
+        "anchor_from": "left_middle",
+        "anchor_to": "left_middle",
+        "bindings": [
+         {
+          "binding_name": "#form_button_text",
+          "binding_type": "collection",
+          "binding_collection_name": "form_buttons"
+         },
+         {
+          "binding_type": "view",
+          "source_property_name": "(not ((#form_button_text - '§e§r§b') = #form_button_text))",
+          "target_property_name": "#visible"
          }
         ]
        }
@@ -2617,7 +3269,7 @@
   "type": "panel",
   "size": [
    "100%",
-   "100%"
+   0
   ],
   "bindings": [
    {
@@ -2633,374 +3285,489 @@
   ],
   "controls": [
    {
-    "value": {
+    "over": {
      "type": "panel",
      "size": [
       "100%",
-      "100%"
+      20
      ],
-     "bindings": [
-      {
-       "binding_name": "#form_button_text",
-       "binding_type": "collection",
-       "binding_collection_name": "form_buttons"
-      },
-      {
-       "binding_type": "view",
-       "source_property_name": "(not ((#form_button_text - '§v§r') = #form_button_text))",
-       "target_property_name": "#visible"
-      }
+     "offset": [
+      0,
+      -20
      ],
+     "anchor_from": "top_left",
+     "anchor_to": "top_left",
+     "layer": 8,
      "controls": [
       {
-       "c": {
-        "type": "panel",
-        "size": [
-         30,
-         14
-        ],
-        "offset": [
-         -4,
-         0
-        ],
-        "anchor_from": "right_middle",
-        "anchor_to": "right_middle",
-        "layer": 8,
-        "controls": [
-         {
-          "button@common.button": {
-           "size": [
-            "100%",
-            "100%"
-           ],
-           "$pressed_button_name": "button.form_button_click",
-           "layer": 1,
-           "controls": [
-            {
-             "default": {
-              "type": "image",
-              "texture": "textures/ui/npcstudio/panel/value",
-              "size": [
-               "100%",
-               "100%"
-              ]
-             }
-            },
-            {
-             "hover": {
-              "type": "image",
-              "texture": "textures/ui/npcstudio/panel/value_hover",
-              "size": [
-               "100%",
-               "100%"
-              ]
-             }
-            },
-            {
-             "pressed": {
-              "type": "image",
-              "texture": "textures/ui/npcstudio/panel/value_pressed",
-              "size": [
-               "100%",
-               "100%"
-              ]
-             }
-            }
-           ],
-           "$button_bindings": [
-            {
-             "binding_type": "collection_details",
-             "binding_collection_name": "form_buttons"
-            }
-           ]
-          }
-         },
-         {
-          "label": {
-           "type": "label",
-           "layer": 6,
-           "size": [
-            "100% - 4px",
-            10
-           ],
-           "offset": [
-            0,
-            0
-           ],
-           "anchor_from": "center",
-           "anchor_to": "center",
-           "text": "#text",
-           "text_alignment": "center",
-           "color": [
-            0.93,
-            0.93,
-            0.93
-           ],
-           "shadow": false,
-           "font_scale_factor": 0.75,
-           "bindings": [
-            {
-             "binding_name": "#form_button_text",
-             "binding_type": "collection",
-             "binding_collection_name": "form_buttons"
-            },
-            {
-             "binding_type": "view",
-             "source_property_name": "((((((#form_button_text - '§k§r') - '§p§r') - '§y§r') - '§v§r') - '§m§r') - '§z§r')",
-             "target_property_name": "#text"
-            }
-           ]
-          }
-         }
-        ]
-       }
-      }
-     ]
-    }
-   },
-   {
-    "small": {
-     "type": "panel",
-     "size": [
-      "100%",
-      "100%"
-     ],
-     "bindings": [
-      {
-       "binding_name": "#form_button_text",
-       "binding_type": "collection",
-       "binding_collection_name": "form_buttons"
-      },
-      {
-       "binding_type": "view",
-       "source_property_name": "(not ((#form_button_text - '§m§r') = #form_button_text))",
-       "target_property_name": "#visible"
-      }
-     ],
-     "controls": [
-      {
-       "c": {
-        "type": "panel",
+       "small@common.button": {
         "size": [
          12,
          14
         ],
+        "$pressed_button_name": "button.form_button_click",
+        "layer": 1,
+        "controls": [
+         {
+          "default": {
+           "type": "image",
+           "texture": "textures/ui/npcstudio/panel/small",
+           "size": [
+            "100%",
+            "100%"
+           ]
+          }
+         },
+         {
+          "hover": {
+           "type": "image",
+           "texture": "textures/ui/npcstudio/panel/small_hover",
+           "size": [
+            "100%",
+            "100%"
+           ]
+          }
+         },
+         {
+          "pressed": {
+           "type": "image",
+           "texture": "textures/ui/npcstudio/panel/small_pressed",
+           "size": [
+            "100%",
+            "100%"
+           ]
+          }
+         }
+        ],
+        "$button_bindings": [
+         {
+          "binding_type": "collection_details",
+          "binding_collection_name": "form_buttons"
+         }
+        ],
+        "anchor_from": "right_middle",
+        "anchor_to": "right_middle",
+        "offset": [
+         -4,
+         0
+        ],
+        "bindings": [
+         {
+          "binding_type": "collection_details",
+          "binding_collection_name": "form_buttons"
+         },
+         {
+          "binding_name": "#form_button_text",
+          "binding_type": "collection",
+          "binding_collection_name": "form_buttons"
+         },
+         {
+          "binding_type": "view",
+          "source_property_name": "(not ((#form_button_text - '§m§r') = #form_button_text))",
+          "target_property_name": "#visible"
+         }
+        ]
+       }
+      },
+      {
+       "small_icon": {
+        "type": "image",
+        "layer": 7,
+        "size": [
+         8,
+         8
+        ],
+        "offset": [
+         -6,
+         0
+        ],
+        "anchor_from": "right_middle",
+        "anchor_to": "right_middle",
+        "bindings": [
+         {
+          "binding_name": "#form_button_texture",
+          "binding_type": "collection",
+          "binding_collection_name": "form_buttons",
+          "binding_name_override": "#texture"
+         },
+         {
+          "binding_name": "#form_button_texture_file_system",
+          "binding_type": "collection",
+          "binding_collection_name": "form_buttons",
+          "binding_name_override": "#texture_file_system"
+         },
+         {
+          "binding_name": "#form_button_text",
+          "binding_type": "collection",
+          "binding_collection_name": "form_buttons"
+         },
+         {
+          "binding_type": "view",
+          "source_property_name": "((not ((#texture = '') or (#texture = 'loading'))) and (not ((#form_button_text - '§m§r') = #form_button_text)))",
+          "target_property_name": "#visible"
+         }
+        ]
+       }
+      },
+      {
+       "value@common.button": {
+        "size": [
+         30,
+         14
+        ],
+        "$pressed_button_name": "button.form_button_click",
+        "layer": 1,
+        "controls": [
+         {
+          "default": {
+           "type": "image",
+           "texture": "textures/ui/npcstudio/panel/value",
+           "size": [
+            "100%",
+            "100%"
+           ]
+          }
+         },
+         {
+          "hover": {
+           "type": "image",
+           "texture": "textures/ui/npcstudio/panel/value_hover",
+           "size": [
+            "100%",
+            "100%"
+           ]
+          }
+         },
+         {
+          "pressed": {
+           "type": "image",
+           "texture": "textures/ui/npcstudio/panel/value_pressed",
+           "size": [
+            "100%",
+            "100%"
+           ]
+          }
+         }
+        ],
+        "$button_bindings": [
+         {
+          "binding_type": "collection_details",
+          "binding_collection_name": "form_buttons"
+         }
+        ],
+        "anchor_from": "right_middle",
+        "anchor_to": "right_middle",
+        "offset": [
+         -4,
+         0
+        ],
+        "bindings": [
+         {
+          "binding_type": "collection_details",
+          "binding_collection_name": "form_buttons"
+         },
+         {
+          "binding_name": "#form_button_text",
+          "binding_type": "collection",
+          "binding_collection_name": "form_buttons"
+         },
+         {
+          "binding_type": "view",
+          "source_property_name": "(not ((#form_button_text - '§v§r') = #form_button_text))",
+          "target_property_name": "#visible"
+         }
+        ]
+       }
+      },
+      {
+       "value_text": {
+        "type": "label",
+        "layer": 7,
+        "size": [
+         30,
+         10
+        ],
         "offset": [
          -4,
          0
         ],
         "anchor_from": "right_middle",
         "anchor_to": "right_middle",
-        "layer": 8,
-        "controls": [
+        "text": "#text",
+        "text_alignment": "center",
+        "color": [
+         0.93,
+         0.93,
+         0.93
+        ],
+        "shadow": false,
+        "font_scale_factor": 0.75,
+        "bindings": [
          {
-          "button@common.button": {
-           "size": [
-            "100%",
-            "100%"
-           ],
-           "$pressed_button_name": "button.form_button_click",
-           "layer": 1,
-           "controls": [
-            {
-             "default": {
-              "type": "image",
-              "texture": "textures/ui/npcstudio/panel/small",
-              "size": [
-               "100%",
-               "100%"
-              ]
-             }
-            },
-            {
-             "hover": {
-              "type": "image",
-              "texture": "textures/ui/npcstudio/panel/small_hover",
-              "size": [
-               "100%",
-               "100%"
-              ]
-             }
-            },
-            {
-             "pressed": {
-              "type": "image",
-              "texture": "textures/ui/npcstudio/panel/small_pressed",
-              "size": [
-               "100%",
-               "100%"
-              ]
-             }
-            }
-           ],
-           "$button_bindings": [
-            {
-             "binding_type": "collection_details",
-             "binding_collection_name": "form_buttons"
-            }
-           ]
-          }
+          "binding_name": "#form_button_text",
+          "binding_type": "collection",
+          "binding_collection_name": "form_buttons"
          },
          {
-          "icon": {
-           "type": "image",
-           "layer": 5,
-           "size": [
-            8,
-            8
-           ],
-           "offset": [
-            0,
-            0
-           ],
-           "anchor_from": "center",
-           "anchor_to": "center",
-           "bindings": [
-            {
-             "binding_name": "#form_button_texture",
-             "binding_type": "collection",
-             "binding_collection_name": "form_buttons",
-             "binding_name_override": "#texture"
-            },
-            {
-             "binding_name": "#form_button_texture_file_system",
-             "binding_type": "collection",
-             "binding_collection_name": "form_buttons",
-             "binding_name_override": "#texture_file_system"
-            },
-            {
-             "binding_type": "view",
-             "source_property_name": "(not ((#texture = '') or (#texture = 'loading')))",
-             "target_property_name": "#visible"
-            }
-           ]
-          }
+          "binding_type": "view",
+          "source_property_name": "(((((((((((((((((#form_button_text - '§o§r') - '§h§r') - '§i§r') - '§j§r') - '§q§r') - '§w§r') - '§f§r') - '§s§r') - '§t§r') - '§e§r') - '§k§r') - '§p§r') - '§y§r') - '§v§r') - '§m§r') - '§z§r') - '§b')",
+          "target_property_name": "#text"
+         },
+         {
+          "binding_type": "view",
+          "source_property_name": "(not ((#form_button_text - '§v§r') = #form_button_text))",
+          "target_property_name": "#visible"
          }
         ]
        }
-      }
-     ]
-    }
-   },
-   {
-    "choose": {
-     "type": "panel",
-     "size": [
-      "100%",
-      "100%"
-     ],
-     "bindings": [
-      {
-       "binding_name": "#form_button_text",
-       "binding_type": "collection",
-       "binding_collection_name": "form_buttons"
       },
       {
-       "binding_type": "view",
-       "source_property_name": "(not ((#form_button_text - '§z§r') = #form_button_text))",
-       "target_property_name": "#visible"
-      }
-     ],
-     "controls": [
-      {
-       "c": {
-        "type": "panel",
+       "choose@common.button": {
         "size": [
          "62% - 10px",
          14
         ],
+        "$pressed_button_name": "button.form_button_click",
+        "layer": 1,
+        "controls": [
+         {
+          "default": {
+           "type": "image",
+           "texture": "textures/ui/npcstudio/panel/choose",
+           "size": [
+            "100%",
+            "100%"
+           ]
+          }
+         },
+         {
+          "hover": {
+           "type": "image",
+           "texture": "textures/ui/npcstudio/panel/choose_hover",
+           "size": [
+            "100%",
+            "100%"
+           ]
+          }
+         },
+         {
+          "pressed": {
+           "type": "image",
+           "texture": "textures/ui/npcstudio/panel/choose_pressed",
+           "size": [
+            "100%",
+            "100%"
+           ]
+          }
+         }
+        ],
+        "$button_bindings": [
+         {
+          "binding_type": "collection_details",
+          "binding_collection_name": "form_buttons"
+         }
+        ],
+        "anchor_from": "right_middle",
+        "anchor_to": "right_middle",
+        "offset": [
+         -4,
+         0
+        ],
+        "bindings": [
+         {
+          "binding_type": "collection_details",
+          "binding_collection_name": "form_buttons"
+         },
+         {
+          "binding_name": "#form_button_text",
+          "binding_type": "collection",
+          "binding_collection_name": "form_buttons"
+         },
+         {
+          "binding_type": "view",
+          "source_property_name": "(not ((#form_button_text - '§z§r') = #form_button_text))",
+          "target_property_name": "#visible"
+         }
+        ]
+       }
+      },
+      {
+       "choose_text": {
+        "type": "label",
+        "layer": 7,
+        "size": [
+         "62% - 10px",
+         10
+        ],
         "offset": [
          -4,
          0
         ],
         "anchor_from": "right_middle",
         "anchor_to": "right_middle",
-        "layer": 8,
+        "text": "#text",
+        "text_alignment": "center",
+        "color": [
+         0.93,
+         0.93,
+         0.93
+        ],
+        "shadow": false,
+        "font_scale_factor": 0.85,
+        "bindings": [
+         {
+          "binding_name": "#form_button_text",
+          "binding_type": "collection",
+          "binding_collection_name": "form_buttons"
+         },
+         {
+          "binding_type": "view",
+          "source_property_name": "(((((((((((((((((#form_button_text - '§o§r') - '§h§r') - '§i§r') - '§j§r') - '§q§r') - '§w§r') - '§f§r') - '§s§r') - '§t§r') - '§e§r') - '§k§r') - '§p§r') - '§y§r') - '§v§r') - '§m§r') - '§z§r') - '§b')",
+          "target_property_name": "#text"
+         },
+         {
+          "binding_type": "view",
+          "source_property_name": "(not ((#form_button_text - '§z§r') = #form_button_text))",
+          "target_property_name": "#visible"
+         }
+        ]
+       }
+      },
+      {
+       "tile@common.button": {
+        "size": [
+         18,
+         18
+        ],
+        "$pressed_button_name": "button.form_button_click",
+        "layer": 1,
         "controls": [
          {
-          "button@common.button": {
+          "default": {
+           "type": "image",
+           "texture": "textures/ui/npcstudio/panel/tile",
            "size": [
             "100%",
             "100%"
-           ],
-           "$pressed_button_name": "button.form_button_click",
-           "layer": 1,
-           "controls": [
-            {
-             "default": {
-              "type": "image",
-              "texture": "textures/ui/npcstudio/panel/choose",
-              "size": [
-               "100%",
-               "100%"
-              ]
-             }
-            },
-            {
-             "hover": {
-              "type": "image",
-              "texture": "textures/ui/npcstudio/panel/choose_hover",
-              "size": [
-               "100%",
-               "100%"
-              ]
-             }
-            },
-            {
-             "pressed": {
-              "type": "image",
-              "texture": "textures/ui/npcstudio/panel/choose_pressed",
-              "size": [
-               "100%",
-               "100%"
-              ]
-             }
-            }
-           ],
-           "$button_bindings": [
-            {
-             "binding_type": "collection_details",
-             "binding_collection_name": "form_buttons"
-            }
            ]
           }
          },
          {
-          "label": {
-           "type": "label",
-           "layer": 6,
+          "hover": {
+           "type": "image",
+           "texture": "textures/ui/npcstudio/panel/tile_hover",
            "size": [
-            "100% - 4px",
-            10
-           ],
-           "offset": [
-            0,
-            0
-           ],
-           "anchor_from": "center",
-           "anchor_to": "center",
-           "text": "#text",
-           "text_alignment": "center",
-           "color": [
-            0.93,
-            0.93,
-            0.93
-           ],
-           "shadow": false,
-           "font_scale_factor": 0.85,
-           "bindings": [
-            {
-             "binding_name": "#form_button_text",
-             "binding_type": "collection",
-             "binding_collection_name": "form_buttons"
-            },
-            {
-             "binding_type": "view",
-             "source_property_name": "((((((#form_button_text - '§k§r') - '§p§r') - '§y§r') - '§v§r') - '§m§r') - '§z§r')",
-             "target_property_name": "#text"
-            }
+            "100%",
+            "100%"
            ]
           }
+         },
+         {
+          "pressed": {
+           "type": "image",
+           "texture": "textures/ui/npcstudio/panel/tile_pressed",
+           "size": [
+            "100%",
+            "100%"
+           ]
+          }
+         }
+        ],
+        "$button_bindings": [
+         {
+          "binding_type": "collection_details",
+          "binding_collection_name": "form_buttons"
+         }
+        ],
+        "anchor_from": "left_middle",
+        "anchor_to": "left_middle",
+        "offset": [
+         70,
+         0
+        ],
+        "bindings": [
+         {
+          "binding_type": "collection_details",
+          "binding_collection_name": "form_buttons"
+         },
+         {
+          "binding_name": "#form_button_text",
+          "binding_type": "collection",
+          "binding_collection_name": "form_buttons"
+         },
+         {
+          "binding_type": "view",
+          "source_property_name": "(not ((#form_button_text - '§e§r') = #form_button_text))",
+          "target_property_name": "#visible"
+         }
+        ]
+       }
+      },
+      {
+       "tile_icon": {
+        "type": "image",
+        "layer": 5,
+        "size": [
+         14,
+         14
+        ],
+        "offset": [
+         72,
+         0
+        ],
+        "anchor_from": "left_middle",
+        "anchor_to": "left_middle",
+        "bindings": [
+         {
+          "binding_name": "#form_button_texture",
+          "binding_type": "collection",
+          "binding_collection_name": "form_buttons",
+          "binding_name_override": "#texture"
+         },
+         {
+          "binding_name": "#form_button_texture_file_system",
+          "binding_type": "collection",
+          "binding_collection_name": "form_buttons",
+          "binding_name_override": "#texture_file_system"
+         },
+         {
+          "binding_name": "#form_button_text",
+          "binding_type": "collection",
+          "binding_collection_name": "form_buttons"
+         },
+         {
+          "binding_type": "view",
+          "source_property_name": "((not ((#texture = '') or (#texture = 'loading'))) and (not ((#form_button_text - '§e§r') = #form_button_text)))",
+          "target_property_name": "#visible"
+         }
+        ]
+       }
+      },
+      {
+       "tile_on": {
+        "type": "image",
+        "texture": "textures/ui/npcstudio/panel/sel_ring",
+        "size": [
+         18,
+         18
+        ],
+        "layer": 7,
+        "offset": [
+         70,
+         0
+        ],
+        "anchor_from": "left_middle",
+        "anchor_to": "left_middle",
+        "bindings": [
+         {
+          "binding_name": "#form_button_text",
+          "binding_type": "collection",
+          "binding_collection_name": "form_buttons"
+         },
+         {
+          "binding_type": "view",
+          "source_property_name": "(not ((#form_button_text - '§e§r§b') = #form_button_text))",
+          "target_property_name": "#visible"
          }
         ]
        }

@@ -6,6 +6,9 @@
 - Tap any value box to type an exact number
 - NPC heads on the right scroll, so 20+ NPCs all fit; the Spawn button sits at the top and never moves
 - Thinner, brighter cyan outline (Thin is the new default, Medium and Thick still in Display, Outline)
+- Inventory section shows the NPC's 6 slots as tiles; tap one to change it
+- Section headers in cyan with their icon; tab names fit
+- Spawn, rename, presets and every other input form open in the same dark panel instead of a grey box
 
 ## NPC Studio V3: the studio update
 
