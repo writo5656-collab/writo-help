@@ -182,6 +182,8 @@ The side panel can show all of that.
 | **MinUI** (Cookiesmuch/MinUI) | Form title carries a hidden tag; `server_form.json` swaps in a fully custom layout. Sets all menu transition times to 0. | The **side-panel look** from the mockup + **instant tab switching** (no slide animation between menus). |
 | **Chest-UI** (Herobrine643928 and forks) | Same trick, draws buttons as a grid of item slots. | **Icon grids**: skins as a grid of heads, poses as tiles, trims/materials as icon tiles instead of long lists. |
 | **json-ui-examples** (LeGend077) | Ready-made custom toggle, slider, scroll panel, progress bar. | Switch-style toggles, slim sliders, smooth scrolling list. |
+| **SjnExe/AddonExe** (MIT, updated Oct 2026) | 3,150-line `server_form.json` with grid menus; invisible colour codes in the title pick the layout. | **Main code base for the panel**: head grids, tile grids, layout switching. |
+| **bedrock-core/ui** (MIT), **jsonforge** (MIT) | Write menus like web pages / visual menu editor. | Structure ideas and quick layout testing. |
 | **Effortless Building** (in-world entity panels) | 3D panels with every word drawn into pictures. | Not used for menus (can't show names). Idea kept: hover highlight + press feedback. |
 
 **Decision:** two layers that look like one design (dark panel, cyan accent):
@@ -192,7 +194,9 @@ The side panel can show all of that.
 Fallbacks: if the custom look breaks after a Mojang update, menus become plain grey but work;
 on Minecraft older than 26.60, editors run without pictures.
 
-**Sources:** github.com/Cookiesmuch/MinUI · github.com/Herobrine643928/Chest-UI ·
+Clickable preview: `art/reference/v3-preview.html`.
+
+**Sources:** github.com/SjnExe/AddonExe · github.com/bedrock-core/ui · github.com/xRookieFight/jsonforge · github.com/Cookiesmuch/MinUI · github.com/Herobrine643928/Chest-UI ·
 github.com/LeGend077/json-ui-examples · github.com/victorsigma/Bedrock-DDUI-Forms ·
 wiki.bedrock.dev/json-ui/modifying-server-forms ·
 learn.microsoft.com/minecraft/creator/documents/scripting/intro-to-ddui

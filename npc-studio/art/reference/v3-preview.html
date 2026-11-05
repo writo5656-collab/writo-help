@@ -1,0 +1,427 @@
+<title>NPC Studio V3 Preview</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=VT323&family=Noto+Sans:wght@400;600;700&family=Figtree:wght@400;600;700&display=swap">
+<style>
+/* Layout: a landscape "phone screen" stage that scales to fit, with notes and the GitHub findings below it. */
+:root{
+  --bg:#eef2f6; --fg:#121821; --sub:#4b5868; --line:#d3dbe4; --card:#ffffff; --accent:#0a8fb8;
+  --f-body:'Figtree',system-ui,sans-serif; --f-pixel:'VT323',ui-monospace,monospace; --f-ore:'Noto Sans',system-ui,sans-serif;
+  /* in-game colours (same in both themes: this is the game screen) */
+  --pn:#10151e; --pn2:#182030; --pnl:#2a3447; --cy:#27d3f5; --cyd:#0b6f86; --tx:#dfe8f5; --mut:#8494ab;
+  --ore:#313233; --ore2:#48494a; --oreline:#1e1e1f; --oregreen:#3c8527; --oretx:#ffffff;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0c1016;--fg:#e6edf5;--sub:#9aa8ba;--line:#243042;--card:#121925;--accent:#3fc4ea;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0c1016;--fg:#e6edf5;--sub:#9aa8ba;--line:#243042;--card:#121925;--accent:#3fc4ea;color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font:15px/1.5 var(--f-body);padding-block:18px 40px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.wrapc{max-width:920px;margin:0 auto;display:grid;gap:18px}
+header h1{font:400 40px/1 var(--f-pixel);margin:0;letter-spacing:.5px;text-wrap:balance}
+header h1 b{color:var(--accent);font-weight:400}
+header p{margin:6px 0 0;color:var(--sub);max-width:68ch}
+.try{display:flex;flex-wrap:wrap;gap:6px;margin:0;padding:0;list-style:none}
+.try li{font-size:13px;border:1px solid var(--line);background:var(--card);border-radius:999px;padding:3px 10px;color:var(--sub)}
+.try b{color:var(--fg)}
+
+/* ---------- stage ---------- */
+#fit{width:100%;overflow:hidden;border-radius:16px}
+#stage{width:880px;height:430px;position:relative;overflow:hidden;transform-origin:0 0;border:4px solid #05070a;border-radius:16px;background:#000;user-select:none;-webkit-user-select:none;font-family:var(--f-pixel);color:var(--tx)}
+#world{position:absolute;inset:0;transition:transform .45s ease;transform-origin:58% 55%}
+#sky{position:absolute;inset:0;background:linear-gradient(#7fb2f2,#b9d6f7 58%);transition:background .3s}
+#sun{position:absolute;width:34px;height:34px;background:#fff6c8;right:120px;top:40px;box-shadow:0 0 30px #fff3a0;transition:top .3s,background .3s}
+#hills{position:absolute;left:0;right:0;top:205px;height:70px;background:
+  radial-gradient(120px 60px at 380px 70px,#5f9147 98%,transparent),radial-gradient(160px 70px at 620px 75px,#567f42 98%,transparent),radial-gradient(140px 55px at 820px 72px,#5f9147 98%,transparent)}
+#trees i{position:absolute;display:block;width:26px;height:26px;background:#2f6b2a;box-shadow:0 8px 0 -4px #2f6b2a}
+#trees i::after{content:"";position:absolute;left:10px;top:24px;width:6px;height:14px;background:#6b4a2b}
+#ground{position:absolute;left:0;right:0;top:250px;bottom:0;background:linear-gradient(#6cab45,#4f8b33);}
+#ground::before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(90deg,#0000 0 22px,#00000010 22px 24px)}
+#fog{position:absolute;left:0;right:0;top:0;height:330px;pointer-events:none;opacity:0;transition:opacity .3s,background .3s}
+.prop{transition:opacity .25s}
+
+/* NPC */
+#npcwrap{position:absolute;left:470px;top:118px;width:90px;height:200px;transform-origin:50% 100%;transition:transform .15s}
+#shadow{position:absolute;left:458px;top:305px;width:114px;height:20px;border-radius:50%;background:#0003}
+#npc{position:absolute;inset:0;transition:filter .2s}
+#npc.sel{filter:drop-shadow(2px 0 0 var(--cy)) drop-shadow(-2px 0 0 var(--cy)) drop-shadow(0 2px 0 var(--cy)) drop-shadow(0 -2px 0 var(--cy)) drop-shadow(0 0 7px #27d3f5aa)}
+#npc i{position:absolute;display:block}
+.hd{left:25px;top:0;width:40px;height:40px}
+.bd{left:25px;top:40px;width:40px;height:62px}
+.ar{top:40px;width:20px;height:62px;transform-origin:50% 8px;transition:transform .12s}
+.ar.r{left:5px}.ar.l{left:65px}
+.lg{top:102px;width:20px;height:64px;transform-origin:50% 0}
+.lg.r{left:25px}.lg.l{left:45px}
+#npc .ac{background-blend-mode:normal}
+.part-on{outline:3px solid #ffe14d;outline-offset:1px;z-index:3}
+/* cameras */
+.cam{position:absolute;width:150px;height:120px;overflow:visible}
+.cam text{font-family:var(--f-pixel);font-size:15px}
+#cam1{left:322px;top:150px;transform:scale(.8)}
+#cam2{left:700px;top:40px;transform:scale(.62)}
+
+/* ---------- V3 side panel (custom JSON UI look) ---------- */
+#panel{position:absolute;left:0;top:0;bottom:0;width:318px;background:var(--pn);border-right:2px solid #000;display:flex;flex-direction:column;z-index:5;transition:transform .18s ease}
+#panel.shut{transform:translateX(-318px)}
+#handle{position:absolute;left:318px;top:160px;width:30px;height:62px;z-index:5;background:var(--pn);color:var(--cy);border:2px solid #000;border-left:0;border-radius:0 8px 8px 0;font:22px var(--f-pixel);transition:left .18s ease;cursor:pointer}
+#panel.shut+#handle{left:0}
+.brand{display:flex;align-items:center;gap:8px;padding:6px 10px 2px}
+.brand canvas{width:22px;height:22px;image-rendering:pixelated}
+.brand span{font-size:20px;letter-spacing:.5px}
+.brand small{margin-left:auto;font-size:15px;color:var(--mut)}
+.tabs{display:flex;border-bottom:2px solid var(--pnl);padding:0 4px}
+.tabs button{flex:1;background:none;border:0;color:var(--mut);font:17px var(--f-pixel);padding:5px 0 4px;border-bottom:3px solid transparent;cursor:pointer}
+.tabs button.on{color:var(--cy);border-color:var(--cy)}
+#pbody{flex:1;overflow:auto;padding:8px 10px 10px;scrollbar-width:thin;scrollbar-color:var(--pnl) transparent}
+.sec{color:var(--cy);font-size:17px;margin:4px 0 4px;display:flex;align-items:center;gap:6px}
+.sec::after{content:"";flex:1;height:1px;background:var(--pnl)}
+.grid{display:grid;grid-template-columns:repeat(5,1fr);gap:5px}
+.tile{background:var(--pn2);border:2px solid var(--pnl);color:var(--tx);font:15px/1 var(--f-pixel);padding:4px 0 3px;display:grid;justify-items:center;gap:2px;cursor:pointer}
+.tile canvas{width:34px;height:34px;image-rendering:pixelated}
+.tile.on{border-color:var(--cy);box-shadow:inset 0 0 0 1px var(--cy);color:var(--cy)}
+.tile.more{color:var(--mut);align-content:center;font-size:15px}
+.row{display:flex;align-items:center;gap:6px;margin:5px 0}
+.row .lab{flex:1;font-size:18px}
+.row .val{font-size:18px;color:var(--cy)}
+.btn{background:var(--pn2);border:2px solid var(--pnl);color:var(--tx);font:17px var(--f-pixel);padding:2px 8px;cursor:pointer}
+.btn.go{border-color:var(--cyd);color:var(--cy)}
+.btn.wide{flex:1}
+.sw{width:40px;height:22px;border-radius:11px;background:#0a0e15;border:2px solid var(--pnl);position:relative;cursor:pointer;flex:none}
+.sw::after{content:"";position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:var(--mut);transition:left .15s,background .15s}
+.sw.on{border-color:var(--cy)}.sw.on::after{left:20px;background:var(--cy)}
+.chips{display:flex;flex-wrap:wrap;gap:5px}
+.chip{background:var(--pn2);border:2px solid var(--pnl);color:var(--tx);font:16px var(--f-pixel);padding:1px 8px;cursor:pointer}
+.chip.on{border-color:var(--cy);color:var(--cy)}
+.slots{display:grid;grid-template-columns:repeat(6,1fr);gap:4px}
+.slot{background:#0a0e15;border:2px solid var(--pnl);height:34px;display:grid;place-items:center;font-size:14px;color:var(--mut)}
+.slot.has{border-color:var(--cyd);color:var(--cy)}
+.list .it{display:flex;align-items:center;gap:8px;background:var(--pn2);border:2px solid var(--pnl);padding:3px 6px;margin:0 0 4px;font-size:18px;cursor:pointer}
+.list .it.on{border-color:#3dff6e;color:#7dff9c}
+.dot{width:10px;height:10px;background:currentColor;flex:none}
+.foot{border-top:2px solid var(--pnl);padding:5px 10px;display:flex;align-items:center;gap:8px;font-size:16px;color:var(--mut)}
+.foot canvas{width:20px;height:20px;image-rendering:pixelated}
+.foot b{color:var(--cy);font-weight:400}
+
+/* ---------- Ore UI live editor (Mojang CustomForm look) ---------- */
+#ore{position:absolute;right:26px;top:36px;width:300px;z-index:7;background:var(--ore);border:2px solid var(--oreline);box-shadow:0 0 0 2px #5a5b5c inset,0 10px 30px #0008;font-family:var(--f-ore);color:var(--oretx);display:none}
+#ore.show{display:block}
+#ore .oh{display:flex;align-items:center;padding:8px 10px;background:#262728;border-bottom:2px solid var(--oreline);font-weight:700;font-size:14px}
+#ore .oh button{margin-left:auto;background:none;border:0;color:#fff;font:700 16px var(--f-ore);cursor:pointer}
+#ore .ob{padding:8px 12px 12px;display:grid;gap:9px}
+#ore .lbl{font-size:12px;color:#d0d1d4;display:flex;justify-content:space-between}
+#ore input[type=range]{width:100%;accent-color:#ffffff;height:18px}
+#ore select{width:100%;background:#1e1e1f;color:#fff;border:2px solid #000;font:600 13px var(--f-ore);padding:5px}
+#ore .tg{display:flex;align-items:center;justify-content:space-between;font-size:13px}
+#ore .tg input{width:18px;height:18px;accent-color:var(--oregreen)}
+#ore .ok{background:var(--oregreen);border:2px solid #1d4d13;box-shadow:inset 0 -3px #1d4d13;color:#fff;font:700 13px var(--f-ore);padding:7px;cursor:pointer}
+#ore .ghost{background:var(--ore2);border:2px solid var(--oreline);box-shadow:inset 0 -3px #2b2c2d;color:#fff;font:600 13px var(--f-ore);padding:6px;cursor:pointer}
+#ore .note{font-size:11px;color:#a9abb0}
+#ore .btnrow{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+
+/* ---------- pose mode / camera view / photo ---------- */
+#hot{position:absolute;left:50%;bottom:36px;transform:translateX(-50%);display:none;gap:3px;z-index:6}
+#hot button{width:58px;height:46px;background:#000b;border:2px solid #555;color:#fff;font:15px/1 var(--f-pixel);cursor:pointer}
+#hot button.on{border-color:#ffe14d;color:#ffe14d}
+#readout{position:absolute;right:10px;top:8px;text-align:right;font-size:19px;line-height:1.05;text-shadow:1px 1px #000;display:none;z-index:6}
+#camui{position:absolute;inset:0;display:none;z-index:6;pointer-events:none}
+#camui .bar{position:absolute;left:50%;top:10px;transform:translateX(-50%);display:flex;align-items:center;gap:10px;background:#000a;padding:3px 12px;font-size:22px;pointer-events:auto}
+#camui .bar button{background:none;border:0;color:#fff;font:24px var(--f-pixel);cursor:pointer}
+#camui .exit{position:absolute;right:12px;bottom:40px;pointer-events:auto}
+#guides{position:absolute;inset:0;display:none;pointer-events:none;z-index:4;background:
+  linear-gradient(90deg,#0000 calc(33.33% - 1px),#fff8 0 calc(33.33% + 1px),#0000 0 calc(66.66% - 1px),#fff8 0 calc(66.66% + 1px),#0000 0),
+  linear-gradient(#0000 calc(33.33% - 1px),#fff8 0 calc(33.33% + 1px),#0000 0 calc(66.66% - 1px),#fff8 0 calc(66.66% + 1px),#0000 0)}
+#flash{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none;z-index:9;transition:opacity .2s}
+#count{position:absolute;inset:0;display:none;place-items:center;font-size:110px;color:#fff;text-shadow:3px 3px #000;z-index:8;pointer-events:none}
+#confirm{position:absolute;inset:0;display:none;place-items:center;background:#0006;z-index:8}
+#confirm .box{background:var(--pn);border:2px solid var(--cy);padding:12px 16px;display:grid;gap:8px;min-width:250px;text-align:center;font-size:20px}
+#cap{position:absolute;left:0;right:0;bottom:0;min-height:28px;background:#000c;color:#fff;font-size:18px;padding:3px 12px;text-align:center;z-index:9}
+#cap b{color:var(--cy);font-weight:400}
+#panel:not(.shut)~#cap{left:318px}
+#stage.clean #panel,#stage.clean #handle,#stage.clean #cap,#stage.clean .cam,#stage.clean #hot,#stage.clean #readout{visibility:hidden}
+#stage.clean #npc.sel{filter:none}
+
+/* ---------- notes below ---------- */
+.legend{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px}
+.legend div{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 12px;min-width:0}
+.legend h3{margin:0 0 3px;font-size:15px}
+.legend p{margin:0;color:var(--sub);font-size:14px}
+.sw-cy{display:inline-block;width:12px;height:12px;border:2px solid #27d3f5;vertical-align:-1px;margin-right:5px;box-shadow:0 0 6px #27d3f5}
+.sw-gr{display:inline-block;width:12px;height:12px;border:2px solid #3dff6e;vertical-align:-1px;margin-right:5px}
+.sw-ore{display:inline-block;width:12px;height:12px;background:#313233;border:2px solid #5a5b5c;vertical-align:-1px;margin-right:5px}
+.sw-pn{display:inline-block;width:12px;height:12px;background:#10151e;border:2px solid #27d3f5;vertical-align:-1px;margin-right:5px}
+h2{font:400 30px/1 var(--f-pixel);margin:8px 0 0}
+.tw{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--card)}
+table{border-collapse:collapse;width:100%;min-width:640px;font-size:14px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--sub);font-weight:600}
+tr:last-child td{border-bottom:0}
+td a{color:var(--accent)}
+.lic{display:inline-block;font-size:12px;border-radius:999px;padding:1px 8px;border:1px solid var(--line);white-space:nowrap}
+.lic.ok{border-color:#2f9e5b;color:#2f9e5b}.lic.cr{border-color:#c9862a;color:#c9862a}.lic.no{border-color:#b8484a;color:#b8484a}
+.small{color:var(--sub);font-size:13px;margin:0}
+button:focus-visible{outline:2px solid #ffe14d;outline-offset:1px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="wrapc">
+<header>
+  <h1>NPC Studio <b>V3</b> preview</h1>
+  <p>How the new menus, camera, outline, fog and green screen will look and behave. Tap through it like in game. It's a drawing of the add-on, not Minecraft itself, so blocks and lighting are simplified. On a phone, turn it sideways.</p>
+</header>
+<ul class="try" aria-label="Things to try">
+  <li><b>Display</b> → tap a skin head</li>
+  <li><b>Size ›</b> → drag the slider</li>
+  <li><b>Trim Studio</b> → change pattern/material</li>
+  <li><b>Pose</b> → Gizmo, drag on the world</li>
+  <li><b>World</b> → Depth Fog</li>
+  <li><b>Camera</b> → Peek</li>
+  <li><b>Layers</b> → Green Screen, Photo Mode</li>
+</ul>
+
+<div id="fit"><div id="stage">
+  <div id="world">
+    <div id="sky"></div><div id="sun" class="prop"></div>
+    <div id="hills" class="prop"></div>
+    <div id="trees" class="prop"><i style="left:420px;top:212px"></i><i style="left:470px;top:220px;transform:scale(.8)"></i><i style="left:760px;top:208px"></i><i style="left:812px;top:218px;transform:scale(.7)"></i></div>
+    <div id="ground" class="prop"></div>
+    <div id="fog"></div>
+    <div id="shadow" class="prop"></div>
+    <svg class="cam" id="cam2" viewBox="0 0 150 120" aria-hidden="true"></svg>
+    <svg class="cam" id="cam1" viewBox="0 0 150 120" aria-hidden="true"></svg>
+    <div id="npcwrap"><div id="npc" class="sel"><i class="lg r"></i><i class="lg l"></i><i class="bd"></i><i class="ar r"></i><i class="ar l"></i><i class="hd"></i></div></div>
+  </div>
+  <div id="guides"></div>
+
+  <div id="panel">
+    <div class="brand"><canvas id="logo" width="8" height="8"></canvas><span>NPC Studio V3</span><small>Knight #2</small></div>
+    <div class="tabs" id="tabs" role="tablist"></div>
+    <div id="pbody"></div>
+    <div class="foot"><canvas id="fhead" width="8" height="8"></canvas><span>Selected: <b id="fname">Knight</b> · outlined for everyone</span></div>
+  </div>
+  <button id="handle" aria-label="Hide or show the panel">&#9776;</button>
+
+  <div id="ore" role="dialog" aria-label="Live editor"><div class="oh"><span id="otitle">Size</span><button id="oclose" aria-label="Close">✕</button></div><div class="ob" id="obody"></div></div>
+
+  <div id="hot"></div>
+  <div id="readout"></div>
+  <div id="camui"><div class="bar"><button id="cprev" aria-label="Previous camera">‹</button><span id="cname">Camera 1</span><button id="cnext" aria-label="Next camera">›</button></div><button class="btn go exit" id="cexit">Back to me</button></div>
+  <div id="confirm"><div class="box"><div>Keep this pose?</div><div style="display:flex;gap:8px"><button class="btn go wide" id="keep">Yes, keep it</button><button class="btn wide" id="undo">No, undo</button></div></div></div>
+  <div id="count"></div><div id="flash"></div>
+  <div id="cap">Tap anything in the panel.</div>
+</div></div>
+
+<section class="legend" aria-label="What you are looking at">
+  <div><h3><span class="sw-pn"></span>Side panel (left)</h3><p>The new main menu: tabs, head grids, one-tap switches. Built on the menu system Minecraft uses for add-on menus, with our own design file.</p></div>
+  <div><h3><span class="sw-ore"></span>Live editor (grey box)</h3><p>Mojang's new live menu. Sliders and dropdowns change the NPC while you drag; it doesn't close. Its look is Mojang's and can't be changed, and where it sits on screen is only certain once it runs in game.</p></div>
+  <div><h3><span class="sw-cy"></span>Cyan outline</h3><p>Marks the selected NPC. Every player in the world sees it. Hidden automatically in Peek and Photo Mode.</p></div>
+  <div><h3><span class="sw-gr"></span>Pyramid cameras</h3><p>Green = selected, blue = others. The frame gets wider or narrower with the camera's FOV.</p></div>
+</section>
+
+<h2>Found on GitHub</h2>
+<p class="small">Projects with working code for these ideas. "Use" means we can copy code (with credit where the licence asks for it); "Learn" means we only study the idea.</p>
+<div class="tw"><table>
+  <thead><tr><th>Project</th><th>What it has</th><th>For V3</th><th>Licence</th></tr></thead>
+  <tbody>
+    <tr><td><a href="https://github.com/SjnExe/AddonExe" target="_blank" rel="noopener">SjnExe/AddonExe</a></td><td>3,150-line menu design file with grid menus (even Minesweeper, 2048, Connect 4 inside menus). Invisible colour codes in the title pick the layout. Updated Oct 2026.</td><td>Use: head grids, tile grids, layout switching</td><td><span class="lic ok">MIT</span></td></tr>
+    <tr><td><a href="https://github.com/Cookiesmuch/MinUI" target="_blank" rel="noopener">Cookiesmuch/MinUI</a></td><td>Fully custom menu screens, HUD overlays, and all menu animations set to 0.</td><td>Use: instant tab switching, title tag hook</td><td><span class="lic ok">MIT</span></td></tr>
+    <tr><td><a href="https://github.com/LeGend077/json-ui-examples" target="_blank" rel="noopener">LeGend077/json-ui-examples</a></td><td>Custom switch, slider, scroll panel, progress bar.</td><td>Use: switches and scrolling in the panel</td><td><span class="lic ok">MIT</span></td></tr>
+    <tr><td><a href="https://github.com/bedrock-core/ui" target="_blank" rel="noopener">bedrock-core/ui</a></td><td>Write menus like web pages (JSX), compiles to menu files.</td><td>Learn: structure for many screens</td><td><span class="lic ok">MIT</span></td></tr>
+    <tr><td><a href="https://github.com/xRookieFight/jsonforge" target="_blank" rel="noopener">xRookieFight/jsonforge</a></td><td>Visual drag-and-drop editor for menu design files.</td><td>Use: test layouts quickly</td><td><span class="lic ok">MIT</span></td></tr>
+    <tr><td><a href="https://github.com/Herobrine643928/Chest-UI" target="_blank" rel="noopener">Herobrine643928/Chest-UI</a></td><td>Menus drawn as chest-style item grids.</td><td>Use: item picker grid (with credit)</td><td><span class="lic cr">CC BY 4.0</span></td></tr>
+    <tr><td><a href="https://github.com/victorsigma/Bedrock-DDUI-Forms" target="_blank" rel="noopener">victorsigma/Bedrock-DDUI-Forms</a></td><td>Builds Mojang's new live menus from simple lists, with back/forward between screens.</td><td>Learn only (no licence file)</td><td><span class="lic no">none</span></td></tr>
+    <tr><td><a href="https://github.com/Vortextbloons/MCP-JSON-UI-Minecraft" target="_blank" rel="noopener">Vortextbloons/MCP-JSON-UI-Minecraft</a></td><td>Templates for grid and tab menus.</td><td>Learn only (no licence file)</td><td><span class="lic no">none</span></td></tr>
+  </tbody>
+</table></div>
+<p class="small">Also checked: Mojang's official docs for the live menus (in the add-on's current version), custom fog files (official, for Depth Fog), and Effortless Building (floating panels, not used for menus). No GitHub project does a selection outline with a resource pack, so that part is ours to build and test.</p>
+</div>
+
+<script>
+(()=>{
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const st=$('#stage'), cap=$('#cap'), panel=$('#panel'), ore=$('#ore');
+let K=1;function fit(){const w=$('#fit').clientWidth;K=Math.min(1,w/880);st.style.transform=`scale(${K})`;$('#fit').style.height=(430*K)+'px'}
+addEventListener('resize',fit);fit();
+const say=(a,b)=>{cap.innerHTML=a+(b?' <b>→ '+b+'</b>':'')};
+
+/* ---------- skins (8x8 faces drawn on canvas) ---------- */
+const SK=[
+ {n:'Steve', skin:'#b5835a',hair:'#3b2716',eye:'#5a4fcf',shirt:'#24a6a8',pants:'#3a3d9a'},
+ {n:'Alex', skin:'#f0c7a0',hair:'#e0782b',eye:'#2e8b57',shirt:'#6aa84f',pants:'#7a5230'},
+ {n:'Knight', skin:'#c99a74',hair:'#9aa3ad',eye:'#2d2d2d',shirt:'#8a939c',pants:'#5c646d',helm:1},
+ {n:'Mage', skin:'#e2b58f',hair:'#5b2c86',eye:'#c7a1ff',shirt:'#6c3aa0',pants:'#3f2160',hood:1},
+ {n:'Soldier', skin:'#a8794f',hair:'#3f5a2a',eye:'#222',shirt:'#55703a',pants:'#3f522c'},
+ {n:'Assassin', skin:'#d6a57c',hair:'#1b1b1f',eye:'#e33',shirt:'#26262c',pants:'#1b1b20',hood:1},
+ {n:'Scientist', skin:'#e8c09c',hair:'#e9e9e9',eye:'#3a6fd8',shirt:'#f2f2f2',pants:'#4b5563'},
+ {n:'Mercenary', skin:'#9c6b47',hair:'#5a3a22',eye:'#222',shirt:'#7a5a3a',pants:'#3f3a33'},
+ {n:'NoxeelMC', skin:'#f1c9a5',hair:'#1fb6e0',eye:'#0b5e73',shirt:'#1478c8',pants:'#0e3d6b'},
+];
+function face(c,s){const g=c.getContext('2d');g.fillStyle=s.skin;g.fillRect(0,0,8,8);g.fillStyle=s.hair;g.fillRect(0,0,8,2);g.fillRect(0,2,1,2);g.fillRect(7,2,1,2);
+ if(s.helm){g.fillStyle=s.hair;g.fillRect(0,0,8,8);g.fillStyle='#2b3036';g.fillRect(1,3,6,1);g.fillRect(3,4,2,3);return}
+ if(s.hood){g.fillStyle=s.hair;g.fillRect(0,0,8,3);g.fillRect(0,0,1,8);g.fillRect(7,0,1,8)}
+ g.fillStyle='#fff';g.fillRect(1,4,2,1);g.fillRect(5,4,2,1);g.fillStyle=s.eye;g.fillRect(2,4,1,1);g.fillRect(5,4,1,1);g.fillStyle='#00000040';g.fillRect(3,6,2,1)}
+function headURL(s){const c=document.createElement('canvas');c.width=c.height=8;face(c,s);return c.toDataURL()}
+SK.forEach(s=>s.url=headURL(s));
+(()=>{const g=$('#logo').getContext('2d');g.fillStyle='#27d3f5';g.fillRect(3,0,2,2);g.fillRect(2,2,4,3);g.fillRect(1,2,1,3);g.fillRect(6,2,1,3);g.fillRect(2,5,1,3);g.fillRect(5,5,1,3)})();
+
+/* ---------- state ---------- */
+const S={tab:0,skin:2,slim:false,size:100,height:100,look:false,trim:{pat:'Silence',mat:'Diamond',glint:true,on:true},
+ armor:true,fog:{on:false,preset:'Depth White',dist:55},time:0.35,cam:0,fov:60,guides:true,
+ hide:{npcs:false,cams:false,outline:false},backdrop:'None',
+ pose:{sel:3,mode:'Rotate',axis:'Free',rot:{0:0,3:-25,4:15,5:0,6:0}},bak:null,mode:'panel'};
+const MATS={Iron:'#d8d8d8',Gold:'#f4c534',Diamond:'#4ee3d9',Emerald:'#2ecc5f',Netherite:'#4a4246',Redstone:'#d22b2b',Lapis:'#2a55c8',Amethyst:'#a46bea',Copper:'#d0794d',Quartz:'#ece6dc',Resin:'#e3772a'};
+const PATS=['Sentry','Dune','Coast','Wild','Ward','Eye','Vex','Tide','Snout','Rib','Spire','Wayfinder','Shaper','Silence','Raiser','Host','Flow','Bolt'];
+const BONES=['Head','Body','Right Arm','Left Arm','Right Leg','Left Leg','Whole Body'];
+
+/* ---------- NPC drawing ---------- */
+function trimBg(base){if(!S.armor||!S.trim.on)return base;const t=MATS[S.trim.mat],i=PATS.indexOf(S.trim.pat)%4;
+ const g=[`repeating-linear-gradient(45deg,${t} 0 3px,transparent 3px 11px)`,`linear-gradient(${t},${t}) 50% 30%/100% 4px no-repeat`,`repeating-linear-gradient(90deg,${t} 0 3px,transparent 3px 9px)`,`radial-gradient(${t} 30%,transparent 32%) 0 0/10px 10px`][i];return `${g},${base}`}
+function drawNPC(){const s=SK[S.skin],armor=S.armor?'#8f9aa5':null;
+ const hd=$('#npc .hd'),bd=$('#npc .bd');
+ hd.style.background=`url(${s.url}) 0 0/100% 100%`;hd.style.imageRendering='pixelated';
+ bd.style.background=armor?trimBg('linear-gradient('+armor+','+armor+')'):s.shirt;
+ $$('#npc .ar').forEach(a=>{a.style.background=s.shirt;a.style.width=(S.slim?15:20)+'px'});
+ $('#npc .ar.l').style.left=(S.slim?65:65)+'px';
+ $$('#npc .lg').forEach(l=>l.style.background=armor?trimBg('linear-gradient(#6f7882,#6f7882)'):s.pants);
+ bd.style.boxShadow=S.armor&&S.trim.glint?'inset 0 0 14px #b67cff':'none';
+ const r=S.pose.rot;$('#npc .hd').style.transform=`rotate(${r[0]||0}deg)`;$('#npc .ar.r').style.transform=`rotate(${r[2]||0}deg)`;
+ $('#npc .ar.l').style.transform=`rotate(${r[3]||0}deg)`;$('#npc .lg.r').style.transform=`rotate(${r[4]||0}deg)`;$('#npc .lg.l').style.transform=`rotate(${r[5]||0}deg)`;
+ $('#npcwrap').style.transform=`rotate(${r[6]||0}deg) scale(${S.size/100},${S.size/100*S.height/100})`;
+ $('#npc').classList.toggle('sel',!S.hide.outline&&!['peek','photo'].includes(S.mode));
+ $$('#npc i').forEach(e=>e.classList.remove('part-on'));
+ if(S.mode==='pose'){const m={0:'.hd',1:'.bd',2:'.ar.r',3:'.ar.l',4:'.lg.r',5:'.lg.l'}[S.pose.sel];if(m)$('#npc '+m).classList.add('part-on')}
+ $('#fname').textContent=s.n;const fc=$('#fhead');face(fc,s);$('.brand small').textContent=s.n+' #2'}
+
+/* ---------- cameras (pyramid frustum) ---------- */
+function drawCam(el,col,label,fov){const w=18+fov*0.55, cx=118, cy=60;
+ const A=[cx,cy-w/1.6],B=[cx+16,cy-w/1.6-8],C=[cx+16,cy+w/1.6+8],D=[cx,cy+w/1.6],P=[22,62];
+ const L=(a,b)=>`<line x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}"/>`;
+ el.innerHTML=`<defs><filter id="gl${el.id}"><feGaussianBlur stdDeviation="1.6" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+ <g stroke="${col}" stroke-width="2.5" fill="none" filter="url(#gl${el.id})" stroke-linecap="round">${L(P,A)+L(P,B)+L(P,C)+L(P,D)+L(A,B)+L(B,C)+L(C,D)+L(D,A)}
+ <polygon points="${(A[0]+B[0])/2-6},${(A[1]+B[1])/2-4} ${(A[0]+B[0])/2+6},${(A[1]+B[1])/2-6} ${(A[0]+B[0])/2},${(A[1]+B[1])/2-14}" fill="${col}"/></g>
+ <text x="20" y="${cy+w/1.6+30}" fill="${col}">${label}</text>`}
+function drawCams(){drawCam($('#cam1'),S.cam===0?'#3dff6e':'#36a8ff','Camera 1',S.fov);drawCam($('#cam2'),S.cam===1?'#3dff6e':'#36a8ff','Camera 2',50);
+ $$('.cam').forEach(c=>c.style.opacity=(S.hide.cams||S.backdrop!=='None')?0:1)}
+
+/* ---------- world: time, fog, backdrop ---------- */
+const FOGS={'Depth White':['#ffffff','#ffffff'],'Depth Black':['#05070a','#05070a'],'Cinematic Haze':['#c9dcf2','#e9f1fb'],'Sunset':['#f39a5b','#ffd29a'],'Night Blue':['#16244a','#24386b'],'Horror':['#3a0d0d','#1a0505']};
+function drawWorld(){const t=S.time, day=Math.sin(t*Math.PI);
+ const top=`hsl(212 ${40+30*day}% ${18+50*day}%)`,bot=t<0.15||t>0.85?'#f2a66a':`hsl(210 ${50+20*day}% ${30+52*day}%)`;
+ $('#sky').style.background=`linear-gradient(${top},${bot} 58%)`;$('#sun').style.top=(190-150*day)+'px';$('#sun').style.background=day<0.3?'#ffb36b':'#fff6c8';
+ const f=$('#fog');if(S.fog.on){const [a,b]=FOGS[S.fog.preset];const stop=Math.round(30+S.fog.dist*0.6);
+  f.style.background=`linear-gradient(${a} 0%,${b} ${stop-25}%,${b}cc ${stop}%,transparent ${Math.min(100,stop+18)}%)`;f.style.opacity=1}else f.style.opacity=0;
+ const bd=S.backdrop, bg={Green:'#00ff00',Black:'#000',White:'#fff'}[bd];
+ $$('#world .prop,#sky').forEach(e=>e.style.opacity=bd==='None'?1:0);$('#world').style.background=bg||'transparent';if(bd!=='None')f.style.opacity=0;
+ $('#npcwrap').style.opacity=S.hide.npcs?0:1;$('#shadow').style.opacity=(S.hide.npcs||bd!=='None')?0:1;drawCams()}
+
+/* ---------- side panel ---------- */
+const T=['Display','Pose','Presets','World','Camera','Layers'];
+function tabs(){$('#tabs').innerHTML=T.map((x,i)=>`<button role="tab" aria-selected="${i===S.tab}" class="${i===S.tab?'on':''}" data-a="tab" data-v="${i}">${x}</button>`).join('')}
+const sw=(on,a,v)=>`<button class="sw ${on?'on':''}" data-a="${a}" data-v="${v||''}" aria-pressed="${on}"></button>`;
+function body(){const b=$('#pbody');let h='';
+ if(S.tab===0){h=`<div class="sec">Skin</div><div class="grid">${SK.map((s,i)=>`<button class="tile ${i===S.skin?'on':''}" data-a="skin" data-v="${i}"><img src="${s.url}" alt="" width="34" height="34" style="image-rendering:pixelated">${s.n.slice(0,7)}</button>`).join('')}<button class="tile more" data-a="say" data-v="20 custom slots from the Skin Pack Builder">+20</button></div>
+  <div class="row"><span class="lab">Slim arms</span>${sw(S.slim,'slim')}<span class="lab" style="text-align:right">Look at me</span>${sw(S.look,'look')}</div>
+  <div class="row"><span class="lab">Size</span><span class="val">${S.size}%</span><button class="btn go" data-a="ore" data-v="size">Edit ›</button></div>
+  <div class="sec">Wardrobe</div><div class="slots">${['Hd','Ch','Lg','Bt','Hand','Off'].map((x,i)=>`<div class="slot ${S.armor&&i<4||i===4?'has':''}">${x}</div>`).join('')}</div>
+  <div class="row"><button class="btn go wide" data-a="ore" data-v="trim">Trim Studio ›</button><button class="btn wide" data-a="armor">${S.armor?'Remove armor':'Put armor on'}</button></div>`}
+ else if(S.tab===1){h=`<div class="sec">Body part</div><div class="chips">${BONES.map((x,i)=>`<button class="chip ${i===S.pose.sel?'on':''}" data-a="part" data-v="${i}">${x}</button>`).join('')}</div>
+  <div class="row"><button class="btn go wide" data-a="gizmo" data-v="Rotate">Rotate (gizmo)</button><button class="btn go wide" data-a="gizmo" data-v="Move">Move (gizmo)</button></div>
+  <div class="row"><button class="btn wide" data-a="ore" data-v="pose">Exact sliders ›</button><button class="btn wide" data-a="say" data-v="Mirror left ↔ right">Mirror</button></div>
+  <div class="sec">Pose Library</div><div class="chips">${['Idle','Wave','Fight','Sit','Lie down','Fly','Kneel','Point','Victory','Ride'].map(x=>`<button class="chip" data-a="lib" data-v="${x}">${x}</button>`).join('')}</div>`}
+ else if(S.tab===2){h=`<div class="sec">Presets</div><div class="list">${['Castle guard','Wizard tower','Boss fight scene'].map(x=>`<div class="it" data-a="say" data-v="Spawn preset: ${x}"><span class="dot" style="color:var(--cy)"></span>${x}</div>`).join('')}</div>
+  <div class="sec">Make a crowd</div><div class="chips">${['Grid','Line','Circle','Random'].map(x=>`<button class="chip" data-a="say" data-v="Crowd: ${x} (with random turns)">${x}</button>`).join('')}</div>
+  <div class="sec">Tools</div><div class="chips">${['Stamp','Rotator','Teleporter','Block Prop','Particle Prop','Cape'].map(x=>`<button class="chip" data-a="say" data-v="${x} tool">${x}</button>`).join('')}</div>`}
+ else if(S.tab===3){h=`<div class="sec">Time & weather</div><div class="row"><span class="lab">Time of day</span><button class="btn go" data-a="ore" data-v="time">Edit ›</button></div>
+  <div class="chips">${['Clear','Rain','Thunder','Freeze time'].map(x=>`<button class="chip" data-a="say" data-v="${x}">${x}</button>`).join('')}</div>
+  <div class="sec">Depth Fog</div><div class="row"><span class="lab">Depth Fog</span>${sw(S.fog.on,'fog')}</div>
+  <div class="chips">${Object.keys(FOGS).map(x=>`<button class="chip ${x===S.fog.preset?'on':''}" data-a="fogp" data-v="${x}">${x}</button>`).join('')}</div>
+  <div class="row"><span class="lab">Fog distance</span><button class="btn go" data-a="ore" data-v="fog">Edit ›</button></div>
+  <div class="sec">Studio rules</div><div class="row"><span class="lab">No mobs · no drops · day lock</span>${sw(true,'say','Studio World Rules')}</div>`}
+ else if(S.tab===4){h=`<div class="sec">Cameras</div><div class="list">${['Camera 1','Camera 2'].map((x,i)=>`<div class="it ${i===S.cam?'on':''}" data-a="cam" data-v="${i}"><span class="dot"></span>${x}<span style="margin-left:auto;color:var(--mut)">${i===0?S.fov:50}° FOV</span></div>`).join('')}</div>
+  <div class="row"><button class="btn go wide" data-a="peek">Peek through camera</button></div>
+  <div class="row"><span class="lab">Lens (FOV)</span><button class="btn go" data-a="ore" data-v="fov">Edit ›</button></div>
+  <div class="row"><span class="lab">Thirds guide</span>${sw(S.guides,'guides')}</div>
+  <div class="chips">${['Fly Cam','30 Shots','Place at my view'].map(x=>`<button class="chip" data-a="say" data-v="${x}">${x}</button>`).join('')}</div>`}
+ else {h=`<div class="sec">Show / hide</div>
+  <div class="row"><span class="lab">NPCs</span>${sw(!S.hide.npcs,'hide','npcs')}</div>
+  <div class="row"><span class="lab">Cameras</span>${sw(!S.hide.cams,'hide','cams')}</div>
+  <div class="row"><span class="lab">Outline</span>${sw(!S.hide.outline,'hide','outline')}</div>
+  <div class="sec">Backdrop</div><div class="chips">${['None','Green','Black','White'].map(x=>`<button class="chip ${x===S.backdrop?'on':''}" data-a="bd" data-v="${x}">${x==='Green'?'Green Screen':x}</button>`).join('')}</div>
+  <div class="row"><button class="btn go wide" data-a="layer">Layer Shot (3 photos)</button></div>
+  <div class="row"><button class="btn go wide" data-a="photo">Photo Mode</button></div>`}
+ b.innerHTML=h}
+
+/* ---------- Ore UI live editor ---------- */
+function rng(id,label,val,min,max,unit){return `<label class="lbl" for="${id}"><span>${label}</span><span id="${id}v">${val}${unit}</span></label><input type="range" id="${id}" min="${min}" max="${max}" value="${val}">`}
+function openOre(k){S.oreKind=k;let t='',h='';
+ if(k==='size'){t='Size';h=rng('o-size','Size',S.size,10,500,'%')+rng('o-h','Height',S.height,50,200,'%')}
+ if(k==='trim'){t='Trim Studio';h=`<label class="lbl" for="o-pat">Pattern</label><select id="o-pat">${PATS.map(p=>`<option ${p===S.trim.pat?'selected':''}>${p}</option>`).join('')}</select>
+  <label class="lbl" for="o-mat">Material</label><select id="o-mat">${Object.keys(MATS).map(p=>`<option ${p===S.trim.mat?'selected':''}>${p}</option>`).join('')}</select>
+  <div class="tg"><label for="o-gl">Enchant glint</label><input type="checkbox" id="o-gl" ${S.trim.glint?'checked':''}></div><div class="tg"><label for="o-on">Show trim</label><input type="checkbox" id="o-on" ${S.trim.on?'checked':''}></div>`}
+ if(k==='pose'){t='Exact sliders · '+BONES[S.pose.sel];h=rng('o-rx','Rotate',S.pose.rot[S.pose.sel]||0,-180,180,'°')}
+ if(k==='time'){t='Time of day';h=rng('o-t','Time',Math.round(S.time*24000),0,24000,'')}
+ if(k==='fog'){t='Depth Fog';h=rng('o-fd','Distance',S.fog.dist,4,128,' blocks')}
+ if(k==='fov'){t='Lens · Camera 1';h=rng('o-fov','FOV',S.fov,20,110,'°')}
+ h+=`<div class="note">Changes show on the NPC while you drag. The menu stays open.</div><div class="btnrow"><button class="ghost" id="o-undo">Undo</button><button class="ok" id="o-done">Done</button></div>`;
+ $('#otitle').textContent=t;$('#obody').innerHTML=h;ore.classList.add('show');S.oreBak=JSON.stringify(S);
+ say('Live editor open','drag it and watch the NPC/world change')}
+function oreInput(e){const id=e.target.id,v=e.target.type==='checkbox'?e.target.checked:e.target.value;
+ if(id==='o-size')S.size=+v;if(id==='o-h')S.height=+v;if(id==='o-pat')S.trim.pat=v;if(id==='o-mat')S.trim.mat=v;if(id==='o-gl')S.trim.glint=v;if(id==='o-on')S.trim.on=v;
+ if(id==='o-rx')S.pose.rot[S.pose.sel]=+v;if(id==='o-t')S.time=+v/24000;if(id==='o-fd'){S.fog.dist=+v;S.fog.on=true}if(id==='o-fov')S.fov=+v;
+ const out=$('#'+id+'v');if(out)out.textContent=v+(id==='o-size'||id==='o-h'?'%':id==='o-rx'||id==='o-fov'?'°':id==='o-fd'?' blocks':'');
+ drawNPC();drawWorld()}
+function closeOre(){ore.classList.remove('show');body()}
+
+/* ---------- pose mode ---------- */
+const HB=['Select','Rotate','Move','Axis','Undo','Reset','Done'];
+function hot(){const h=$('#hot');h.style.display=S.mode==='pose'?'flex':'none';h.innerHTML=HB.map((x,i)=>`<button data-a="hb" data-v="${i}" class="${(i===1&&S.pose.mode==='Rotate')||(i===2&&S.pose.mode==='Move')?'on':''}">${x}</button>`).join('');
+ const r=$('#readout');r.style.display=S.mode==='pose'?'block':'none';const v=Math.round(S.pose.rot[S.pose.sel]||0);
+ r.innerHTML=`${BONES[S.pose.sel]}<br>${S.pose.mode} · Axis ${S.pose.axis}<br><span style="color:#f66">X 0</span> <span style="color:#6f6">Y 0</span> <span style="color:#69f">Z ${v}</span>`}
+function enterPose(m){S.pose.mode=m;S.bak=JSON.stringify(S.pose.rot);S.mode='pose';panel.classList.add('shut');hot();drawNPC();say('Pose Mode','drag on the world to turn the yellow part · hotbar = tools')}
+function leavePose(keep){$('#confirm').style.display='none';if(!keep)S.pose.rot=JSON.parse(S.bak);S.mode='panel';hot();drawNPC();S.tab=1;tabs();body();panel.classList.remove('shut');say(keep?'Pose kept':'Pose undone','panel is back on Pose')}
+
+/* ---------- peek / photo ---------- */
+function peek(on){S.mode=on?'peek':'panel';$('#camui').style.display=on?'block':'none';panel.classList.toggle('shut',on);$('#handle').style.visibility=on?'hidden':'visible';
+ $('#guides').style.display=on&&S.guides?'block':'none';$('#world').style.transform=on?(S.cam===0?'scale(1.75) translate(-10px,-10px)':'scale(1.45) translate(-170px,30px)'):'none';
+ $$('.cam').forEach(c=>c.style.visibility=on?'hidden':'visible');$('#cname').textContent='Camera '+(S.cam+1);drawNPC();
+ say(on?'Peeking through Camera '+(S.cam+1):'Back to your view',on?'this is the real shot · arrows switch camera':'')}
+function photo(){S.mode='photo';$('#ore').classList.remove('show');st.classList.add('clean');panel.classList.add('shut');drawNPC();let n=3;const c=$('#count');c.style.display='grid';
+ const tick=()=>{if(n>0){c.textContent=n;n--;setTimeout(tick,650)}else{c.style.display='none';$('#flash').style.opacity=.9;setTimeout(()=>$('#flash').style.opacity=0,180);
+  setTimeout(()=>{st.classList.remove('clean');S.mode='panel';panel.classList.remove('shut');drawNPC();say('Photo Mode done','take your device screenshot on the flash')},1400)}};tick()}
+function layerShot(){const steps=[['None',false,'① Full shot'],['Green',false,'② NPCs on green'],['None',true,'③ Background only']];let i=0;
+ const go=()=>{if(i>=steps.length){S.backdrop='None';S.hide.npcs=false;drawWorld();body();say('Layer Shot done','3 photos that line up perfectly');return}
+  const [b,h,l]=steps[i++];S.backdrop=b;S.hide.npcs=h;drawWorld();say(l,'screenshot now');setTimeout(go,1500)};go()}
+
+/* ---------- events ---------- */
+st.addEventListener('click',e=>{const el=e.target.closest('[data-a]');if(!el)return;const a=el.dataset.a,v=el.dataset.v;
+ if(a==='tab'){S.tab=+v;tabs();body();say('Tab: '+T[S.tab],'switches instantly, no animation')}
+ else if(a==='skin'){S.skin=+v;drawNPC();body();say('Skin: '+SK[S.skin].n,'heads grid, one tap')}
+ else if(a==='slim'){S.slim=!S.slim;drawNPC();body();say('Slim arms '+(S.slim?'on':'off'),'switch, one tap')}
+ else if(a==='look'){S.look=!S.look;body();say('Look at players '+(S.look?'on':'off'))}
+ else if(a==='armor'){S.armor=!S.armor;drawNPC();body();say(S.armor?'Armor on':'Armor off')}
+ else if(a==='ore')openOre(v);
+ else if(a==='part'){S.pose.sel=+v;body();say('Selected: '+BONES[S.pose.sel])}
+ else if(a==='gizmo')enterPose(v);
+ else if(a==='lib'){const L={Idle:{2:0,3:0,0:0},Wave:{3:-150,2:0},Fight:{2:-70,3:-40},Sit:{4:-80,5:-80},'Lie down':{6:-90},Fly:{2:-170,3:-170},Kneel:{4:-90},Point:{2:-90},Victory:{2:-160,3:-160},Ride:{4:-60,5:-60}}[v];S.pose.rot={0:0,1:0,2:0,3:0,4:0,5:0,6:0,...L};drawNPC();say('Pose: '+v,'applied instantly')}
+ else if(a==='hb'){const i=+v;if(i===0)S.pose.sel=(S.pose.sel+1)%7;if(i===1)S.pose.mode='Rotate';if(i===2)S.pose.mode='Move';if(i===3)S.pose.axis=['Free','X','Y','Z'][(['Free','X','Y','Z'].indexOf(S.pose.axis)+1)%4];
+  if(i===4)S.pose.rot=JSON.parse(S.bak);if(i===5)S.pose.rot[S.pose.sel]=0;if(i===6){$('#confirm').style.display='grid'}hot();drawNPC();say(HB[i],'hotbar tool')}
+ else if(a==='fog'){S.fog.on=!S.fog.on;drawWorld();body();say('Depth Fog '+(S.fog.on?'on':'off'),'only you see it')}
+ else if(a==='fogp'){S.fog.preset=v;S.fog.on=true;drawWorld();body();say('Fog: '+v)}
+ else if(a==='cam'){S.cam=+v;drawCams();body();say('Selected Camera '+(S.cam+1),'turns green')}
+ else if(a==='peek')peek(true);
+ else if(a==='guides'){S.guides=!S.guides;body();say('Thirds guide '+(S.guides?'on':'off'),'shown while peeking, never in the photo')}
+ else if(a==='hide'){S.hide[v]=!S.hide[v];drawNPC();drawWorld();body();say((S.hide[v]?'Hidden: ':'Shown: ')+v)}
+ else if(a==='bd'){S.backdrop=v;drawWorld();body();say(v==='None'?'Backdrop off':'Backdrop: '+v,v==='Green'?'remove green in any editor = clean NPC':'')}
+ else if(a==='layer')layerShot();
+ else if(a==='photo')photo();
+ else if(a==='say')say(v);
+});
+$('#handle').onclick=()=>{panel.classList.toggle('shut');say(panel.classList.contains('shut')?'Panel hidden':'Panel open',panel.classList.contains('shut')?'walk and look around':'')};
+$('#oclose').onclick=closeOre;$('#obody').addEventListener('input',oreInput);
+$('#obody').addEventListener('click',e=>{if(e.target.id==='o-done'){closeOre();say('Saved')}if(e.target.id==='o-undo'){const b=JSON.parse(S.oreBak);Object.assign(S,{size:b.size,height:b.height,trim:b.trim,time:b.time,fog:b.fog,fov:b.fov});S.pose.rot=b.pose.rot;drawNPC();drawWorld();closeOre();say('Undone')}});
+$('#keep').onclick=()=>leavePose(true);$('#undo').onclick=()=>leavePose(false);
+$('#cexit').onclick=()=>peek(false);
+$('#cprev').onclick=$('#cnext').onclick=()=>{S.cam=1-S.cam;drawCams();peek(true)};
+let drag=null;$('#world').addEventListener('pointerdown',e=>{if(S.mode==='pose'){drag=e.clientX;$('#world').setPointerCapture(e.pointerId)}else if(S.mode==='panel'&&panel.classList.contains('shut'))say('World is live','panel hidden')});
+$('#world').addEventListener('pointermove',e=>{if(drag===null||S.mode!=='pose')return;const d=(e.clientX-drag)/K;drag=e.clientX;S.pose.rot[S.pose.sel]=Math.max(-180,Math.min(180,(S.pose.rot[S.pose.sel]||0)+d));drawNPC();hot()});
+addEventListener('pointerup',()=>drag=null);
+
+tabs();body();drawNPC();drawWorld();
+})();
+</script>
