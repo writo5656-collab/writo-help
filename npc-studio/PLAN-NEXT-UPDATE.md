@@ -175,6 +175,28 @@ with every word drawn into a picture beforehand (8.9 MB of pictures). That can't
 camera names, item search or your own preset names, and it gets in the way of camera shots.
 The side panel can show all of that.
 
+### Research: how other add-ons build better menus (GitHub, Nov 2026)
+| Project | How it works | What we take from it |
+|---|---|---|
+| **Mojang DDUI `CustomForm`** (official, `@minecraft/server-ui`) | New built-in menu system. Toggles, sliders, dropdowns and buttons work **while the menu stays open**; values update live. Sections can be shown/hidden live (= tabs without reopening). Pictures in menus from server-ui 2.3.0 (Minecraft 26.60+). | **Live editors:** size, pose sliders, FOV, fog, time, Trim Studio, so the NPC changes as you drag. Future-proof, but its look can't be restyled. |
+| **MinUI** (Cookiesmuch/MinUI) | Form title carries a hidden tag; `server_form.json` swaps in a fully custom layout. Sets all menu transition times to 0. | The **side-panel look** from the mockup + **instant tab switching** (no slide animation between menus). |
+| **Chest-UI** (Herobrine643928 and forks) | Same trick, draws buttons as a grid of item slots. | **Icon grids**: skins as a grid of heads, poses as tiles, trims/materials as icon tiles instead of long lists. |
+| **json-ui-examples** (LeGend077) | Ready-made custom toggle, slider, scroll panel, progress bar. | Switch-style toggles, slim sliders, smooth scrolling list. |
+| **Effortless Building** (in-world entity panels) | 3D panels with every word drawn into pictures. | Not used for menus (can't show names). Idea kept: hover highlight + press feedback. |
+
+**Decision:** two layers that look like one design (dark panel, cyan accent):
+1. **Navigation menus** (main hub, lists, grids, Pose Library, Wardrobe slots): custom side panel
+   from the mockup with tabs, icon grids, NPC heads, instant switching.
+2. **Live editors** (anything with sliders/toggles/dropdowns): DDUI CustomForm, so the NPC/world
+   updates while you drag and the menu never closes.
+Fallbacks: if the custom look breaks after a Mojang update, menus become plain grey but work;
+on Minecraft older than 26.60, editors run without pictures.
+
+**Sources:** github.com/Cookiesmuch/MinUI · github.com/Herobrine643928/Chest-UI ·
+github.com/LeGend077/json-ui-examples · github.com/victorsigma/Bedrock-DDUI-Forms ·
+wiki.bedrock.dev/json-ui/modifying-server-forms ·
+learn.microsoft.com/minecraft/creator/documents/scripting/intro-to-ddui
+
 ## Decisions
 - Public name: **NPC Studio V3**
 - Build **all ✅ features** from #9
