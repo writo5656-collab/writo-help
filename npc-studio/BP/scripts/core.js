@@ -184,7 +184,9 @@ export function cleanLabel(text) {
 // Each row is [main, a, b, c]. An empty label hides a slot. The tag at the start of a label picks the look.
 // Every look has ONE tag of its own, because Bedrock's UI gets long and/or conditions wrong:
 //   main: §o§r button row · §j§r§h§r open section · §j§r§i§r folded section · §e§r slot tile
-//         §q§r + §w§r checkbox · §f§r field · §s§r slider (icon = track picture) · §t§r stepper
+//         §w§r checkbox (whole row is its button) · §q§r + §f§r field · §s§r slider · §t§r stepper
+//         (§q§r rows: the row button covers only the label column, the controls sit right of it;
+//          buttons must never overlap: overlapping live buttons crashed the game)
 //   a:    §k§r small button (minus / previous)
 //   b:    §y§r value box between a and c (slider: its picture is the track; field: the "Choose" box)
 //   c:    §m§r small button (plus / next)
@@ -193,7 +195,7 @@ export function cleanLabel(text) {
 const EDITOR_TAG = "§n§p§s§r";
 export const TAB_MARK = "§u§r";
 const PLAIN = "§o§r", HDR_OPEN = "§j§r§h§r", HDR_SHUT = "§j§r§i§r", TILE = "§e§r";
-const CHECK = "§q§r§w§r", FIELD = "§q§r§f§r", SLIDE = "§q§r§s§r", STEP = "§q§r§t§r";
+const CHECK = "§w§r", FIELD = "§q§r§f§r", SLIDE = "§q§r§s§r", STEP = "§q§r§t§r";
 const A_SMALL = "§k§r", B_WIDE = "§y§r", C_SMALL = "§m§r";
 const RAIL_N = 24, BAR_N = 8, ROW_N = 48; // + button 38 = hide / show the panel; rows start at 39
 // Body tags (the body is a global binding, so the UI can read them anywhere):

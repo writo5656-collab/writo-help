@@ -175,6 +175,13 @@ def row_control(i):
     k = ROW0 + 4 * i
     if os.environ.get("NPCS_NO_AUX"):  # test build: rows without the -, value box, +
         return [{f"r{i}@server_form.npcs_main": {"collection_index": k}}]
+    if ROW_PANEL:  # variant: the 4 entries sit in their own collection panel (no 0-tall entries)
+        return [{f"row{i}": {"type": "collection_panel", "collection_name": "form_buttons", "size": ["100%", "100%c"],
+                             "controls": [
+            {"m@server_form.npcs_main": {"collection_index": k}},
+            {"a@server_form.npcs_aux_a": {"collection_index": k + 1}},
+            {"b@server_form.npcs_aux_b": {"collection_index": k + 2}},
+            {"c@server_form.npcs_aux_c": {"collection_index": k + 3}}]}}]
     return [
         {f"r{i}@server_form.npcs_main": {"collection_index": k}},
         {f"r{i}a@server_form.npcs_aux_a": {"collection_index": k + 1}},
@@ -183,7 +190,13 @@ def row_control(i):
     ]
 
 
+ROW_PANEL = bool(os.environ.get("NPCS_ROW_PANEL"))
+
+
 def aux(controls):
+    if ROW_PANEL:  # full row size, lying on top of the main entry inside the row's collection panel
+        return {"type": "panel", "size": ["100%", 20], "layer": 8, "anchor_from": "top_left", "anchor_to": "top_left",
+                "bindings": [coll(BTN), view(shown())], "controls": controls}
     return {"type": "panel", "size": ["100%", 0], "bindings": [coll(BTN), view(shown())], "controls": [
         {"over": {"type": "panel", "size": ["100%", 20], "offset": [0, -20], "anchor_from": "top_left", "anchor_to": "top_left",
                   "layer": 8, "controls": controls}}]}
@@ -203,7 +216,13 @@ def row_templates():
         # looks: plain pictures; the one button on top is see-through and only lights up on hover / press
         image("bg_row", "row", ("100% - 6px", 18), has(PLAIN)),
         image("bg_hdr", "hdr", ("100% - 6px", 18), has(HDR)),
-        one_button("hit", ("100% - 6px", 18)),
+        # two buttons that are never visible together, and never under the controls:
+        #   full width on button / header / checkbox rows, only the label column on control rows
+        {"full": {"type": "panel", "size": ["100%", "100%"], "bindings": [coll(BTN), view(lacks(CAP))],
+                  "controls": [one_button("hit", ("100% - 6px", 18))]}},
+        {"cap": {"type": "panel", "size": [f"{LABEL_COL} - 3px", 18], "offset": [3, 0], "anchor_from": "left_middle",
+                 "anchor_to": "left_middle", "bindings": [coll(BTN), view(has(CAP))],
+                 "controls": [one_button("hit", ("100%", "100%"))]}},
         {"icon_row": dict(icon([14, 14], [8, 0], "left_middle"), bindings=tex_bindings(has(PLAIN)))},
         {"icon_hdr": dict(icon([12, 12], [8, 0], "left_middle"), bindings=tex_bindings(has(HDR)))},
         {"check": dict(icon([12, 12], [-5, 0], "right_middle"), bindings=tex_bindings(has(CHECK)))},
@@ -216,8 +235,8 @@ def row_templates():
         {"label_row": text_label(["100% - 56px", 10], [28, 0], "left_middle", "left", [PLAIN], has(PLAIN))},
         {"label_hdr": text_label(["100% - 56px", 10], [26, 0], "left_middle", "left", hdr_marks, has(HDR), color=CYAN)},
         {"label_cap": text_label([f"{LABEL_COL} - 10px", 10], [10, 0], "left_middle", "left", [CAP, FIELD, SLIDE, STEP],
-                                 f"({has(CAP)} and {lacks(CHECK)})", color=CAP_COLOR)},
-        {"label_chk": text_label(["100% - 36px", 10], [10, 0], "left_middle", "left", [CAP, CHECK], has(CHECK), color=CAP_COLOR)}
+                                 has(CAP), color=CAP_COLOR)},
+        {"label_chk": text_label(["100% - 36px", 10], [10, 0], "left_middle", "left", [CHECK], has(CHECK), color=CAP_COLOR)}
     ]}
     # a: small button at the start of the control column
     t["npcs_aux_a"] = aux([{"col": {"type": "panel", "size": [f"{CTRL_COL} - 2px", "100%"], "anchor_from": "right_middle",
@@ -661,10 +680,13 @@ def validate(d):
             for v in o:
                 n += count_buttons(v)
         return n
-    for name in ("npcs_main", "npcs_aux_a", "npcs_aux_b", "npcs_aux_c", "npcs_tab", "npcs_head", "npcs_tool",
+    for name in ("npcs_aux_a", "npcs_aux_b", "npcs_aux_c", "npcs_tab", "npcs_head", "npcs_tool",
                  "npcs_hide_btn", "npcs_mini_handle"):
         if name in d and count_buttons(d[name]) != 1:
             errors.append(f"{name} has {count_buttons(d[name])} buttons (must be exactly 1 per form entry)")
+    # the row: 2 buttons, shown by opposite checks (never both); same as the V3.1 rows that worked
+    if "npcs_main" in d and count_buttons(d["npcs_main"]) != 2:
+        errors.append(f"npcs_main has {count_buttons(d['npcs_main'])} buttons (must be 2: full / label column)")
     # expressions: the layout that works in game nests at most 6 brackets; 17 crashed the game
     import re as _re
     def exprs(o):
