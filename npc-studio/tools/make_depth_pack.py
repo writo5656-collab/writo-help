@@ -30,9 +30,12 @@ KEEP = ("textures/entity/npcstudio/depth_sky", "textures/entity/npcstudio/backdr
 # Bedrock uses these textures' alpha as a TINT mask (opaque pixels get the biome colour), not as holes:
 # fully transparent = no tint at all, and the solid block still draws every pixel
 TINT_MASKS = ("textures/blocks/grass_side",)
+# solid white: leaves read as clean shapes like DMS (their holes showed the black sky as speckles)
+SOLID = ("textures/blocks/leaves", "textures/blocks/azalea_leaves", "textures/blocks/mangrove_leaves",
+         "textures/blocks/cherry_leaves", "textures/blocks/pale_oak_leaves")
 
 
-def white_like(src, dst, no_tint=False):
+def white_like(src, dst, no_tint=False, solid=False):
     """Same size, every pixel white, alpha kept (fully transparent stays transparent)."""
     try:
         im = Image.open(src).convert("RGBA")
@@ -40,7 +43,7 @@ def white_like(src, dst, no_tint=False):
         print("skip", src, e)
         return False
     out = Image.new("RGBA", im.size, (255, 255, 255, 0 if no_tint else 255))
-    if not no_tint:
+    if not no_tint and not solid:
         out.putalpha(im.getchannel("A"))
     os.makedirs(os.path.dirname(dst), exist_ok=True)
     out.save(dst, optimize=True)
@@ -69,7 +72,7 @@ def main(vanilla):
                     if stem.startswith(KEEP) or stem.endswith("_mers") or stem.endswith("_normal"):
                         continue
                     dst = os.path.join(OUT, stem + ".png")
-                    n += white_like(os.path.join(dp, f), dst, no_tint=stem.startswith(TINT_MASKS))
+                    n += white_like(os.path.join(dp, f), dst, no_tint=stem.startswith(TINT_MASKS), solid=stem.startswith(SOLID))
     # 2. no tint: white colour maps
     for cm in ("grass", "foliage", "birch", "evergreen", "swamp_grass", "swamp_foliage", "mangrove_swamp_foliage", "dry_foliage"):
         solid(os.path.join(OUT, "textures/colormap", cm + ".png"), (256, 256), (255, 255, 255, 255))

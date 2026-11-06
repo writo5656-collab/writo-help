@@ -5,7 +5,18 @@
       "identifier": "npcstudio:depth_sky",
       "is_spawnable": false,
       "is_summonable": true,
-      "is_experimental": false
+      "is_experimental": false,
+      "properties": {
+        "npcstudio:size": {
+          "type": "int",
+          "range": [
+            8,
+            512
+          ],
+          "default": 192,
+          "client_sync": true
+        }
+      }
     },
     "components": {
       "minecraft:type_family": {

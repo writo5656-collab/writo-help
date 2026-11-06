@@ -450,6 +450,16 @@ function depthFog(player, on) {
   } catch {
     /* ignore */
   }
+  // the black sky box ends where the fog is fully black: everything past it is black anyway, and it
+  // has to stay inside the render distance (the game doesn't draw anything farther)
+  const sky = depthState.get(player.id)?.sky;
+  if (on && sky?.isValid) {
+    try {
+      sky.setProperty("npcstudio:size", Math.min(512, depthStart(player) + depthLength(player) + 1));
+    } catch {
+      /* ignore */
+    }
+  }
 }
 function removeSkies(dim) {
   try {
@@ -490,6 +500,7 @@ export function setDepth(player, on) {
     // black sky: a huge black box that follows your view (camera view included)
     try {
       st.sky = dim.spawnEntity(DEPTH_SKY_ID, viewPoint(player));
+      depthFog(player, true);
     } catch (e) {
       console.warn(`[NPC Studio] depth sky: ${e}`);
     }
@@ -503,7 +514,7 @@ export function setDepth(player, on) {
         }
       }
     }, 10);
-    msg(player, "§bDepth map on. §7Needs the §fNPC Studio Depth Map§7 resource pack ON (above NPC Studio) for the white look. /npcstudio:depth to leave.");
+    msg(player, "§bDepth map on. §7Needs the §fNPC Studio Depth Map§7 resource pack ON (above NPC Studio). Keep your render distance above Start + Max dist. /npcstudio:depth to leave.");
   } else {
     const st = depthState.get(player.id);
     depthState.delete(player.id);

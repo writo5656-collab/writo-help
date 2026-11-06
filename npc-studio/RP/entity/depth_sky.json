@@ -15,7 +15,10 @@
       "render_controllers": [
         "controller.render.npcstudio.depth_sky"
       ],
-      "enable_attachables": false
+      "enable_attachables": false,
+      "scripts": {
+        "scale": "query.property('npcstudio:size')"
+      }
     }
   }
 }
