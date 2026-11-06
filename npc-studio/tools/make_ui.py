@@ -170,6 +170,8 @@ def row_control(i):
     """One row = 4 collection slots, all direct children of the rows stack (Bedrock only reads
     collection_index there). The main slot is 20 tall; a, b and c are 0 tall and draw on top of it."""
     k = ROW0 + 4 * i
+    if os.environ.get("NPCS_NO_AUX"):  # crash test build: rows without the -, +, value boxes
+        return [{f"r{i}@server_form.npcs_main": {"collection_index": k}}]
     return [
         {f"r{i}@server_form.npcs_main": {"collection_index": k}},
         {f"r{i}a@server_form.npcs_aux_a": {"collection_index": k + 1}},
@@ -234,31 +236,7 @@ def row_templates():
     return t
 
 
-def build():
-    d = {"namespace": "server_form"}
-
-    # instant menus: no slide/fade between screens, so folding a section or switching tabs is immediate
-    d["third_party_server_screen"] = {
-        "$screen_animations": ["@server_form.npcs_no_anim"],
-        "$background_animations": ["@server_form.npcs_no_anim"],
-        "render_game_behind": True
-        # V3.2: "absorbs_input": false (free look) is the suspect for a game crash when the panel opened; removed
-    }
-    d["npcs_no_anim"] = {"anim_type": "offset", "easing": "linear", "duration": 0, "from": [0, 0], "to": [0, 0],
-                         "play_event": "screen.exit_pop", "end_event": "screen.exit_end"}
-    d["main_screen_content"] = {
-        "type": "panel", "size": ["100%", "100%"],
-        "controls": [{"server_form_factory": {"type": "factory", "control_ids": {
-            "long_form": "@server_form.npcs_router", "custom_form": "@server_form.npcs_custom_router"}}}]
-    }
-    d["npcs_router"] = {"type": "panel", "size": ["100%", "100%"], "controls": [
-        {"vanilla@server_form.npcs_vanilla_wrap": {}},
-        {"studio@server_form.npcs_editor": {}}
-    ]}
-    d["npcs_vanilla_wrap"] = {"type": "panel", "size": ["100%", "100%"],
-                              "bindings": [global_title(), view(NO_PANEL)],
-                              "controls": [{"long_form@server_form.long_form": {}}]}
-
+def add_dark_inputs(d):
     # ---------- NPC Studio input forms (text boxes, sliders, toggles): same dark left panel, no grey box ----------
     d["npcs_custom_router"] = {"type": "panel", "size": ["100%", "100%"], "controls": [
         {"vanilla": {"type": "panel", "size": ["100%", "100%"], "bindings": [global_title(), view(NO_PANEL)],
@@ -305,6 +283,38 @@ def build():
             {"pad_end": {"type": "panel", "size": ["100%", 8]}}
         ]
     }
+
+
+
+def build():
+    d = {"namespace": "server_form"}
+
+    # instant menus: no slide/fade between screens, so folding a section or switching tabs is immediate
+    d["third_party_server_screen"] = {
+        "$screen_animations": ["@server_form.npcs_no_anim"],
+        "$background_animations": ["@server_form.npcs_no_anim"],
+        "render_game_behind": True
+        # V3.2: "absorbs_input": false (free look) is the suspect for a game crash when the panel opened; removed
+    }
+    d["npcs_no_anim"] = {"anim_type": "offset", "easing": "linear", "duration": 0, "from": [0, 0], "to": [0, 0],
+                         "play_event": "screen.exit_pop", "end_event": "screen.exit_end"}
+    d["main_screen_content"] = {
+        "type": "panel", "size": ["100%", "100%"],
+        "controls": [{"server_form_factory": {"type": "factory", "control_ids": {
+            "long_form": "@server_form.npcs_router",
+            # V3.2 crash hunt: input forms use Mojang's own box again (the re-hosted one is a crash suspect)
+            "custom_form": "@server_form.custom_form"}}}]
+    }
+    d["npcs_router"] = {"type": "panel", "size": ["100%", "100%"], "controls": [
+        {"vanilla@server_form.npcs_vanilla_wrap": {}},
+        {"studio@server_form.npcs_editor": {}}
+    ]}
+    d["npcs_vanilla_wrap"] = {"type": "panel", "size": ["100%", "100%"],
+                              "bindings": [global_title(), view(NO_PANEL)],
+                              "controls": [{"long_form@server_form.long_form": {}}]}
+
+    if os.environ.get("NPCS_DARK_INPUTS"):  # off while hunting the crash
+        add_dark_inputs(d)
 
     d["npcs_editor"] = {
         "type": "panel", "size": ["100%", "100%"], "layer": 2,
@@ -358,10 +368,8 @@ def build():
         "type": "stack_panel", "orientation": "vertical", "size": ["100%", "100%c"],
         "anchor_from": "top_left", "anchor_to": "top_left", "collection_name": "form_buttons",
         "controls": [
-            {"body_box": {"type": "panel", "size": ["100%", "100%c"], "controls": [
-                {"body": {"type": "label", "size": ["100% - 16px", "default"], "offset": [8, 2], "text": "#form_text", "color": SUB,
-                          "anchor_from": "top_left", "anchor_to": "top_left",
-                          "shadow": False, "font_scale_factor": 0.85, "layer": 4}}]}},
+            {"body": {"type": "label", "size": ["100% - 12px", "default"], "offset": [6, 0], "text": "#form_text", "color": SUB,
+                      "shadow": False, "font_scale_factor": 0.85, "layer": 4}},
             {"pad": {"type": "panel", "size": ["100%", 4]}}
         ] + rows + [{"pad_end": {"type": "panel", "size": ["100%", 8]}}]
     }
