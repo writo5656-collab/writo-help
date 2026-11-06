@@ -167,7 +167,8 @@ function displayTab(player, m, npc, self) {
   const cape = getCape(npc);
   m.section("model", "Model settings", ICON("skin"));
   m.field("Skin", skinPlainName(npc.getProperty("npcstudio:skin_index") ?? 0), npcHead(npc), () =>
-    pickSkin(player, "Choose Skin", (i) => (setSkin(npc, i), self()), self)
+    pickSkin(player, "Choose Skin", (i) => (setSkin(npc, i), self()), self),
+    () => setSkin(npc, 0)
   );
   m.cycle("Cape", cape ? CAPE_NAMES[cape - 1] : "None", (d) => setCape(npc, (cape + d + 9) % 9));
   m.field("Name tag", npc.getDynamicProperty("npcstudio:real_name") !== undefined ? "Hidden" : npcLabel(npc), ICON("nametag"), () => openNameTag(player, npc, self));
@@ -177,21 +178,23 @@ function displayTab(player, m, npc, self) {
   m.toggle("Bright", isBright(npc), () => (setBright(npc, !isBright(npc)), self()));
 
   m.section("tr", "Transform", ICON("move"));
+  const at = npc.location;
+  const move = () => openMoveMenu(player, npc, self);
+  m.trio("Position", [at.x, at.y, at.z].map((v) => ({ text: (Math.round(v * 10) / 10).toFixed(1), fn: move })));
   transformRows(m, npc);
   m.btn("Move / Turn", ICON("move"), () => openMoveMenu(player, npc, self));
 
   m.section("inv", "Inventory", ICON("equip"));
   const slot = (def) => ({ label: def.key, icon: equipIcon(npc, def.key), on: !!getEquip(npc, def.key), fn: () => openSlotMenu(player, npc, def.key, self) });
-  m.tiles(SLOTS.slice(0, 4).map(slot));
-  m.tiles(SLOTS.slice(4).map(slot));
+  m.tiles(SLOTS.map(slot), "Slots");
   m.btn("Wardrobe", ICON("equip"), () => openWardrobe(player, npc, self));
   m.btn("Trim Studio", ICON("trim"), () => trimPage(player, npc, self));
 
   const look = getOutlineLook();
   m.section("ol", "Outline", ICON("outline"));
   m.toggle("Show outline", !areOutlinesHidden(), () => (setOutlinesHidden(!areOutlinesHidden()), self()));
-  m.cycle("Thickness", THICKNESS[look.thick], (d) => setOutlineLook({ thick: (look.thick + d + 3) % 3 }));
-  m.cycle("Style", OUTLINE_STYLES[look.style], () => setOutlineLook({ style: 1 - look.style }));
+  m.choices("Thickness", THICKNESS, look.thick, (i) => setOutlineLook({ thick: i }));
+  m.choices("Style", OUTLINE_STYLES, look.style, (i) => setOutlineLook({ style: i }));
 
   m.section("more", "More", ICON("manage"));
   m.btn("Keyframe Animator", ICON("record"), () => openAnimator(player, npc, self));

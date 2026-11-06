@@ -109,7 +109,7 @@ IS_MINI = f"(not (({BODY} - '{MINI_TAG}') = {BODY}))"
 NOT_MINI = f"(({BODY} - '{MINI_TAG}') = {BODY})"
 PLAIN, HDR, HDR_OPEN, HDR_SHUT, TILE = "§o§r", "§j§r", "§h§r", "§i§r", "§e§r"
 CAP, CHECK, FIELD, SLIDE, STEP = "§q§r", "§w§r", "§f§r", "§s§r", "§t§r"
-A_SMALL, B_WIDE, C_SMALL = "§k§r", "§y§r", "§m§r"
+A_SMALL, B_WIDE, C_SMALL, THIRD = "§k§r", "§y§r", "§m§r", "§a§r"
 PANEL_W = "34%"
 BAR_H = 24
 RAIL_W = 32
@@ -208,15 +208,37 @@ def aux(controls):
 
 AUX_BARE = bool(os.environ.get("NPCS_AUX_BARE"))   # test: slots with only their button (no icon / text)
 AUX_NO_B = bool(os.environ.get("NPCS_AUX_NO_B"))   # test: only the - and + slots
+NO_BOX = bool(os.environ.get("NPCS_NO_BOX"))       # test: middle slot without the value box
 
 
-def small_slot(anchor, offset):
+def variant(mark, controls):
+    """One look of a slot, shown only when the slot's label starts with its tag."""
+    return {"type": "panel", "size": ["100%", "100%"], "bindings": [coll(BTN), view(has(mark))], "controls": controls}
+
+
+def small_slot(mark, anchor, offset):
     """- / + / < / > : one small button with its icon."""
     dx = -2 if anchor.startswith("right") else 2
     parts = [one_button("small", (12, 14), anchor=anchor, offset=offset)]
     if not AUX_BARE:
         parts.append({"icon": dict(icon([8, 8], [offset[0] + dx, 0], anchor), layer=7)})
-    return parts
+    return {f"v_{mark[1]}": variant(mark, parts)}
+
+
+def control_col(controls):
+    """The control column right of the captions (sizes are plain percentages: no "N% - Mpx" in the slots)."""
+    return {"col": {"type": "panel", "size": [CTRL_COL, "100%"], "anchor_from": "right_middle", "anchor_to": "right_middle",
+                    "controls": controls}}
+
+
+def third_slot(anchor):
+    """One of three equal buttons across the control column (choices, slot tiles, X / Y / Z)."""
+    cell = {"cell": {"type": "panel", "size": ["32%", 16], "anchor_from": anchor, "anchor_to": anchor,
+                     "controls": [one_button("row", ("100%", "100%")),
+                                  {"icon": dict(icon([12, 12], [0, 0], "center"), layer=7)},
+                                  {"text": dict(text_label(["100%", 10], [0, 0], "center", "center", [THIRD], shown(),
+                                                           scale=0.8), layer=7)}]}}
+    return {"v_third": variant(THIRD, [control_col([cell])])}
 
 
 def row_templates():
@@ -248,24 +270,22 @@ def row_templates():
                                  has(CAP), color=CAP_COLOR)},
         {"label_chk": text_label(["100% - 36px", 10], [10, 0], "left_middle", "left", [CHECK], has(CHECK), color=CAP_COLOR)}
     ]}
-    # a: small button at the start of the control column
-    t["npcs_aux_a"] = aux([{"col": {"type": "panel", "size": [f"{CTRL_COL} - 2px", "100%"], "anchor_from": "right_middle",
-                                    "anchor_to": "right_middle", "controls": small_slot("left_middle", [0, 0])}}])
-    # b: the value box between a and c; a slider's track is its picture. The number is always on the
-    # right (labels must never read #texture: only images have a texture).
-    box = [f"{CTRL_COL} - 34px", 14]
-    b_parts = [one_button("value", ("100%", "100%"))]
-    if not AUX_BARE:
-        b_parts += [
-            {"track": dict(icon(["100% - 40px", 8], [4, 0], "left_middle"), layer=7, bindings=[
-                coll("#form_button_texture", "#texture"), coll("#form_button_texture_file_system", "#texture_file_system"),
-                view(HAS_TEX)])},
-            {"num": dict(text_label(["100% - 8px", 10], [-4, 0], "right_middle", "right", [B_WIDE], shown(), scale=0.85), layer=7)}
-        ]
-    t["npcs_aux_b"] = aux([{"box": {"type": "panel", "size": box, "anchor_from": "right_middle", "anchor_to": "right_middle",
-                                    "offset": [-18, 0], "controls": b_parts}}])
-    # c: small button at the right edge
-    t["npcs_aux_c"] = aux(small_slot("right_middle", [-4, 0]))
+    # a: small button at the start of the control column, or the left third
+    t["npcs_aux_a"] = aux([{"v_small": variant(A_SMALL, [control_col(list(small_slot(A_SMALL, "left_middle", [2, 0]).values())[0]["controls"])])},
+                           third_slot("left_middle")])
+    # b: the value box between a and c (a slider's track is its picture, the number on the right), or the middle third
+    box = {"box": {"type": "panel", "size": ["48%", 14], "anchor_from": "right_middle", "anchor_to": "right_middle",
+                   "offset": [-18, 0], "controls": [one_button("row", ("100%", "100%"))] + ([] if AUX_BARE else [
+        {"track": dict(icon(["58%", 8], [3, 0], "left_middle"), layer=7, bindings=[
+            coll("#form_button_texture", "#texture"), coll("#form_button_texture_file_system", "#texture_file_system"),
+            view(HAS_TEX)])},
+        {"num": dict(text_label(["40%", 10], [-3, 0], "right_middle", "right", [B_WIDE], shown(), scale=0.85), layer=7)}])}}
+    if NO_BOX:  # test build: the middle slot only has the third (choices / tiles), no value box
+        t["npcs_aux_b"] = aux([third_slot("center")])
+    else:
+        t["npcs_aux_b"] = aux([{"v_wide": variant(B_WIDE, [box])}, third_slot("center")])
+    # c: small button at the right edge, or the right third
+    t["npcs_aux_c"] = aux([small_slot(C_SMALL, "right_middle", [-4, 0]), third_slot("right_middle")])
     return t
 
 
@@ -688,7 +708,25 @@ def validate(d):
             for v in o:
                 n += count_buttons(v)
         return n
-    for name in ("npcs_aux_a", "npcs_aux_b", "npcs_aux_c", "npcs_tab", "npcs_head", "npcs_tool",
+    for name in ("npcs_aux_a", "npcs_aux_b", "npcs_aux_c"):
+        want = 1 if (NO_BOX and name == "npcs_aux_b") else 2
+        if name in d and count_buttons(d[name]) != want:
+            errors.append(f"{name} has {count_buttons(d[name])} buttons (must be {want}: one per look, shown by different tags)")
+        sizes = []
+        def find_sizes(o):
+            if isinstance(o, dict):
+                for k, v in o.items():
+                    if k == "size":
+                        sizes.extend(x for x in v if isinstance(x, str))
+                    find_sizes(v)
+            elif isinstance(o, list):
+                for v in o:
+                    find_sizes(v)
+        find_sizes(d.get(name, {}).get("controls", []))
+        bad = [x for x in sizes if " - " in x or " + " in x]
+        if bad:
+            errors.append(f"{name}: subtracted sizes inside the slot {bad[:3]} (the value box with these crashed the game)")
+    for name in ("npcs_tab", "npcs_head", "npcs_tool",
                  "npcs_hide_btn", "npcs_mini_handle"):
         if name in d and count_buttons(d[name]) != 1:
             errors.append(f"{name} has {count_buttons(d[name])} buttons (must be exactly 1 per form entry)")

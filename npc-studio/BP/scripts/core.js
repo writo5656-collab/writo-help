@@ -197,12 +197,14 @@ export const TAB_MARK = "§u§r";
 const PLAIN = "§o§r", HDR_OPEN = "§j§r§h§r", HDR_SHUT = "§j§r§i§r", TILE = "§e§r";
 const CHECK = "§w§r", FIELD = "§q§r§f§r", SLIDE = "§q§r§s§r", STEP = "§q§r§t§r";
 const A_SMALL = "§k§r", B_WIDE = "§y§r", C_SMALL = "§m§r";
+// §a§r in a, b and c: three equal buttons across the control column (choices like Line / Square /
+// Circle, slot tiles with an icon, X / Y / Z boxes)
+const THIRD = "§a§r";
 const RAIL_N = 24, BAR_N = 8, ROW_N = 48; // + button 38 = hide / show the panel; rows start at 39
 // Body tags (the body is a global binding, so the UI can read them anywhere):
 //   §g§r  thirds grid over the free space      §x§r  panel hidden (only the › handle, grid, hint)
 const GRID_TAG = "§g§r", MINI_TAG = "§x§r";
-// Slot tiles are off until the in-game crash is found (rows are used instead): RP layout flag NPCS_TILES
-const TILES = false;
+
 export const CHECKBOX = (on) => ICON(on ? "check_on" : "check_off");
 export const SWITCH = CHECKBOX;
 const TRACK = (frac) => `textures/ui/npcstudio/slider/s${String(clamp(Math.round(frac * 20), 0, 20)).padStart(2, "0")}`;
@@ -337,18 +339,31 @@ export function menu(title, body) {
       return api;
     },
     /** Up to 4 square tiles in one row: [{ icon, on, fn }] (inventory slots). */
-    tiles(items) {
-      if (!TILES) {
-        for (const it of items) api.btn(`${it.label ?? "Slot"}${it.on ? " §b(worn)" : ""}`, it.icon, it.fn);
-        return api;
-      }
-      const t = items.slice(0, 4).map((it) => ({ text: TILE + (it.on ? "§b" : "") + (it.label ?? "slot"), icon: it.icon, fn: it.fn }));
-      rows.push({ kind: "row", ...t[0], sec: section, a: t[1], b: t[2], c: t[3] });
+    /** Up to 3 equal buttons right of the caption: [{ text, icon, on, fn, stay }] (Java-style choice row). */
+    trio(label, items) {
+      const t = items.slice(0, 3).map((it) => {
+        const fn = it.stay ? keep(() => stay(it.fn)) : it.fn;
+        return { text: THIRD + (it.on ? "§b" : "") + (String(it.text ?? "").replace(/§./g, "") || " "), icon: it.icon, fn };
+      });
+      rows.push({ kind: "row", text: FIELD + (label || " "), fn: t[0]?.fn, sec: section, a: t[0], b: t[1], c: t[2] });
       return api;
     },
-    field(label, value, _icon, fn) {
+    /** Pick one of up to 3 options; the active one is cyan. pick(i) changes it, the panel redraws. */
+    choices(label, options, active, pick) {
+      return api.trio(label, options.map((o, i) => ({ text: o, on: i === active, fn: () => pick(i), stay: true })));
+    },
+    /** Item slots as tiles with their icon, 3 per row: [{ label, icon, on, fn }]. */
+    tiles(items, caption = "") {
+      for (let i = 0; i < items.length; i += 3) {
+        // icon-only tiles like Java (a name would sit on top of the icon)
+        api.trio(i === 0 ? caption : "", items.slice(i, i + 3).map((it) => ({ text: it.icon ? " " : it.label, icon: it.icon, on: it.on, fn: it.fn })));
+      }
+      return api;
+    },
+    field(label, value, _icon, fn, onClear) {
       const v = String(value).replace(/§./g, "") || "None";
-      rows.push({ kind: "row", text: FIELD + label, fn, sec: section, b: { text: B_WIDE + v, fn } });
+      const c = onClear ? { text: C_SMALL + " ", icon: ICON("delete"), fn: keep(() => stay(onClear)) } : undefined;
+      rows.push({ kind: "row", text: FIELD + label, fn, sec: section, b: { text: B_WIDE + v, fn }, c });
       return api;
     },
     toggle(text, on, fn) {

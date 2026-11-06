@@ -48,7 +48,7 @@ export function poseRows(m, player, npc) {
   const rot = getRot(npc, bone.key);
   const pos = getPos(npc, bone.key);
   m.cycle("Part", bone.label, (d) => (s.bone = wrap(s.bone + d, BONES.length)));
-  m.cycle("Step", step.name, (d) => (s.step = wrap(s.step + d, STEPS.length)));
+  m.choices("Step", STEPS.map((x) => x.name), s.step, (i) => (s.step = i));
   ["Tilt", "Turn", "Roll"].forEach((name, i) =>
     m.slider(name, Math.round(rot[i] * 10) / 10, { min: -180, max: 180, step: bone.key === "root" ? Math.max(1.5, step.rot) : step.rot, unit: "°" }, (v) => {
       if (!npc.isValid) return;
@@ -194,8 +194,7 @@ export function timeRows(m, player, self) {
   const frozen = rule("doDayLightCycle", true) === false;
   m.toggle("Freeze time", frozen, () => (cmd(player, `gamerule dodaylightcycle ${frozen ? "true" : "false"}`), system.runTimeout(self, 1)));
   const w = weatherPick.get(player.id) ?? 0;
-  m.cycle("Weather", WEATHER[w], (d) => {
-    const n = wrap(w + d, WEATHER.length);
+  m.choices("Weather", WEATHER, w, (n) => {
     weatherPick.set(player.id, n);
     cmd(player, `weather ${WEATHER[n].toLowerCase()} 999999`);
   });
