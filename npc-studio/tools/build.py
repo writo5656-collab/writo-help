@@ -94,10 +94,12 @@ def main():
                 for f in sorted(files):
                     full = os.path.join(dp, f)
                     z.write(full, os.path.relpath(full, BUILD))
+        # Only pack folders at the top: Minecraft tries to import every top-level item of an .mcaddon,
+        # so loose README/LICENSE files there showed "Not a valid zip archive" twice on import.
         for extra in ("LICENSE.md", "README.md"):
             p = os.path.join(ROOT, extra)
             if os.path.exists(p):
-                z.write(p, extra)
+                z.write(p, f"NPCStudio_BP/{extra}")
     print(f"wrote {out} ({os.path.getsize(out) // 1024} KB)")
 
 
