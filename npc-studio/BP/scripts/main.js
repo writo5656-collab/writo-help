@@ -10,7 +10,7 @@
  */
 import { ItemStack, EquipmentSlot, EntityComponentTypes, CommandPermissionLevel, CustomCommandStatus } from "@minecraft/server";
 import { world, system, safeOn, msg, sfx, actionbar, NPC_ID, CAMERA_ID, WAND_ID, CAMERA_TOOL_ID, MOB_TOOL_ID, HANDBOOK_ID, MONITOR_ID, STAMP_ID, ROTATOR_ID, TELEPORTER_ID, MOB_TAG, TOOL_IDS, isLocked } from "./core.js";
-import { peek } from "./studio.js";
+import { peek, setDepth, depthOn } from "./studio.js";
 import { stampCopy, stampPaste, rotateToMe, teleportLook } from "./props.js";
 import { openHandbook } from "./handbook.js";
 import { openMainMenu, openManageMenu, getLookedAtNPC, startLookLoop } from "./npc.js";
@@ -56,6 +56,7 @@ safeOn(() => system.beforeEvents.startup, (ev) => {
       console.warn(`[NPC Studio] couldn't register /${name}: ${e}`);
     }
   };
+  add("depth", "Depth map view on / off (near white, far black)", (p) => setDepth(p, !depthOn(p)));
   add("exitcam", "Leave NPC Studio camera view", (p) => {
     if (inCinema(p)) exitCinema(p);
     else {

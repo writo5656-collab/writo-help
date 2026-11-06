@@ -28,7 +28,8 @@ import {
 import { poseRows, resetPart, transformRows, trimPage, timeRows, fogRows, setPoseBone } from "./live.js";
 import {
   peek, photoMode, layerShot, placeBackdrop, removeBackdrop, getBackdrop, BACKDROP_COLORS, npcsHidden, setNpcsHidden,
-  camerasHidden, setCamerasHidden, nameTagsHidden, setNameTagsHidden, guidesOn, setGuides
+  camerasHidden, setCamerasHidden, nameTagsHidden, setNameTagsHidden, guidesOn, setGuides,
+  depthOn, setDepth, depthRange, setDepthRange, DEPTH_RANGES
 } from "./studio.js";
 import { openPropMenu, openParticleMenu, openCrowdMenu, openScenesMenu, openToolsMenu, openStudioRules } from "./props.js";
 
@@ -359,6 +360,10 @@ function layersTab(player, m, npc, self) {
   m.toggle("Outline", !areOutlinesHidden(), () => (setOutlinesHidden(!areOutlinesHidden()), self()));
   m.toggle("Name tags", !nameTagsHidden(player), () => (setNameTagsHidden(player, !nameTagsHidden(player)), self()));
   m.toggle("Grid", guidesOn(player), () => (setGuides(player, !guidesOn(player)), self()));
+  m.section("depth", "Depth map", ICON("fog"));
+  m.toggle("Depth map", depthOn(player), () => (setDepth(player, !depthOn(player)), self()));
+  const dr = DEPTH_RANGES.indexOf(depthRange(player));
+  m.cycle("Range", `${depthRange(player)} blocks`, (d) => setDepthRange(player, DEPTH_RANGES[Math.max(0, Math.min(DEPTH_RANGES.length - 1, dr + d))]));
   const bd = getBackdrop(player);
   const cur = bd ? bd.getProperty("npcstudio:color") : -1;
   m.section("bd", "Backdrop", ICON("backdrop"));

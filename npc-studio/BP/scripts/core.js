@@ -473,7 +473,7 @@ export function menu(title, body) {
       const bar = hooks.bar(player) ?? [];
       for (let i = 0; i < BAR_N; i++) add(bar[i] ? bar[i].label || " " : "", bar[i]?.icon, bar[i]?.fn);
       // 38 hide the panel (see the whole view), the › handle brings it back
-      add(" ", ICON("prev"), keep(() => showMini(player, again)));
+      add(" ", ICON("eye"), keep(() => showMini(player, again)));
       // 39+ rows, 4 buttons each (folded sections hide their rows)
       const visible = rows.filter((r) => r.kind === "hdr" || !r.sec || !isFolded(player, r.sec));
       const per = ROW_N - 2;

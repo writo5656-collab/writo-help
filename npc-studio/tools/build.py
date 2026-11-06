@@ -90,6 +90,17 @@ def main():
     rp = os.path.join(BUILD, "NPCStudio_RP")
     shutil.copytree(os.path.join(ROOT, "BP"), bp)
     shutil.copytree(os.path.join(ROOT, "RP"), rp)
+    # 3rd pack: Depth Map (tools/make_depth_pack.py); its version follows the main packs
+    dm = os.path.join(BUILD, "NPCStudio_DepthMap")
+    if os.path.isdir(os.path.join(ROOT, "DEPTH_RP")):
+        shutil.copytree(os.path.join(ROOT, "DEPTH_RP"), dm)
+        mf = os.path.join(dm, "manifest.json")
+        m = json.load(open(mf))
+        v = json.load(open(os.path.join(rp, "manifest.json")))["header"]["version"]
+        m["header"]["version"] = v
+        for mod in m["modules"]:
+            mod["version"] = v
+        json.dump(m, open(mf, "w"), indent=2)
     n = gen_loot(bp)
     print(f"generated {n} loot tables")
     if validate(BUILD):
@@ -98,7 +109,9 @@ def main():
     os.makedirs(DIST, exist_ok=True)
     out = os.path.abspath(os.path.join(DIST, "NPCStudio-V3.mcaddon"))  # public name; manifest keeps counting ({ver})
     with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED, compresslevel=9) as z:
-        for folder in (bp, rp):
+        for folder in (bp, rp, dm):
+            if not os.path.isdir(folder):
+                continue
             for dp, _, files in os.walk(folder):
                 for f in sorted(files):
                     full = os.path.join(dp, f)

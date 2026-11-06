@@ -442,10 +442,7 @@ def build():
         "bindings": [{"binding_name": BODY}, view(NOT_MINI)],
         "controls": [
             {"tabs@server_form.npcs_tabs": {}},
-            {"hide_slot": {"type": "stack_panel", "orientation": "horizontal", "size": [14, 14],
-                           "anchor_from": "top_right", "anchor_to": "top_right", "offset": [-20, 3],
-                           "collection_name": "form_buttons",
-                           "controls": [{"h@server_form.npcs_hide_btn": {"collection_index": MINI_BTN}}]}},
+
             {"close@common.button": dict(btn("close", size=(14, 14), mapping="button.menu_exit", collection=False),
                                          anchor_from="top_right", anchor_to="top_right", offset=[-3, 3])},
             {"rule": {"type": "image", "texture": "textures/ui/npcstudio/panel/rule", "size": ["100%", 1],
@@ -454,15 +451,16 @@ def build():
         ]
     }
     tabs = [{f"tab{i}@server_form.npcs_tab": {"collection_index": TAB0 + i}} for i in range(TABS)]
+    # hide-panel button: in the middle of the bottom bar (next to the X it got hit by mistake)
     d["npcs_hide_btn"] = {
-        "type": "panel", "size": [14, 14],
+        "type": "panel", "size": [BAR_H, BAR_H - 4],
         "bindings": [coll(BTN), view(shown())],
         "controls": [
-            {"button@common.button": dict(btn("small", size=(14, 14)), anchor_from="center", anchor_to="center")},
-            {"icon": icon([8, 8], [0, 0], "center")}
+            {"button@common.button": dict(btn("tool", size=(BAR_H - 4, BAR_H - 4)), anchor_from="center", anchor_to="center")},
+            {"icon": icon([10, 10], [0, 0], "center")}
         ]
     }
-    d["npcs_tabs"] = {"type": "stack_panel", "orientation": "horizontal", "size": ["100% - 40px", 18],
+    d["npcs_tabs"] = {"type": "stack_panel", "orientation": "horizontal", "size": ["100% - 22px", 18],
                       "offset": [3, 2], "anchor_from": "top_left", "anchor_to": "top_left",
                       "collection_name": "form_buttons", "controls": tabs}
     d["npcs_tab"] = {
@@ -539,7 +537,10 @@ def build():
             {"l": {"type": "stack_panel", "orientation": "horizontal", "size": ["100%c", BAR_H - 4], "offset": [4, 0],
                    "anchor_from": "left_middle", "anchor_to": "left_middle", "collection_name": "form_buttons", "controls": left}},
             {"r": {"type": "stack_panel", "orientation": "horizontal", "size": ["100%c", BAR_H - 4], "offset": [-4, 0],
-                   "anchor_from": "right_middle", "anchor_to": "right_middle", "collection_name": "form_buttons", "controls": right}}
+                   "anchor_from": "right_middle", "anchor_to": "right_middle", "collection_name": "form_buttons", "controls": right}},
+            {"mid": {"type": "stack_panel", "orientation": "horizontal", "size": [BAR_H, BAR_H - 4],
+                     "anchor_from": "center", "anchor_to": "center", "collection_name": "form_buttons",
+                     "controls": [{"h@server_form.npcs_hide_btn": {"collection_index": MINI_BTN}}]}}
         ]
     }
     d["npcs_tool"] = {

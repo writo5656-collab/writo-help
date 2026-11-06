@@ -1,5 +1,10 @@
 ## NPC Studio V3.2: editing inside the panel
 
+- Depth Map pack + Layers > Depth map (/npcstudio:depth): white world, near white, far black, black sky, for depth passes
+- Full-screen thirds grid with a switch (Layers > Grid)
+- Tap a slider's number for a real drag slider; - / + still work in the panel
+- Java-style choice buttons, inventory tiles and X / Y / Z boxes
+
 - Sliders live in the panel now: size, pose, Trim Studio, time, fog and camera lens no longer open a grey popup that hides your NPC
 - Java NPC Studio style rows: a label column, then a Choose button, a checkbox, a - / + slider with a value box, or < / > steppers
 - Pose tab: pick a body part and a step size, then Tilt, Turn, Roll and Move it while you watch

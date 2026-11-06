@@ -1,0 +1,29 @@
+{
+  "format_version": 2,
+  "header": {
+    "name": "NPC Studio V3 Depth Map [RP]",
+    "description": "Depth pass for NPC Studio: everything white, near = white, far = black. Turn on only while filming depth shots (Studio panel > Layers > Depth map).",
+    "uuid": "6b1f0d2e-3c84-4b8e-9a51-2f0c7d9e4a61",
+    "version": [
+      4,
+      15,
+      0
+    ],
+    "min_engine_version": [
+      1,
+      21,
+      0
+    ]
+  },
+  "modules": [
+    {
+      "type": "resources",
+      "uuid": "a3c95e70-1d2b-4f6a-8e3c-5b7d9f1a2c84",
+      "version": [
+        4,
+        15,
+        0
+      ]
+    }
+  ]
+}

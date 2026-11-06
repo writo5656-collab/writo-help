@@ -397,30 +397,6 @@
     "tabs@server_form.npcs_tabs": {}
    },
    {
-    "hide_slot": {
-     "type": "stack_panel",
-     "orientation": "horizontal",
-     "size": [
-      14,
-      14
-     ],
-     "anchor_from": "top_right",
-     "anchor_to": "top_right",
-     "offset": [
-      -20,
-      3
-     ],
-     "collection_name": "form_buttons",
-     "controls": [
-      {
-       "h@server_form.npcs_hide_btn": {
-        "collection_index": 38
-       }
-      }
-     ]
-    }
-   },
-   {
     "close@common.button": {
      "size": [
       14,
@@ -493,8 +469,8 @@
  "npcs_hide_btn": {
   "type": "panel",
   "size": [
-   14,
-   14
+   24,
+   20
   ],
   "bindings": [
    {
@@ -512,8 +488,8 @@
    {
     "button@common.button": {
      "size": [
-      14,
-      14
+      20,
+      20
      ],
      "$pressed_button_name": "button.form_button_click",
      "layer": 1,
@@ -521,7 +497,7 @@
       {
        "default": {
         "type": "image",
-        "texture": "textures/ui/npcstudio/panel/small",
+        "texture": "textures/ui/npcstudio/panel/tool",
         "size": [
          "100%",
          "100%"
@@ -531,7 +507,7 @@
       {
        "hover": {
         "type": "image",
-        "texture": "textures/ui/npcstudio/panel/small_hover",
+        "texture": "textures/ui/npcstudio/panel/tool_hover",
         "size": [
          "100%",
          "100%"
@@ -541,7 +517,7 @@
       {
        "pressed": {
         "type": "image",
-        "texture": "textures/ui/npcstudio/panel/small_pressed",
+        "texture": "textures/ui/npcstudio/panel/tool_pressed",
         "size": [
          "100%",
          "100%"
@@ -564,8 +540,8 @@
      "type": "image",
      "layer": 5,
      "size": [
-      8,
-      8
+      10,
+      10
      ],
      "offset": [
       0,
@@ -600,7 +576,7 @@
   "type": "stack_panel",
   "orientation": "horizontal",
   "size": [
-   "100% - 40px",
+   "100% - 22px",
    18
   ],
   "offset": [
@@ -3879,6 +3855,26 @@
       {
        "b7@server_form.npcs_tool": {
         "collection_index": 37
+       }
+      }
+     ]
+    }
+   },
+   {
+    "mid": {
+     "type": "stack_panel",
+     "orientation": "horizontal",
+     "size": [
+      24,
+      20
+     ],
+     "anchor_from": "center",
+     "anchor_to": "center",
+     "collection_name": "form_buttons",
+     "controls": [
+      {
+       "h@server_form.npcs_hide_btn": {
+        "collection_index": 38
        }
       }
      ]

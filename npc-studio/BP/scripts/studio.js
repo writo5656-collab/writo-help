@@ -411,3 +411,70 @@ system.runTimeout(() => {
     }
   }
 }, 35);
+
+// =====================================================================================
+// Depth Map mode (DMS stand-in): with the "NPC Studio Depth Map" resource pack on, everything is
+// white; this mode adds black distance fog (near = white, far = black), noon, clear weather, and
+// hides outlines, name tags and cameras. Off puts everything back. /npcstudio:depth toggles it.
+// =====================================================================================
+const depthState = new Map(); // player.id -> what to restore
+export const DEPTH_RANGES = [16, 24, 32, 48, 64, 96, 128];
+export function depthOn(player) {
+  return depthState.has(player.id);
+}
+export function depthRange(player) {
+  const r = Number(player.getDynamicProperty("npcstudio:depth_range") ?? 64);
+  return DEPTH_RANGES.includes(r) ? r : 64;
+}
+function depthFog(player, on) {
+  try {
+    player.runCommand("fog @s remove npcstudio_depthmap");
+    if (on) player.runCommand(`fog @s push npcstudio:fog_black_${depthRange(player)} npcstudio_depthmap`);
+  } catch {
+    /* ignore */
+  }
+}
+export function setDepthRange(player, r) {
+  player.setDynamicProperty("npcstudio:depth_range", r);
+  if (depthOn(player)) depthFog(player, true);
+}
+export function setDepth(player, on) {
+  if (on === depthOn(player)) return;
+  const dim = player.dimension;
+  const run = (c) => {
+    try {
+      dim.runCommand(c);
+    } catch {
+      /* ignore */
+    }
+  };
+  if (on) {
+    let time = 6000;
+    let cycle = true;
+    try {
+      time = world.getTimeOfDay();
+      cycle = world.gameRules.doDayLightCycle !== false;
+    } catch {
+      /* ignore */
+    }
+    depthState.set(player.id, { time, cycle, names: nameTagsHidden(player), cams: camerasHidden(player), outlines: areOutlinesHidden() });
+    run("gamerule dodaylightcycle false");
+    run("time set 6000");
+    run("weather clear 999999");
+    if (!nameTagsHidden(player)) setNameTagsHidden(player, true);
+    if (!camerasHidden(player)) setCamerasHidden(player, true);
+    setOutlinesHidden(true);
+    depthFog(player, true);
+    msg(player, "§bDepth map on. §7Turn on the NPC Studio Depth Map resource pack for the white look. /npcstudio:depth to leave.");
+  } else {
+    const s = depthState.get(player.id);
+    depthState.delete(player.id);
+    depthFog(player, false);
+    run(`time set ${s.time}`);
+    if (s.cycle) run("gamerule dodaylightcycle true");
+    if (!s.names) setNameTagsHidden(player, false);
+    if (!s.cams) setCamerasHidden(player, false);
+    setOutlinesHidden(s.outlines);
+    msg(player, "§7Depth map off.");
+  }
+}

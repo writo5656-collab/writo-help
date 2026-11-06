@@ -1,0 +1,16 @@
+{
+ "format_version": "1.26.0",
+ "minecraft:client_biome": {
+  "description": {
+   "identifier": "minecraft:sulfur_caves"
+  },
+  "components": {
+   "minecraft:water_appearance": {
+    "surface_color": "#FFFFFF"
+   },
+   "minecraft:fog_appearance": {
+    "fog_identifier": "minecraft:fog_sulfur_caves"
+   }
+  }
+ }
+}

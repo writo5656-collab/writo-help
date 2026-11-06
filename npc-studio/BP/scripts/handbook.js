@@ -29,6 +29,14 @@ export const CHAPTERS = [
         "§7The NPC changes right away and the panel stays on the left, so you see the result on the right. Tap a value box to type an exact number.",
         "§7Pose tab: pick the part, pick the step (Fine, Normal, Big), then Tilt, Turn, Roll and Move."
       ]),
+      P("fog", "Depth Map", [
+        "A depth pass like Java depth shaders: near = white, far = black, sky black.",
+        "",
+        "1. Turn on the §bNPC Studio Depth Map§f resource pack (above NPC Studio): every texture turns white.",
+        "2. Studio panel > Layers > §bDepth map§f (or /npcstudio:depth). Pick the Range.",
+        "3. Film or take the screenshot. Turn Depth map off and the pack off to go back.",
+        "§7Bedrock add-ons can't run real shaders, so this is built from white textures + black fog."
+      ]),
       P("trim", "Trim Studio (Fitting Room)", [
         "The camera moves close to the NPC. Change pattern, material, armor and glint and see each change on the NPC immediately.",
         "§7'Turn view' walks the camera around the NPC. Done or X puts your camera back."
