@@ -58,7 +58,7 @@ function peekText(cam, i) {
   const locked = isCamLocked(cam) ? "  §d[LOCKED]" : "";
   return (
     `§f${name}${locked}\n` +
-    `§7Tap: next camera  |  Double-tap sneak: back  |  Thirds grid: Camera tab\n` +
+    `§7Tap: next camera  |  Double-tap sneak: back  |  Grid: Layers tab\n` +
     `§8XYZ ${f(l.x)}, ${f(l.y)}, ${f(l.z)}  |  Yaw ${f(st.rotY)}  Pitch ${f(st.rotX)}  |  FOV ${Math.round(st.fov)}`
   );
 }

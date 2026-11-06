@@ -2,14 +2,65 @@
  "namespace": "server_form",
  "third_party_server_screen": {
   "$screen_animations": [
-   "@server_form.npcs_no_anim"
+   "@server_form.npcs_in_push",
+   "@server_form.npcs_in_pop",
+   "@server_form.npcs_out_push",
+   "@server_form.npcs_out_pop"
   ],
   "$background_animations": [
-   "@server_form.npcs_no_anim"
+   "@server_form.npcs_in_push",
+   "@server_form.npcs_in_pop",
+   "@server_form.npcs_out_push",
+   "@server_form.npcs_out_pop"
   ],
   "render_game_behind": true
  },
- "npcs_no_anim": {
+ "npcs_in_push": {
+  "anim_type": "offset",
+  "easing": "linear",
+  "duration": 0,
+  "from": [
+   0,
+   0
+  ],
+  "to": [
+   0,
+   0
+  ],
+  "play_event": "screen.entrance_push",
+  "end_event": "screen.entrance_end"
+ },
+ "npcs_in_pop": {
+  "anim_type": "offset",
+  "easing": "linear",
+  "duration": 0,
+  "from": [
+   0,
+   0
+  ],
+  "to": [
+   0,
+   0
+  ],
+  "play_event": "screen.entrance_pop",
+  "end_event": "screen.entrance_end"
+ },
+ "npcs_out_push": {
+  "anim_type": "offset",
+  "easing": "linear",
+  "duration": 0,
+  "from": [
+   0,
+   0
+  ],
+  "to": [
+   0,
+   0
+  ],
+  "play_event": "screen.exit_push",
+  "end_event": "screen.exit_end"
+ },
+ "npcs_out_pop": {
   "anim_type": "offset",
   "easing": "linear",
   "duration": 0,
@@ -119,22 +170,18 @@
   "texture": "textures/ui/npcstudio/panel/grid_thirds",
   "layer": 1,
   "size": [
-   "66% - 32px",
-   "100% - 24px"
+   "100%",
+   "100%"
   ],
-  "anchor_from": "top_right",
-  "anchor_to": "top_right",
-  "offset": [
-   -32,
-   0
-  ],
+  "anchor_from": "top_left",
+  "anchor_to": "top_left",
   "bindings": [
    {
     "binding_name": "#form_text"
    },
    {
     "binding_type": "view",
-    "source_property_name": "((not ((#form_text - '§g§r') = #form_text)) and ((#form_text - '§x§r') = #form_text))",
+    "source_property_name": "(not ((#form_text - '§g§r') = #form_text))",
     "target_property_name": "#visible"
    }
   ]
@@ -157,17 +204,6 @@
    }
   ],
   "controls": [
-   {
-    "grid": {
-     "type": "image",
-     "texture": "textures/ui/npcstudio/panel/grid_thirds",
-     "size": [
-      "100%",
-      "100%"
-     ],
-     "layer": 1
-    }
-   },
    {
     "handle_slot": {
      "type": "stack_panel",

@@ -4,6 +4,7 @@
  */
 import { world, system, InputPermissionCategory } from "@minecraft/server";
 import { ActionFormData, ModalFormData, MessageFormData } from "@minecraft/server-ui";
+import * as ui from "@minecraft/server-ui";
 
 export const NPC_ID = "npcstudio:npc";
 export const NPC_FAMILY = "npcstudio_npc";
@@ -156,7 +157,7 @@ export function npcLabel(npc) {
 function showWithRetry(form, player, tries = 0) {
   return form.show(player).then((res) => {
     if (res.canceled && res.cancelationReason === "UserBusy" && tries < 40) {
-      return new Promise((resolve) => system.runTimeout(resolve, 5)).then(() => showWithRetry(form, player, tries + 1));
+      return new Promise((resolve) => system.runTimeout(resolve, 2)).then(() => showWithRetry(form, player, tries + 1));
     }
     return res;
   });
@@ -200,6 +201,9 @@ const A_SMALL = "§k§r", B_WIDE = "§y§r", C_SMALL = "§m§r";
 // §a§r in a, b and c: three equal buttons across the control column (choices like Line / Square /
 // Circle, slot tiles with an icon, X / Y / Z boxes)
 const THIRD = "§a§r";
+// Values start with §f: text that starts with a digit after the tag ("100%", "1.0") showed nothing
+// in game (the UI formula seems to treat it as a number)
+const V = "§f";
 const RAIL_N = 24, BAR_N = 8, ROW_N = 48; // + button 38 = hide / show the panel; rows start at 39
 // Body tags (the body is a global binding, so the UI can read them anywhere):
 //   §g§r  thirds grid over the free space      §x§r  panel hidden (only the › handle, grid, hint)
@@ -283,6 +287,43 @@ export function fmtNum(v) {
  * Sliders and steppers redraw the same screen at once, so the NPC changes in the world while the
  * panel stays open on the left.
  */
+/**
+ * One live drag slider (DDUI CustomForm): set(value) runs while the player drags, done() when it closes.
+ * Returns false when this game version has no live forms (the caller types the number instead).
+ */
+const HAS_DRAG = typeof ui.CustomForm === "function" && typeof ui.ObservableNumber === "function";
+function dragSlider(player, label, value, min, max, step, unit, set, done, tries = 0) {
+  if (!HAS_DRAG || !player) return false;
+  try {
+    const form = new ui.CustomForm(player, `${label}${unit ? ` (${unit})` : ""}`);
+    const o = new ui.ObservableNumber(value, { clientWritable: true });
+    let last = value;
+    o.subscribe((v) => {
+      const n = clamp(Math.round(v / step) * step, min, max);
+      if (n === last) return;
+      last = n;
+      try {
+        set(n);
+      } catch (e) {
+        console.warn(`[NPC Studio] drag ${label}: ${e}`);
+      }
+    });
+    form.slider(label, o, min, max, { step });
+    form.closeButton();
+    form
+      .show()
+      .then((reason) => {
+        if (reason === "UserBusy" && tries < 40) return void system.runTimeout(() => dragSlider(player, label, last, min, max, step, unit, set, done, tries + 1), 2);
+        system.runTimeout(done, 2); // a new form can't open in the tick the old one closed
+      })
+      .catch(() => done());
+    return true;
+  } catch (e) {
+    console.warn(`[NPC Studio] drag slider unavailable: ${e}`);
+    return false;
+  }
+}
+
 /** The panel tucked away: only a › handle on the left, the thirds grid and a hint. */
 function showMini(player, reopen) {
   const form = new ActionFormData().title(EDITOR_TAG + "Studio").body(MINI_TAG + GRID_TAG + "Panel hidden");
@@ -343,7 +384,7 @@ export function menu(title, body) {
     trio(label, items) {
       const t = items.slice(0, 3).map((it) => {
         const fn = it.stay ? keep(() => stay(it.fn)) : it.fn;
-        return { text: THIRD + (it.on ? "§b" : "") + (String(it.text ?? "").replace(/§./g, "") || " "), icon: it.icon, fn };
+        return { text: THIRD + (it.on ? "§b" : V) + (String(it.text ?? "").replace(/§./g, "") || " "), icon: it.icon, fn };
       });
       rows.push({ kind: "row", text: FIELD + (label || " "), fn: t[0]?.fn, sec: section, a: t[0], b: t[1], c: t[2] });
       return api;
@@ -363,7 +404,7 @@ export function menu(title, body) {
     field(label, value, _icon, fn, onClear) {
       const v = String(value).replace(/§./g, "") || "None";
       const c = onClear ? { text: C_SMALL + " ", icon: ICON("delete"), fn: keep(() => stay(onClear)) } : undefined;
-      rows.push({ kind: "row", text: FIELD + label, fn, sec: section, b: { text: B_WIDE + v, fn }, c });
+      rows.push({ kind: "row", text: FIELD + label, fn, sec: section, b: { text: B_WIDE + V + v, fn }, c });
       return api;
     },
     toggle(text, on, fn) {
@@ -374,18 +415,21 @@ export function menu(title, body) {
       const { min, max, step, unit = "" } = opts;
       const v = clamp(value, min, max);
       const to = (n) => keep(() => stay(() => set(clamp(Math.round(n / step) * step, min, max))));
-      const exact = keep(() =>
+      // tap the number: a real drag slider (Mojang's live form, the NPC changes while you drag);
+      // typing the number is the fallback on game versions without it
+      const typed = () =>
         modal(label)
           .text("v", `${label} (${fmtNum(min)} to ${fmtNum(max)})`, fmtNum(v), fmtNum(v))
           .show(lastPlayer, ({ v: t }) => {
             const n = parseFloat(String(t ?? "").replace(",", "."));
             if (Number.isFinite(n)) set(clamp(n, min, max));
             again();
-          }, again));
+          }, again);
+      const exact = keep(() => (dragSlider(lastPlayer, label, v, min, max, step, unit, set, again) ? undefined : typed()));
       rows.push({
         kind: "row", text: SLIDE + label, fn: exact, sec: section,
         a: { text: A_SMALL + " ", icon: ICON("dec"), fn: to(v - step) },
-        b: { text: B_WIDE + fmtNum(v) + unit, icon: TRACK((v - min) / (max - min || 1)), fn: exact },
+        b: { text: B_WIDE + V + fmtNum(v) + unit, icon: TRACK((v - min) / (max - min || 1)), fn: exact },
         c: { text: C_SMALL + " ", icon: ICON("inc"), fn: to(v + step) }
       });
       return api;
@@ -395,7 +439,7 @@ export function menu(title, body) {
       rows.push({
         kind: "row", text: STEP + label, fn: go(1), sec: section,
         a: { text: A_SMALL + " ", icon: ICON("prev"), fn: go(-1) },
-        b: { text: B_WIDE + (String(value).replace(/§./g, "") || "None"), fn: go(1) },
+        b: { text: B_WIDE + V + (String(value).replace(/§./g, "") || "None"), fn: go(1) },
         c: { text: C_SMALL + " ", icon: ICON("next"), fn: go(1) }
       });
       return api;

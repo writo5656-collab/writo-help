@@ -346,13 +346,22 @@ def wrap_vanilla(name):
     return {"block@server_form.npcs_blocker": {"controls": [{name: {}}]}}
 
 
+ANIM_EVENTS = [("npcs_in_push", "screen.entrance_push", "screen.entrance_end"),
+               ("npcs_in_pop", "screen.entrance_pop", "screen.entrance_end"),
+               ("npcs_out_push", "screen.exit_push", "screen.exit_end"),
+               ("npcs_out_pop", "screen.exit_pop", "screen.exit_end")]
+NO_ANIMS = [f"@server_form.{n}" for n, _, _ in ANIM_EVENTS]
+
+
 def build():
     d = {"namespace": "server_form"}
 
     # instant menus: no slide/fade between screens, so folding a section or switching tabs is immediate
     d["third_party_server_screen"] = {
-        "$screen_animations": ["@server_form.npcs_no_anim"],
-        "$background_animations": ["@server_form.npcs_no_anim"],
+        # every screen event gets a 0-length animation WITH its end event: with only the exit one, the
+        # entrance never "ended" and the first tap on a freshly opened panel did nothing
+        "$screen_animations": NO_ANIMS,
+        "$background_animations": NO_ANIMS,
         "render_game_behind": True
     }
     if FREELOOK:
@@ -364,8 +373,9 @@ def build():
     # panel, like Mojang's own popups, so their buttons still work
     if FREELOOK:
         d["npcs_blocker"] = {"type": "input_panel", "size": ["100%", "100%"], "modal": True, "prevent_touch_input": True}
-    d["npcs_no_anim"] = {"anim_type": "offset", "easing": "linear", "duration": 0, "from": [0, 0], "to": [0, 0],
-                         "play_event": "screen.exit_pop", "end_event": "screen.exit_end"}
+    for name, play, end in ANIM_EVENTS:
+        d[name] = {"anim_type": "offset", "easing": "linear", "duration": 0, "from": [0, 0], "to": [0, 0],
+                   "play_event": play, "end_event": end}
     d["main_screen_content"] = {
         "type": "panel", "size": ["100%", "100%"],
         "controls": [{"server_form_factory": {"type": "factory", "control_ids": {
@@ -395,18 +405,16 @@ def build():
         ]
     }
     # thirds grid over the free space right of the panel (Camera tab: Thirds guide)
-    d["npcs_grid_free"] = {
+    d["npcs_grid_free"] = {  # the whole screen, under the panel (Layers / Camera tab: Grid)
         "type": "image", "texture": "textures/ui/npcstudio/panel/grid_thirds", "layer": 1,
-        "size": [f"{100 - int(PANEL_W[:-1])}% - {RAIL_W}px", f"100% - {BAR_H}px"],
-        "anchor_from": "top_right", "anchor_to": "top_right", "offset": [-RAIL_W, 0],
-        "bindings": [{"binding_name": BODY}, view(f"({HAS_GRID} and {NOT_MINI})")]
+        "size": ["100%", "100%"], "anchor_from": "top_left", "anchor_to": "top_left",
+        "bindings": [{"binding_name": BODY}, view(HAS_GRID)]
     }
     # panel hidden: the whole view with the grid, a › handle on the left and a hint at the bottom
     d["npcs_mini"] = {
         "type": "panel", "size": ["100%", "100%"], "layer": 2,
         "bindings": [{"binding_name": BODY}, view(IS_MINI)],
         "controls": [
-            {"grid": {"type": "image", "texture": "textures/ui/npcstudio/panel/grid_thirds", "size": ["100%", "100%"], "layer": 1}},
             {"handle_slot": {"type": "stack_panel", "orientation": "vertical", "size": [16, 40],
                              "anchor_from": "left_middle", "anchor_to": "left_middle", "collection_name": "form_buttons",
                              "controls": [{"h@server_form.npcs_mini_handle": {"collection_index": MINI_BTN}}]}},

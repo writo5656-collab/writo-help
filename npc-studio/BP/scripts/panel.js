@@ -335,7 +335,7 @@ function cameraTab(player, m, npc, self) {
   m.btn("Fly Cam Path", ICON("waypoint"), () => flyCam(player, "path"));
   m.btn("Place Camera At My View", ICON("plus"), () => placeCameraAtView(player));
   m.btn("Preview Cameras", ICON("monitor"), () => peek(player));
-  m.toggle("Thirds guide", guidesOn(player), () => (setGuides(player, !guidesOn(player)), self()));
+  m.toggle("Grid", guidesOn(player), () => (setGuides(player, !guidesOn(player)), self()));
   if (sel) m.field("Lens", `${sel.nameTag || "Camera"}`, ICON("fov"), () => openLiveCamera(player, sel, self));
   m.btn("Cinematic Shots", ICON("film"), () => openShotsMenu(player, self));
   const cams = allCameras(player).slice(0, 30);
@@ -358,6 +358,7 @@ function layersTab(player, m, npc, self) {
   m.toggle("Cameras", !camerasHidden(player), () => (setCamerasHidden(player, !camerasHidden(player)), self()));
   m.toggle("Outline", !areOutlinesHidden(), () => (setOutlinesHidden(!areOutlinesHidden()), self()));
   m.toggle("Name tags", !nameTagsHidden(player), () => (setNameTagsHidden(player, !nameTagsHidden(player)), self()));
+  m.toggle("Grid", guidesOn(player), () => (setGuides(player, !guidesOn(player)), self()));
   const bd = getBackdrop(player);
   const cur = bd ? bd.getProperty("npcstudio:color") : -1;
   m.section("bd", "Backdrop", ICON("backdrop"));
