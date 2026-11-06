@@ -109,7 +109,7 @@ IS_MINI = f"(not (({BODY} - '{MINI_TAG}') = {BODY}))"
 NOT_MINI = f"(({BODY} - '{MINI_TAG}') = {BODY})"
 PLAIN, HDR, HDR_OPEN, HDR_SHUT, TILE = "§o§r", "§j§r", "§h§r", "§i§r", "§e§r"
 CAP, CHECK, FIELD, SLIDE, STEP = "§q§r", "§w§r", "§f§r", "§s§r", "§t§r"
-A_SMALL, B_SMALL, B_WIDE, C_VALUE, C_SMALL, C_CHOOSE = "§k§r", "§p§r", "§y§r", "§v§r", "§m§r", "§z§r"
+A_SMALL, B_WIDE, C_SMALL = "§k§r", "§y§r", "§m§r"
 PANEL_W = "34%"
 BAR_H = 24
 RAIL_W = 32
@@ -141,6 +141,7 @@ def strip(marks):
 
 
 HAS_TEX = "(not ((#texture = '') or (#texture = 'loading')))"
+NO_TEX = "((#texture = '') or (#texture = 'loading'))"
 
 
 def tex_bindings(cond):
@@ -155,34 +156,24 @@ def text_label(size, offset, anchor, align, marks, cond, color=TXT, scale=1.0, l
             "bindings": [coll(BTN), view(strip(marks), "#text"), view(cond)]}
 
 
-def plain_button(name, texture, size, cond, anchor="center", offset=(0, 0)):
-    """common.button + collection binding, shown when cond is true (the details binding must stay)."""
-    return {f"{name}@common.button": dict(btn(texture, size=size), anchor_from=anchor, anchor_to=anchor, offset=list(offset),
-                                          bindings=[details(), coll(BTN), view(cond)])}
+def image(name, texture, size, cond, anchor="center", offset=(0, 0), layer=1):
+    """A plain picture shown when cond is true (backgrounds: no button, so no input)."""
+    return {name: {"type": "image", "texture": f"textures/ui/npcstudio/panel/{texture}", "size": list(size), "layer": layer,
+                   "anchor_from": anchor, "anchor_to": anchor, "offset": list(offset),
+                   "bindings": [coll(BTN), view(cond)]}}
 
 
-ALL_MARKS = [PLAIN, HDR_OPEN, HDR_SHUT, HDR, CAP, CHECK, FIELD, SLIDE, STEP, TILE,
-             A_SMALL, B_SMALL, B_WIDE, C_VALUE, C_SMALL, C_CHOOSE, "§b"]
-
-
-def tile(offset_x):
-    """Square slot tile (inventory). Same look in all four slots, only the x position differs."""
-    if not TILES:
-        return []
-    return [
-        plain_button("tile", "tile", (18, 18), has(TILE), anchor="left_middle", offset=(offset_x, 0)),
-        {"tile_icon": dict(icon([14, 14], [offset_x + 2, 0], "left_middle"), bindings=tex_bindings(has(TILE)))},
-        {"tile_on": {"type": "image", "texture": "textures/ui/npcstudio/panel/sel_ring", "size": [18, 18], "layer": 7,
-                     "offset": [offset_x, 0], "anchor_from": "left_middle", "anchor_to": "left_middle",
-                     "bindings": [coll(BTN), view(has(f"{TILE}§b"))]}}
-    ]
+def one_button(texture, size, anchor="center", offset=(0, 0)):
+    """THE button of a form entry. Exactly one per entry: three stacked buttons on one entry crashed the
+    game. No visibility of its own: the entry's panel hides it when the entry is empty."""
+    return {"button@common.button": dict(btn(texture, size=size), anchor_from=anchor, anchor_to=anchor, offset=list(offset))}
 
 
 def row_control(i):
-    """One row = 4 collection slots, all direct children of the rows stack (Bedrock only reads
-    collection_index there). The main slot is 20 tall; a, b and c are 0 tall and draw on top of it."""
+    """One row = 4 form entries, all direct children of the rows stack (Bedrock only reads
+    collection_index there). The main entry is 20 tall; a, b and c are 0 tall and draw on top of it."""
     k = ROW0 + 4 * i
-    if os.environ.get("NPCS_NO_AUX"):  # crash test build: rows without the -, +, value boxes
+    if os.environ.get("NPCS_NO_AUX"):  # test build: rows without the -, value box, +
         return [{f"r{i}@server_form.npcs_main": {"collection_index": k}}]
     return [
         {f"r{i}@server_form.npcs_main": {"collection_index": k}},
@@ -198,34 +189,24 @@ def aux(controls):
                   "layer": 8, "controls": controls}}]}
 
 
-def small_btn(name, mark, anchor, offset):
+def small_slot(anchor, offset):
+    """- / + / < / > : one small button with its icon."""
     dx = -2 if anchor.startswith("right") else 2
-    return [plain_button(name, "small", (12, 14), has(mark), anchor=anchor, offset=offset),
-            {f"{name}_icon": dict(icon([8, 8], [offset[0] + dx, 0], anchor), layer=7, bindings=tex_bindings(has(mark)))}]
-
-
-def control_column(controls):
-    """A panel covering the control column (right of the captions); children anchor to its left edge."""
-    return [{"col": {"type": "panel", "size": [f"{CTRL_COL} - 2px", "100%"], "anchor_from": "right_middle",
-                     "anchor_to": "right_middle", "controls": controls}}]
-
-
-def value_btn(name, mark, size, offset, scale):
-    return [plain_button(name, "value" if mark != C_CHOOSE else "choose", size, has(mark), anchor="right_middle", offset=offset),
-            {f"{name}_text": dict(text_label([size[0], 10], offset, "right_middle", "center", [mark], has(mark), scale=scale), layer=7)}]
+    return [one_button("small", (12, 14), anchor=anchor, offset=offset),
+            {"icon": dict(icon([8, 8], [offset[0] + dx, 0], anchor), layer=7)}]
 
 
 def row_templates():
     t = {}
+    hdr_marks = [HDR, HDR_OPEN, HDR_SHUT]
     t["npcs_main"] = {"type": "panel", "size": ["100%", 20], "bindings": [coll(BTN), view(shown())], "controls": [
-        # button row: raised; section header: flat with a hairline; caption rows: flat, the control does the work
-        plain_button("btn_row", "row", ("100% - 6px", 18), has(PLAIN)),
-        plain_button("btn_hdr", "hdr", ("100% - 6px", 18), has(HDR)),
-        plain_button("btn_cap", "cap", ("100% - 6px", 18), has(CAP)),
+        # looks: plain pictures; the one button on top is see-through and only lights up on hover / press
+        image("bg_row", "row", ("100% - 6px", 18), has(PLAIN)),
+        image("bg_hdr", "hdr", ("100% - 6px", 18), has(HDR)),
+        one_button("hit", ("100% - 6px", 18)),
         {"icon_row": dict(icon([14, 14], [8, 0], "left_middle"), bindings=tex_bindings(has(PLAIN)))},
         {"icon_hdr": dict(icon([12, 12], [8, 0], "left_middle"), bindings=tex_bindings(has(HDR)))},
         {"check": dict(icon([12, 12], [-5, 0], "right_middle"), bindings=tex_bindings(has(CHECK)))},
-        {"track": dict(icon([f"{CTRL_COL} - 66px", 8], [-50, 0], "right_middle"), bindings=tex_bindings(has(SLIDE)))},
         {"chev_open": {"type": "image", "texture": "textures/ui/npcstudio/panel/chev_open", "size": [8, 8], "layer": 6,
                        "offset": [-8, 0], "anchor_from": "right_middle", "anchor_to": "right_middle",
                        "bindings": [coll(BTN), view(has(HDR_OPEN))]}},
@@ -233,18 +214,31 @@ def row_templates():
                        "offset": [-8, 0], "anchor_from": "right_middle", "anchor_to": "right_middle",
                        "bindings": [coll(BTN), view(has(HDR_SHUT))]}},
         {"label_row": text_label(["100% - 56px", 10], [28, 0], "left_middle", "left", [PLAIN], has(PLAIN))},
-        {"label_hdr": text_label(["100% - 56px", 10], [26, 0], "left_middle", "left", [HDR, HDR_OPEN, HDR_SHUT], has(HDR), color=CYAN)},
-        {"label_field": text_label([f"{LABEL_COL} - 10px", 10], [10, 0], "left_middle", "left", [CAP, FIELD], has(FIELD), color=CAP_COLOR)},
-        {"label_slide": text_label([f"{LABEL_COL} - 10px", 10], [10, 0], "left_middle", "left", [CAP, SLIDE], has(SLIDE), color=CAP_COLOR)},
-        {"label_step": text_label([f"{LABEL_COL} - 10px", 10], [10, 0], "left_middle", "left", [CAP, STEP], has(STEP), color=CAP_COLOR)},
+        {"label_hdr": text_label(["100% - 56px", 10], [26, 0], "left_middle", "left", hdr_marks, has(HDR), color=CYAN)},
+        {"label_cap": text_label([f"{LABEL_COL} - 10px", 10], [10, 0], "left_middle", "left", [CAP, FIELD, SLIDE, STEP],
+                                 f"({has(CAP)} and {lacks(CHECK)})", color=CAP_COLOR)},
         {"label_chk": text_label(["100% - 36px", 10], [10, 0], "left_middle", "left", [CAP, CHECK], has(CHECK), color=CAP_COLOR)}
-    ] + tile(4)}
-    t["npcs_aux_a"] = aux(control_column(small_btn("small", A_SMALL, "left_middle", [0, 0])) + tile(26))
-    t["npcs_aux_b"] = aux(small_btn("small", B_SMALL, "right_middle", [-36, 0])
-                          + value_btn("wide", B_WIDE, [f"{CTRL_COL} - 34px", 14], [-18, 0], 0.85) + tile(48))
-    t["npcs_aux_c"] = aux(small_btn("small", C_SMALL, "right_middle", [-4, 0])
-                          + value_btn("value", C_VALUE, [30, 14], [-4, 0], 0.75)
-                          + value_btn("choose", C_CHOOSE, [f"{CTRL_COL} - 10px", 14], [-4, 0], 0.85) + tile(70))
+    ]}
+    # a: small button at the start of the control column
+    t["npcs_aux_a"] = aux([{"col": {"type": "panel", "size": [f"{CTRL_COL} - 2px", "100%"], "anchor_from": "right_middle",
+                                    "anchor_to": "right_middle", "controls": small_slot("left_middle", [0, 0])}}])
+    # b: the value box between a and c; a slider's track is its picture, the number sits on the right
+    box = [f"{CTRL_COL} - 34px", 14]
+    t["npcs_aux_b"] = aux([{"box": {"type": "panel", "size": box, "anchor_from": "right_middle", "anchor_to": "right_middle",
+                                    "offset": [-18, 0], "controls": [
+        one_button("value", ("100%", "100%")),
+        {"track": dict(icon(["100% - 40px", 8], [4, 0], "left_middle"), layer=7, bindings=[
+            coll("#form_button_texture", "#texture"), coll("#form_button_texture_file_system", "#texture_file_system"),
+            view(HAS_TEX)])},
+        {"num": dict(text_label([34, 10], [-2, 0], "right_middle", "right", [B_WIDE], "(1 = 1)", scale=0.8), layer=7,
+                     bindings=[coll("#form_button_texture", "#texture"), coll(BTN), view(strip([B_WIDE]), "#text"),
+                               view(f"(not {NO_TEX})")])},
+        {"text": dict(text_label(["100% - 4px", 10], [0, 0], "center", "center", [B_WIDE], "(1 = 1)", scale=0.85), layer=7,
+                      bindings=[coll("#form_button_texture", "#texture"), coll(BTN), view(strip([B_WIDE]), "#text"),
+                                view(NO_TEX)])}
+    ]}}])
+    # c: small button at the right edge
+    t["npcs_aux_c"] = aux(small_slot("right_middle", [-4, 0]))
     return t
 
 
@@ -533,6 +527,10 @@ def textures():
     nine("tool_hover", (44, 44, 47, 255), (80, 80, 86, 255))
     nine("tool_pressed", (30, 70, 82, 255), (39, 211, 245, 255))
     nine("bar_bg", (15, 15, 16, 245), None)
+    # the one see-through button of each row: lights up a little on hover, cyan on press
+    nine("hit", (0, 0, 0, 0), None)
+    nine("hit_hover", (255, 255, 255, 14), None)
+    nine("hit_pressed", (39, 211, 245, 48), None)
     # Java-style controls: flat caption rows, small square buttons, inset value boxes, "Choose" buttons
     nine("cap", (0, 0, 0, 0), None)
     nine("cap_hover", (255, 255, 255, 10), None)
@@ -652,6 +650,21 @@ def validate(d):
             for i, v in enumerate(o):
                 walk(v, f"{path}[{i}]")
     walk(d, "")
+    # exactly ONE button per form entry (three stacked buttons on one entry crashed the game)
+    def count_buttons(o):
+        n = 0
+        if isinstance(o, dict):
+            for k, v in o.items():
+                n += k.endswith("@common.button")
+                n += count_buttons(v)
+        elif isinstance(o, list):
+            for v in o:
+                n += count_buttons(v)
+        return n
+    for name in ("npcs_main", "npcs_aux_a", "npcs_aux_b", "npcs_aux_c", "npcs_tab", "npcs_head", "npcs_tool",
+                 "npcs_hide_btn", "npcs_mini_handle"):
+        if name in d and count_buttons(d[name]) != 1:
+            errors.append(f"{name} has {count_buttons(d[name])} buttons (must be exactly 1 per form entry)")
     # expressions: the layout that works in game nests at most 6 brackets; 17 crashed the game
     import re as _re
     def exprs(o):

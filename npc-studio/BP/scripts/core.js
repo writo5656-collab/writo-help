@@ -185,14 +185,16 @@ export function cleanLabel(text) {
 // Every look has ONE tag of its own, because Bedrock's UI gets long and/or conditions wrong:
 //   main: §o§r button row · §j§r§h§r open section · §j§r§i§r folded section · §e§r slot tile
 //         §q§r + §w§r checkbox · §f§r field · §s§r slider (icon = track picture) · §t§r stepper
-//   a:    §k§r small button left of the control column (minus / previous) · §e§r tile
-//   b:    §p§r small button (plus) · §y§r wide value box (stepper) · §e§r tile
-//   c:    §v§r value box · §m§r small button (next) · §z§r "Choose" button (field) · §e§r tile
+//   a:    §k§r small button (minus / previous)
+//   b:    §y§r value box between a and c (slider: its picture is the track; field: the "Choose" box)
+//   c:    §m§r small button (plus / next)
+// Every form entry gets exactly ONE button in the UI: rows with 3 stacked buttons on one entry
+// crashed the game (4.3-4.10).
 const EDITOR_TAG = "§n§p§s§r";
 export const TAB_MARK = "§u§r";
 const PLAIN = "§o§r", HDR_OPEN = "§j§r§h§r", HDR_SHUT = "§j§r§i§r", TILE = "§e§r";
 const CHECK = "§q§r§w§r", FIELD = "§q§r§f§r", SLIDE = "§q§r§s§r", STEP = "§q§r§t§r";
-const A_SMALL = "§k§r", B_SMALL = "§p§r", B_WIDE = "§y§r", C_VALUE = "§v§r", C_SMALL = "§m§r", C_CHOOSE = "§z§r";
+const A_SMALL = "§k§r", B_WIDE = "§y§r", C_SMALL = "§m§r";
 const RAIL_N = 24, BAR_N = 8, ROW_N = 48; // + button 38 = hide / show the panel; rows start at 39
 // Body tags (the body is a global binding, so the UI can read them anywhere):
 //   §g§r  thirds grid over the free space      §x§r  panel hidden (only the › handle, grid, hint)
@@ -344,7 +346,7 @@ export function menu(title, body) {
     },
     field(label, value, _icon, fn) {
       const v = String(value).replace(/§./g, "") || "None";
-      rows.push({ kind: "row", text: FIELD + label, fn, sec: section, c: { text: C_CHOOSE + v, fn } });
+      rows.push({ kind: "row", text: FIELD + label, fn, sec: section, b: { text: B_WIDE + v, fn } });
       return api;
     },
     toggle(text, on, fn) {
@@ -364,10 +366,10 @@ export function menu(title, body) {
             again();
           }, again));
       rows.push({
-        kind: "row", text: SLIDE + label, icon: TRACK((v - min) / (max - min || 1)), fn: exact, sec: section,
+        kind: "row", text: SLIDE + label, fn: exact, sec: section,
         a: { text: A_SMALL + " ", icon: ICON("dec"), fn: to(v - step) },
-        b: { text: B_SMALL + " ", icon: ICON("inc"), fn: to(v + step) },
-        c: { text: C_VALUE + fmtNum(v) + unit, fn: exact }
+        b: { text: B_WIDE + fmtNum(v) + unit, icon: TRACK((v - min) / (max - min || 1)), fn: exact },
+        c: { text: C_SMALL + " ", icon: ICON("inc"), fn: to(v + step) }
       });
       return api;
     },

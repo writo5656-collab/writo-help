@@ -1801,51 +1801,14 @@
   ],
   "controls": [
    {
-    "btn_row@common.button": {
+    "bg_row": {
+     "type": "image",
+     "texture": "textures/ui/npcstudio/panel/row",
      "size": [
       "100% - 6px",
       18
      ],
-     "$pressed_button_name": "button.form_button_click",
      "layer": 1,
-     "controls": [
-      {
-       "default": {
-        "type": "image",
-        "texture": "textures/ui/npcstudio/panel/row",
-        "size": [
-         "100%",
-         "100%"
-        ]
-       }
-      },
-      {
-       "hover": {
-        "type": "image",
-        "texture": "textures/ui/npcstudio/panel/row_hover",
-        "size": [
-         "100%",
-         "100%"
-        ]
-       }
-      },
-      {
-       "pressed": {
-        "type": "image",
-        "texture": "textures/ui/npcstudio/panel/row_pressed",
-        "size": [
-         "100%",
-         "100%"
-        ]
-       }
-      }
-     ],
-     "$button_bindings": [
-      {
-       "binding_type": "collection_details",
-       "binding_collection_name": "form_buttons"
-      }
-     ],
      "anchor_from": "center",
      "anchor_to": "center",
      "offset": [
@@ -1853,10 +1816,6 @@
       0
      ],
      "bindings": [
-      {
-       "binding_type": "collection_details",
-       "binding_collection_name": "form_buttons"
-      },
       {
        "binding_name": "#form_button_text",
        "binding_type": "collection",
@@ -1871,51 +1830,14 @@
     }
    },
    {
-    "btn_hdr@common.button": {
+    "bg_hdr": {
+     "type": "image",
+     "texture": "textures/ui/npcstudio/panel/hdr",
      "size": [
       "100% - 6px",
       18
      ],
-     "$pressed_button_name": "button.form_button_click",
      "layer": 1,
-     "controls": [
-      {
-       "default": {
-        "type": "image",
-        "texture": "textures/ui/npcstudio/panel/hdr",
-        "size": [
-         "100%",
-         "100%"
-        ]
-       }
-      },
-      {
-       "hover": {
-        "type": "image",
-        "texture": "textures/ui/npcstudio/panel/hdr_hover",
-        "size": [
-         "100%",
-         "100%"
-        ]
-       }
-      },
-      {
-       "pressed": {
-        "type": "image",
-        "texture": "textures/ui/npcstudio/panel/hdr_pressed",
-        "size": [
-         "100%",
-         "100%"
-        ]
-       }
-      }
-     ],
-     "$button_bindings": [
-      {
-       "binding_type": "collection_details",
-       "binding_collection_name": "form_buttons"
-      }
-     ],
      "anchor_from": "center",
      "anchor_to": "center",
      "offset": [
@@ -1923,10 +1845,6 @@
       0
      ],
      "bindings": [
-      {
-       "binding_type": "collection_details",
-       "binding_collection_name": "form_buttons"
-      },
       {
        "binding_name": "#form_button_text",
        "binding_type": "collection",
@@ -1941,7 +1859,7 @@
     }
    },
    {
-    "btn_cap@common.button": {
+    "button@common.button": {
      "size": [
       "100% - 6px",
       18
@@ -1952,7 +1870,7 @@
       {
        "default": {
         "type": "image",
-        "texture": "textures/ui/npcstudio/panel/cap",
+        "texture": "textures/ui/npcstudio/panel/hit",
         "size": [
          "100%",
          "100%"
@@ -1962,7 +1880,7 @@
       {
        "hover": {
         "type": "image",
-        "texture": "textures/ui/npcstudio/panel/cap_hover",
+        "texture": "textures/ui/npcstudio/panel/hit_hover",
         "size": [
          "100%",
          "100%"
@@ -1972,7 +1890,7 @@
       {
        "pressed": {
         "type": "image",
-        "texture": "textures/ui/npcstudio/panel/cap_pressed",
+        "texture": "textures/ui/npcstudio/panel/hit_pressed",
         "size": [
          "100%",
          "100%"
@@ -1991,22 +1909,6 @@
      "offset": [
       0,
       0
-     ],
-     "bindings": [
-      {
-       "binding_type": "collection_details",
-       "binding_collection_name": "form_buttons"
-      },
-      {
-       "binding_name": "#form_button_text",
-       "binding_type": "collection",
-       "binding_collection_name": "form_buttons"
-      },
-      {
-       "binding_type": "view",
-       "source_property_name": "(not ((#form_button_text - '§q§r') = #form_button_text))",
-       "target_property_name": "#visible"
-      }
      ]
     }
    },
@@ -2125,46 +2027,6 @@
       {
        "binding_type": "view",
        "source_property_name": "((not ((#texture = '') or (#texture = 'loading'))) and (not ((#form_button_text - '§w§r') = #form_button_text)))",
-       "target_property_name": "#visible"
-      }
-     ]
-    }
-   },
-   {
-    "track": {
-     "type": "image",
-     "layer": 5,
-     "size": [
-      "62% - 66px",
-      8
-     ],
-     "offset": [
-      -50,
-      0
-     ],
-     "anchor_from": "right_middle",
-     "anchor_to": "right_middle",
-     "bindings": [
-      {
-       "binding_name": "#form_button_texture",
-       "binding_type": "collection",
-       "binding_collection_name": "form_buttons",
-       "binding_name_override": "#texture"
-      },
-      {
-       "binding_name": "#form_button_texture_file_system",
-       "binding_type": "collection",
-       "binding_collection_name": "form_buttons",
-       "binding_name_override": "#texture_file_system"
-      },
-      {
-       "binding_name": "#form_button_text",
-       "binding_type": "collection",
-       "binding_collection_name": "form_buttons"
-      },
-      {
-       "binding_type": "view",
-       "source_property_name": "((not ((#texture = '') or (#texture = 'loading'))) and (not ((#form_button_text - '§s§r') = #form_button_text)))",
        "target_property_name": "#visible"
       }
      ]
@@ -2313,7 +2175,7 @@
     }
    },
    {
-    "label_field": {
+    "label_cap": {
      "type": "label",
      "layer": 6,
      "size": [
@@ -2343,96 +2205,12 @@
       },
       {
        "binding_type": "view",
-       "source_property_name": "((#form_button_text - '§q§r') - '§f§r')",
+       "source_property_name": "((((#form_button_text - '§q§r') - '§f§r') - '§s§r') - '§t§r')",
        "target_property_name": "#text"
       },
       {
        "binding_type": "view",
-       "source_property_name": "(not ((#form_button_text - '§f§r') = #form_button_text))",
-       "target_property_name": "#visible"
-      }
-     ]
-    }
-   },
-   {
-    "label_slide": {
-     "type": "label",
-     "layer": 6,
-     "size": [
-      "38% - 10px",
-      10
-     ],
-     "offset": [
-      10,
-      0
-     ],
-     "anchor_from": "left_middle",
-     "anchor_to": "left_middle",
-     "text": "#text",
-     "text_alignment": "left",
-     "color": [
-      0.8,
-      0.8,
-      0.82
-     ],
-     "shadow": false,
-     "font_scale_factor": 1.0,
-     "bindings": [
-      {
-       "binding_name": "#form_button_text",
-       "binding_type": "collection",
-       "binding_collection_name": "form_buttons"
-      },
-      {
-       "binding_type": "view",
-       "source_property_name": "((#form_button_text - '§q§r') - '§s§r')",
-       "target_property_name": "#text"
-      },
-      {
-       "binding_type": "view",
-       "source_property_name": "(not ((#form_button_text - '§s§r') = #form_button_text))",
-       "target_property_name": "#visible"
-      }
-     ]
-    }
-   },
-   {
-    "label_step": {
-     "type": "label",
-     "layer": 6,
-     "size": [
-      "38% - 10px",
-      10
-     ],
-     "offset": [
-      10,
-      0
-     ],
-     "anchor_from": "left_middle",
-     "anchor_to": "left_middle",
-     "text": "#text",
-     "text_alignment": "left",
-     "color": [
-      0.8,
-      0.8,
-      0.82
-     ],
-     "shadow": false,
-     "font_scale_factor": 1.0,
-     "bindings": [
-      {
-       "binding_name": "#form_button_text",
-       "binding_type": "collection",
-       "binding_collection_name": "form_buttons"
-      },
-      {
-       "binding_type": "view",
-       "source_property_name": "((#form_button_text - '§q§r') - '§t§r')",
-       "target_property_name": "#text"
-      },
-      {
-       "binding_type": "view",
-       "source_property_name": "(not ((#form_button_text - '§t§r') = #form_button_text))",
+       "source_property_name": "((not ((#form_button_text - '§q§r') = #form_button_text)) and ((#form_button_text - '§w§r') = #form_button_text))",
        "target_property_name": "#visible"
       }
      ]
@@ -2527,7 +2305,7 @@
         "anchor_to": "right_middle",
         "controls": [
          {
-          "small@common.button": {
+          "button@common.button": {
            "size": [
             12,
             14
@@ -2577,27 +2355,11 @@
            "offset": [
             0,
             0
-           ],
-           "bindings": [
-            {
-             "binding_type": "collection_details",
-             "binding_collection_name": "form_buttons"
-            },
-            {
-             "binding_name": "#form_button_text",
-             "binding_type": "collection",
-             "binding_collection_name": "form_buttons"
-            },
-            {
-             "binding_type": "view",
-             "source_property_name": "(not ((#form_button_text - '§k§r') = #form_button_text))",
-             "target_property_name": "#visible"
-            }
            ]
           }
          },
          {
-          "small_icon": {
+          "icon": {
            "type": "image",
            "layer": 7,
            "size": [
@@ -2624,13 +2386,8 @@
              "binding_name_override": "#texture_file_system"
             },
             {
-             "binding_name": "#form_button_text",
-             "binding_type": "collection",
-             "binding_collection_name": "form_buttons"
-            },
-            {
              "binding_type": "view",
-             "source_property_name": "((not ((#texture = '') or (#texture = 'loading'))) and (not ((#form_button_text - '§k§r') = #form_button_text)))",
+             "source_property_name": "(not ((#texture = '') or (#texture = 'loading')))",
              "target_property_name": "#visible"
             }
            ]
@@ -2679,160 +2436,11 @@
      "layer": 8,
      "controls": [
       {
-       "small@common.button": {
-        "size": [
-         12,
-         14
-        ],
-        "$pressed_button_name": "button.form_button_click",
-        "layer": 1,
-        "controls": [
-         {
-          "default": {
-           "type": "image",
-           "texture": "textures/ui/npcstudio/panel/small",
-           "size": [
-            "100%",
-            "100%"
-           ]
-          }
-         },
-         {
-          "hover": {
-           "type": "image",
-           "texture": "textures/ui/npcstudio/panel/small_hover",
-           "size": [
-            "100%",
-            "100%"
-           ]
-          }
-         },
-         {
-          "pressed": {
-           "type": "image",
-           "texture": "textures/ui/npcstudio/panel/small_pressed",
-           "size": [
-            "100%",
-            "100%"
-           ]
-          }
-         }
-        ],
-        "$button_bindings": [
-         {
-          "binding_type": "collection_details",
-          "binding_collection_name": "form_buttons"
-         }
-        ],
-        "anchor_from": "right_middle",
-        "anchor_to": "right_middle",
-        "offset": [
-         -36,
-         0
-        ],
-        "bindings": [
-         {
-          "binding_type": "collection_details",
-          "binding_collection_name": "form_buttons"
-         },
-         {
-          "binding_name": "#form_button_text",
-          "binding_type": "collection",
-          "binding_collection_name": "form_buttons"
-         },
-         {
-          "binding_type": "view",
-          "source_property_name": "(not ((#form_button_text - '§p§r') = #form_button_text))",
-          "target_property_name": "#visible"
-         }
-        ]
-       }
-      },
-      {
-       "small_icon": {
-        "type": "image",
-        "layer": 7,
-        "size": [
-         8,
-         8
-        ],
-        "offset": [
-         -38,
-         0
-        ],
-        "anchor_from": "right_middle",
-        "anchor_to": "right_middle",
-        "bindings": [
-         {
-          "binding_name": "#form_button_texture",
-          "binding_type": "collection",
-          "binding_collection_name": "form_buttons",
-          "binding_name_override": "#texture"
-         },
-         {
-          "binding_name": "#form_button_texture_file_system",
-          "binding_type": "collection",
-          "binding_collection_name": "form_buttons",
-          "binding_name_override": "#texture_file_system"
-         },
-         {
-          "binding_name": "#form_button_text",
-          "binding_type": "collection",
-          "binding_collection_name": "form_buttons"
-         },
-         {
-          "binding_type": "view",
-          "source_property_name": "((not ((#texture = '') or (#texture = 'loading'))) and (not ((#form_button_text - '§p§r') = #form_button_text)))",
-          "target_property_name": "#visible"
-         }
-        ]
-       }
-      },
-      {
-       "wide@common.button": {
+       "box": {
+        "type": "panel",
         "size": [
          "62% - 34px",
          14
-        ],
-        "$pressed_button_name": "button.form_button_click",
-        "layer": 1,
-        "controls": [
-         {
-          "default": {
-           "type": "image",
-           "texture": "textures/ui/npcstudio/panel/value",
-           "size": [
-            "100%",
-            "100%"
-           ]
-          }
-         },
-         {
-          "hover": {
-           "type": "image",
-           "texture": "textures/ui/npcstudio/panel/value_hover",
-           "size": [
-            "100%",
-            "100%"
-           ]
-          }
-         },
-         {
-          "pressed": {
-           "type": "image",
-           "texture": "textures/ui/npcstudio/panel/value_pressed",
-           "size": [
-            "100%",
-            "100%"
-           ]
-          }
-         }
-        ],
-        "$button_bindings": [
-         {
-          "binding_type": "collection_details",
-          "binding_collection_name": "form_buttons"
-         }
         ],
         "anchor_from": "right_middle",
         "anchor_to": "right_middle",
@@ -2840,62 +2448,191 @@
          -18,
          0
         ],
-        "bindings": [
+        "controls": [
          {
-          "binding_type": "collection_details",
-          "binding_collection_name": "form_buttons"
+          "button@common.button": {
+           "size": [
+            "100%",
+            "100%"
+           ],
+           "$pressed_button_name": "button.form_button_click",
+           "layer": 1,
+           "controls": [
+            {
+             "default": {
+              "type": "image",
+              "texture": "textures/ui/npcstudio/panel/value",
+              "size": [
+               "100%",
+               "100%"
+              ]
+             }
+            },
+            {
+             "hover": {
+              "type": "image",
+              "texture": "textures/ui/npcstudio/panel/value_hover",
+              "size": [
+               "100%",
+               "100%"
+              ]
+             }
+            },
+            {
+             "pressed": {
+              "type": "image",
+              "texture": "textures/ui/npcstudio/panel/value_pressed",
+              "size": [
+               "100%",
+               "100%"
+              ]
+             }
+            }
+           ],
+           "$button_bindings": [
+            {
+             "binding_type": "collection_details",
+             "binding_collection_name": "form_buttons"
+            }
+           ],
+           "anchor_from": "center",
+           "anchor_to": "center",
+           "offset": [
+            0,
+            0
+           ]
+          }
          },
          {
-          "binding_name": "#form_button_text",
-          "binding_type": "collection",
-          "binding_collection_name": "form_buttons"
+          "track": {
+           "type": "image",
+           "layer": 7,
+           "size": [
+            "100% - 40px",
+            8
+           ],
+           "offset": [
+            4,
+            0
+           ],
+           "anchor_from": "left_middle",
+           "anchor_to": "left_middle",
+           "bindings": [
+            {
+             "binding_name": "#form_button_texture",
+             "binding_type": "collection",
+             "binding_collection_name": "form_buttons",
+             "binding_name_override": "#texture"
+            },
+            {
+             "binding_name": "#form_button_texture_file_system",
+             "binding_type": "collection",
+             "binding_collection_name": "form_buttons",
+             "binding_name_override": "#texture_file_system"
+            },
+            {
+             "binding_type": "view",
+             "source_property_name": "(not ((#texture = '') or (#texture = 'loading')))",
+             "target_property_name": "#visible"
+            }
+           ]
+          }
          },
          {
-          "binding_type": "view",
-          "source_property_name": "(not ((#form_button_text - '§y§r') = #form_button_text))",
-          "target_property_name": "#visible"
-         }
-        ]
-       }
-      },
-      {
-       "wide_text": {
-        "type": "label",
-        "layer": 7,
-        "size": [
-         "62% - 34px",
-         10
-        ],
-        "offset": [
-         -18,
-         0
-        ],
-        "anchor_from": "right_middle",
-        "anchor_to": "right_middle",
-        "text": "#text",
-        "text_alignment": "center",
-        "color": [
-         0.93,
-         0.93,
-         0.93
-        ],
-        "shadow": false,
-        "font_scale_factor": 0.85,
-        "bindings": [
-         {
-          "binding_name": "#form_button_text",
-          "binding_type": "collection",
-          "binding_collection_name": "form_buttons"
+          "num": {
+           "type": "label",
+           "layer": 7,
+           "size": [
+            34,
+            10
+           ],
+           "offset": [
+            -2,
+            0
+           ],
+           "anchor_from": "right_middle",
+           "anchor_to": "right_middle",
+           "text": "#text",
+           "text_alignment": "right",
+           "color": [
+            0.93,
+            0.93,
+            0.93
+           ],
+           "shadow": false,
+           "font_scale_factor": 0.8,
+           "bindings": [
+            {
+             "binding_name": "#form_button_texture",
+             "binding_type": "collection",
+             "binding_collection_name": "form_buttons",
+             "binding_name_override": "#texture"
+            },
+            {
+             "binding_name": "#form_button_text",
+             "binding_type": "collection",
+             "binding_collection_name": "form_buttons"
+            },
+            {
+             "binding_type": "view",
+             "source_property_name": "(#form_button_text - '§y§r')",
+             "target_property_name": "#text"
+            },
+            {
+             "binding_type": "view",
+             "source_property_name": "(not ((#texture = '') or (#texture = 'loading')))",
+             "target_property_name": "#visible"
+            }
+           ]
+          }
          },
          {
-          "binding_type": "view",
-          "source_property_name": "(#form_button_text - '§y§r')",
-          "target_property_name": "#text"
-         },
-         {
-          "binding_type": "view",
-          "source_property_name": "(not ((#form_button_text - '§y§r') = #form_button_text))",
-          "target_property_name": "#visible"
+          "text": {
+           "type": "label",
+           "layer": 7,
+           "size": [
+            "100% - 4px",
+            10
+           ],
+           "offset": [
+            0,
+            0
+           ],
+           "anchor_from": "center",
+           "anchor_to": "center",
+           "text": "#text",
+           "text_alignment": "center",
+           "color": [
+            0.93,
+            0.93,
+            0.93
+           ],
+           "shadow": false,
+           "font_scale_factor": 0.85,
+           "bindings": [
+            {
+             "binding_name": "#form_button_texture",
+             "binding_type": "collection",
+             "binding_collection_name": "form_buttons",
+             "binding_name_override": "#texture"
+            },
+            {
+             "binding_name": "#form_button_text",
+             "binding_type": "collection",
+             "binding_collection_name": "form_buttons"
+            },
+            {
+             "binding_type": "view",
+             "source_property_name": "(#form_button_text - '§y§r')",
+             "target_property_name": "#text"
+            },
+            {
+             "binding_type": "view",
+             "source_property_name": "((#texture = '') or (#texture = 'loading'))",
+             "target_property_name": "#visible"
+            }
+           ]
+          }
          }
         ]
        }
@@ -2940,7 +2677,7 @@
      "layer": 8,
      "controls": [
       {
-       "small@common.button": {
+       "button@common.button": {
         "size": [
          12,
          14
@@ -2990,27 +2727,11 @@
         "offset": [
          -4,
          0
-        ],
-        "bindings": [
-         {
-          "binding_type": "collection_details",
-          "binding_collection_name": "form_buttons"
-         },
-         {
-          "binding_name": "#form_button_text",
-          "binding_type": "collection",
-          "binding_collection_name": "form_buttons"
-         },
-         {
-          "binding_type": "view",
-          "source_property_name": "(not ((#form_button_text - '§m§r') = #form_button_text))",
-          "target_property_name": "#visible"
-         }
         ]
        }
       },
       {
-       "small_icon": {
+       "icon": {
         "type": "image",
         "layer": 7,
         "size": [
@@ -3037,237 +2758,8 @@
           "binding_name_override": "#texture_file_system"
          },
          {
-          "binding_name": "#form_button_text",
-          "binding_type": "collection",
-          "binding_collection_name": "form_buttons"
-         },
-         {
           "binding_type": "view",
-          "source_property_name": "((not ((#texture = '') or (#texture = 'loading'))) and (not ((#form_button_text - '§m§r') = #form_button_text)))",
-          "target_property_name": "#visible"
-         }
-        ]
-       }
-      },
-      {
-       "value@common.button": {
-        "size": [
-         30,
-         14
-        ],
-        "$pressed_button_name": "button.form_button_click",
-        "layer": 1,
-        "controls": [
-         {
-          "default": {
-           "type": "image",
-           "texture": "textures/ui/npcstudio/panel/value",
-           "size": [
-            "100%",
-            "100%"
-           ]
-          }
-         },
-         {
-          "hover": {
-           "type": "image",
-           "texture": "textures/ui/npcstudio/panel/value_hover",
-           "size": [
-            "100%",
-            "100%"
-           ]
-          }
-         },
-         {
-          "pressed": {
-           "type": "image",
-           "texture": "textures/ui/npcstudio/panel/value_pressed",
-           "size": [
-            "100%",
-            "100%"
-           ]
-          }
-         }
-        ],
-        "$button_bindings": [
-         {
-          "binding_type": "collection_details",
-          "binding_collection_name": "form_buttons"
-         }
-        ],
-        "anchor_from": "right_middle",
-        "anchor_to": "right_middle",
-        "offset": [
-         -4,
-         0
-        ],
-        "bindings": [
-         {
-          "binding_type": "collection_details",
-          "binding_collection_name": "form_buttons"
-         },
-         {
-          "binding_name": "#form_button_text",
-          "binding_type": "collection",
-          "binding_collection_name": "form_buttons"
-         },
-         {
-          "binding_type": "view",
-          "source_property_name": "(not ((#form_button_text - '§v§r') = #form_button_text))",
-          "target_property_name": "#visible"
-         }
-        ]
-       }
-      },
-      {
-       "value_text": {
-        "type": "label",
-        "layer": 7,
-        "size": [
-         30,
-         10
-        ],
-        "offset": [
-         -4,
-         0
-        ],
-        "anchor_from": "right_middle",
-        "anchor_to": "right_middle",
-        "text": "#text",
-        "text_alignment": "center",
-        "color": [
-         0.93,
-         0.93,
-         0.93
-        ],
-        "shadow": false,
-        "font_scale_factor": 0.75,
-        "bindings": [
-         {
-          "binding_name": "#form_button_text",
-          "binding_type": "collection",
-          "binding_collection_name": "form_buttons"
-         },
-         {
-          "binding_type": "view",
-          "source_property_name": "(#form_button_text - '§v§r')",
-          "target_property_name": "#text"
-         },
-         {
-          "binding_type": "view",
-          "source_property_name": "(not ((#form_button_text - '§v§r') = #form_button_text))",
-          "target_property_name": "#visible"
-         }
-        ]
-       }
-      },
-      {
-       "choose@common.button": {
-        "size": [
-         "62% - 10px",
-         14
-        ],
-        "$pressed_button_name": "button.form_button_click",
-        "layer": 1,
-        "controls": [
-         {
-          "default": {
-           "type": "image",
-           "texture": "textures/ui/npcstudio/panel/choose",
-           "size": [
-            "100%",
-            "100%"
-           ]
-          }
-         },
-         {
-          "hover": {
-           "type": "image",
-           "texture": "textures/ui/npcstudio/panel/choose_hover",
-           "size": [
-            "100%",
-            "100%"
-           ]
-          }
-         },
-         {
-          "pressed": {
-           "type": "image",
-           "texture": "textures/ui/npcstudio/panel/choose_pressed",
-           "size": [
-            "100%",
-            "100%"
-           ]
-          }
-         }
-        ],
-        "$button_bindings": [
-         {
-          "binding_type": "collection_details",
-          "binding_collection_name": "form_buttons"
-         }
-        ],
-        "anchor_from": "right_middle",
-        "anchor_to": "right_middle",
-        "offset": [
-         -4,
-         0
-        ],
-        "bindings": [
-         {
-          "binding_type": "collection_details",
-          "binding_collection_name": "form_buttons"
-         },
-         {
-          "binding_name": "#form_button_text",
-          "binding_type": "collection",
-          "binding_collection_name": "form_buttons"
-         },
-         {
-          "binding_type": "view",
-          "source_property_name": "(not ((#form_button_text - '§z§r') = #form_button_text))",
-          "target_property_name": "#visible"
-         }
-        ]
-       }
-      },
-      {
-       "choose_text": {
-        "type": "label",
-        "layer": 7,
-        "size": [
-         "62% - 10px",
-         10
-        ],
-        "offset": [
-         -4,
-         0
-        ],
-        "anchor_from": "right_middle",
-        "anchor_to": "right_middle",
-        "text": "#text",
-        "text_alignment": "center",
-        "color": [
-         0.93,
-         0.93,
-         0.93
-        ],
-        "shadow": false,
-        "font_scale_factor": 0.85,
-        "bindings": [
-         {
-          "binding_name": "#form_button_text",
-          "binding_type": "collection",
-          "binding_collection_name": "form_buttons"
-         },
-         {
-          "binding_type": "view",
-          "source_property_name": "(#form_button_text - '§z§r')",
-          "target_property_name": "#text"
-         },
-         {
-          "binding_type": "view",
-          "source_property_name": "(not ((#form_button_text - '§z§r') = #form_button_text))",
+          "source_property_name": "(not ((#texture = '') or (#texture = 'loading')))",
           "target_property_name": "#visible"
          }
         ]
