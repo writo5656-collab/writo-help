@@ -21,7 +21,7 @@ export const CHAPTERS = [
         "§bCamera§f — Fly Cam, cameras, Peek, shots",
         "§bLayers§f — green screen, hide/show, Photo Mode",
         "",
-        "§7Checkboxes flip with one tap. Drag in the free space on the right to look around (you can't walk or hit while the panel is open); tap an NPC there to select it. The X closes the panel so you can move."
+        "§7Checkboxes flip with one tap. The X closes the panel so you can move."
       ]),
       P("scale", "Sliders In The Panel", [
         "Size, pose, Trim Studio, time, fog and the camera lens are rows in the panel: §b-§f and §b+§f change the value, §b<§f and §b>§f step through choices.",

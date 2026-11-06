@@ -241,15 +241,9 @@ def build():
     d["third_party_server_screen"] = {
         "$screen_animations": ["@server_form.npcs_no_anim"],
         "$background_animations": ["@server_form.npcs_no_anim"],
-        "render_game_behind": True,
-        # free look: touches on the empty part of the screen reach the game (like the HUD), so you can
-        # turn your view on the right while the Studio panel is open. Walking, breaking, placing and
-        # hitting are switched off by the scripts while the panel is open (core.js editorLock, viewport.js).
-        "absorbs_input": False
+        "render_game_behind": True
+        # V3.2: "absorbs_input": false (free look) is the suspect for a game crash when the panel opened; removed
     }
-    # other add-ons' forms and Mojang's dialogs keep blocking the world: a full-screen input catcher
-    # (the form sits INSIDE the modal input panel, like Mojang's own popups, so its buttons still work)
-    d["npcs_blocker"] = {"type": "input_panel", "size": ["100%", "100%"], "modal": True, "prevent_touch_input": True}
     d["npcs_no_anim"] = {"anim_type": "offset", "easing": "linear", "duration": 0, "from": [0, 0], "to": [0, 0],
                          "play_event": "screen.exit_pop", "end_event": "screen.exit_end"}
     d["main_screen_content"] = {
@@ -263,12 +257,12 @@ def build():
     ]}
     d["npcs_vanilla_wrap"] = {"type": "panel", "size": ["100%", "100%"],
                               "bindings": [global_title(), view(NO_PANEL)],
-                              "controls": [{"block@server_form.npcs_blocker": {"controls": [{"long_form@server_form.long_form": {}}]}}]}
+                              "controls": [{"long_form@server_form.long_form": {}}]}
 
     # ---------- NPC Studio input forms (text boxes, sliders, toggles): same dark left panel, no grey box ----------
     d["npcs_custom_router"] = {"type": "panel", "size": ["100%", "100%"], "controls": [
         {"vanilla": {"type": "panel", "size": ["100%", "100%"], "bindings": [global_title(), view(NO_PANEL)],
-                     "controls": [{"block@server_form.npcs_blocker": {"controls": [{"custom_form@server_form.custom_form": {}}]}}]}},
+                     "controls": [{"custom_form@server_form.custom_form": {}}]}},
         {"studio@server_form.npcs_custom": {"bindings": [global_title(), view(HAS_PANEL)]}}
     ]}
     d["npcs_custom"] = {
