@@ -468,6 +468,52 @@ function removeSkies(dim) {
     /* ignore */
   }
 }
+// ---------- ground haze: soft white fog lying on the ground (the milky look of DMS's floor) ----------
+// Flat particle layers on the ground around your view; the black depth fog darkens them with distance
+// like everything else. Off / Light / Medium / Strong.
+export const HAZE_LEVELS = ["Off", "Light", "Medium", "Strong"];
+export function hazeLevel(player) {
+  const v = Number(player.getDynamicProperty("npcstudio:depth_haze") ?? 2);
+  return v >= 0 && v < HAZE_LEVELS.length ? v : 2;
+}
+export function setHazeLevel(player, v) {
+  player.setDynamicProperty("npcstudio:depth_haze", v);
+}
+const HAZE_RADIUS = 24;
+const HAZE_STEP = 4;
+function groundY(dim, x, z, fallback) {
+  try {
+    const b = dim.getTopmostBlock?.({ x, z });
+    if (b) return b.y + 1;
+  } catch {
+    /* unloaded */
+  }
+  return fallback;
+}
+function spawnHaze(player) {
+  const level = hazeLevel(player);
+  if (!level) return;
+  const dim = player.dimension;
+  const c = viewPoint(player);
+  const cx = Math.round(c.x / HAZE_STEP) * HAZE_STEP;
+  const cz = Math.round(c.z / HAZE_STEP) * HAZE_STEP;
+  for (let dx = -HAZE_RADIUS; dx <= HAZE_RADIUS; dx += HAZE_STEP) {
+    for (let dz = -HAZE_RADIUS; dz <= HAZE_RADIUS; dz += HAZE_STEP) {
+      if (dx * dx + dz * dz > HAZE_RADIUS * HAZE_RADIUS) continue;
+      const x = cx + dx;
+      const z = cz + dz;
+      const y = groundY(dim, x, z, c.y - 1.6);
+      for (const h of [0.15, 0.9]) {
+        try {
+          dim.spawnParticle(`npcstudio:haze_${level}`, { x: x + 0.5, y: y + h, z: z + 0.5 });
+        } catch {
+          /* unloaded */
+        }
+      }
+    }
+  }
+}
+
 export function setDepth(player, on) {
   if (on === depthOn(player)) return;
   const dim = player.dimension;
@@ -504,8 +550,10 @@ export function setDepth(player, on) {
     } catch (e) {
       console.warn(`[NPC Studio] depth sky: ${e}`);
     }
+    let tick = 0;
     st.loop = system.runInterval(() => {
       if (!player.isValid) return;
+      if (tick++ % 3 === 0) spawnHaze(player); // every 1.5 s (particles live 2.4 s)
       if (st.sky?.isValid) {
         try {
           st.sky.teleport(viewPoint(player));

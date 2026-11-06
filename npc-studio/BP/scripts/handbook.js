@@ -35,6 +35,7 @@ export const CHAPTERS = [
         "1. Turn on the §bNPC Studio Depth Map§f resource pack (above NPC Studio): every texture turns white.",
         "2. Studio panel > Layers > §bDepth map§f (or /npcstudio:depth).",
         "   §bStart§f: white until this distance. §bMax dist.§f: how long the fade to black is (like DMS, in chunks).",
+        "   §bGround fog§f: soft white fog lying on the ground (Off, Light, Medium, Strong).",
         "3. Film or take the screenshot. Turn Depth map off and the pack off to go back.",
         "§7The sky turns black (a big black box follows your view). Bedrock add-ons can't run real shaders, so this is built from white textures + black fog."
       ]),
