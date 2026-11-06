@@ -253,6 +253,24 @@ FOG_PRESETS = {
 FOG_DISTANCES = [6, 10, 16, 24, 32, 48, 64, 96, 128]
 
 
+# Depth Map fogs (like DMS): white until Gradient Start, then a straight fade to black over Max Distance.
+# Blocks (1 chunk = 16 blocks).
+DEPTH_STARTS = [0, 8, 16, 32, 48, 64, 96, 128]
+DEPTH_LENGTHS = [16, 32, 48, 64, 96, 128, 192, 256]
+
+
+def make_depth_fogs():
+    d = os.path.join(RP, "fogs")
+    for st in DEPTH_STARTS:
+        for ln in DEPTH_LENGTHS:
+            layer = {"fog_start": float(st), "fog_end": float(st + ln), "fog_color": "#000000", "render_distance_type": "fixed"}
+            data = {"format_version": "1.16.100", "minecraft:fog_settings": {
+                "description": {"identifier": f"npcstudio:depth_{st}_{ln}"},
+                "distance": {"air": layer, "weather": dict(layer), "water": dict(layer)}}}
+            with open(os.path.join(d, f"npcstudio_depth_{st}_{ln}.json"), "w") as f:
+                json.dump(data, f, indent=1)
+
+
 def make_fogs():
     d = os.path.join(RP, "fogs")
     os.makedirs(d, exist_ok=True)
@@ -332,6 +350,7 @@ if __name__ == "__main__":
     make_silhouette()
     make_prop()
     make_fogs()
+    make_depth_fogs()
     make_camera()
     make_outline()
     make_capes()

@@ -1,0 +1,47 @@
+{
+ "format_version": "1.12.0",
+ "minecraft:geometry": [
+  {
+   "description": {
+    "identifier": "geometry.npcstudio.depth_sky",
+    "texture_width": 4,
+    "texture_height": 4,
+    "visible_bounds_width": 600,
+    "visible_bounds_height": 600,
+    "visible_bounds_offset": [
+     0,
+     0,
+     0
+    ]
+   },
+   "bones": [
+    {
+     "name": "sky",
+     "pivot": [
+      0,
+      0,
+      0
+     ],
+     "cubes": [
+      {
+       "origin": [
+        -4096,
+        -4096,
+        -4096
+       ],
+       "size": [
+        8192,
+        8192,
+        8192
+       ],
+       "uv": [
+        0,
+        0
+       ]
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

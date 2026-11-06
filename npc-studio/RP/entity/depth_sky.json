@@ -1,0 +1,21 @@
+{
+  "format_version": "1.10.0",
+  "minecraft:client_entity": {
+    "description": {
+      "identifier": "npcstudio:depth_sky",
+      "materials": {
+        "default": "entity_alphatest"
+      },
+      "textures": {
+        "default": "textures/entity/npcstudio/backdrop_black"
+      },
+      "geometry": {
+        "default": "geometry.npcstudio.depth_sky"
+      },
+      "render_controllers": [
+        "controller.render.npcstudio.depth_sky"
+      ],
+      "enable_attachables": false
+    }
+  }
+}

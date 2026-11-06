@@ -33,9 +33,10 @@ export const CHAPTERS = [
         "A depth pass like Java depth shaders: near = white, far = black, sky black.",
         "",
         "1. Turn on the §bNPC Studio Depth Map§f resource pack (above NPC Studio): every texture turns white.",
-        "2. Studio panel > Layers > §bDepth map§f (or /npcstudio:depth). Pick the Range.",
+        "2. Studio panel > Layers > §bDepth map§f (or /npcstudio:depth).",
+        "   §bStart§f: white until this distance. §bMax dist.§f: how long the fade to black is (like DMS, in chunks).",
         "3. Film or take the screenshot. Turn Depth map off and the pack off to go back.",
-        "§7Bedrock add-ons can't run real shaders, so this is built from white textures + black fog."
+        "§7The sky turns black (a big black box follows your view). Bedrock add-ons can't run real shaders, so this is built from white textures + black fog."
       ]),
       P("trim", "Trim Studio (Fitting Room)", [
         "The camera moves close to the NPC. Change pattern, material, armor and glint and see each change on the NPC immediately.",

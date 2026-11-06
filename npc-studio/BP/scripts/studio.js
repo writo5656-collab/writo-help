@@ -413,30 +413,49 @@ system.runTimeout(() => {
 }, 35);
 
 // =====================================================================================
-// Depth Map mode (DMS stand-in): with the "NPC Studio Depth Map" resource pack on, everything is
-// white; this mode adds black distance fog (near = white, far = black), noon, clear weather, and
-// hides outlines, name tags and cameras. Off puts everything back. /npcstudio:depth toggles it.
+// Depth Map mode (a stand-in for Java's DMS shader): with the "NPC Studio Depth Map" resource pack on,
+// every texture is white. This mode adds what DMS does with depth:
+//   white until Gradient Start, then a straight fade to black over Max Distance (black fog), and a
+//   black sky / background (a 512-block black box around your view). Noon + clear weather keep the
+//   white even, outlines / name tags / cameras are hidden. Off puts everything back.
+// /npcstudio:depth toggles it.
 // =====================================================================================
-const depthState = new Map(); // player.id -> what to restore
-export const DEPTH_RANGES = [16, 24, 32, 48, 64, 96, 128];
+const DEPTH_SKY_ID = "npcstudio:depth_sky";
+const depthState = new Map(); // player.id -> { restore, sky, loop }
+export const DEPTH_STARTS = [0, 8, 16, 32, 48, 64, 96, 128]; // blocks (DMS "Gradient Start")
+export const DEPTH_LENGTHS = [16, 32, 48, 64, 96, 128, 192, 256]; // blocks (DMS "Max. Distance")
+export const chunks = (blocks) => `${blocks / 16} ch (${blocks} blocks)`;
 export function depthOn(player) {
   return depthState.has(player.id);
 }
-export function depthRange(player) {
-  const r = Number(player.getDynamicProperty("npcstudio:depth_range") ?? 64);
-  return DEPTH_RANGES.includes(r) ? r : 64;
+function depthSetting(player, key, list, def) {
+  const v = Number(player.getDynamicProperty(`npcstudio:depth_${key}`) ?? def);
+  return list.includes(v) ? v : def;
+}
+export const depthStart = (player) => depthSetting(player, "start", DEPTH_STARTS, 0);
+export const depthLength = (player) => depthSetting(player, "length", DEPTH_LENGTHS, 192); // DMS default: 12 chunks
+export function setDepthStart(player, v) {
+  player.setDynamicProperty("npcstudio:depth_start", v);
+  if (depthOn(player)) depthFog(player, true);
+}
+export function setDepthLength(player, v) {
+  player.setDynamicProperty("npcstudio:depth_length", v);
+  if (depthOn(player)) depthFog(player, true);
 }
 function depthFog(player, on) {
   try {
     player.runCommand("fog @s remove npcstudio_depthmap");
-    if (on) player.runCommand(`fog @s push npcstudio:fog_black_${depthRange(player)} npcstudio_depthmap`);
+    if (on) player.runCommand(`fog @s push npcstudio:depth_${depthStart(player)}_${depthLength(player)} npcstudio_depthmap`);
   } catch {
     /* ignore */
   }
 }
-export function setDepthRange(player, r) {
-  player.setDynamicProperty("npcstudio:depth_range", r);
-  if (depthOn(player)) depthFog(player, true);
+function removeSkies(dim) {
+  try {
+    for (const e of dim.getEntities({ type: DEPTH_SKY_ID })) e.remove();
+  } catch {
+    /* ignore */
+  }
 }
 export function setDepth(player, on) {
   if (on === depthOn(player)) return;
@@ -457,7 +476,8 @@ export function setDepth(player, on) {
     } catch {
       /* ignore */
     }
-    depthState.set(player.id, { time, cycle, names: nameTagsHidden(player), cams: camerasHidden(player), outlines: areOutlinesHidden() });
+    const st = { restore: { time, cycle, names: nameTagsHidden(player), cams: camerasHidden(player), outlines: areOutlinesHidden() } };
+    depthState.set(player.id, st);
     run("gamerule dodaylightcycle false");
     run("time set 6000");
     run("weather clear 999999");
@@ -465,11 +485,34 @@ export function setDepth(player, on) {
     if (!camerasHidden(player)) setCamerasHidden(player, true);
     setOutlinesHidden(true);
     depthFog(player, true);
-    msg(player, "§bDepth map on. §7Turn on the NPC Studio Depth Map resource pack for the white look. /npcstudio:depth to leave.");
+    // black sky: a huge black box that follows your view (camera view included)
+    try {
+      st.sky = dim.spawnEntity(DEPTH_SKY_ID, viewPoint(player));
+    } catch (e) {
+      console.warn(`[NPC Studio] depth sky: ${e}`);
+    }
+    st.loop = system.runInterval(() => {
+      if (!player.isValid) return;
+      if (st.sky?.isValid) {
+        try {
+          st.sky.teleport(viewPoint(player));
+        } catch {
+          /* ignore */
+        }
+      }
+    }, 10);
+    msg(player, "§bDepth map on. §7Needs the §fNPC Studio Depth Map§7 resource pack ON (above NPC Studio) for the white look. /npcstudio:depth to leave.");
   } else {
-    const s = depthState.get(player.id);
+    const st = depthState.get(player.id);
     depthState.delete(player.id);
+    if (st.loop !== undefined) system.clearRun(st.loop);
+    try {
+      st.sky?.remove();
+    } catch {
+      /* ignore */
+    }
     depthFog(player, false);
+    const s = st.restore;
     run(`time set ${s.time}`);
     if (s.cycle) run("gamerule dodaylightcycle true");
     if (!s.names) setNameTagsHidden(player, false);
@@ -478,3 +521,11 @@ export function setDepth(player, on) {
     msg(player, "§7Depth map off.");
   }
 }
+// after a /reload or rejoin no sky box should be left behind
+system.runTimeout(() => ["overworld", "nether", "the_end"].forEach((d) => {
+  try {
+    removeSkies(world.getDimension(d));
+  } catch {
+    /* ignore */
+  }
+}), 40);
