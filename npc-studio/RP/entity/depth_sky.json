@@ -7,7 +7,7 @@
         "default": "entity_alphatest"
       },
       "textures": {
-        "default": "textures/entity/npcstudio/backdrop_black"
+        "default": "textures/entity/npcstudio/depth_sky"
       },
       "geometry": {
         "default": "geometry.npcstudio.depth_sky"

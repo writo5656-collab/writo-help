@@ -25,16 +25,23 @@ HEADER_UUID = "6b1f0d2e-3c84-4b8e-9a51-2f0c7d9e4a61"
 MODULE_UUID = "a3c95e70-1d2b-4f6a-8e3c-5b7d9f1a2c84"
 
 
-def white_like(src, dst):
+# never whitened: the depth map's own black sky box and the coloured backdrops
+KEEP = ("textures/entity/npcstudio/depth_sky", "textures/entity/npcstudio/backdrop_")
+# Bedrock uses these textures' alpha as a TINT mask (opaque pixels get the biome colour), not as holes:
+# fully transparent = no tint at all, and the solid block still draws every pixel
+TINT_MASKS = ("textures/blocks/grass_side",)
+
+
+def white_like(src, dst, no_tint=False):
     """Same size, every pixel white, alpha kept (fully transparent stays transparent)."""
     try:
         im = Image.open(src).convert("RGBA")
     except Exception as e:
         print("skip", src, e)
         return False
-    a = im.getchannel("A")
-    out = Image.new("RGBA", im.size, (255, 255, 255, 255))
-    out.putalpha(a)
+    out = Image.new("RGBA", im.size, (255, 255, 255, 0 if no_tint else 255))
+    if not no_tint:
+        out.putalpha(im.getchannel("A"))
     os.makedirs(os.path.dirname(dst), exist_ok=True)
     out.save(dst, optimize=True)
     return True
@@ -57,9 +64,12 @@ def main(vanilla):
                 for f in files:
                     if not f.lower().endswith((".png", ".tga")):
                         continue
-                    rel = os.path.relpath(os.path.join(dp, f), base)
-                    dst = os.path.join(OUT, os.path.splitext(rel)[0] + ".png")
-                    n += white_like(os.path.join(dp, f), dst)
+                    rel = os.path.relpath(os.path.join(dp, f), base).replace(os.sep, "/")
+                    stem = os.path.splitext(rel)[0]
+                    if stem.startswith(KEEP) or stem.endswith("_mers") or stem.endswith("_normal"):
+                        continue
+                    dst = os.path.join(OUT, stem + ".png")
+                    n += white_like(os.path.join(dp, f), dst, no_tint=stem.startswith(TINT_MASKS))
     # 2. no tint: white colour maps
     for cm in ("grass", "foliage", "birch", "evergreen", "swamp_grass", "swamp_foliage", "mangrove_swamp_foliage", "dry_foliage"):
         solid(os.path.join(OUT, "textures/colormap", cm + ".png"), (256, 256), (255, 255, 255, 255))
@@ -84,6 +94,19 @@ def main(vanilla):
         with open(os.path.join(OUT, "biomes", f), "w", encoding="utf-8") as fh:
             json.dump(data, fh, indent=1)
         nb += 1
+    # 4b. the older biome colour file too (Bedrock still reads it): white water everywhere
+    legacy = {"biomes": {"default": {"water_surface_color": "#FFFFFF", "water_surface_transparency": 0.65,
+                                     "fog_identifier": "minecraft:fog_default"}}}
+    old = os.path.join(os.path.dirname(vanilla.rstrip("/")), "resource_pack", "biomes_client.json")
+    for path in (os.path.join(vanilla, "biomes_client.json"), old):
+        if os.path.exists(path):
+            import re
+            src = json.loads(re.sub(r"/\*.*?\*/", "", open(path, encoding="utf-8").read(), flags=re.S))
+            for name, b in src.get("biomes", {}).items():
+                legacy["biomes"][name] = {**b, "water_surface_color": "#FFFFFF"}
+            break
+    with open(os.path.join(OUT, "biomes_client.json"), "w", encoding="utf-8") as fh:
+        json.dump(legacy, fh, indent=1)
     # 5. manifest + icon
     ver = json.load(open(os.path.join(ROOT, "RP", "manifest.json")))["header"]["version"]
     manifest = {

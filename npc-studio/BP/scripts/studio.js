@@ -11,6 +11,7 @@
  * Add-ons can't take screenshots or save files, so the player presses their device's screenshot.
  * Copyright (c) 2026 NoxeelMC. All rights reserved. See LICENSE.md.
  */
+import { HudVisibility } from "@minecraft/server";
 import { world, system, msg, sfx, actionbar, NPC_FAMILY, MOB_TAG, CAMERA_ID, CAM_PRESET, getJson, setJson, forward, clamp } from "./core.js";
 import { enterCinema, exitCinema, inCinema, hideHud, setCinemaTap } from "./cinema.js";
 import { allCameras, getSelectedCamera, lookThrough, camState, isCamLocked } from "./camera.js";
@@ -485,6 +486,7 @@ export function setDepth(player, on) {
     if (!camerasHidden(player)) setCamerasHidden(player, true);
     setOutlinesHidden(true);
     depthFog(player, true);
+    hideHud(player, true); // hotbar and HUD off like a shader capture (messages stay)
     // black sky: a huge black box that follows your view (camera view included)
     try {
       st.sky = dim.spawnEntity(DEPTH_SKY_ID, viewPoint(player));
@@ -512,6 +514,13 @@ export function setDepth(player, on) {
       /* ignore */
     }
     depthFog(player, false);
+    if (!inCinema(player)) {
+      try {
+        player.onScreenDisplay.setHudVisibility(HudVisibility.Reset);
+      } catch {
+        /* ignore */
+      }
+    }
     const s = st.restore;
     run(`time set ${s.time}`);
     if (s.cycle) run("gamerule dodaylightcycle true");
