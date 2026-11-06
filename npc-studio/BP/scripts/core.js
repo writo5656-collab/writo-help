@@ -224,9 +224,7 @@ const LOCK_CATS = [InputPermissionCategory.LateralMovement, InputPermissionCateg
 export function isEditing(player) {
   return editing.has(player.id);
 }
-// Switching input permissions in the same tick a form opens is a suspect for a game crash (V3.2),
-// so the walking lock is off: editorLock only remembers that the panel is open.
-const LOCK_INPUT = false;
+const LOCK_INPUT = true; // walking / jumping / sneaking off while the panel is open (free look)
 export function editorLock(player, on) {
   if (on) editing.add(player.id);
   else editing.delete(player.id);

@@ -38,7 +38,7 @@ TAB_MARK = "§u§r"
 TXT = [0.93, 0.93, 0.93]
 SUB = [0.63, 0.63, 0.65]
 CYAN = [0.15, 0.83, 0.96]
-CAP = [0.80, 0.80, 0.82]
+CAP_COLOR = [0.80, 0.80, 0.82]  # caption text (not the CAP row tag below!)
 
 
 def coll(name, override=None):
@@ -222,10 +222,10 @@ def row_templates():
                        "bindings": [coll(BTN), view(has(HDR_SHUT))]}},
         {"label_row": text_label(["100% - 56px", 10], [28, 0], "left_middle", "left", ALL_MARKS[:-1], has(PLAIN))},
         {"label_hdr": text_label(["100% - 56px", 10], [26, 0], "left_middle", "left", ALL_MARKS, has(HDR), color=CYAN)},
-        {"label_field": text_label([f"{LABEL_COL} - 10px", 10], [10, 0], "left_middle", "left", ALL_MARKS[:-1], has(FIELD), color=CAP)},
-        {"label_slide": text_label([f"{LABEL_COL} - 10px", 10], [10, 0], "left_middle", "left", ALL_MARKS[:-1], has(SLIDE), color=CAP)},
-        {"label_step": text_label([f"{LABEL_COL} - 10px", 10], [10, 0], "left_middle", "left", ALL_MARKS[:-1], has(STEP), color=CAP)},
-        {"label_chk": text_label(["100% - 36px", 10], [10, 0], "left_middle", "left", ALL_MARKS[:-1], has(CHECK), color=CAP)}
+        {"label_field": text_label([f"{LABEL_COL} - 10px", 10], [10, 0], "left_middle", "left", ALL_MARKS[:-1], has(FIELD), color=CAP_COLOR)},
+        {"label_slide": text_label([f"{LABEL_COL} - 10px", 10], [10, 0], "left_middle", "left", ALL_MARKS[:-1], has(SLIDE), color=CAP_COLOR)},
+        {"label_step": text_label([f"{LABEL_COL} - 10px", 10], [10, 0], "left_middle", "left", ALL_MARKS[:-1], has(STEP), color=CAP_COLOR)},
+        {"label_chk": text_label(["100% - 36px", 10], [10, 0], "left_middle", "left", ALL_MARKS[:-1], has(CHECK), color=CAP_COLOR)}
     ] + tile(4)}
     t["npcs_aux_a"] = aux(control_column(small_btn("small", A_SMALL, "left_middle", [0, 0])) + tile(26))
     t["npcs_aux_b"] = aux(small_btn("small", B_SMALL, "right_middle", [-36, 0])
@@ -240,7 +240,7 @@ def add_dark_inputs(d):
     # ---------- NPC Studio input forms (text boxes, sliders, toggles): same dark left panel, no grey box ----------
     d["npcs_custom_router"] = {"type": "panel", "size": ["100%", "100%"], "controls": [
         {"vanilla": {"type": "panel", "size": ["100%", "100%"], "bindings": [global_title(), view(NO_PANEL)],
-                     "controls": [{"custom_form@server_form.custom_form": {}}]}},
+                     "controls": [{"block@server_form.npcs_blocker": {"controls": [{"custom_form@server_form.custom_form": {}}]}}]}},
         {"studio@server_form.npcs_custom": {"bindings": [global_title(), view(HAS_PANEL)]}}
     ]}
     d["npcs_custom"] = {
@@ -294,16 +294,22 @@ def build():
         "$screen_animations": ["@server_form.npcs_no_anim"],
         "$background_animations": ["@server_form.npcs_no_anim"],
         "render_game_behind": True
-        # V3.2: "absorbs_input": false (free look) is the suspect for a game crash when the panel opened; removed
     }
+    if not os.environ.get("NPCS_SAFE"):
+        # free look: touches on the empty part of the screen reach the game (like the HUD), so you can turn
+        # your view on the right while the Studio panel is open. Walking, breaking, placing and hitting are
+        # switched off by the scripts meanwhile (core.js editorLock, viewport.js).
+        d["third_party_server_screen"]["absorbs_input"] = False
+    # other add-ons' forms and Mojang's dialogs keep blocking the world: they sit INSIDE a modal input
+    # panel, like Mojang's own popups, so their buttons still work
+    d["npcs_blocker"] = {"type": "input_panel", "size": ["100%", "100%"], "modal": True, "prevent_touch_input": True}
     d["npcs_no_anim"] = {"anim_type": "offset", "easing": "linear", "duration": 0, "from": [0, 0], "to": [0, 0],
                          "play_event": "screen.exit_pop", "end_event": "screen.exit_end"}
     d["main_screen_content"] = {
         "type": "panel", "size": ["100%", "100%"],
         "controls": [{"server_form_factory": {"type": "factory", "control_ids": {
             "long_form": "@server_form.npcs_router",
-            # V3.2 crash hunt: input forms use Mojang's own box again (the re-hosted one is a crash suspect)
-            "custom_form": "@server_form.custom_form"}}}]
+            "custom_form": "@server_form.custom_form" if os.environ.get("NPCS_SAFE") else "@server_form.npcs_custom_router"}}}]
     }
     d["npcs_router"] = {"type": "panel", "size": ["100%", "100%"], "controls": [
         {"vanilla@server_form.npcs_vanilla_wrap": {}},
@@ -311,9 +317,9 @@ def build():
     ]}
     d["npcs_vanilla_wrap"] = {"type": "panel", "size": ["100%", "100%"],
                               "bindings": [global_title(), view(NO_PANEL)],
-                              "controls": [{"long_form@server_form.long_form": {}}]}
+                              "controls": [{"block@server_form.npcs_blocker": {"controls": [{"long_form@server_form.long_form": {}}]}}]}
 
-    if os.environ.get("NPCS_DARK_INPUTS"):  # off while hunting the crash
+    if not os.environ.get("NPCS_SAFE"):  # NPCS_SAFE=1: Mojang's own input box, no free look
         add_dark_inputs(d)
 
     d["npcs_editor"] = {
@@ -536,9 +542,52 @@ def slider_tracks():
         img.save(os.path.join(out, f"s{n:02d}.png"))
 
 
+def validate(d):
+    """Catch wrong value types before they reach the game: Bedrock crashes on some of them
+    (V3.2: a label colour that was a text tag closed the game when the panel opened)."""
+    errors = []
+
+    def is_num(v):
+        return isinstance(v, (int, float)) and not isinstance(v, bool)
+
+    def walk(o, path):
+        if isinstance(o, dict):
+            for k, v in o.items():
+                p = f"{path}/{k}"
+                if k == "color" and not (isinstance(v, list) and len(v) in (3, 4) and all(is_num(x) and 0 <= x <= 1 for x in v)):
+                    errors.append(f"{p}: colour must be [r, g, b] numbers 0-1, got {v!r}")
+                if k in ("size", "offset", "max_size", "min_size") and not (isinstance(v, list) and len(v) == 2
+                                                                            and all(is_num(x) or isinstance(x, str) for x in v)):
+                    errors.append(f"{p}: must be a pair, got {v!r}")
+                if k in ("size", "offset") and isinstance(v, list):
+                    for x in v:
+                        if isinstance(x, str) and "§" in x:
+                            errors.append(f"{p}: text tag inside a size/offset: {v!r}")
+                if k in ("layer", "font_scale_factor", "collection_index") and not is_num(v):
+                    errors.append(f"{p}: must be a number, got {v!r}")
+                if k == "texture" and not (isinstance(v, str) and not v.startswith("§")):
+                    errors.append(f"{p}: texture must be a path, got {v!r}")
+                if k in ("shadow", "modal", "render_game_behind") and not isinstance(v, bool):
+                    errors.append(f"{p}: must be true/false, got {v!r}")
+                walk(v, p)
+        elif isinstance(o, list):
+            for i, v in enumerate(o):
+                walk(v, f"{path}[{i}]")
+    walk(d, "")
+    # every textures/ui/npcstudio path must exist
+    import re
+    for t in set(re.findall(r'textures/ui/npcstudio/[a-z0-9_/]+', json.dumps(d))):
+        if not any(os.path.exists(os.path.join(ROOT, "RP", t + ext)) for ext in (".png", ".json")):
+            errors.append(f"missing texture {t}")
+    if errors:
+        raise SystemExit("server_form.json check failed:\n  " + "\n  ".join(errors[:30]))
+
+
 if __name__ == "__main__":
     textures()
     os.makedirs(UI, exist_ok=True)
+    data = build()
+    validate(data)
     with open(os.path.join(UI, "server_form.json"), "w", encoding="utf-8") as f:
-        json.dump(build(), f, indent=1, ensure_ascii=False)
+        json.dump(data, f, indent=1, ensure_ascii=False)
     print("server_form.json + panel textures written")

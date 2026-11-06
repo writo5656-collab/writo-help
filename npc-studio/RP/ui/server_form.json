@@ -7,7 +7,17 @@
   "$background_animations": [
    "@server_form.npcs_no_anim"
   ],
-  "render_game_behind": true
+  "render_game_behind": true,
+  "absorbs_input": false
+ },
+ "npcs_blocker": {
+  "type": "input_panel",
+  "size": [
+   "100%",
+   "100%"
+  ],
+  "modal": true,
+  "prevent_touch_input": true
  },
  "npcs_no_anim": {
   "anim_type": "offset",
@@ -36,7 +46,7 @@
      "type": "factory",
      "control_ids": {
       "long_form": "@server_form.npcs_router",
-      "custom_form": "@server_form.custom_form"
+      "custom_form": "@server_form.npcs_custom_router"
      }
     }
    }
@@ -75,7 +85,333 @@
   ],
   "controls": [
    {
-    "long_form@server_form.long_form": {}
+    "block@server_form.npcs_blocker": {
+     "controls": [
+      {
+       "long_form@server_form.long_form": {}
+      }
+     ]
+    }
+   }
+  ]
+ },
+ "npcs_custom_router": {
+  "type": "panel",
+  "size": [
+   "100%",
+   "100%"
+  ],
+  "controls": [
+   {
+    "vanilla": {
+     "type": "panel",
+     "size": [
+      "100%",
+      "100%"
+     ],
+     "bindings": [
+      {
+       "binding_name": "#title_text"
+      },
+      {
+       "binding_type": "view",
+       "source_property_name": "((#title_text - '§n§p') = #title_text)",
+       "target_property_name": "#visible"
+      }
+     ],
+     "controls": [
+      {
+       "block@server_form.npcs_blocker": {
+        "controls": [
+         {
+          "custom_form@server_form.custom_form": {}
+         }
+        ]
+       }
+      }
+     ]
+    }
+   },
+   {
+    "studio@server_form.npcs_custom": {
+     "bindings": [
+      {
+       "binding_name": "#title_text"
+      },
+      {
+       "binding_type": "view",
+       "source_property_name": "(not ((#title_text - '§n§p') = #title_text))",
+       "target_property_name": "#visible"
+      }
+     ]
+    }
+   }
+  ]
+ },
+ "npcs_custom": {
+  "type": "image",
+  "texture": "textures/ui/npcstudio/panel/panel_bg",
+  "layer": 2,
+  "size": [
+   "34%",
+   "100%"
+  ],
+  "anchor_from": "top_left",
+  "anchor_to": "top_left",
+  "controls": [
+   {
+    "title": {
+     "type": "label",
+     "text": "#title_text",
+     "color": [
+      0.15,
+      0.83,
+      0.96
+     ],
+     "shadow": false,
+     "layer": 4,
+     "size": [
+      "100% - 30px",
+      10
+     ],
+     "offset": [
+      10,
+      6
+     ],
+     "anchor_from": "top_left",
+     "anchor_to": "top_left",
+     "bindings": [
+      {
+       "binding_name": "#title_text"
+      },
+      {
+       "binding_type": "view",
+       "source_property_name": "((((#title_text - '§n§p§s§r') - '§n§p§t§r') - '§n§p§g§r') - '§n§p§h§r')",
+       "target_property_name": "#title_text"
+      }
+     ]
+    }
+   },
+   {
+    "close@common.button": {
+     "size": [
+      14,
+      14
+     ],
+     "$pressed_button_name": "button.menu_exit",
+     "layer": 1,
+     "controls": [
+      {
+       "default": {
+        "type": "image",
+        "texture": "textures/ui/npcstudio/panel/close",
+        "size": [
+         "100%",
+         "100%"
+        ]
+       }
+      },
+      {
+       "hover": {
+        "type": "image",
+        "texture": "textures/ui/npcstudio/panel/close_hover",
+        "size": [
+         "100%",
+         "100%"
+        ]
+       }
+      },
+      {
+       "pressed": {
+        "type": "image",
+        "texture": "textures/ui/npcstudio/panel/close_pressed",
+        "size": [
+         "100%",
+         "100%"
+        ]
+       }
+      }
+     ],
+     "anchor_from": "top_right",
+     "anchor_to": "top_right",
+     "offset": [
+      -3,
+      3
+     ]
+    }
+   },
+   {
+    "rule": {
+     "type": "image",
+     "texture": "textures/ui/npcstudio/panel/rule",
+     "size": [
+      "100%",
+      1
+     ],
+     "offset": [
+      0,
+      20
+     ],
+     "anchor_from": "top_left",
+     "anchor_to": "top_left",
+     "layer": 3
+    }
+   },
+   {
+    "scroll@server_form.npcs_custom_scroll": {}
+   }
+  ]
+ },
+ "npcs_custom_scroll@common.scrolling_panel": {
+  "anchor_to": "top_left",
+  "anchor_from": "top_left",
+  "offset": [
+   0,
+   22
+  ],
+  "$show_background": false,
+  "size": [
+   "100%",
+   "100% - 23px"
+  ],
+  "$scrolling_content": "server_form.npcs_custom_content",
+  "$scroll_size": [
+   4,
+   "100% - 4px"
+  ],
+  "$scrolling_pane_size": [
+   "100% - 6px",
+   "100%"
+  ],
+  "$scrolling_pane_offset": [
+   0,
+   0
+  ],
+  "$scroll_bar_right_padding_size": [
+   0,
+   0
+  ]
+ },
+ "npcs_custom_content": {
+  "type": "stack_panel",
+  "orientation": "vertical",
+  "size": [
+   "100% - 12px",
+   "100%c"
+  ],
+  "offset": [
+   6,
+   0
+  ],
+  "anchor_from": "top_left",
+  "anchor_to": "top_left",
+  "controls": [
+   {
+    "generated_form@server_form.generated_contents": {}
+   },
+   {
+    "gap": {
+     "type": "panel",
+     "size": [
+      "100%",
+      6
+     ]
+    }
+   },
+   {
+    "submit": {
+     "type": "panel",
+     "size": [
+      "100%",
+      20
+     ],
+     "bindings": [
+      {
+       "binding_name": "#submit_button_visible",
+       "binding_name_override": "#visible"
+      }
+     ],
+     "controls": [
+      {
+       "button@common.button": {
+        "size": [
+         "100%",
+         18
+        ],
+        "$pressed_button_name": "button.submit_custom_form",
+        "layer": 1,
+        "controls": [
+         {
+          "default": {
+           "type": "image",
+           "texture": "textures/ui/npcstudio/panel/small",
+           "size": [
+            "100%",
+            "100%"
+           ]
+          }
+         },
+         {
+          "hover": {
+           "type": "image",
+           "texture": "textures/ui/npcstudio/panel/small_hover",
+           "size": [
+            "100%",
+            "100%"
+           ]
+          }
+         },
+         {
+          "pressed": {
+           "type": "image",
+           "texture": "textures/ui/npcstudio/panel/small_pressed",
+           "size": [
+            "100%",
+            "100%"
+           ]
+          }
+         }
+        ],
+        "anchor_from": "center",
+        "anchor_to": "center"
+       }
+      },
+      {
+       "label": {
+        "type": "label",
+        "text": "#submit_text",
+        "color": [
+         0.93,
+         0.93,
+         0.93
+        ],
+        "shadow": false,
+        "layer": 6,
+        "size": [
+         "100%",
+         10
+        ],
+        "text_alignment": "center",
+        "anchor_from": "center",
+        "anchor_to": "center",
+        "bindings": [
+         {
+          "binding_name": "#submit_text"
+         }
+        ]
+       }
+      }
+     ]
+    }
+   },
+   {
+    "pad_end": {
+     "type": "panel",
+     "size": [
+      "100%",
+      8
+     ]
+    }
    }
   ]
  },
@@ -1960,7 +2296,11 @@
      "anchor_to": "left_middle",
      "text": "#text",
      "text_alignment": "left",
-     "color": "§q§r",
+     "color": [
+      0.8,
+      0.8,
+      0.82
+     ],
      "shadow": false,
      "font_scale_factor": 1.0,
      "bindings": [
@@ -1998,7 +2338,11 @@
      "anchor_to": "left_middle",
      "text": "#text",
      "text_alignment": "left",
-     "color": "§q§r",
+     "color": [
+      0.8,
+      0.8,
+      0.82
+     ],
      "shadow": false,
      "font_scale_factor": 1.0,
      "bindings": [
@@ -2036,7 +2380,11 @@
      "anchor_to": "left_middle",
      "text": "#text",
      "text_alignment": "left",
-     "color": "§q§r",
+     "color": [
+      0.8,
+      0.8,
+      0.82
+     ],
      "shadow": false,
      "font_scale_factor": 1.0,
      "bindings": [
@@ -2074,7 +2422,11 @@
      "anchor_to": "left_middle",
      "text": "#text",
      "text_alignment": "left",
-     "color": "§q§r",
+     "color": [
+      0.8,
+      0.8,
+      0.82
+     ],
      "shadow": false,
      "font_scale_factor": 1.0,
      "bindings": [
