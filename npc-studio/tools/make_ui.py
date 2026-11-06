@@ -187,6 +187,10 @@ def row_control(i):
         {f"r{i}a@server_form.npcs_aux_a": {"collection_index": k + 1}},
         {f"r{i}b@server_form.npcs_aux_b": {"collection_index": k + 2}},
         {f"r{i}c@server_form.npcs_aux_c": {"collection_index": k + 3}}
+    ] if not AUX_NO_B else [
+        {f"r{i}@server_form.npcs_main": {"collection_index": k}},
+        {f"r{i}a@server_form.npcs_aux_a": {"collection_index": k + 1}},
+        {f"r{i}c@server_form.npcs_aux_c": {"collection_index": k + 3}}
     ]
 
 
@@ -202,11 +206,17 @@ def aux(controls):
                   "layer": 8, "controls": controls}}]}
 
 
+AUX_BARE = bool(os.environ.get("NPCS_AUX_BARE"))   # test: slots with only their button (no icon / text)
+AUX_NO_B = bool(os.environ.get("NPCS_AUX_NO_B"))   # test: only the - and + slots
+
+
 def small_slot(anchor, offset):
     """- / + / < / > : one small button with its icon."""
     dx = -2 if anchor.startswith("right") else 2
-    return [one_button("small", (12, 14), anchor=anchor, offset=offset),
-            {"icon": dict(icon([8, 8], [offset[0] + dx, 0], anchor), layer=7)}]
+    parts = [one_button("small", (12, 14), anchor=anchor, offset=offset)]
+    if not AUX_BARE:
+        parts.append({"icon": dict(icon([8, 8], [offset[0] + dx, 0], anchor), layer=7)})
+    return parts
 
 
 def row_templates():
@@ -241,21 +251,19 @@ def row_templates():
     # a: small button at the start of the control column
     t["npcs_aux_a"] = aux([{"col": {"type": "panel", "size": [f"{CTRL_COL} - 2px", "100%"], "anchor_from": "right_middle",
                                     "anchor_to": "right_middle", "controls": small_slot("left_middle", [0, 0])}}])
-    # b: the value box between a and c; a slider's track is its picture, the number sits on the right
+    # b: the value box between a and c; a slider's track is its picture. The number is always on the
+    # right (labels must never read #texture: only images have a texture).
     box = [f"{CTRL_COL} - 34px", 14]
+    b_parts = [one_button("value", ("100%", "100%"))]
+    if not AUX_BARE:
+        b_parts += [
+            {"track": dict(icon(["100% - 40px", 8], [4, 0], "left_middle"), layer=7, bindings=[
+                coll("#form_button_texture", "#texture"), coll("#form_button_texture_file_system", "#texture_file_system"),
+                view(HAS_TEX)])},
+            {"num": dict(text_label(["100% - 8px", 10], [-4, 0], "right_middle", "right", [B_WIDE], shown(), scale=0.85), layer=7)}
+        ]
     t["npcs_aux_b"] = aux([{"box": {"type": "panel", "size": box, "anchor_from": "right_middle", "anchor_to": "right_middle",
-                                    "offset": [-18, 0], "controls": [
-        one_button("value", ("100%", "100%")),
-        {"track": dict(icon(["100% - 40px", 8], [4, 0], "left_middle"), layer=7, bindings=[
-            coll("#form_button_texture", "#texture"), coll("#form_button_texture_file_system", "#texture_file_system"),
-            view(HAS_TEX)])},
-        {"num": dict(text_label([34, 10], [-2, 0], "right_middle", "right", [B_WIDE], "(1 = 1)", scale=0.8), layer=7,
-                     bindings=[coll("#form_button_texture", "#texture"), coll(BTN), view(strip([B_WIDE]), "#text"),
-                               view(f"(not {NO_TEX})")])},
-        {"text": dict(text_label(["100% - 4px", 10], [0, 0], "center", "center", [B_WIDE], "(1 = 1)", scale=0.85), layer=7,
-                      bindings=[coll("#form_button_texture", "#texture"), coll(BTN), view(strip([B_WIDE]), "#text"),
-                                view(NO_TEX)])}
-    ]}}])
+                                    "offset": [-18, 0], "controls": b_parts}}])
     # c: small button at the right edge
     t["npcs_aux_c"] = aux(small_slot("right_middle", [-4, 0]))
     return t
@@ -706,6 +714,20 @@ def validate(d):
             depth = max(depth, cur)
         if depth > 6:
             errors.append(f"expression nests {depth} brackets (max 6): {e[:120]}")
+    # labels must not bind #texture (only images have one; a label doing it is a crash suspect)
+    def labels(o):
+        if isinstance(o, dict):
+            if o.get("type") == "label":
+                yield o
+            for v in o.values():
+                yield from labels(v)
+        elif isinstance(o, list):
+            for v in o:
+                yield from labels(v)
+    for lab in labels(d):
+        for bnd in lab.get("bindings", []):
+            if "#texture" in (bnd.get("binding_name_override", ""), bnd.get("binding_name", "")):
+                errors.append(f"a label binds #texture: {json.dumps(lab)[:100]}")
     # every textures/ui/npcstudio path must exist
     import re
     for t in set(re.findall(r'textures/ui/npcstudio/[a-z0-9_/]+', json.dumps(d))):

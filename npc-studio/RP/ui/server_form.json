@@ -2649,11 +2649,11 @@
            "type": "label",
            "layer": 7,
            "size": [
-            34,
+            "100% - 8px",
             10
            ],
            "offset": [
-            -2,
+            -4,
             0
            ],
            "anchor_from": "right_middle",
@@ -2666,63 +2666,9 @@
             0.93
            ],
            "shadow": false,
-           "font_scale_factor": 0.8,
-           "bindings": [
-            {
-             "binding_name": "#form_button_texture",
-             "binding_type": "collection",
-             "binding_collection_name": "form_buttons",
-             "binding_name_override": "#texture"
-            },
-            {
-             "binding_name": "#form_button_text",
-             "binding_type": "collection",
-             "binding_collection_name": "form_buttons"
-            },
-            {
-             "binding_type": "view",
-             "source_property_name": "(#form_button_text - '§y§r')",
-             "target_property_name": "#text"
-            },
-            {
-             "binding_type": "view",
-             "source_property_name": "(not ((#texture = '') or (#texture = 'loading')))",
-             "target_property_name": "#visible"
-            }
-           ]
-          }
-         },
-         {
-          "text": {
-           "type": "label",
-           "layer": 7,
-           "size": [
-            "100% - 4px",
-            10
-           ],
-           "offset": [
-            0,
-            0
-           ],
-           "anchor_from": "center",
-           "anchor_to": "center",
-           "text": "#text",
-           "text_alignment": "center",
-           "color": [
-            0.93,
-            0.93,
-            0.93
-           ],
-           "shadow": false,
            "font_scale_factor": 0.85,
            "bindings": [
             {
-             "binding_name": "#form_button_texture",
-             "binding_type": "collection",
-             "binding_collection_name": "form_buttons",
-             "binding_name_override": "#texture"
-            },
-            {
              "binding_name": "#form_button_text",
              "binding_type": "collection",
              "binding_collection_name": "form_buttons"
@@ -2734,7 +2680,7 @@
             },
             {
              "binding_type": "view",
-             "source_property_name": "((#texture = '') or (#texture = 'loading'))",
+             "source_property_name": "(not (#form_button_text = ''))",
              "target_property_name": "#visible"
             }
            ]

@@ -1,2 +1,2 @@
 // written by tools/build.py from BP/manifest.json
-export const VERSION = "4.12.0";
+export const VERSION = "4.13.0";
