@@ -200,7 +200,7 @@ def control_column(controls):
 
 def value_btn(name, mark, size, offset, scale):
     return [plain_button(name, "value" if mark != C_CHOOSE else "choose", size, has(mark), anchor="right_middle", offset=offset),
-            {f"{name}_text": dict(text_label([size[0], 10], offset, "right_middle", "center", ALL_MARKS, has(mark), scale=scale), layer=7)}]
+            {f"{name}_text": dict(text_label([size[0], 10], offset, "right_middle", "center", [mark], has(mark), scale=scale), layer=7)}]
 
 
 def row_templates():
@@ -220,12 +220,12 @@ def row_templates():
         {"chev_shut": {"type": "image", "texture": "textures/ui/npcstudio/panel/chev_shut", "size": [8, 8], "layer": 6,
                        "offset": [-8, 0], "anchor_from": "right_middle", "anchor_to": "right_middle",
                        "bindings": [coll(BTN), view(has(HDR_SHUT))]}},
-        {"label_row": text_label(["100% - 56px", 10], [28, 0], "left_middle", "left", ALL_MARKS[:-1], has(PLAIN))},
-        {"label_hdr": text_label(["100% - 56px", 10], [26, 0], "left_middle", "left", ALL_MARKS, has(HDR), color=CYAN)},
-        {"label_field": text_label([f"{LABEL_COL} - 10px", 10], [10, 0], "left_middle", "left", ALL_MARKS[:-1], has(FIELD), color=CAP_COLOR)},
-        {"label_slide": text_label([f"{LABEL_COL} - 10px", 10], [10, 0], "left_middle", "left", ALL_MARKS[:-1], has(SLIDE), color=CAP_COLOR)},
-        {"label_step": text_label([f"{LABEL_COL} - 10px", 10], [10, 0], "left_middle", "left", ALL_MARKS[:-1], has(STEP), color=CAP_COLOR)},
-        {"label_chk": text_label(["100% - 36px", 10], [10, 0], "left_middle", "left", ALL_MARKS[:-1], has(CHECK), color=CAP_COLOR)}
+        {"label_row": text_label(["100% - 56px", 10], [28, 0], "left_middle", "left", [PLAIN], has(PLAIN))},
+        {"label_hdr": text_label(["100% - 56px", 10], [26, 0], "left_middle", "left", [HDR, HDR_OPEN, HDR_SHUT], has(HDR), color=CYAN)},
+        {"label_field": text_label([f"{LABEL_COL} - 10px", 10], [10, 0], "left_middle", "left", [CAP, FIELD], has(FIELD), color=CAP_COLOR)},
+        {"label_slide": text_label([f"{LABEL_COL} - 10px", 10], [10, 0], "left_middle", "left", [CAP, SLIDE], has(SLIDE), color=CAP_COLOR)},
+        {"label_step": text_label([f"{LABEL_COL} - 10px", 10], [10, 0], "left_middle", "left", [CAP, STEP], has(STEP), color=CAP_COLOR)},
+        {"label_chk": text_label(["100% - 36px", 10], [10, 0], "left_middle", "left", [CAP, CHECK], has(CHECK), color=CAP_COLOR)}
     ] + tile(4)}
     t["npcs_aux_a"] = aux(control_column(small_btn("small", A_SMALL, "left_middle", [0, 0])) + tile(26))
     t["npcs_aux_b"] = aux(small_btn("small", B_SMALL, "right_middle", [-36, 0])
@@ -240,7 +240,7 @@ def add_dark_inputs(d):
     # ---------- NPC Studio input forms (text boxes, sliders, toggles): same dark left panel, no grey box ----------
     d["npcs_custom_router"] = {"type": "panel", "size": ["100%", "100%"], "controls": [
         {"vanilla": {"type": "panel", "size": ["100%", "100%"], "bindings": [global_title(), view(NO_PANEL)],
-                     "controls": [{"block@server_form.npcs_blocker": {"controls": [{"custom_form@server_form.custom_form": {}}]}}]}},
+                     "controls": [wrap_vanilla("custom_form@server_form.custom_form")]}},
         {"studio@server_form.npcs_custom": {"bindings": [global_title(), view(HAS_PANEL)]}}
     ]}
     d["npcs_custom"] = {
@@ -286,6 +286,13 @@ def add_dark_inputs(d):
 
 
 
+def wrap_vanilla(name):
+    """Mojang's form, inside the input blocker when free look is on (NPCS_SAFE=1: as it is)."""
+    if os.environ.get("NPCS_SAFE"):
+        return {name: {}}
+    return {"block@server_form.npcs_blocker": {"controls": [{name: {}}]}}
+
+
 def build():
     d = {"namespace": "server_form"}
 
@@ -302,7 +309,8 @@ def build():
         d["third_party_server_screen"]["absorbs_input"] = False
     # other add-ons' forms and Mojang's dialogs keep blocking the world: they sit INSIDE a modal input
     # panel, like Mojang's own popups, so their buttons still work
-    d["npcs_blocker"] = {"type": "input_panel", "size": ["100%", "100%"], "modal": True, "prevent_touch_input": True}
+    if not os.environ.get("NPCS_SAFE"):
+        d["npcs_blocker"] = {"type": "input_panel", "size": ["100%", "100%"], "modal": True, "prevent_touch_input": True}
     d["npcs_no_anim"] = {"anim_type": "offset", "easing": "linear", "duration": 0, "from": [0, 0], "to": [0, 0],
                          "play_event": "screen.exit_pop", "end_event": "screen.exit_end"}
     d["main_screen_content"] = {
@@ -317,7 +325,7 @@ def build():
     ]}
     d["npcs_vanilla_wrap"] = {"type": "panel", "size": ["100%", "100%"],
                               "bindings": [global_title(), view(NO_PANEL)],
-                              "controls": [{"block@server_form.npcs_blocker": {"controls": [{"long_form@server_form.long_form": {}}]}}]}
+                              "controls": [wrap_vanilla("long_form@server_form.long_form")]}
 
     if not os.environ.get("NPCS_SAFE"):  # NPCS_SAFE=1: Mojang's own input box, no free look
         add_dark_inputs(d)
@@ -574,6 +582,25 @@ def validate(d):
             for i, v in enumerate(o):
                 walk(v, f"{path}[{i}]")
     walk(d, "")
+    # expressions: the layout that works in game nests at most 6 brackets; 17 crashed the game
+    import re as _re
+    def exprs(o):
+        if isinstance(o, dict):
+            if "source_property_name" in o:
+                yield o["source_property_name"]
+            for v in o.values():
+                yield from exprs(v)
+        elif isinstance(o, list):
+            for v in o:
+                yield from exprs(v)
+    for e in set(exprs(d)):
+        depth = cur = 0
+        for ch in e:
+            cur += ch == "("
+            cur -= ch == ")"
+            depth = max(depth, cur)
+        if depth > 6:
+            errors.append(f"expression nests {depth} brackets (max 6): {e[:120]}")
     # every textures/ui/npcstudio path must exist
     import re
     for t in set(re.findall(r'textures/ui/npcstudio/[a-z0-9_/]+', json.dumps(d))):

@@ -2227,7 +2227,7 @@
       },
       {
        "binding_type": "view",
-       "source_property_name": "((((((((((((((((#form_button_text - '§o§r') - '§h§r') - '§i§r') - '§j§r') - '§q§r') - '§w§r') - '§f§r') - '§s§r') - '§t§r') - '§e§r') - '§k§r') - '§p§r') - '§y§r') - '§v§r') - '§m§r') - '§z§r')",
+       "source_property_name": "(#form_button_text - '§o§r')",
        "target_property_name": "#text"
       },
       {
@@ -2269,7 +2269,7 @@
       },
       {
        "binding_type": "view",
-       "source_property_name": "(((((((((((((((((#form_button_text - '§o§r') - '§h§r') - '§i§r') - '§j§r') - '§q§r') - '§w§r') - '§f§r') - '§s§r') - '§t§r') - '§e§r') - '§k§r') - '§p§r') - '§y§r') - '§v§r') - '§m§r') - '§z§r') - '§b')",
+       "source_property_name": "(((#form_button_text - '§j§r') - '§h§r') - '§i§r')",
        "target_property_name": "#text"
       },
       {
@@ -2311,7 +2311,7 @@
       },
       {
        "binding_type": "view",
-       "source_property_name": "((((((((((((((((#form_button_text - '§o§r') - '§h§r') - '§i§r') - '§j§r') - '§q§r') - '§w§r') - '§f§r') - '§s§r') - '§t§r') - '§e§r') - '§k§r') - '§p§r') - '§y§r') - '§v§r') - '§m§r') - '§z§r')",
+       "source_property_name": "((#form_button_text - '§q§r') - '§f§r')",
        "target_property_name": "#text"
       },
       {
@@ -2353,7 +2353,7 @@
       },
       {
        "binding_type": "view",
-       "source_property_name": "((((((((((((((((#form_button_text - '§o§r') - '§h§r') - '§i§r') - '§j§r') - '§q§r') - '§w§r') - '§f§r') - '§s§r') - '§t§r') - '§e§r') - '§k§r') - '§p§r') - '§y§r') - '§v§r') - '§m§r') - '§z§r')",
+       "source_property_name": "((#form_button_text - '§q§r') - '§s§r')",
        "target_property_name": "#text"
       },
       {
@@ -2395,7 +2395,7 @@
       },
       {
        "binding_type": "view",
-       "source_property_name": "((((((((((((((((#form_button_text - '§o§r') - '§h§r') - '§i§r') - '§j§r') - '§q§r') - '§w§r') - '§f§r') - '§s§r') - '§t§r') - '§e§r') - '§k§r') - '§p§r') - '§y§r') - '§v§r') - '§m§r') - '§z§r')",
+       "source_property_name": "((#form_button_text - '§q§r') - '§t§r')",
        "target_property_name": "#text"
       },
       {
@@ -2437,7 +2437,7 @@
       },
       {
        "binding_type": "view",
-       "source_property_name": "((((((((((((((((#form_button_text - '§o§r') - '§h§r') - '§i§r') - '§j§r') - '§q§r') - '§w§r') - '§f§r') - '§s§r') - '§t§r') - '§e§r') - '§k§r') - '§p§r') - '§y§r') - '§v§r') - '§m§r') - '§z§r')",
+       "source_property_name": "((#form_button_text - '§q§r') - '§w§r')",
        "target_property_name": "#text"
       },
       {
@@ -3135,7 +3135,7 @@
          },
          {
           "binding_type": "view",
-          "source_property_name": "(((((((((((((((((#form_button_text - '§o§r') - '§h§r') - '§i§r') - '§j§r') - '§q§r') - '§w§r') - '§f§r') - '§s§r') - '§t§r') - '§e§r') - '§k§r') - '§p§r') - '§y§r') - '§v§r') - '§m§r') - '§z§r') - '§b')",
+          "source_property_name": "(#form_button_text - '§y§r')",
           "target_property_name": "#text"
          },
          {
@@ -3535,7 +3535,7 @@
          },
          {
           "binding_type": "view",
-          "source_property_name": "(((((((((((((((((#form_button_text - '§o§r') - '§h§r') - '§i§r') - '§j§r') - '§q§r') - '§w§r') - '§f§r') - '§s§r') - '§t§r') - '§e§r') - '§k§r') - '§p§r') - '§y§r') - '§v§r') - '§m§r') - '§z§r') - '§b')",
+          "source_property_name": "(#form_button_text - '§v§r')",
           "target_property_name": "#text"
          },
          {
@@ -3647,7 +3647,7 @@
          },
          {
           "binding_type": "view",
-          "source_property_name": "(((((((((((((((((#form_button_text - '§o§r') - '§h§r') - '§i§r') - '§j§r') - '§q§r') - '§w§r') - '§f§r') - '§s§r') - '§t§r') - '§e§r') - '§k§r') - '§p§r') - '§y§r') - '§v§r') - '§m§r') - '§z§r') - '§b')",
+          "source_property_name": "(#form_button_text - '§z§r')",
           "target_property_name": "#text"
          },
          {
