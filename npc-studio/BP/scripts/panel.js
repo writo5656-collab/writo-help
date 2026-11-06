@@ -5,6 +5,7 @@
  * steppers (- / +) change the NPC right away and redraw the panel, so the world stays in view.
  * Copyright (c) 2026 NoxeelMC. All rights reserved. See LICENSE.md.
  */
+import { VERSION } from "./version.js";
 import { menu, modal, msg, confirm, ICON, npcLabel, npcsNear, isLocked, setEditorHooks, NPC_FAMILY } from "./core.js";
 import { getAnim, readPose, applyPose, mirrorPose, pushUndo, undo, redo, historySize } from "./rig.js";
 import { LOOP_ANIMS } from "./poses.js";
@@ -45,6 +46,7 @@ function currentNpc(player) {
 
 // ---------- the parts every editor screen shares: tabs, NPC heads, bottom tools ----------
 setEditorHooks({
+  grid: (player) => guidesOn(player),
   tabs: (player) => ({ names: TABS, active: lastTab.get(player.id) ?? 0, onTab: (i) => openStudio(player, i) }),
   rail: (player) => {
     const cur = getSelection(player)[0];
@@ -97,7 +99,8 @@ export function openStudio(player, tab) {
   const body = npc
     ? `§7Editing §f${npcLabel(npc)}${sel > 1 ? `§7 +${sel - 1} more` : ""}${isLocked(npc) ? " §c(locked)" : ""}`
     : "§7No NPC selected. Tap an NPC with the Baton, or a head on the right.";
-  const m = menu("NPC Studio", body).reopen(self);
+  const bodyV = `${body} §8v${VERSION}`;
+  const m = menu("NPC Studio", bodyV).reopen(self);
   if (npc && isLocked(npc) && (tab === 0 || tab === 1)) {
     m.btn("Unlock This NPC", ICON("lock"), () => {
       npc.setProperty("npcstudio:locked", false);
@@ -178,7 +181,7 @@ function displayTab(player, m, npc, self) {
   m.btn("Move / Turn", ICON("move"), () => openMoveMenu(player, npc, self));
 
   m.section("inv", "Inventory", ICON("equip"));
-  const slot = (def) => ({ icon: equipIcon(npc, def.key), on: !!getEquip(npc, def.key), fn: () => openSlotMenu(player, npc, def.key, self) });
+  const slot = (def) => ({ label: def.key, icon: equipIcon(npc, def.key), on: !!getEquip(npc, def.key), fn: () => openSlotMenu(player, npc, def.key, self) });
   m.tiles(SLOTS.slice(0, 4).map(slot));
   m.tiles(SLOTS.slice(4).map(slot));
   m.btn("Wardrobe", ICON("equip"), () => openWardrobe(player, npc, self));

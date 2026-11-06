@@ -96,7 +96,17 @@ def label_from_button(size, offset, anchor, align, scale=1.0, strip_tab=False):
 # A row is [main, a, b, c]; the tag at the start of each label picks its look (see core.js):
 #   main: (none) button · §h§r/§i§r section · §w§r checkbox · §f§r field · §s§r slider · §t§r stepper
 #   a: §k§r small (minus / previous)   b: §p§r small (plus) · §y§r wide value   c: §v§r value · §m§r small · §z§r Choose
-TAB0, RAIL0, RAILN, BAR0, BARN, ROW0, ROWN = 0, 6, 24, 30, 8, 38, 48
+TAB0, RAIL0, RAILN, BAR0, BARN, MINI_BTN, ROW0, ROWN = 0, 6, 24, 30, 8, 38, 39, 48
+# Features that are off until each one is proven in game (the panel crashed the game in 4.3-4.8):
+FREELOOK = bool(os.environ.get("NPCS_FREELOOK"))       # look around in the free space
+DARK_INPUTS = bool(os.environ.get("NPCS_DARK_INPUTS"))  # input forms inside the dark panel
+TILES = bool(os.environ.get("NPCS_TILES"))              # inventory slot tiles (core.js TILES must match)
+# body tags (global #form_text): thirds grid · panel hidden
+GRID_TAG, MINI_TAG = "§g§r", "§x§r"
+BODY = "#form_text"
+HAS_GRID = f"(not (({BODY} - '{GRID_TAG}') = {BODY}))"
+IS_MINI = f"(not (({BODY} - '{MINI_TAG}') = {BODY}))"
+NOT_MINI = f"(({BODY} - '{MINI_TAG}') = {BODY})"
 PLAIN, HDR, HDR_OPEN, HDR_SHUT, TILE = "§o§r", "§j§r", "§h§r", "§i§r", "§e§r"
 CAP, CHECK, FIELD, SLIDE, STEP = "§q§r", "§w§r", "§f§r", "§s§r", "§t§r"
 A_SMALL, B_SMALL, B_WIDE, C_VALUE, C_SMALL, C_CHOOSE = "§k§r", "§p§r", "§y§r", "§v§r", "§m§r", "§z§r"
@@ -157,6 +167,8 @@ ALL_MARKS = [PLAIN, HDR_OPEN, HDR_SHUT, HDR, CAP, CHECK, FIELD, SLIDE, STEP, TIL
 
 def tile(offset_x):
     """Square slot tile (inventory). Same look in all four slots, only the x position differs."""
+    if not TILES:
+        return []
     return [
         plain_button("tile", "tile", (18, 18), has(TILE), anchor="left_middle", offset=(offset_x, 0)),
         {"tile_icon": dict(icon([14, 14], [offset_x + 2, 0], "left_middle"), bindings=tex_bindings(has(TILE)))},
@@ -288,7 +300,7 @@ def add_dark_inputs(d):
 
 def wrap_vanilla(name):
     """Mojang's form, inside the input blocker when free look is on (NPCS_SAFE=1: as it is)."""
-    if os.environ.get("NPCS_SAFE"):
+    if not FREELOOK:
         return {name: {}}
     return {"block@server_form.npcs_blocker": {"controls": [{name: {}}]}}
 
@@ -302,14 +314,14 @@ def build():
         "$background_animations": ["@server_form.npcs_no_anim"],
         "render_game_behind": True
     }
-    if not os.environ.get("NPCS_SAFE"):
+    if FREELOOK:
         # free look: touches on the empty part of the screen reach the game (like the HUD), so you can turn
         # your view on the right while the Studio panel is open. Walking, breaking, placing and hitting are
         # switched off by the scripts meanwhile (core.js editorLock, viewport.js).
         d["third_party_server_screen"]["absorbs_input"] = False
     # other add-ons' forms and Mojang's dialogs keep blocking the world: they sit INSIDE a modal input
     # panel, like Mojang's own popups, so their buttons still work
-    if not os.environ.get("NPCS_SAFE"):
+    if FREELOOK:
         d["npcs_blocker"] = {"type": "input_panel", "size": ["100%", "100%"], "modal": True, "prevent_touch_input": True}
     d["npcs_no_anim"] = {"anim_type": "offset", "easing": "linear", "duration": 0, "from": [0, 0], "to": [0, 0],
                          "play_event": "screen.exit_pop", "end_event": "screen.exit_end"}
@@ -317,7 +329,7 @@ def build():
         "type": "panel", "size": ["100%", "100%"],
         "controls": [{"server_form_factory": {"type": "factory", "control_ids": {
             "long_form": "@server_form.npcs_router",
-            "custom_form": "@server_form.custom_form" if os.environ.get("NPCS_SAFE") else "@server_form.npcs_custom_router"}}}]
+            "custom_form": "@server_form.npcs_custom_router" if DARK_INPUTS else "@server_form.custom_form"}}}]
     }
     d["npcs_router"] = {"type": "panel", "size": ["100%", "100%"], "controls": [
         {"vanilla@server_form.npcs_vanilla_wrap": {}},
@@ -327,16 +339,50 @@ def build():
                               "bindings": [global_title(), view(NO_PANEL)],
                               "controls": [wrap_vanilla("long_form@server_form.long_form")]}
 
-    if not os.environ.get("NPCS_SAFE"):  # NPCS_SAFE=1: Mojang's own input box, no free look
+    if DARK_INPUTS:
         add_dark_inputs(d)
 
     d["npcs_editor"] = {
         "type": "panel", "size": ["100%", "100%"], "layer": 2,
         "bindings": [global_title(), view(HAS_PANEL)],
         "controls": [
+            {"grid@server_form.npcs_grid_free": {}},
             {"left@server_form.npcs_left": {}},
             {"rail@server_form.npcs_rail": {}},
-            {"bar@server_form.npcs_bar": {}}
+            {"bar@server_form.npcs_bar": {}},
+            {"mini@server_form.npcs_mini": {}}
+        ]
+    }
+    # thirds grid over the free space right of the panel (Camera tab: Thirds guide)
+    d["npcs_grid_free"] = {
+        "type": "image", "texture": "textures/ui/npcstudio/panel/grid_thirds", "layer": 1,
+        "size": [f"{100 - int(PANEL_W[:-1])}% - {RAIL_W}px", f"100% - {BAR_H}px"],
+        "anchor_from": "top_right", "anchor_to": "top_right", "offset": [-RAIL_W, 0],
+        "bindings": [{"binding_name": BODY}, view(f"({HAS_GRID} and {NOT_MINI})")]
+    }
+    # panel hidden: the whole view with the grid, a › handle on the left and a hint at the bottom
+    d["npcs_mini"] = {
+        "type": "panel", "size": ["100%", "100%"], "layer": 2,
+        "bindings": [{"binding_name": BODY}, view(IS_MINI)],
+        "controls": [
+            {"grid": {"type": "image", "texture": "textures/ui/npcstudio/panel/grid_thirds", "size": ["100%", "100%"], "layer": 1}},
+            {"handle_slot": {"type": "stack_panel", "orientation": "vertical", "size": [16, 40],
+                             "anchor_from": "left_middle", "anchor_to": "left_middle", "collection_name": "form_buttons",
+                             "controls": [{"h@server_form.npcs_mini_handle": {"collection_index": MINI_BTN}}]}},
+            {"hint_bg": {"type": "image", "texture": "textures/ui/npcstudio/panel/bar_bg", "layer": 3,
+                         "size": [240, 14], "anchor_from": "bottom_middle", "anchor_to": "bottom_middle", "offset": [0, -6],
+                         "controls": [{"hint": {"type": "label", "text": "Panel hidden  ·  tap  >  on the left to bring it back",
+                                                "color": SUB, "shadow": False, "font_scale_factor": 0.8, "layer": 4,
+                                                "size": ["100% - 8px", 10], "text_alignment": "center",
+                                                "anchor_from": "center", "anchor_to": "center"}}]}}
+        ]
+    }
+    d["npcs_mini_handle"] = {
+        "type": "panel", "size": [16, 40],
+        "bindings": [coll(BTN), view(shown())],
+        "controls": [
+            {"button@common.button": dict(btn("tool", size=(16, 40)), anchor_from="center", anchor_to="center")},
+            {"icon": icon([8, 8], [0, 0], "center")}
         ]
     }
 
@@ -344,8 +390,13 @@ def build():
     d["npcs_left"] = {
         "type": "image", "texture": "textures/ui/npcstudio/panel/panel_bg",
         "size": [PANEL_W, f"100% - {BAR_H}px"], "anchor_from": "top_left", "anchor_to": "top_left", "layer": 2,
+        "bindings": [{"binding_name": BODY}, view(NOT_MINI)],
         "controls": [
             {"tabs@server_form.npcs_tabs": {}},
+            {"hide_slot": {"type": "stack_panel", "orientation": "horizontal", "size": [14, 14],
+                           "anchor_from": "top_right", "anchor_to": "top_right", "offset": [-20, 3],
+                           "collection_name": "form_buttons",
+                           "controls": [{"h@server_form.npcs_hide_btn": {"collection_index": MINI_BTN}}]}},
             {"close@common.button": dict(btn("close", size=(14, 14), mapping="button.menu_exit", collection=False),
                                          anchor_from="top_right", anchor_to="top_right", offset=[-3, 3])},
             {"rule": {"type": "image", "texture": "textures/ui/npcstudio/panel/rule", "size": ["100%", 1],
@@ -354,7 +405,15 @@ def build():
         ]
     }
     tabs = [{f"tab{i}@server_form.npcs_tab": {"collection_index": TAB0 + i}} for i in range(TABS)]
-    d["npcs_tabs"] = {"type": "stack_panel", "orientation": "horizontal", "size": ["100% - 22px", 18],
+    d["npcs_hide_btn"] = {
+        "type": "panel", "size": [14, 14],
+        "bindings": [coll(BTN), view(shown())],
+        "controls": [
+            {"button@common.button": dict(btn("small", size=(14, 14)), anchor_from="center", anchor_to="center")},
+            {"icon": icon([8, 8], [0, 0], "center")}
+        ]
+    }
+    d["npcs_tabs"] = {"type": "stack_panel", "orientation": "horizontal", "size": ["100% - 40px", 18],
                       "offset": [3, 2], "anchor_from": "top_left", "anchor_to": "top_left",
                       "collection_name": "form_buttons", "controls": tabs}
     d["npcs_tab"] = {
@@ -394,6 +453,7 @@ def build():
     d["npcs_rail"] = {
         "type": "image", "texture": "textures/ui/npcstudio/panel/panel_bg",
         "size": [RAIL_W, f"100% - {BAR_H}px"], "anchor_from": "top_right", "anchor_to": "top_right", "layer": 2,
+        "bindings": [{"binding_name": BODY}, view(NOT_MINI)],
         "controls": [{"scroll@server_form.npcs_rail_scroll": {}}]
     }
     d["npcs_rail_scroll@common.scrolling_panel"] = {
@@ -425,6 +485,7 @@ def build():
     d["npcs_bar"] = {
         "type": "image", "texture": "textures/ui/npcstudio/panel/bar_bg",
         "size": ["100%", BAR_H], "anchor_from": "bottom_left", "anchor_to": "bottom_left", "layer": 2,
+        "bindings": [{"binding_name": BODY}, view(NOT_MINI)],
         "controls": [
             {"l": {"type": "stack_panel", "orientation": "horizontal", "size": ["100%c", BAR_H - 4], "offset": [4, 0],
                    "anchor_from": "left_middle", "anchor_to": "left_middle", "collection_name": "form_buttons", "controls": left}},
@@ -487,6 +548,15 @@ def textures():
     nine("choose_pressed", (30, 70, 82, 255), (39, 211, 245, 255))
     small_icons()
     slider_tracks()
+    # thirds grid: thin light lines at 1/3 and 2/3, stretched over the free space
+    W, H = 960, 540
+    img = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+    g = ImageDraw.Draw(img)
+    for x in (W // 3, 2 * W // 3):
+        g.rectangle([x - 1, 0, x, H - 1], fill=(255, 255, 255, 110))
+    for y in (H // 3, 2 * H // 3):
+        g.rectangle([0, y - 1, W - 1, y], fill=(255, 255, 255, 110))
+    img.save(os.path.join(TEX, "grid_thirds.png"))
     nine("sel_ring", (0, 0, 0, 0), (39, 211, 245, 255))
     nine("tab", (16, 21, 30, 0), None)
     nine("tab_hover", (35, 35, 37, 255), None)

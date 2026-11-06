@@ -75,7 +75,16 @@ def validate(folder):
     return bad
 
 
+def write_version():
+    """BP/scripts/version.js = the manifest version, shown in the panel (tells which pack a world runs)."""
+    v = ".".join(map(str, json.load(open(os.path.join(ROOT, "BP", "manifest.json")))["header"]["version"]))
+    with open(os.path.join(ROOT, "BP", "scripts", "version.js"), "w", encoding="utf-8") as f:
+        f.write(f'// written by tools/build.py from BP/manifest.json\nexport const VERSION = "{v}";\n')
+    return v
+
+
 def main():
+    write_version()
     shutil.rmtree(BUILD, ignore_errors=True)
     bp = os.path.join(BUILD, "NPCStudio_BP")
     rp = os.path.join(BUILD, "NPCStudio_RP")

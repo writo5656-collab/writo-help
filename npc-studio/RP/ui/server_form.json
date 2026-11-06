@@ -7,17 +7,7 @@
   "$background_animations": [
    "@server_form.npcs_no_anim"
   ],
-  "render_game_behind": true,
-  "absorbs_input": false
- },
- "npcs_blocker": {
-  "type": "input_panel",
-  "size": [
-   "100%",
-   "100%"
-  ],
-  "modal": true,
-  "prevent_touch_input": true
+  "render_game_behind": true
  },
  "npcs_no_anim": {
   "anim_type": "offset",
@@ -46,7 +36,7 @@
      "type": "factory",
      "control_ids": {
       "long_form": "@server_form.npcs_router",
-      "custom_form": "@server_form.npcs_custom_router"
+      "custom_form": "@server_form.custom_form"
      }
     }
    }
@@ -85,333 +75,7 @@
   ],
   "controls": [
    {
-    "block@server_form.npcs_blocker": {
-     "controls": [
-      {
-       "long_form@server_form.long_form": {}
-      }
-     ]
-    }
-   }
-  ]
- },
- "npcs_custom_router": {
-  "type": "panel",
-  "size": [
-   "100%",
-   "100%"
-  ],
-  "controls": [
-   {
-    "vanilla": {
-     "type": "panel",
-     "size": [
-      "100%",
-      "100%"
-     ],
-     "bindings": [
-      {
-       "binding_name": "#title_text"
-      },
-      {
-       "binding_type": "view",
-       "source_property_name": "((#title_text - '§n§p') = #title_text)",
-       "target_property_name": "#visible"
-      }
-     ],
-     "controls": [
-      {
-       "block@server_form.npcs_blocker": {
-        "controls": [
-         {
-          "custom_form@server_form.custom_form": {}
-         }
-        ]
-       }
-      }
-     ]
-    }
-   },
-   {
-    "studio@server_form.npcs_custom": {
-     "bindings": [
-      {
-       "binding_name": "#title_text"
-      },
-      {
-       "binding_type": "view",
-       "source_property_name": "(not ((#title_text - '§n§p') = #title_text))",
-       "target_property_name": "#visible"
-      }
-     ]
-    }
-   }
-  ]
- },
- "npcs_custom": {
-  "type": "image",
-  "texture": "textures/ui/npcstudio/panel/panel_bg",
-  "layer": 2,
-  "size": [
-   "34%",
-   "100%"
-  ],
-  "anchor_from": "top_left",
-  "anchor_to": "top_left",
-  "controls": [
-   {
-    "title": {
-     "type": "label",
-     "text": "#title_text",
-     "color": [
-      0.15,
-      0.83,
-      0.96
-     ],
-     "shadow": false,
-     "layer": 4,
-     "size": [
-      "100% - 30px",
-      10
-     ],
-     "offset": [
-      10,
-      6
-     ],
-     "anchor_from": "top_left",
-     "anchor_to": "top_left",
-     "bindings": [
-      {
-       "binding_name": "#title_text"
-      },
-      {
-       "binding_type": "view",
-       "source_property_name": "((((#title_text - '§n§p§s§r') - '§n§p§t§r') - '§n§p§g§r') - '§n§p§h§r')",
-       "target_property_name": "#title_text"
-      }
-     ]
-    }
-   },
-   {
-    "close@common.button": {
-     "size": [
-      14,
-      14
-     ],
-     "$pressed_button_name": "button.menu_exit",
-     "layer": 1,
-     "controls": [
-      {
-       "default": {
-        "type": "image",
-        "texture": "textures/ui/npcstudio/panel/close",
-        "size": [
-         "100%",
-         "100%"
-        ]
-       }
-      },
-      {
-       "hover": {
-        "type": "image",
-        "texture": "textures/ui/npcstudio/panel/close_hover",
-        "size": [
-         "100%",
-         "100%"
-        ]
-       }
-      },
-      {
-       "pressed": {
-        "type": "image",
-        "texture": "textures/ui/npcstudio/panel/close_pressed",
-        "size": [
-         "100%",
-         "100%"
-        ]
-       }
-      }
-     ],
-     "anchor_from": "top_right",
-     "anchor_to": "top_right",
-     "offset": [
-      -3,
-      3
-     ]
-    }
-   },
-   {
-    "rule": {
-     "type": "image",
-     "texture": "textures/ui/npcstudio/panel/rule",
-     "size": [
-      "100%",
-      1
-     ],
-     "offset": [
-      0,
-      20
-     ],
-     "anchor_from": "top_left",
-     "anchor_to": "top_left",
-     "layer": 3
-    }
-   },
-   {
-    "scroll@server_form.npcs_custom_scroll": {}
-   }
-  ]
- },
- "npcs_custom_scroll@common.scrolling_panel": {
-  "anchor_to": "top_left",
-  "anchor_from": "top_left",
-  "offset": [
-   0,
-   22
-  ],
-  "$show_background": false,
-  "size": [
-   "100%",
-   "100% - 23px"
-  ],
-  "$scrolling_content": "server_form.npcs_custom_content",
-  "$scroll_size": [
-   4,
-   "100% - 4px"
-  ],
-  "$scrolling_pane_size": [
-   "100% - 6px",
-   "100%"
-  ],
-  "$scrolling_pane_offset": [
-   0,
-   0
-  ],
-  "$scroll_bar_right_padding_size": [
-   0,
-   0
-  ]
- },
- "npcs_custom_content": {
-  "type": "stack_panel",
-  "orientation": "vertical",
-  "size": [
-   "100% - 12px",
-   "100%c"
-  ],
-  "offset": [
-   6,
-   0
-  ],
-  "anchor_from": "top_left",
-  "anchor_to": "top_left",
-  "controls": [
-   {
-    "generated_form@server_form.generated_contents": {}
-   },
-   {
-    "gap": {
-     "type": "panel",
-     "size": [
-      "100%",
-      6
-     ]
-    }
-   },
-   {
-    "submit": {
-     "type": "panel",
-     "size": [
-      "100%",
-      20
-     ],
-     "bindings": [
-      {
-       "binding_name": "#submit_button_visible",
-       "binding_name_override": "#visible"
-      }
-     ],
-     "controls": [
-      {
-       "button@common.button": {
-        "size": [
-         "100%",
-         18
-        ],
-        "$pressed_button_name": "button.submit_custom_form",
-        "layer": 1,
-        "controls": [
-         {
-          "default": {
-           "type": "image",
-           "texture": "textures/ui/npcstudio/panel/small",
-           "size": [
-            "100%",
-            "100%"
-           ]
-          }
-         },
-         {
-          "hover": {
-           "type": "image",
-           "texture": "textures/ui/npcstudio/panel/small_hover",
-           "size": [
-            "100%",
-            "100%"
-           ]
-          }
-         },
-         {
-          "pressed": {
-           "type": "image",
-           "texture": "textures/ui/npcstudio/panel/small_pressed",
-           "size": [
-            "100%",
-            "100%"
-           ]
-          }
-         }
-        ],
-        "anchor_from": "center",
-        "anchor_to": "center"
-       }
-      },
-      {
-       "label": {
-        "type": "label",
-        "text": "#submit_text",
-        "color": [
-         0.93,
-         0.93,
-         0.93
-        ],
-        "shadow": false,
-        "layer": 6,
-        "size": [
-         "100%",
-         10
-        ],
-        "text_alignment": "center",
-        "anchor_from": "center",
-        "anchor_to": "center",
-        "bindings": [
-         {
-          "binding_name": "#submit_text"
-         }
-        ]
-       }
-      }
-     ]
-    }
-   },
-   {
-    "pad_end": {
-     "type": "panel",
-     "size": [
-      "100%",
-      8
-     ]
-    }
+    "long_form@server_form.long_form": {}
    }
   ]
  },
@@ -434,6 +98,9 @@
   ],
   "controls": [
    {
+    "grid@server_form.npcs_grid_free": {}
+   },
+   {
     "left@server_form.npcs_left": {}
    },
    {
@@ -441,6 +108,231 @@
    },
    {
     "bar@server_form.npcs_bar": {}
+   },
+   {
+    "mini@server_form.npcs_mini": {}
+   }
+  ]
+ },
+ "npcs_grid_free": {
+  "type": "image",
+  "texture": "textures/ui/npcstudio/panel/grid_thirds",
+  "layer": 1,
+  "size": [
+   "66% - 32px",
+   "100% - 24px"
+  ],
+  "anchor_from": "top_right",
+  "anchor_to": "top_right",
+  "offset": [
+   -32,
+   0
+  ],
+  "bindings": [
+   {
+    "binding_name": "#form_text"
+   },
+   {
+    "binding_type": "view",
+    "source_property_name": "((not ((#form_text - '§g§r') = #form_text)) and ((#form_text - '§x§r') = #form_text))",
+    "target_property_name": "#visible"
+   }
+  ]
+ },
+ "npcs_mini": {
+  "type": "panel",
+  "size": [
+   "100%",
+   "100%"
+  ],
+  "layer": 2,
+  "bindings": [
+   {
+    "binding_name": "#form_text"
+   },
+   {
+    "binding_type": "view",
+    "source_property_name": "(not ((#form_text - '§x§r') = #form_text))",
+    "target_property_name": "#visible"
+   }
+  ],
+  "controls": [
+   {
+    "grid": {
+     "type": "image",
+     "texture": "textures/ui/npcstudio/panel/grid_thirds",
+     "size": [
+      "100%",
+      "100%"
+     ],
+     "layer": 1
+    }
+   },
+   {
+    "handle_slot": {
+     "type": "stack_panel",
+     "orientation": "vertical",
+     "size": [
+      16,
+      40
+     ],
+     "anchor_from": "left_middle",
+     "anchor_to": "left_middle",
+     "collection_name": "form_buttons",
+     "controls": [
+      {
+       "h@server_form.npcs_mini_handle": {
+        "collection_index": 38
+       }
+      }
+     ]
+    }
+   },
+   {
+    "hint_bg": {
+     "type": "image",
+     "texture": "textures/ui/npcstudio/panel/bar_bg",
+     "layer": 3,
+     "size": [
+      240,
+      14
+     ],
+     "anchor_from": "bottom_middle",
+     "anchor_to": "bottom_middle",
+     "offset": [
+      0,
+      -6
+     ],
+     "controls": [
+      {
+       "hint": {
+        "type": "label",
+        "text": "Panel hidden  ·  tap  >  on the left to bring it back",
+        "color": [
+         0.63,
+         0.63,
+         0.65
+        ],
+        "shadow": false,
+        "font_scale_factor": 0.8,
+        "layer": 4,
+        "size": [
+         "100% - 8px",
+         10
+        ],
+        "text_alignment": "center",
+        "anchor_from": "center",
+        "anchor_to": "center"
+       }
+      }
+     ]
+    }
+   }
+  ]
+ },
+ "npcs_mini_handle": {
+  "type": "panel",
+  "size": [
+   16,
+   40
+  ],
+  "bindings": [
+   {
+    "binding_name": "#form_button_text",
+    "binding_type": "collection",
+    "binding_collection_name": "form_buttons"
+   },
+   {
+    "binding_type": "view",
+    "source_property_name": "(not (#form_button_text = ''))",
+    "target_property_name": "#visible"
+   }
+  ],
+  "controls": [
+   {
+    "button@common.button": {
+     "size": [
+      16,
+      40
+     ],
+     "$pressed_button_name": "button.form_button_click",
+     "layer": 1,
+     "controls": [
+      {
+       "default": {
+        "type": "image",
+        "texture": "textures/ui/npcstudio/panel/tool",
+        "size": [
+         "100%",
+         "100%"
+        ]
+       }
+      },
+      {
+       "hover": {
+        "type": "image",
+        "texture": "textures/ui/npcstudio/panel/tool_hover",
+        "size": [
+         "100%",
+         "100%"
+        ]
+       }
+      },
+      {
+       "pressed": {
+        "type": "image",
+        "texture": "textures/ui/npcstudio/panel/tool_pressed",
+        "size": [
+         "100%",
+         "100%"
+        ]
+       }
+      }
+     ],
+     "$button_bindings": [
+      {
+       "binding_type": "collection_details",
+       "binding_collection_name": "form_buttons"
+      }
+     ],
+     "anchor_from": "center",
+     "anchor_to": "center"
+    }
+   },
+   {
+    "icon": {
+     "type": "image",
+     "layer": 5,
+     "size": [
+      8,
+      8
+     ],
+     "offset": [
+      0,
+      0
+     ],
+     "anchor_from": "center",
+     "anchor_to": "center",
+     "bindings": [
+      {
+       "binding_name": "#form_button_texture",
+       "binding_type": "collection",
+       "binding_collection_name": "form_buttons",
+       "binding_name_override": "#texture"
+      },
+      {
+       "binding_name": "#form_button_texture_file_system",
+       "binding_type": "collection",
+       "binding_collection_name": "form_buttons",
+       "binding_name_override": "#texture_file_system"
+      },
+      {
+       "binding_type": "view",
+       "source_property_name": "(not ((#texture = '') or (#texture = 'loading')))",
+       "target_property_name": "#visible"
+      }
+     ]
+    }
    }
   ]
  },
@@ -454,9 +346,43 @@
   "anchor_from": "top_left",
   "anchor_to": "top_left",
   "layer": 2,
+  "bindings": [
+   {
+    "binding_name": "#form_text"
+   },
+   {
+    "binding_type": "view",
+    "source_property_name": "((#form_text - '§x§r') = #form_text)",
+    "target_property_name": "#visible"
+   }
+  ],
   "controls": [
    {
     "tabs@server_form.npcs_tabs": {}
+   },
+   {
+    "hide_slot": {
+     "type": "stack_panel",
+     "orientation": "horizontal",
+     "size": [
+      14,
+      14
+     ],
+     "anchor_from": "top_right",
+     "anchor_to": "top_right",
+     "offset": [
+      -20,
+      3
+     ],
+     "collection_name": "form_buttons",
+     "controls": [
+      {
+       "h@server_form.npcs_hide_btn": {
+        "collection_index": 38
+       }
+      }
+     ]
+    }
    },
    {
     "close@common.button": {
@@ -528,11 +454,117 @@
    }
   ]
  },
+ "npcs_hide_btn": {
+  "type": "panel",
+  "size": [
+   14,
+   14
+  ],
+  "bindings": [
+   {
+    "binding_name": "#form_button_text",
+    "binding_type": "collection",
+    "binding_collection_name": "form_buttons"
+   },
+   {
+    "binding_type": "view",
+    "source_property_name": "(not (#form_button_text = ''))",
+    "target_property_name": "#visible"
+   }
+  ],
+  "controls": [
+   {
+    "button@common.button": {
+     "size": [
+      14,
+      14
+     ],
+     "$pressed_button_name": "button.form_button_click",
+     "layer": 1,
+     "controls": [
+      {
+       "default": {
+        "type": "image",
+        "texture": "textures/ui/npcstudio/panel/small",
+        "size": [
+         "100%",
+         "100%"
+        ]
+       }
+      },
+      {
+       "hover": {
+        "type": "image",
+        "texture": "textures/ui/npcstudio/panel/small_hover",
+        "size": [
+         "100%",
+         "100%"
+        ]
+       }
+      },
+      {
+       "pressed": {
+        "type": "image",
+        "texture": "textures/ui/npcstudio/panel/small_pressed",
+        "size": [
+         "100%",
+         "100%"
+        ]
+       }
+      }
+     ],
+     "$button_bindings": [
+      {
+       "binding_type": "collection_details",
+       "binding_collection_name": "form_buttons"
+      }
+     ],
+     "anchor_from": "center",
+     "anchor_to": "center"
+    }
+   },
+   {
+    "icon": {
+     "type": "image",
+     "layer": 5,
+     "size": [
+      8,
+      8
+     ],
+     "offset": [
+      0,
+      0
+     ],
+     "anchor_from": "center",
+     "anchor_to": "center",
+     "bindings": [
+      {
+       "binding_name": "#form_button_texture",
+       "binding_type": "collection",
+       "binding_collection_name": "form_buttons",
+       "binding_name_override": "#texture"
+      },
+      {
+       "binding_name": "#form_button_texture_file_system",
+       "binding_type": "collection",
+       "binding_collection_name": "form_buttons",
+       "binding_name_override": "#texture_file_system"
+      },
+      {
+       "binding_type": "view",
+       "source_property_name": "(not ((#texture = '') or (#texture = 'loading')))",
+       "target_property_name": "#visible"
+      }
+     ]
+    }
+   }
+  ]
+ },
  "npcs_tabs": {
   "type": "stack_panel",
   "orientation": "horizontal",
   "size": [
-   "100% - 22px",
+   "100% - 40px",
    18
   ],
   "offset": [
@@ -780,962 +812,962 @@
    },
    {
     "r0@server_form.npcs_main": {
-     "collection_index": 38
-    }
-   },
-   {
-    "r0a@server_form.npcs_aux_a": {
      "collection_index": 39
     }
    },
    {
-    "r0b@server_form.npcs_aux_b": {
+    "r0a@server_form.npcs_aux_a": {
      "collection_index": 40
     }
    },
    {
-    "r0c@server_form.npcs_aux_c": {
+    "r0b@server_form.npcs_aux_b": {
      "collection_index": 41
     }
    },
    {
-    "r1@server_form.npcs_main": {
+    "r0c@server_form.npcs_aux_c": {
      "collection_index": 42
     }
    },
    {
-    "r1a@server_form.npcs_aux_a": {
+    "r1@server_form.npcs_main": {
      "collection_index": 43
     }
    },
    {
-    "r1b@server_form.npcs_aux_b": {
+    "r1a@server_form.npcs_aux_a": {
      "collection_index": 44
     }
    },
    {
-    "r1c@server_form.npcs_aux_c": {
+    "r1b@server_form.npcs_aux_b": {
      "collection_index": 45
     }
    },
    {
-    "r2@server_form.npcs_main": {
+    "r1c@server_form.npcs_aux_c": {
      "collection_index": 46
     }
    },
    {
-    "r2a@server_form.npcs_aux_a": {
+    "r2@server_form.npcs_main": {
      "collection_index": 47
     }
    },
    {
-    "r2b@server_form.npcs_aux_b": {
+    "r2a@server_form.npcs_aux_a": {
      "collection_index": 48
     }
    },
    {
-    "r2c@server_form.npcs_aux_c": {
+    "r2b@server_form.npcs_aux_b": {
      "collection_index": 49
     }
    },
    {
-    "r3@server_form.npcs_main": {
+    "r2c@server_form.npcs_aux_c": {
      "collection_index": 50
     }
    },
    {
-    "r3a@server_form.npcs_aux_a": {
+    "r3@server_form.npcs_main": {
      "collection_index": 51
     }
    },
    {
-    "r3b@server_form.npcs_aux_b": {
+    "r3a@server_form.npcs_aux_a": {
      "collection_index": 52
     }
    },
    {
-    "r3c@server_form.npcs_aux_c": {
+    "r3b@server_form.npcs_aux_b": {
      "collection_index": 53
     }
    },
    {
-    "r4@server_form.npcs_main": {
+    "r3c@server_form.npcs_aux_c": {
      "collection_index": 54
     }
    },
    {
-    "r4a@server_form.npcs_aux_a": {
+    "r4@server_form.npcs_main": {
      "collection_index": 55
     }
    },
    {
-    "r4b@server_form.npcs_aux_b": {
+    "r4a@server_form.npcs_aux_a": {
      "collection_index": 56
     }
    },
    {
-    "r4c@server_form.npcs_aux_c": {
+    "r4b@server_form.npcs_aux_b": {
      "collection_index": 57
     }
    },
    {
-    "r5@server_form.npcs_main": {
+    "r4c@server_form.npcs_aux_c": {
      "collection_index": 58
     }
    },
    {
-    "r5a@server_form.npcs_aux_a": {
+    "r5@server_form.npcs_main": {
      "collection_index": 59
     }
    },
    {
-    "r5b@server_form.npcs_aux_b": {
+    "r5a@server_form.npcs_aux_a": {
      "collection_index": 60
     }
    },
    {
-    "r5c@server_form.npcs_aux_c": {
+    "r5b@server_form.npcs_aux_b": {
      "collection_index": 61
     }
    },
    {
-    "r6@server_form.npcs_main": {
+    "r5c@server_form.npcs_aux_c": {
      "collection_index": 62
     }
    },
    {
-    "r6a@server_form.npcs_aux_a": {
+    "r6@server_form.npcs_main": {
      "collection_index": 63
     }
    },
    {
-    "r6b@server_form.npcs_aux_b": {
+    "r6a@server_form.npcs_aux_a": {
      "collection_index": 64
     }
    },
    {
-    "r6c@server_form.npcs_aux_c": {
+    "r6b@server_form.npcs_aux_b": {
      "collection_index": 65
     }
    },
    {
-    "r7@server_form.npcs_main": {
+    "r6c@server_form.npcs_aux_c": {
      "collection_index": 66
     }
    },
    {
-    "r7a@server_form.npcs_aux_a": {
+    "r7@server_form.npcs_main": {
      "collection_index": 67
     }
    },
    {
-    "r7b@server_form.npcs_aux_b": {
+    "r7a@server_form.npcs_aux_a": {
      "collection_index": 68
     }
    },
    {
-    "r7c@server_form.npcs_aux_c": {
+    "r7b@server_form.npcs_aux_b": {
      "collection_index": 69
     }
    },
    {
-    "r8@server_form.npcs_main": {
+    "r7c@server_form.npcs_aux_c": {
      "collection_index": 70
     }
    },
    {
-    "r8a@server_form.npcs_aux_a": {
+    "r8@server_form.npcs_main": {
      "collection_index": 71
     }
    },
    {
-    "r8b@server_form.npcs_aux_b": {
+    "r8a@server_form.npcs_aux_a": {
      "collection_index": 72
     }
    },
    {
-    "r8c@server_form.npcs_aux_c": {
+    "r8b@server_form.npcs_aux_b": {
      "collection_index": 73
     }
    },
    {
-    "r9@server_form.npcs_main": {
+    "r8c@server_form.npcs_aux_c": {
      "collection_index": 74
     }
    },
    {
-    "r9a@server_form.npcs_aux_a": {
+    "r9@server_form.npcs_main": {
      "collection_index": 75
     }
    },
    {
-    "r9b@server_form.npcs_aux_b": {
+    "r9a@server_form.npcs_aux_a": {
      "collection_index": 76
     }
    },
    {
-    "r9c@server_form.npcs_aux_c": {
+    "r9b@server_form.npcs_aux_b": {
      "collection_index": 77
     }
    },
    {
-    "r10@server_form.npcs_main": {
+    "r9c@server_form.npcs_aux_c": {
      "collection_index": 78
     }
    },
    {
-    "r10a@server_form.npcs_aux_a": {
+    "r10@server_form.npcs_main": {
      "collection_index": 79
     }
    },
    {
-    "r10b@server_form.npcs_aux_b": {
+    "r10a@server_form.npcs_aux_a": {
      "collection_index": 80
     }
    },
    {
-    "r10c@server_form.npcs_aux_c": {
+    "r10b@server_form.npcs_aux_b": {
      "collection_index": 81
     }
    },
    {
-    "r11@server_form.npcs_main": {
+    "r10c@server_form.npcs_aux_c": {
      "collection_index": 82
     }
    },
    {
-    "r11a@server_form.npcs_aux_a": {
+    "r11@server_form.npcs_main": {
      "collection_index": 83
     }
    },
    {
-    "r11b@server_form.npcs_aux_b": {
+    "r11a@server_form.npcs_aux_a": {
      "collection_index": 84
     }
    },
    {
-    "r11c@server_form.npcs_aux_c": {
+    "r11b@server_form.npcs_aux_b": {
      "collection_index": 85
     }
    },
    {
-    "r12@server_form.npcs_main": {
+    "r11c@server_form.npcs_aux_c": {
      "collection_index": 86
     }
    },
    {
-    "r12a@server_form.npcs_aux_a": {
+    "r12@server_form.npcs_main": {
      "collection_index": 87
     }
    },
    {
-    "r12b@server_form.npcs_aux_b": {
+    "r12a@server_form.npcs_aux_a": {
      "collection_index": 88
     }
    },
    {
-    "r12c@server_form.npcs_aux_c": {
+    "r12b@server_form.npcs_aux_b": {
      "collection_index": 89
     }
    },
    {
-    "r13@server_form.npcs_main": {
+    "r12c@server_form.npcs_aux_c": {
      "collection_index": 90
     }
    },
    {
-    "r13a@server_form.npcs_aux_a": {
+    "r13@server_form.npcs_main": {
      "collection_index": 91
     }
    },
    {
-    "r13b@server_form.npcs_aux_b": {
+    "r13a@server_form.npcs_aux_a": {
      "collection_index": 92
     }
    },
    {
-    "r13c@server_form.npcs_aux_c": {
+    "r13b@server_form.npcs_aux_b": {
      "collection_index": 93
     }
    },
    {
-    "r14@server_form.npcs_main": {
+    "r13c@server_form.npcs_aux_c": {
      "collection_index": 94
     }
    },
    {
-    "r14a@server_form.npcs_aux_a": {
+    "r14@server_form.npcs_main": {
      "collection_index": 95
     }
    },
    {
-    "r14b@server_form.npcs_aux_b": {
+    "r14a@server_form.npcs_aux_a": {
      "collection_index": 96
     }
    },
    {
-    "r14c@server_form.npcs_aux_c": {
+    "r14b@server_form.npcs_aux_b": {
      "collection_index": 97
     }
    },
    {
-    "r15@server_form.npcs_main": {
+    "r14c@server_form.npcs_aux_c": {
      "collection_index": 98
     }
    },
    {
-    "r15a@server_form.npcs_aux_a": {
+    "r15@server_form.npcs_main": {
      "collection_index": 99
     }
    },
    {
-    "r15b@server_form.npcs_aux_b": {
+    "r15a@server_form.npcs_aux_a": {
      "collection_index": 100
     }
    },
    {
-    "r15c@server_form.npcs_aux_c": {
+    "r15b@server_form.npcs_aux_b": {
      "collection_index": 101
     }
    },
    {
-    "r16@server_form.npcs_main": {
+    "r15c@server_form.npcs_aux_c": {
      "collection_index": 102
     }
    },
    {
-    "r16a@server_form.npcs_aux_a": {
+    "r16@server_form.npcs_main": {
      "collection_index": 103
     }
    },
    {
-    "r16b@server_form.npcs_aux_b": {
+    "r16a@server_form.npcs_aux_a": {
      "collection_index": 104
     }
    },
    {
-    "r16c@server_form.npcs_aux_c": {
+    "r16b@server_form.npcs_aux_b": {
      "collection_index": 105
     }
    },
    {
-    "r17@server_form.npcs_main": {
+    "r16c@server_form.npcs_aux_c": {
      "collection_index": 106
     }
    },
    {
-    "r17a@server_form.npcs_aux_a": {
+    "r17@server_form.npcs_main": {
      "collection_index": 107
     }
    },
    {
-    "r17b@server_form.npcs_aux_b": {
+    "r17a@server_form.npcs_aux_a": {
      "collection_index": 108
     }
    },
    {
-    "r17c@server_form.npcs_aux_c": {
+    "r17b@server_form.npcs_aux_b": {
      "collection_index": 109
     }
    },
    {
-    "r18@server_form.npcs_main": {
+    "r17c@server_form.npcs_aux_c": {
      "collection_index": 110
     }
    },
    {
-    "r18a@server_form.npcs_aux_a": {
+    "r18@server_form.npcs_main": {
      "collection_index": 111
     }
    },
    {
-    "r18b@server_form.npcs_aux_b": {
+    "r18a@server_form.npcs_aux_a": {
      "collection_index": 112
     }
    },
    {
-    "r18c@server_form.npcs_aux_c": {
+    "r18b@server_form.npcs_aux_b": {
      "collection_index": 113
     }
    },
    {
-    "r19@server_form.npcs_main": {
+    "r18c@server_form.npcs_aux_c": {
      "collection_index": 114
     }
    },
    {
-    "r19a@server_form.npcs_aux_a": {
+    "r19@server_form.npcs_main": {
      "collection_index": 115
     }
    },
    {
-    "r19b@server_form.npcs_aux_b": {
+    "r19a@server_form.npcs_aux_a": {
      "collection_index": 116
     }
    },
    {
-    "r19c@server_form.npcs_aux_c": {
+    "r19b@server_form.npcs_aux_b": {
      "collection_index": 117
     }
    },
    {
-    "r20@server_form.npcs_main": {
+    "r19c@server_form.npcs_aux_c": {
      "collection_index": 118
     }
    },
    {
-    "r20a@server_form.npcs_aux_a": {
+    "r20@server_form.npcs_main": {
      "collection_index": 119
     }
    },
    {
-    "r20b@server_form.npcs_aux_b": {
+    "r20a@server_form.npcs_aux_a": {
      "collection_index": 120
     }
    },
    {
-    "r20c@server_form.npcs_aux_c": {
+    "r20b@server_form.npcs_aux_b": {
      "collection_index": 121
     }
    },
    {
-    "r21@server_form.npcs_main": {
+    "r20c@server_form.npcs_aux_c": {
      "collection_index": 122
     }
    },
    {
-    "r21a@server_form.npcs_aux_a": {
+    "r21@server_form.npcs_main": {
      "collection_index": 123
     }
    },
    {
-    "r21b@server_form.npcs_aux_b": {
+    "r21a@server_form.npcs_aux_a": {
      "collection_index": 124
     }
    },
    {
-    "r21c@server_form.npcs_aux_c": {
+    "r21b@server_form.npcs_aux_b": {
      "collection_index": 125
     }
    },
    {
-    "r22@server_form.npcs_main": {
+    "r21c@server_form.npcs_aux_c": {
      "collection_index": 126
     }
    },
    {
-    "r22a@server_form.npcs_aux_a": {
+    "r22@server_form.npcs_main": {
      "collection_index": 127
     }
    },
    {
-    "r22b@server_form.npcs_aux_b": {
+    "r22a@server_form.npcs_aux_a": {
      "collection_index": 128
     }
    },
    {
-    "r22c@server_form.npcs_aux_c": {
+    "r22b@server_form.npcs_aux_b": {
      "collection_index": 129
     }
    },
    {
-    "r23@server_form.npcs_main": {
+    "r22c@server_form.npcs_aux_c": {
      "collection_index": 130
     }
    },
    {
-    "r23a@server_form.npcs_aux_a": {
+    "r23@server_form.npcs_main": {
      "collection_index": 131
     }
    },
    {
-    "r23b@server_form.npcs_aux_b": {
+    "r23a@server_form.npcs_aux_a": {
      "collection_index": 132
     }
    },
    {
-    "r23c@server_form.npcs_aux_c": {
+    "r23b@server_form.npcs_aux_b": {
      "collection_index": 133
     }
    },
    {
-    "r24@server_form.npcs_main": {
+    "r23c@server_form.npcs_aux_c": {
      "collection_index": 134
     }
    },
    {
-    "r24a@server_form.npcs_aux_a": {
+    "r24@server_form.npcs_main": {
      "collection_index": 135
     }
    },
    {
-    "r24b@server_form.npcs_aux_b": {
+    "r24a@server_form.npcs_aux_a": {
      "collection_index": 136
     }
    },
    {
-    "r24c@server_form.npcs_aux_c": {
+    "r24b@server_form.npcs_aux_b": {
      "collection_index": 137
     }
    },
    {
-    "r25@server_form.npcs_main": {
+    "r24c@server_form.npcs_aux_c": {
      "collection_index": 138
     }
    },
    {
-    "r25a@server_form.npcs_aux_a": {
+    "r25@server_form.npcs_main": {
      "collection_index": 139
     }
    },
    {
-    "r25b@server_form.npcs_aux_b": {
+    "r25a@server_form.npcs_aux_a": {
      "collection_index": 140
     }
    },
    {
-    "r25c@server_form.npcs_aux_c": {
+    "r25b@server_form.npcs_aux_b": {
      "collection_index": 141
     }
    },
    {
-    "r26@server_form.npcs_main": {
+    "r25c@server_form.npcs_aux_c": {
      "collection_index": 142
     }
    },
    {
-    "r26a@server_form.npcs_aux_a": {
+    "r26@server_form.npcs_main": {
      "collection_index": 143
     }
    },
    {
-    "r26b@server_form.npcs_aux_b": {
+    "r26a@server_form.npcs_aux_a": {
      "collection_index": 144
     }
    },
    {
-    "r26c@server_form.npcs_aux_c": {
+    "r26b@server_form.npcs_aux_b": {
      "collection_index": 145
     }
    },
    {
-    "r27@server_form.npcs_main": {
+    "r26c@server_form.npcs_aux_c": {
      "collection_index": 146
     }
    },
    {
-    "r27a@server_form.npcs_aux_a": {
+    "r27@server_form.npcs_main": {
      "collection_index": 147
     }
    },
    {
-    "r27b@server_form.npcs_aux_b": {
+    "r27a@server_form.npcs_aux_a": {
      "collection_index": 148
     }
    },
    {
-    "r27c@server_form.npcs_aux_c": {
+    "r27b@server_form.npcs_aux_b": {
      "collection_index": 149
     }
    },
    {
-    "r28@server_form.npcs_main": {
+    "r27c@server_form.npcs_aux_c": {
      "collection_index": 150
     }
    },
    {
-    "r28a@server_form.npcs_aux_a": {
+    "r28@server_form.npcs_main": {
      "collection_index": 151
     }
    },
    {
-    "r28b@server_form.npcs_aux_b": {
+    "r28a@server_form.npcs_aux_a": {
      "collection_index": 152
     }
    },
    {
-    "r28c@server_form.npcs_aux_c": {
+    "r28b@server_form.npcs_aux_b": {
      "collection_index": 153
     }
    },
    {
-    "r29@server_form.npcs_main": {
+    "r28c@server_form.npcs_aux_c": {
      "collection_index": 154
     }
    },
    {
-    "r29a@server_form.npcs_aux_a": {
+    "r29@server_form.npcs_main": {
      "collection_index": 155
     }
    },
    {
-    "r29b@server_form.npcs_aux_b": {
+    "r29a@server_form.npcs_aux_a": {
      "collection_index": 156
     }
    },
    {
-    "r29c@server_form.npcs_aux_c": {
+    "r29b@server_form.npcs_aux_b": {
      "collection_index": 157
     }
    },
    {
-    "r30@server_form.npcs_main": {
+    "r29c@server_form.npcs_aux_c": {
      "collection_index": 158
     }
    },
    {
-    "r30a@server_form.npcs_aux_a": {
+    "r30@server_form.npcs_main": {
      "collection_index": 159
     }
    },
    {
-    "r30b@server_form.npcs_aux_b": {
+    "r30a@server_form.npcs_aux_a": {
      "collection_index": 160
     }
    },
    {
-    "r30c@server_form.npcs_aux_c": {
+    "r30b@server_form.npcs_aux_b": {
      "collection_index": 161
     }
    },
    {
-    "r31@server_form.npcs_main": {
+    "r30c@server_form.npcs_aux_c": {
      "collection_index": 162
     }
    },
    {
-    "r31a@server_form.npcs_aux_a": {
+    "r31@server_form.npcs_main": {
      "collection_index": 163
     }
    },
    {
-    "r31b@server_form.npcs_aux_b": {
+    "r31a@server_form.npcs_aux_a": {
      "collection_index": 164
     }
    },
    {
-    "r31c@server_form.npcs_aux_c": {
+    "r31b@server_form.npcs_aux_b": {
      "collection_index": 165
     }
    },
    {
-    "r32@server_form.npcs_main": {
+    "r31c@server_form.npcs_aux_c": {
      "collection_index": 166
     }
    },
    {
-    "r32a@server_form.npcs_aux_a": {
+    "r32@server_form.npcs_main": {
      "collection_index": 167
     }
    },
    {
-    "r32b@server_form.npcs_aux_b": {
+    "r32a@server_form.npcs_aux_a": {
      "collection_index": 168
     }
    },
    {
-    "r32c@server_form.npcs_aux_c": {
+    "r32b@server_form.npcs_aux_b": {
      "collection_index": 169
     }
    },
    {
-    "r33@server_form.npcs_main": {
+    "r32c@server_form.npcs_aux_c": {
      "collection_index": 170
     }
    },
    {
-    "r33a@server_form.npcs_aux_a": {
+    "r33@server_form.npcs_main": {
      "collection_index": 171
     }
    },
    {
-    "r33b@server_form.npcs_aux_b": {
+    "r33a@server_form.npcs_aux_a": {
      "collection_index": 172
     }
    },
    {
-    "r33c@server_form.npcs_aux_c": {
+    "r33b@server_form.npcs_aux_b": {
      "collection_index": 173
     }
    },
    {
-    "r34@server_form.npcs_main": {
+    "r33c@server_form.npcs_aux_c": {
      "collection_index": 174
     }
    },
    {
-    "r34a@server_form.npcs_aux_a": {
+    "r34@server_form.npcs_main": {
      "collection_index": 175
     }
    },
    {
-    "r34b@server_form.npcs_aux_b": {
+    "r34a@server_form.npcs_aux_a": {
      "collection_index": 176
     }
    },
    {
-    "r34c@server_form.npcs_aux_c": {
+    "r34b@server_form.npcs_aux_b": {
      "collection_index": 177
     }
    },
    {
-    "r35@server_form.npcs_main": {
+    "r34c@server_form.npcs_aux_c": {
      "collection_index": 178
     }
    },
    {
-    "r35a@server_form.npcs_aux_a": {
+    "r35@server_form.npcs_main": {
      "collection_index": 179
     }
    },
    {
-    "r35b@server_form.npcs_aux_b": {
+    "r35a@server_form.npcs_aux_a": {
      "collection_index": 180
     }
    },
    {
-    "r35c@server_form.npcs_aux_c": {
+    "r35b@server_form.npcs_aux_b": {
      "collection_index": 181
     }
    },
    {
-    "r36@server_form.npcs_main": {
+    "r35c@server_form.npcs_aux_c": {
      "collection_index": 182
     }
    },
    {
-    "r36a@server_form.npcs_aux_a": {
+    "r36@server_form.npcs_main": {
      "collection_index": 183
     }
    },
    {
-    "r36b@server_form.npcs_aux_b": {
+    "r36a@server_form.npcs_aux_a": {
      "collection_index": 184
     }
    },
    {
-    "r36c@server_form.npcs_aux_c": {
+    "r36b@server_form.npcs_aux_b": {
      "collection_index": 185
     }
    },
    {
-    "r37@server_form.npcs_main": {
+    "r36c@server_form.npcs_aux_c": {
      "collection_index": 186
     }
    },
    {
-    "r37a@server_form.npcs_aux_a": {
+    "r37@server_form.npcs_main": {
      "collection_index": 187
     }
    },
    {
-    "r37b@server_form.npcs_aux_b": {
+    "r37a@server_form.npcs_aux_a": {
      "collection_index": 188
     }
    },
    {
-    "r37c@server_form.npcs_aux_c": {
+    "r37b@server_form.npcs_aux_b": {
      "collection_index": 189
     }
    },
    {
-    "r38@server_form.npcs_main": {
+    "r37c@server_form.npcs_aux_c": {
      "collection_index": 190
     }
    },
    {
-    "r38a@server_form.npcs_aux_a": {
+    "r38@server_form.npcs_main": {
      "collection_index": 191
     }
    },
    {
-    "r38b@server_form.npcs_aux_b": {
+    "r38a@server_form.npcs_aux_a": {
      "collection_index": 192
     }
    },
    {
-    "r38c@server_form.npcs_aux_c": {
+    "r38b@server_form.npcs_aux_b": {
      "collection_index": 193
     }
    },
    {
-    "r39@server_form.npcs_main": {
+    "r38c@server_form.npcs_aux_c": {
      "collection_index": 194
     }
    },
    {
-    "r39a@server_form.npcs_aux_a": {
+    "r39@server_form.npcs_main": {
      "collection_index": 195
     }
    },
    {
-    "r39b@server_form.npcs_aux_b": {
+    "r39a@server_form.npcs_aux_a": {
      "collection_index": 196
     }
    },
    {
-    "r39c@server_form.npcs_aux_c": {
+    "r39b@server_form.npcs_aux_b": {
      "collection_index": 197
     }
    },
    {
-    "r40@server_form.npcs_main": {
+    "r39c@server_form.npcs_aux_c": {
      "collection_index": 198
     }
    },
    {
-    "r40a@server_form.npcs_aux_a": {
+    "r40@server_form.npcs_main": {
      "collection_index": 199
     }
    },
    {
-    "r40b@server_form.npcs_aux_b": {
+    "r40a@server_form.npcs_aux_a": {
      "collection_index": 200
     }
    },
    {
-    "r40c@server_form.npcs_aux_c": {
+    "r40b@server_form.npcs_aux_b": {
      "collection_index": 201
     }
    },
    {
-    "r41@server_form.npcs_main": {
+    "r40c@server_form.npcs_aux_c": {
      "collection_index": 202
     }
    },
    {
-    "r41a@server_form.npcs_aux_a": {
+    "r41@server_form.npcs_main": {
      "collection_index": 203
     }
    },
    {
-    "r41b@server_form.npcs_aux_b": {
+    "r41a@server_form.npcs_aux_a": {
      "collection_index": 204
     }
    },
    {
-    "r41c@server_form.npcs_aux_c": {
+    "r41b@server_form.npcs_aux_b": {
      "collection_index": 205
     }
    },
    {
-    "r42@server_form.npcs_main": {
+    "r41c@server_form.npcs_aux_c": {
      "collection_index": 206
     }
    },
    {
-    "r42a@server_form.npcs_aux_a": {
+    "r42@server_form.npcs_main": {
      "collection_index": 207
     }
    },
    {
-    "r42b@server_form.npcs_aux_b": {
+    "r42a@server_form.npcs_aux_a": {
      "collection_index": 208
     }
    },
    {
-    "r42c@server_form.npcs_aux_c": {
+    "r42b@server_form.npcs_aux_b": {
      "collection_index": 209
     }
    },
    {
-    "r43@server_form.npcs_main": {
+    "r42c@server_form.npcs_aux_c": {
      "collection_index": 210
     }
    },
    {
-    "r43a@server_form.npcs_aux_a": {
+    "r43@server_form.npcs_main": {
      "collection_index": 211
     }
    },
    {
-    "r43b@server_form.npcs_aux_b": {
+    "r43a@server_form.npcs_aux_a": {
      "collection_index": 212
     }
    },
    {
-    "r43c@server_form.npcs_aux_c": {
+    "r43b@server_form.npcs_aux_b": {
      "collection_index": 213
     }
    },
    {
-    "r44@server_form.npcs_main": {
+    "r43c@server_form.npcs_aux_c": {
      "collection_index": 214
     }
    },
    {
-    "r44a@server_form.npcs_aux_a": {
+    "r44@server_form.npcs_main": {
      "collection_index": 215
     }
    },
    {
-    "r44b@server_form.npcs_aux_b": {
+    "r44a@server_form.npcs_aux_a": {
      "collection_index": 216
     }
    },
    {
-    "r44c@server_form.npcs_aux_c": {
+    "r44b@server_form.npcs_aux_b": {
      "collection_index": 217
     }
    },
    {
-    "r45@server_form.npcs_main": {
+    "r44c@server_form.npcs_aux_c": {
      "collection_index": 218
     }
    },
    {
-    "r45a@server_form.npcs_aux_a": {
+    "r45@server_form.npcs_main": {
      "collection_index": 219
     }
    },
    {
-    "r45b@server_form.npcs_aux_b": {
+    "r45a@server_form.npcs_aux_a": {
      "collection_index": 220
     }
    },
    {
-    "r45c@server_form.npcs_aux_c": {
+    "r45b@server_form.npcs_aux_b": {
      "collection_index": 221
     }
    },
    {
-    "r46@server_form.npcs_main": {
+    "r45c@server_form.npcs_aux_c": {
      "collection_index": 222
     }
    },
    {
-    "r46a@server_form.npcs_aux_a": {
+    "r46@server_form.npcs_main": {
      "collection_index": 223
     }
    },
    {
-    "r46b@server_form.npcs_aux_b": {
+    "r46a@server_form.npcs_aux_a": {
      "collection_index": 224
     }
    },
    {
-    "r46c@server_form.npcs_aux_c": {
+    "r46b@server_form.npcs_aux_b": {
      "collection_index": 225
     }
    },
    {
-    "r47@server_form.npcs_main": {
+    "r46c@server_form.npcs_aux_c": {
      "collection_index": 226
     }
    },
    {
-    "r47a@server_form.npcs_aux_a": {
+    "r47@server_form.npcs_main": {
      "collection_index": 227
     }
    },
    {
-    "r47b@server_form.npcs_aux_b": {
+    "r47a@server_form.npcs_aux_a": {
      "collection_index": 228
     }
    },
    {
-    "r47c@server_form.npcs_aux_c": {
+    "r47b@server_form.npcs_aux_b": {
      "collection_index": 229
+    }
+   },
+   {
+    "r47c@server_form.npcs_aux_c": {
+     "collection_index": 230
     }
    },
    {
@@ -2447,145 +2479,6 @@
       }
      ]
     }
-   },
-   {
-    "tile@common.button": {
-     "size": [
-      18,
-      18
-     ],
-     "$pressed_button_name": "button.form_button_click",
-     "layer": 1,
-     "controls": [
-      {
-       "default": {
-        "type": "image",
-        "texture": "textures/ui/npcstudio/panel/tile",
-        "size": [
-         "100%",
-         "100%"
-        ]
-       }
-      },
-      {
-       "hover": {
-        "type": "image",
-        "texture": "textures/ui/npcstudio/panel/tile_hover",
-        "size": [
-         "100%",
-         "100%"
-        ]
-       }
-      },
-      {
-       "pressed": {
-        "type": "image",
-        "texture": "textures/ui/npcstudio/panel/tile_pressed",
-        "size": [
-         "100%",
-         "100%"
-        ]
-       }
-      }
-     ],
-     "$button_bindings": [
-      {
-       "binding_type": "collection_details",
-       "binding_collection_name": "form_buttons"
-      }
-     ],
-     "anchor_from": "left_middle",
-     "anchor_to": "left_middle",
-     "offset": [
-      4,
-      0
-     ],
-     "bindings": [
-      {
-       "binding_type": "collection_details",
-       "binding_collection_name": "form_buttons"
-      },
-      {
-       "binding_name": "#form_button_text",
-       "binding_type": "collection",
-       "binding_collection_name": "form_buttons"
-      },
-      {
-       "binding_type": "view",
-       "source_property_name": "(not ((#form_button_text - '§e§r') = #form_button_text))",
-       "target_property_name": "#visible"
-      }
-     ]
-    }
-   },
-   {
-    "tile_icon": {
-     "type": "image",
-     "layer": 5,
-     "size": [
-      14,
-      14
-     ],
-     "offset": [
-      6,
-      0
-     ],
-     "anchor_from": "left_middle",
-     "anchor_to": "left_middle",
-     "bindings": [
-      {
-       "binding_name": "#form_button_texture",
-       "binding_type": "collection",
-       "binding_collection_name": "form_buttons",
-       "binding_name_override": "#texture"
-      },
-      {
-       "binding_name": "#form_button_texture_file_system",
-       "binding_type": "collection",
-       "binding_collection_name": "form_buttons",
-       "binding_name_override": "#texture_file_system"
-      },
-      {
-       "binding_name": "#form_button_text",
-       "binding_type": "collection",
-       "binding_collection_name": "form_buttons"
-      },
-      {
-       "binding_type": "view",
-       "source_property_name": "((not ((#texture = '') or (#texture = 'loading'))) and (not ((#form_button_text - '§e§r') = #form_button_text)))",
-       "target_property_name": "#visible"
-      }
-     ]
-    }
-   },
-   {
-    "tile_on": {
-     "type": "image",
-     "texture": "textures/ui/npcstudio/panel/sel_ring",
-     "size": [
-      18,
-      18
-     ],
-     "layer": 7,
-     "offset": [
-      4,
-      0
-     ],
-     "anchor_from": "left_middle",
-     "anchor_to": "left_middle",
-     "bindings": [
-      {
-       "binding_name": "#form_button_text",
-       "binding_type": "collection",
-       "binding_collection_name": "form_buttons"
-      },
-      {
-       "binding_type": "view",
-       "source_property_name": "(not ((#form_button_text - '§e§r§b') = #form_button_text))",
-       "target_property_name": "#visible"
-      }
-     ]
-    }
    }
   ]
  },
@@ -2742,145 +2635,6 @@
             }
            ]
           }
-         }
-        ]
-       }
-      },
-      {
-       "tile@common.button": {
-        "size": [
-         18,
-         18
-        ],
-        "$pressed_button_name": "button.form_button_click",
-        "layer": 1,
-        "controls": [
-         {
-          "default": {
-           "type": "image",
-           "texture": "textures/ui/npcstudio/panel/tile",
-           "size": [
-            "100%",
-            "100%"
-           ]
-          }
-         },
-         {
-          "hover": {
-           "type": "image",
-           "texture": "textures/ui/npcstudio/panel/tile_hover",
-           "size": [
-            "100%",
-            "100%"
-           ]
-          }
-         },
-         {
-          "pressed": {
-           "type": "image",
-           "texture": "textures/ui/npcstudio/panel/tile_pressed",
-           "size": [
-            "100%",
-            "100%"
-           ]
-          }
-         }
-        ],
-        "$button_bindings": [
-         {
-          "binding_type": "collection_details",
-          "binding_collection_name": "form_buttons"
-         }
-        ],
-        "anchor_from": "left_middle",
-        "anchor_to": "left_middle",
-        "offset": [
-         26,
-         0
-        ],
-        "bindings": [
-         {
-          "binding_type": "collection_details",
-          "binding_collection_name": "form_buttons"
-         },
-         {
-          "binding_name": "#form_button_text",
-          "binding_type": "collection",
-          "binding_collection_name": "form_buttons"
-         },
-         {
-          "binding_type": "view",
-          "source_property_name": "(not ((#form_button_text - '§e§r') = #form_button_text))",
-          "target_property_name": "#visible"
-         }
-        ]
-       }
-      },
-      {
-       "tile_icon": {
-        "type": "image",
-        "layer": 5,
-        "size": [
-         14,
-         14
-        ],
-        "offset": [
-         28,
-         0
-        ],
-        "anchor_from": "left_middle",
-        "anchor_to": "left_middle",
-        "bindings": [
-         {
-          "binding_name": "#form_button_texture",
-          "binding_type": "collection",
-          "binding_collection_name": "form_buttons",
-          "binding_name_override": "#texture"
-         },
-         {
-          "binding_name": "#form_button_texture_file_system",
-          "binding_type": "collection",
-          "binding_collection_name": "form_buttons",
-          "binding_name_override": "#texture_file_system"
-         },
-         {
-          "binding_name": "#form_button_text",
-          "binding_type": "collection",
-          "binding_collection_name": "form_buttons"
-         },
-         {
-          "binding_type": "view",
-          "source_property_name": "((not ((#texture = '') or (#texture = 'loading'))) and (not ((#form_button_text - '§e§r') = #form_button_text)))",
-          "target_property_name": "#visible"
-         }
-        ]
-       }
-      },
-      {
-       "tile_on": {
-        "type": "image",
-        "texture": "textures/ui/npcstudio/panel/sel_ring",
-        "size": [
-         18,
-         18
-        ],
-        "layer": 7,
-        "offset": [
-         26,
-         0
-        ],
-        "anchor_from": "left_middle",
-        "anchor_to": "left_middle",
-        "bindings": [
-         {
-          "binding_name": "#form_button_text",
-          "binding_type": "collection",
-          "binding_collection_name": "form_buttons"
-         },
-         {
-          "binding_type": "view",
-          "source_property_name": "(not ((#form_button_text - '§e§r§b') = #form_button_text))",
-          "target_property_name": "#visible"
          }
         ]
        }
@@ -3141,145 +2895,6 @@
          {
           "binding_type": "view",
           "source_property_name": "(not ((#form_button_text - '§y§r') = #form_button_text))",
-          "target_property_name": "#visible"
-         }
-        ]
-       }
-      },
-      {
-       "tile@common.button": {
-        "size": [
-         18,
-         18
-        ],
-        "$pressed_button_name": "button.form_button_click",
-        "layer": 1,
-        "controls": [
-         {
-          "default": {
-           "type": "image",
-           "texture": "textures/ui/npcstudio/panel/tile",
-           "size": [
-            "100%",
-            "100%"
-           ]
-          }
-         },
-         {
-          "hover": {
-           "type": "image",
-           "texture": "textures/ui/npcstudio/panel/tile_hover",
-           "size": [
-            "100%",
-            "100%"
-           ]
-          }
-         },
-         {
-          "pressed": {
-           "type": "image",
-           "texture": "textures/ui/npcstudio/panel/tile_pressed",
-           "size": [
-            "100%",
-            "100%"
-           ]
-          }
-         }
-        ],
-        "$button_bindings": [
-         {
-          "binding_type": "collection_details",
-          "binding_collection_name": "form_buttons"
-         }
-        ],
-        "anchor_from": "left_middle",
-        "anchor_to": "left_middle",
-        "offset": [
-         48,
-         0
-        ],
-        "bindings": [
-         {
-          "binding_type": "collection_details",
-          "binding_collection_name": "form_buttons"
-         },
-         {
-          "binding_name": "#form_button_text",
-          "binding_type": "collection",
-          "binding_collection_name": "form_buttons"
-         },
-         {
-          "binding_type": "view",
-          "source_property_name": "(not ((#form_button_text - '§e§r') = #form_button_text))",
-          "target_property_name": "#visible"
-         }
-        ]
-       }
-      },
-      {
-       "tile_icon": {
-        "type": "image",
-        "layer": 5,
-        "size": [
-         14,
-         14
-        ],
-        "offset": [
-         50,
-         0
-        ],
-        "anchor_from": "left_middle",
-        "anchor_to": "left_middle",
-        "bindings": [
-         {
-          "binding_name": "#form_button_texture",
-          "binding_type": "collection",
-          "binding_collection_name": "form_buttons",
-          "binding_name_override": "#texture"
-         },
-         {
-          "binding_name": "#form_button_texture_file_system",
-          "binding_type": "collection",
-          "binding_collection_name": "form_buttons",
-          "binding_name_override": "#texture_file_system"
-         },
-         {
-          "binding_name": "#form_button_text",
-          "binding_type": "collection",
-          "binding_collection_name": "form_buttons"
-         },
-         {
-          "binding_type": "view",
-          "source_property_name": "((not ((#texture = '') or (#texture = 'loading'))) and (not ((#form_button_text - '§e§r') = #form_button_text)))",
-          "target_property_name": "#visible"
-         }
-        ]
-       }
-      },
-      {
-       "tile_on": {
-        "type": "image",
-        "texture": "textures/ui/npcstudio/panel/sel_ring",
-        "size": [
-         18,
-         18
-        ],
-        "layer": 7,
-        "offset": [
-         48,
-         0
-        ],
-        "anchor_from": "left_middle",
-        "anchor_to": "left_middle",
-        "bindings": [
-         {
-          "binding_name": "#form_button_text",
-          "binding_type": "collection",
-          "binding_collection_name": "form_buttons"
-         },
-         {
-          "binding_type": "view",
-          "source_property_name": "(not ((#form_button_text - '§e§r§b') = #form_button_text))",
           "target_property_name": "#visible"
          }
         ]
@@ -3657,145 +3272,6 @@
          }
         ]
        }
-      },
-      {
-       "tile@common.button": {
-        "size": [
-         18,
-         18
-        ],
-        "$pressed_button_name": "button.form_button_click",
-        "layer": 1,
-        "controls": [
-         {
-          "default": {
-           "type": "image",
-           "texture": "textures/ui/npcstudio/panel/tile",
-           "size": [
-            "100%",
-            "100%"
-           ]
-          }
-         },
-         {
-          "hover": {
-           "type": "image",
-           "texture": "textures/ui/npcstudio/panel/tile_hover",
-           "size": [
-            "100%",
-            "100%"
-           ]
-          }
-         },
-         {
-          "pressed": {
-           "type": "image",
-           "texture": "textures/ui/npcstudio/panel/tile_pressed",
-           "size": [
-            "100%",
-            "100%"
-           ]
-          }
-         }
-        ],
-        "$button_bindings": [
-         {
-          "binding_type": "collection_details",
-          "binding_collection_name": "form_buttons"
-         }
-        ],
-        "anchor_from": "left_middle",
-        "anchor_to": "left_middle",
-        "offset": [
-         70,
-         0
-        ],
-        "bindings": [
-         {
-          "binding_type": "collection_details",
-          "binding_collection_name": "form_buttons"
-         },
-         {
-          "binding_name": "#form_button_text",
-          "binding_type": "collection",
-          "binding_collection_name": "form_buttons"
-         },
-         {
-          "binding_type": "view",
-          "source_property_name": "(not ((#form_button_text - '§e§r') = #form_button_text))",
-          "target_property_name": "#visible"
-         }
-        ]
-       }
-      },
-      {
-       "tile_icon": {
-        "type": "image",
-        "layer": 5,
-        "size": [
-         14,
-         14
-        ],
-        "offset": [
-         72,
-         0
-        ],
-        "anchor_from": "left_middle",
-        "anchor_to": "left_middle",
-        "bindings": [
-         {
-          "binding_name": "#form_button_texture",
-          "binding_type": "collection",
-          "binding_collection_name": "form_buttons",
-          "binding_name_override": "#texture"
-         },
-         {
-          "binding_name": "#form_button_texture_file_system",
-          "binding_type": "collection",
-          "binding_collection_name": "form_buttons",
-          "binding_name_override": "#texture_file_system"
-         },
-         {
-          "binding_name": "#form_button_text",
-          "binding_type": "collection",
-          "binding_collection_name": "form_buttons"
-         },
-         {
-          "binding_type": "view",
-          "source_property_name": "((not ((#texture = '') or (#texture = 'loading'))) and (not ((#form_button_text - '§e§r') = #form_button_text)))",
-          "target_property_name": "#visible"
-         }
-        ]
-       }
-      },
-      {
-       "tile_on": {
-        "type": "image",
-        "texture": "textures/ui/npcstudio/panel/sel_ring",
-        "size": [
-         18,
-         18
-        ],
-        "layer": 7,
-        "offset": [
-         70,
-         0
-        ],
-        "anchor_from": "left_middle",
-        "anchor_to": "left_middle",
-        "bindings": [
-         {
-          "binding_name": "#form_button_text",
-          "binding_type": "collection",
-          "binding_collection_name": "form_buttons"
-         },
-         {
-          "binding_type": "view",
-          "source_property_name": "(not ((#form_button_text - '§e§r§b') = #form_button_text))",
-          "target_property_name": "#visible"
-         }
-        ]
-       }
       }
      ]
     }
@@ -3812,6 +3288,16 @@
   "anchor_from": "top_right",
   "anchor_to": "top_right",
   "layer": 2,
+  "bindings": [
+   {
+    "binding_name": "#form_text"
+   },
+   {
+    "binding_type": "view",
+    "source_property_name": "((#form_text - '§x§r') = #form_text)",
+    "target_property_name": "#visible"
+   }
+  ],
   "controls": [
    {
     "scroll@server_form.npcs_rail_scroll": {}
@@ -4120,6 +3606,16 @@
   "anchor_from": "bottom_left",
   "anchor_to": "bottom_left",
   "layer": 2,
+  "bindings": [
+   {
+    "binding_name": "#form_text"
+   },
+   {
+    "binding_type": "view",
+    "source_property_name": "((#form_text - '§x§r') = #form_text)",
+    "target_property_name": "#visible"
+   }
+  ],
   "controls": [
    {
     "l": {

@@ -24,7 +24,7 @@ import { startMountLoop, reapplyMobPoses } from "./mount.js";
 import { inFlyCam, flyCamLock, flyCamZoom } from "./flycam.js";
 import { applyPose, expandPreset, pushUndo } from "./rig.js";
 import { dropPlayer } from "./selection.js";
-import "./viewport.js";
+// import "./viewport.js"; // free look handlers: back on together with NPCS_FREELOOK
 import { restoreFog } from "./fog.js";
 import { ALL_POSES, QUICK_CYCLE } from "./poses.js";
 

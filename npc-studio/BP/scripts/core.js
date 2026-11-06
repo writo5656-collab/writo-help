@@ -193,13 +193,18 @@ export const TAB_MARK = "§u§r";
 const PLAIN = "§o§r", HDR_OPEN = "§j§r§h§r", HDR_SHUT = "§j§r§i§r", TILE = "§e§r";
 const CHECK = "§q§r§w§r", FIELD = "§q§r§f§r", SLIDE = "§q§r§s§r", STEP = "§q§r§t§r";
 const A_SMALL = "§k§r", B_SMALL = "§p§r", B_WIDE = "§y§r", C_VALUE = "§v§r", C_SMALL = "§m§r", C_CHOOSE = "§z§r";
-const RAIL_N = 24, BAR_N = 8, ROW_N = 48;
+const RAIL_N = 24, BAR_N = 8, ROW_N = 48; // + button 38 = hide / show the panel; rows start at 39
+// Body tags (the body is a global binding, so the UI can read them anywhere):
+//   §g§r  thirds grid over the free space      §x§r  panel hidden (only the › handle, grid, hint)
+const GRID_TAG = "§g§r", MINI_TAG = "§x§r";
+// Slot tiles are off until the in-game crash is found (rows are used instead): RP layout flag NPCS_TILES
+const TILES = false;
 export const CHECKBOX = (on) => ICON(on ? "check_on" : "check_off");
 export const SWITCH = CHECKBOX;
 const TRACK = (frac) => `textures/ui/npcstudio/slider/s${String(clamp(Math.round(frac * 20), 0, 20)).padStart(2, "0")}`;
 
 /** panel.js fills these in: default tabs, the NPC heads on the right and the bottom tools. */
-const hooks = { tabs: (_player) => null, rail: (_player) => [], bar: (_player) => [] };
+const hooks = { tabs: (_player) => null, rail: (_player) => [], bar: (_player) => [], grid: (_player) => false };
 export function setEditorHooks(h) {
   Object.assign(hooks, h);
 }
@@ -224,7 +229,7 @@ const LOCK_CATS = [InputPermissionCategory.LateralMovement, InputPermissionCateg
 export function isEditing(player) {
   return editing.has(player.id);
 }
-const LOCK_INPUT = true; // walking / jumping / sneaking off while the panel is open (free look)
+const LOCK_INPUT = false; // free look is off until the panel works in game (it only matters with free look)
 export function editorLock(player, on) {
   if (on) editing.add(player.id);
   else editing.delete(player.id);
@@ -272,6 +277,26 @@ export function fmtNum(v) {
  * Sliders and steppers redraw the same screen at once, so the NPC changes in the world while the
  * panel stays open on the left.
  */
+/** The panel tucked away: only a › handle on the left, the thirds grid and a hint. */
+function showMini(player, reopen) {
+  const form = new ActionFormData().title(EDITOR_TAG + "Studio").body(MINI_TAG + GRID_TAG + "Panel hidden");
+  for (let i = 0; i < 38; i++) form.button("");
+  form.button(" ", ICON("next"));
+  editorLock(player, true);
+  showWithRetry(form, player)
+    .then((res) => {
+      editorLock(player, false);
+      if (!res.canceled && res.selection === 38) {
+        sfx(player, "click");
+        reopen();
+      }
+    })
+    .catch((e) => {
+      editorLock(player, false);
+      console.warn(`[NPC Studio] hidden panel: ${e}`);
+    });
+}
+
 export function menu(title, body) {
   const rows = []; // {kind, text, icon, fn, sec, a, b, c}
   let section = null;
@@ -309,6 +334,10 @@ export function menu(title, body) {
     },
     /** Up to 4 square tiles in one row: [{ icon, on, fn }] (inventory slots). */
     tiles(items) {
+      if (!TILES) {
+        for (const it of items) api.btn(`${it.label ?? "Slot"}${it.on ? " §b(worn)" : ""}`, it.icon, it.fn);
+        return api;
+      }
       const t = items.slice(0, 4).map((it) => ({ text: TILE + (it.on ? "§b" : "") + (it.label ?? "slot"), icon: it.icon, fn: it.fn }));
       rows.push({ kind: "row", ...t[0], sec: section, a: t[1], b: t[2], c: t[3] });
       return api;
@@ -360,7 +389,8 @@ export function menu(title, body) {
     show(player) {
       lastPlayer = player;
       const form = new ActionFormData().title(EDITOR_TAG + title);
-      if (body) form.body(body);
+      const grid = !!hooks.grid(player);
+      if (body || grid) form.body((grid ? GRID_TAG : "") + (body ?? ""));
       const actions = [];
       const add = (label, icon, fn) => {
         if (icon) form.button(label, icon);
@@ -379,7 +409,9 @@ export function menu(title, body) {
       for (let i = 0; i < RAIL_N; i++) add(rail[i] ? rail[i].label || " " : "", rail[i]?.icon, rail[i]?.fn);
       const bar = hooks.bar(player) ?? [];
       for (let i = 0; i < BAR_N; i++) add(bar[i] ? bar[i].label || " " : "", bar[i]?.icon, bar[i]?.fn);
-      // 38+ rows, 4 buttons each (folded sections hide their rows)
+      // 38 hide the panel (see the whole view), the › handle brings it back
+      add(" ", ICON("prev"), keep(() => showMini(player, again)));
+      // 39+ rows, 4 buttons each (folded sections hide their rows)
       const visible = rows.filter((r) => r.kind === "hdr" || !r.sec || !isFolded(player, r.sec));
       const per = ROW_N - 2;
       const pages = Math.max(1, Math.ceil(visible.length / per));

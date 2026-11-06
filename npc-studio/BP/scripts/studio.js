@@ -13,7 +13,7 @@
  */
 import { world, system, msg, sfx, actionbar, NPC_FAMILY, MOB_TAG, CAMERA_ID, CAM_PRESET, getJson, setJson, forward, clamp } from "./core.js";
 import { enterCinema, exitCinema, inCinema, hideHud, setCinemaTap } from "./cinema.js";
-import { allCameras, getSelectedCamera, lookThrough, camState } from "./camera.js";
+import { allCameras, getSelectedCamera, lookThrough, camState, isCamLocked } from "./camera.js";
 import { getSelection, setOutlinesHidden, areOutlinesHidden } from "./selection.js";
 
 const BACKDROP_ID = "npcstudio:backdrop";
@@ -49,6 +49,20 @@ export function isPeeking(player) {
   return peeking.has(player.id);
 }
 
+/** Java-style camera readout: name + LOCKED, then the controls, then position / angles / FOV. */
+function peekText(cam, i) {
+  const name = cam.getDynamicProperty("npcstudio:shot_name") || cam.nameTag || `Camera ${i + 1}`;
+  const st = camState(cam);
+  const l = st.location;
+  const f = (v) => (Math.round(v * 10) / 10).toFixed(1);
+  const locked = isCamLocked(cam) ? "  §d[LOCKED]" : "";
+  return (
+    `§f${name}${locked}\n` +
+    `§7Tap: next camera  |  Double-tap sneak: back  |  Thirds grid: Camera tab\n` +
+    `§8XYZ ${f(l.x)}, ${f(l.y)}, ${f(l.z)}  |  Yaw ${f(st.rotY)}  Pitch ${f(st.rotX)}  |  FOV ${Math.round(st.fov)}`
+  );
+}
+
 export function peek(player) {
   const list = allCameras(player);
   if (!list.length) return msg(player, "§cNo cameras yet. Open the Cine Camera > Place Camera At My View.");
@@ -72,8 +86,7 @@ export function peek(player) {
     lookThrough(player, cam, { keepText: true, quiet: true });
     hideHud(player, true);
     showGuides(player, guidesOn(player));
-    const name = cam.getDynamicProperty("npcstudio:shot_name") || cam.nameTag || `Camera ${st.i + 1}`;
-    actionbar(player, `§f‹  §b${name}§f  ›   §7tap = next camera · double-tap sneak = back`);
+    actionbar(player, peekText(cam, st.i));
     sfx(player, "click");
   };
   setCinemaTap(player, () => {
@@ -88,7 +101,7 @@ export function peek(player) {
     const st = peeking.get(player.id);
     if (!st || !player.isValid) return system.clearRun(keep);
     const cam = st.list[st.i];
-    if (cam?.isValid) actionbar(player, `§f‹  §b${cam.getDynamicProperty("npcstudio:shot_name") || cam.nameTag || "Camera"}§f  ›`);
+    if (cam?.isValid) actionbar(player, peekText(cam, st.i));
   }, 40);
 }
 
