@@ -13,58 +13,55 @@
    ],
    "part_visibility": [
     {
-     "*": true
+     "*": false
     },
     {
-     "center": "query.property('npcstudio:gmode') != 3"
+     "root": true
     },
     {
-     "feet": "query.property('npcstudio:gmode') == 3"
-    },
-    {
-     "arrows": "query.property('npcstudio:gmode') == 0"
-    },
-    {
-     "rings": "query.property('npcstudio:gmode') == 1"
+     "center": "query.property('npcstudio:gmode') == 0 || query.property('npcstudio:gmode') == 1"
     },
     {
      "select": "query.property('npcstudio:gmode') == 2"
     },
     {
-     "move_x": "!(query.property('npcstudio:gaxis') == 0 || query.property('npcstudio:gaxis') == 1)"
+     "feet": "query.property('npcstudio:gmode') == 3"
     },
     {
-     "move_x_on": "(query.property('npcstudio:gaxis') == 0 || query.property('npcstudio:gaxis') == 1)"
+     "move_x": "query.property('npcstudio:gmode') == 0 && (query.property('npcstudio:gaxis') == 0 || query.property('npcstudio:gaxis') == 1)"
     },
     {
-     "rot_x": "!(query.property('npcstudio:gaxis') == 0 || query.property('npcstudio:gaxis') == 1)"
+     "move_x_dim": "query.property('npcstudio:gmode') == 0 && !(query.property('npcstudio:gaxis') == 0 || query.property('npcstudio:gaxis') == 1)"
     },
     {
-     "rot_x_on": "(query.property('npcstudio:gaxis') == 0 || query.property('npcstudio:gaxis') == 1)"
+     "rot_x": "query.property('npcstudio:gmode') == 1 && (query.property('npcstudio:gaxis') == 0 || query.property('npcstudio:gaxis') == 1)"
     },
     {
-     "move_y": "!(query.property('npcstudio:gaxis') == 0 || query.property('npcstudio:gaxis') == 2)"
+     "rot_x_dim": "query.property('npcstudio:gmode') == 1 && !(query.property('npcstudio:gaxis') == 0 || query.property('npcstudio:gaxis') == 1)"
     },
     {
-     "move_y_on": "(query.property('npcstudio:gaxis') == 0 || query.property('npcstudio:gaxis') == 2)"
+     "move_y": "query.property('npcstudio:gmode') == 0 && (query.property('npcstudio:gaxis') == 0 || query.property('npcstudio:gaxis') == 2)"
     },
     {
-     "rot_y": "!(query.property('npcstudio:gaxis') == 0 || query.property('npcstudio:gaxis') == 2)"
+     "move_y_dim": "query.property('npcstudio:gmode') == 0 && !(query.property('npcstudio:gaxis') == 0 || query.property('npcstudio:gaxis') == 2)"
     },
     {
-     "rot_y_on": "(query.property('npcstudio:gaxis') == 0 || query.property('npcstudio:gaxis') == 2)"
+     "rot_y": "query.property('npcstudio:gmode') == 1 && (query.property('npcstudio:gaxis') == 0 || query.property('npcstudio:gaxis') == 2)"
     },
     {
-     "move_z": "!(query.property('npcstudio:gaxis') == 0 || query.property('npcstudio:gaxis') == 3)"
+     "rot_y_dim": "query.property('npcstudio:gmode') == 1 && !(query.property('npcstudio:gaxis') == 0 || query.property('npcstudio:gaxis') == 2)"
     },
     {
-     "move_z_on": "(query.property('npcstudio:gaxis') == 0 || query.property('npcstudio:gaxis') == 3)"
+     "move_z": "query.property('npcstudio:gmode') == 0 && (query.property('npcstudio:gaxis') == 0 || query.property('npcstudio:gaxis') == 3)"
     },
     {
-     "rot_z": "!(query.property('npcstudio:gaxis') == 0 || query.property('npcstudio:gaxis') == 3)"
+     "move_z_dim": "query.property('npcstudio:gmode') == 0 && !(query.property('npcstudio:gaxis') == 0 || query.property('npcstudio:gaxis') == 3)"
     },
     {
-     "rot_z_on": "(query.property('npcstudio:gaxis') == 0 || query.property('npcstudio:gaxis') == 3)"
+     "rot_z": "query.property('npcstudio:gmode') == 1 && (query.property('npcstudio:gaxis') == 0 || query.property('npcstudio:gaxis') == 3)"
+    },
+    {
+     "rot_z_dim": "query.property('npcstudio:gmode') == 1 && !(query.property('npcstudio:gaxis') == 0 || query.property('npcstudio:gaxis') == 3)"
     }
    ],
    "ignore_lighting": true

@@ -11,6 +11,8 @@ import { setItemFrame } from "./selection.js";
 
 const AIM = { right_arm: [-90, -15, 0], left_arm: [-90, 35, 0] };
 // arm angles in degrees ([x raise forward, y turn, z roll]); hand = which hand holds it
+// Trident raise: the arm also turns 180° so the trident points forward over the shoulder (the item
+// sits in the hand pointing forward; raising the arm alone swung it round to point backwards).
 const ITEMS = {
   "minecraft:bow": {
     states: ["Idle", "Pull 1", "Pull 2", "Pull 3"],
@@ -25,7 +27,7 @@ const ITEMS = {
   "minecraft:trident": {
     states: ["Hold", "Raise to throw"],
     frame: () => 0,
-    pose: (s) => (s === 0 ? { right_arm: [-18, 0, 0], left_arm: [0, 0, 0] } : { right_arm: [-170, 0, 5], left_arm: [-20, 0, 0] })
+    pose: (s) => (s === 0 ? { right_arm: [-18, 0, 0], left_arm: [0, 0, 0] } : { right_arm: [-170, 180, 0], left_arm: [-20, 0, 0] })
   },
   "minecraft:spyglass": {
     states: ["Hold", "Look"],
