@@ -10,6 +10,7 @@
  *   bits 7-8         outline thickness (0 thin, 1 medium, 2 thick)
  *   bit 9 (512)      outline style: 0 silhouette (custom material), 1 wireframe boxes
  *   bit 10 (1024)    wears armor (silhouette sits outside the armor)
+ *   bits 11-13       Item State picture (bow pulling 0-3, crossbow 0-5), read by RP/attachables
  * Outlines are hidden for everyone while anybody is filming (camera view, peek, Photo Mode),
  * so a selection never ends up in a shot.
  */
@@ -83,6 +84,13 @@ export function isProp(npc) {
 export function setProp(npc, on) {
   const f = getFlags(npc);
   setFlags(npc, on ? f | 64 : f & ~64);
+}
+/** Item State picture for bows / crossbows held by this NPC (RP/attachables read it). */
+export function getItemFrame(npc) {
+  return (getFlags(npc) >> 11) & 7;
+}
+export function setItemFrame(npc, n) {
+  setFlags(npc, (getFlags(npc) & ~(7 << 11)) | ((n & 7) << 11));
 }
 export const CAPE_NAMES = ["Studio Cyan", "Crimson", "Shadow", "Snow", "Royal", "Gold", "Forest", "Ocean"];
 

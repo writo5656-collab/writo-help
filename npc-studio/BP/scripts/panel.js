@@ -6,12 +6,13 @@
  * Copyright (c) 2026 NoxeelMC. All rights reserved. See LICENSE.md.
  */
 import { VERSION } from "./version.js";
+import { itemStateRow } from "./itemstate.js";
 import { menu, modal, msg, confirm, ICON, npcLabel, npcsNear, isLocked, setEditorHooks, NPC_FAMILY } from "./core.js";
 import { getAnim, readPose, applyPose, mirrorPose, pushUndo, undo, redo, historySize } from "./rig.js";
 import { LOOP_ANIMS } from "./poses.js";
 import { pickSkin, setSkin, skinPlainName, npcHead } from "./skins.js";
 import { openWardrobe, openSlotMenu, getEquip, equipIcon, SLOTS } from "./wardrobe.js";
-import { openPoseEditor, openPoseLibrary, openLoopAnims, startGizmo } from "./poseEditor.js";
+import { openPoseEditor, openPoseLibrary, openLoopAnims, startGizmo, poseWalkOn, setPoseWalk } from "./poseEditor.js";
 import { openAnimator, playAllTimelines, stopAllTimelines } from "./animator.js";
 import { openShotsMenu } from "./shots.js";
 import { openRideMenu, isMounted } from "./mount.js";
@@ -189,6 +190,7 @@ function displayTab(player, m, npc, self) {
   m.section("inv", "Inventory", ICON("equip"));
   const slot = (def) => ({ label: def.key, icon: equipIcon(npc, def.key), on: !!getEquip(npc, def.key), fn: () => openSlotMenu(player, npc, def.key, self) });
   m.tiles(SLOTS.map(slot), "Slots");
+  itemStateRow(m, npc); // bow pull, crossbow charge, trident raise, shield block...
   m.btn("Wardrobe", ICON("equip"), () => openWardrobe(player, npc, self));
   m.btn("Trim Studio", ICON("trim"), () => trimPage(player, npc, self));
 
@@ -257,6 +259,7 @@ function poseTab(player, m, npc, self) {
   m.btn("Reset This Part", ICON("clear_x"), () => (resetPart(player, npc), self()));
   m.section("tools", "Pose tools", ICON("gizmo"));
   m.btn("Pose Mode (Gizmo)", ICON("gizmo"), () => startGizmo(player, npc, () => openStudio(player, 1)));
+  m.toggle("Walk in Pose Mode", poseWalkOn(player), () => (setPoseWalk(player, !poseWalkOn(player)), self()));
   m.btn("Pose Library", ICON("pose_preset"), () => openPoseLibrary(player, npc, self));
   m.btn(`Undo (${h.undo})`, ICON("undo"), () => (undo(npc), self()));
   m.btn(`Redo (${h.redo})`, ICON("redo"), () => (redo(npc), self()));

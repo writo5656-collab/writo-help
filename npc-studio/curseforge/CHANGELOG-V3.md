@@ -1,3 +1,9 @@
+## NPC Studio V3.3: Pose Lab
+
+- Walk around while you pose (Pose tab > Walk in Pose Mode); Cancel and Done on the hotbar
+- New gizmo: red / green / blue axis arrows at the NPC's feet, rings or arrows on the part you edit
+- Item State: bow pull, crossbow loading / charged / firework, trident raise, shield block, spyglass look, goat horn play
+
 ## NPC Studio V3.2: editing inside the panel
 
 - Depth Map pack + Layers > Depth map (/npcstudio:depth): white world, near white, far black, black sky, for depth passes

@@ -2,7 +2,9 @@
  * NPC Studio — poseEditor.js : Blender-style posing.
  *
  * LIVE GIZMO (like pressing R / G in Blender): pick a bone, then just LOOK AROUND — the bone
- * follows your view. Sneak = apply, Jump = cancel, scroll/tap hotbar = change axis,
+ * follows your view. Hotbar: 9 = done, 7 = cancel (frozen mode: Sneak = apply, Jump = cancel),
+ * V3.3: walk around while posing (Pose tab > Walk in Pose Mode), red / green / blue axes at the feet,
+ * scroll/tap hotbar = change axis,
  * hit/swing = switch Rotate <-> Move. Works on touch, controller and mouse.
  * Plus precise sliders, nudge pad, mirror, copy/paste, undo/redo, pose library, scale.
  * Copyright (c) 2026 NoxeelMC. All rights reserved. See LICENSE.md.
@@ -288,6 +290,14 @@ export function isInGizmo(player) {
   return gizmos.has(player.id);
 }
 
+/** V3.3: walk around the NPC while posing (default on). Off = the old frozen Pose Mode. */
+export function poseWalkOn(player) {
+  return player.getDynamicProperty("npcstudio:pose_walk") !== false;
+}
+export function setPoseWalk(player, on) {
+  player.setDynamicProperty("npcstudio:pose_walk", on);
+}
+
 function setWalk(player, allowed) {
   try {
     player.inputPermissions.setPermissionCategory(InputPermissionCategory.LateralMovement, allowed);
@@ -312,6 +322,34 @@ function gizmoWorldPos(npc, boneKey, pos) {
   const fwd = -(pv[2] + pos[2]) / 16 * sc;
   const l = npc.location;
   return { x: l.x + r.x * side + f.x * fwd, y: l.y + upDist, z: l.z + r.z * side + f.z * fwd };
+}
+
+/** V3.3: red / green / blue axes at the NPC's feet (a 2nd gizmo in "feet" mode). */
+function feetPos(npc) {
+  const l = npc.location;
+  return { x: l.x, y: l.y + 0.02, z: l.z };
+}
+function spawnFeet(s) {
+  try {
+    const f = s.npc.dimension.spawnEntity(GIZMO_ID, feetPos(s.npc));
+    f.setRotation({ x: 0, y: s.npc.getRotation().y });
+    f.setProperty("npcstudio:gmode", 3);
+    f.setProperty("npcstudio:gscale", clamp(getScale(s.npc), 0.3, 4));
+    s.feet = f;
+  } catch (e) {
+    console.warn(`[NPC Studio] feet gizmo: ${e}`);
+  }
+}
+function syncFeet(s) {
+  const f = s.feet;
+  if (!f?.isValid) return;
+  try {
+    const p = feetPos(s.npc);
+    const o = f.location;
+    if (Math.abs(p.x - o.x) + Math.abs(p.y - o.y) + Math.abs(p.z - o.z) > 0.005) f.teleport(p, { rotation: { x: 0, y: s.npc.getRotation().y } });
+  } catch {
+    /* ignore */
+  }
 }
 
 function spawnGizmo(s) {
@@ -348,7 +386,7 @@ export function cleanupGizmos() {
   for (const d of ["overworld", "nether", "the_end"]) {
     try {
       for (const g of world.getDimension(d).getEntities({ type: GIZMO_ID })) {
-        if (![...gizmos.values()].some((s) => s.gizmo?.id === g.id)) g.remove();
+        if (![...gizmos.values()].some((s) => s.gizmo?.id === g.id || s.feet?.id === g.id)) g.remove();
       }
     } catch {
       /* ignore */
@@ -363,7 +401,7 @@ const gizmoScale = (s) => clamp(getScale(s.npc) * (s.bone.key === "root" ? 1.8 :
 //   1 Select (look at a body part)   2 Rotate   3 Move   4 Axis   5 Undo   6 Reset part   9 Done
 //   While rotating / moving: just look around. Sneak = done, Jump = cancel everything.
 // =====================================================================================
-const TOOLS = ["npcstudio:tool_select", "npcstudio:tool_rotate", "npcstudio:tool_move", "npcstudio:tool_axis", "npcstudio:tool_undo", "npcstudio:tool_reset", undefined, undefined, "npcstudio:tool_done"];
+const TOOLS = ["npcstudio:tool_select", "npcstudio:tool_rotate", "npcstudio:tool_move", "npcstudio:tool_axis", "npcstudio:tool_undo", "npcstudio:tool_reset", "npcstudio:tool_cancel", undefined, "npcstudio:tool_done"];
 const MODE_SLOT = { select: 0, rot: 1, pos: 2 };
 // where each part "is" when you look at it (model pixels)
 const CENTERS = { head: [0, 28, 0], body: [0, 18, 0], right_arm: [-6, 16, 0], left_arm: [6, 16, 0], right_leg: [-2, 6, 0], left_leg: [2, 6, 0], root: [0, 0.5, 0] };
@@ -406,6 +444,7 @@ export function startGizmo(player, npc, back) {
     jump: player.isJumping,
     back,
     grace: 4,
+    walk: poseWalkOn(player),
     start: { pose: readPose(npc), scale: getScale(npc) }
   };
   s.rot = getRot(npc, s.bone.key);
@@ -416,9 +455,10 @@ export function startGizmo(player, npc, back) {
   } catch {
     /* ignore */
   }
-  setWalk(player, false);
+  if (!s.walk) setWalk(player, false); // walking on: move around freely, the gizmo stays on the NPC
   player.setDynamicProperty("npcstudio:gizmo", true);
   spawnGizmo(s);
+  spawnFeet(s);
   sfx(player, "start");
   s.run = system.runInterval(() => tickGizmo(player, s), 1);
 }
@@ -459,7 +499,8 @@ function gizmoReadout(s) {
     const v = s.mode === "rot" ? s.rot.map((n) => `${Math.round(n)}`) : s.pos.map((n) => n.toFixed(1));
     vals = `§cX§f${v[0]} §aY§f${v[1]} §9Z§f${v[2]}`;
   }
-  return `${head}\n${vals}\n§7sneak done · jump cancel`;
+  const keys = s.walk ? "§7slot 9 done · slot 7 cancel · slot 1 to walk and look" : "§7sneak done · jump cancel";
+  return `${head}\n${vals}\n${keys}`;
 }
 
 /** Tapping a hotbar slot. */
@@ -474,6 +515,7 @@ export function gizmoHotbar(player, slot) {
     case 3: gizmoToolUse(player, "npcstudio:tool_axis"); backToModeSlot(player, s); break;
     case 4: gizmoToolUse(player, "npcstudio:tool_undo"); backToModeSlot(player, s); break;
     case 5: gizmoToolUse(player, "npcstudio:tool_reset"); backToModeSlot(player, s); break;
+    case 6: endGizmo(player, false); break;
     case 8: endGizmo(player, true); break;
     default: backToModeSlot(player, s);
   }
@@ -505,6 +547,9 @@ export function gizmoToolUse(player, itemId) {
       break;
     case "npcstudio:tool_done":
       endGizmo(player, true);
+      break;
+    case "npcstudio:tool_cancel":
+      endGizmo(player, false);
       break;
   }
 }
@@ -550,8 +595,8 @@ function tickGizmo(player, s) {
     }
   }
 
-  // Sneak = done, Jump = cancel (rising edges)
-  if (s.grace === 0) {
+  // Sneak = done, Jump = cancel (rising edges) — only in the frozen mode; walking needs both keys
+  if (s.grace === 0 && !s.walk) {
     const sneaking = player.isSneaking;
     const jumping = player.isJumping;
     if (sneaking && !s.sneak) return endGizmo(player, true);
@@ -561,6 +606,7 @@ function tickGizmo(player, s) {
   }
 
   syncGizmo(s);
+  syncFeet(s);
   if (system.currentTick % 2 === 0) corner(player, gizmoReadout(s));
 }
 
@@ -569,10 +615,12 @@ export function endGizmo(player, apply) {
   if (!s) return;
   gizmos.delete(player.id);
   system.clearRun(s.run);
-  try {
-    if (s.gizmo?.isValid) s.gizmo.remove();
-  } catch {
-    /* ignore */
+  for (const e of [s.gizmo, s.feet]) {
+    try {
+      if (e?.isValid) e.remove();
+    } catch {
+      /* ignore */
+    }
   }
   if (!apply && s.npc.isValid) {
     applyPose(s.npc, s.start.pose);

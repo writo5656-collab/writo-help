@@ -29,6 +29,17 @@ export const CHAPTERS = [
         "§7The NPC changes right away and the panel stays on the left, so you see the result on the right. Tap a value box to type an exact number.",
         "§7Pose tab: pick the part, pick the step (Fine, Normal, Big), then Tilt, Turn, Roll and Move."
       ]),
+      P("gizmo", "Pose Mode: walk around", [
+        "Pose tab > §bWalk in Pose Mode§f (on by default): walk, jump and look around while you pose.",
+        "Red / green / blue arrows at the NPC's feet show X, Y and Z. Rings (rotate) or arrows (move) sit on the part you edit.",
+        "§7Hotbar: 1 select (walk and look), 2 rotate, 3 move, 4 axis, 5 undo, 6 reset part, 7 cancel, 9 done.",
+        "§7Walking off: the old frozen mode, sneak = done, jump = cancel."
+      ]),
+      P("equip", "Item State", [
+        "Give the NPC a bow, crossbow, trident, shield, spyglass or goat horn, then Display > Inventory > §bItem State§f.",
+        "§fBow§7: Idle, Pull 1-3 · §fCrossbow§7: Empty, Loading 1-3, Charged, Firework · §fTrident§7: Hold, Raise · §fShield§7: Hold, Block · §fSpyglass§7: Hold, Look · §fGoat Horn§7: Hold, Play",
+        "§7The arms move into place; bows and crossbows also show their real pulling / charged picture."
+      ]),
       P("fog", "Depth Map", [
         "A depth pass like Java depth shaders: near = white, far = black, sky black.",
         "",

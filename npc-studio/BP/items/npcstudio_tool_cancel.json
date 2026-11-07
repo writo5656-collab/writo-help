@@ -1,0 +1,20 @@
+{
+  "format_version": "1.20.60",
+  "minecraft:item": {
+    "description": {
+      "identifier": "npcstudio:tool_cancel",
+      "menu_category": {
+        "category": "none"
+      }
+    },
+    "components": {
+      "minecraft:max_stack_size": 1,
+      "minecraft:icon": "npcstudio_tool_cancel",
+      "minecraft:display_name": {
+        "value": "Cancel"
+      },
+      "minecraft:hand_equipped": false,
+      "minecraft:can_destroy_in_creative": false
+    }
+  }
+}

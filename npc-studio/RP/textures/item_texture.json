@@ -52,6 +52,9 @@
     },
     "npcstudio_teleporter": {
       "textures": "textures/items/npcstudio_teleporter"
+    },
+    "npcstudio_tool_cancel": {
+      "textures": "textures/items/npcstudio_tool_cancel"
     }
   }
 }
