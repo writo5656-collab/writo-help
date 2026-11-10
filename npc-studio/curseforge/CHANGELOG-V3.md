@@ -1,5 +1,7 @@
 ## NPC Studio V3.3: Pose Lab
 
+- Panel: one section open at a time (no scrolling), short buttons in two columns, HUD stays hidden between menus, faster opening
+- Gizmo: thin axis lines, drawn through the NPC and blocks
 - Walk around while you pose (Pose tab > Walk in Pose Mode); Cancel and Done on the hotbar
 - New gizmo: red / green / blue axis arrows at the NPC's feet, rings or arrows on the part you edit
 - Item State: bow pull, crossbow loading / charged / firework, trident raise, shield block, spyglass look, goat horn play

@@ -9,6 +9,9 @@ One entity (npcstudio:gizmo), four looks picked by the gmode property:
   2 select  corner brackets
   3 feet    red X / green Y / blue Z arrows at the NPC's feet (like the Java editor)
 gaxis: 0 free (all three in colour), 1 X, 2 Y, 3 Z (that one in colour, the others grey).
+It is drawn twice: first with a material that ignores depth (shows through the NPC and blocks, like
+the Java editor's gizmo), then normally. If a game version ignores that material, the normal pass
+still draws, so the gizmo can only get better, never disappear.
 Every visibility rule includes its own mode check: a rule on a child bone overrides its parent, so a
 "rings: gmode == 1" on the parent alone did NOT hide the lit rings (V3.3 first try: yellow mess).
 """
@@ -55,7 +58,7 @@ def arrow(axis, start, length, thick, colour):
     return out
 
 
-def ring(axis, radius, thick, colour, n=96):
+def ring(axis, radius, thick, colour, n=120):
     """A solid ring around `axis` from many small overlapping cubes (no cube rotation needed)."""
     out = []
     for k in range(n):
@@ -79,16 +82,17 @@ def main():
     select = next(b for b in old["bones"] if b["name"] == "select")
     for c in select.get("cubes", []):
         c["uv"] = {k: {"uv": UV["cyan"], "uv_size": [1, 1]} for k in ("north", "south", "east", "west", "up", "down")}
-    bones = [{"name": "root", "pivot": [0, 0, 0]}, bone("center", "root", [cube([-1.2, -1.2, -1.2], [2.4, 2.4, 2.4], "white")])]
+    bones = [{"name": "root", "pivot": [0, 0, 0]}, bone("center", "root", [cube([-0.9, -0.9, -0.9], [1.8, 1.8, 1.8], "white")])]
     for ax in "xyz":
-        bones.append(bone(f"move_{ax}", "root", arrow(ax, 1.2, 11, 0.8, ax)))
-        bones.append(bone(f"move_{ax}_dim", "root", arrow(ax, 1.2, 11, 0.8, "dim")))
-        bones.append(bone(f"rot_{ax}", "root", ring(ax, 9.5, 0.75, ax)))
-        bones.append(bone(f"rot_{ax}_dim", "root", ring(ax, 9.5, 0.75, "dim")))
+        bones.append(bone(f"move_{ax}", "root", arrow(ax, 1.0, 12, 0.55, ax)))
+        bones.append(bone(f"move_{ax}_dim", "root", arrow(ax, 1.0, 12, 0.55, "dim")))
+        bones.append(bone(f"rot_{ax}", "root", ring(ax, 9.5, 0.55, ax)))
+        bones.append(bone(f"rot_{ax}_dim", "root", ring(ax, 9.5, 0.55, "dim")))
     select["parent"] = "root"
     bones.append(select)
-    bones.append(bone("feet", "root", [cube([-1.4, -0.2, -1.4], [2.8, 2.8, 2.8], "white")]
-                      + arrow("x", 1.4, 15, 1.0, "x") + arrow("y", 1.4, 18, 1.0, "y") + arrow("z", 1.4, 15, 1.0, "z")))
+    # thin long lines from one point at the feet, like the Java editor
+    bones.append(bone("feet", "root", [cube([-1.0, -0.1, -1.0], [2.0, 2.0, 2.0], "white")]
+                      + arrow("x", 1.0, 20, 0.6, "x") + arrow("y", 1.0, 24, 0.6, "y") + arrow("z", 1.0, 20, 0.6, "z")))
     geo = {"format_version": "1.12.0", "minecraft:geometry": [{
         "description": {"identifier": "geometry.npcstudio.gizmo", "texture_width": 32, "texture_height": 32,
                         "visible_bounds_width": 4, "visible_bounds_height": 4, "visible_bounds_offset": [0, 0, 0]},
@@ -102,9 +106,24 @@ def main():
     for ax in "xyz":
         vis += [{f"move_{ax}": f"{m} == 0 && {lit[ax]}"}, {f"move_{ax}_dim": f"{m} == 0 && !{lit[ax]}"},
                 {f"rot_{ax}": f"{m} == 1 && {lit[ax]}"}, {f"rot_{ax}_dim": f"{m} == 1 && !{lit[ax]}"}]
-    rc = json.load(open(RC))
-    rc["render_controllers"]["controller.render.npcstudio.gizmo"]["part_visibility"] = vis
+    def controller(material):
+        return {"geometry": "Geometry.default", "materials": [{"*": material}], "textures": ["Texture.default"],
+                "ignore_lighting": True, "part_visibility": vis}
+    rc = {"format_version": "1.10.0", "render_controllers": {
+        "controller.render.npcstudio.gizmo_top": controller("Material.top"),
+        "controller.render.npcstudio.gizmo": controller("Material.default")}}
     json.dump(rc, open(RC, "w"), indent=1)
+    # through-everything material + the two passes on the entity
+    mp = os.path.join(ROOT, "RP", "materials", "entity.material")
+    mats = json.load(open(mp))
+    mats["materials"]["npcstudio_gizmo:entity_alphatest"] = {"depthFunc": "Always", "+states": ["DisableDepthWrite"]}
+    json.dump(mats, open(mp, "w"), indent=2)
+    ep = os.path.join(ROOT, "RP", "entity", "gizmo.json")
+    ent = json.load(open(ep))
+    desc = ent["minecraft:client_entity"]["description"]
+    desc["materials"] = {"default": "entity_alphatest", "top": "npcstudio_gizmo"}
+    desc["render_controllers"] = ["controller.render.npcstudio.gizmo_top", "controller.render.npcstudio.gizmo"]
+    json.dump(ent, open(ep, "w"), indent=2)
 
     bp = json.load(open(BP))
     bp["minecraft:entity"]["description"]["properties"]["npcstudio:gmode"]["range"] = [0, 3]

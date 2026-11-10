@@ -6,6 +6,7 @@
  * Copyright (c) 2026 NoxeelMC. All rights reserved. See LICENSE.md.
  */
 import { VERSION } from "./version.js";
+import { inCinema } from "./cinema.js";
 import { itemStateRow } from "./itemstate.js";
 import { menu, modal, msg, confirm, ICON, npcLabel, npcsNear, isLocked, setEditorHooks, NPC_FAMILY } from "./core.js";
 import { getAnim, readPose, applyPose, mirrorPose, pushUndo, undo, redo, historySize } from "./rig.js";
@@ -50,6 +51,8 @@ function currentNpc(player) {
 // ---------- the parts every editor screen shares: tabs, NPC heads, bottom tools ----------
 setEditorHooks({
   grid: (player) => guidesOn(player),
+  // camera view, Preview, Photo Mode and Depth map hide the HUD themselves: leave it to them
+  hudBusy: (player) => inCinema(player) || depthOn(player),
   tabs: (player) => ({ names: TABS, active: lastTab.get(player.id) ?? 0, onTab: (i) => openStudio(player, i) }),
   rail: (player) => {
     const cur = getSelection(player)[0];
@@ -201,9 +204,9 @@ function displayTab(player, m, npc, self) {
   m.choices("Style", OUTLINE_STYLES, look.style, (i) => setOutlineLook({ style: i }));
 
   m.section("more", "More", ICON("manage"));
-  m.btn("Keyframe Animator", ICON("record"), () => openAnimator(player, npc, self));
+  m.btn("Animator", ICON("record"), () => openAnimator(player, npc, self));
   m.btn(isMounted(npc) ? "§bRiding" : "Ride A Mob", ICON("ride"), () => openRideMenu(player, npc, self));
-  m.btn("Cinematic Shot", ICON("film"), () => openShotsMenu(player, self, npc));
+  m.btn("Cine Shot", ICON("film"), () => openShotsMenu(player, self, npc));
   m.btn("Clone", ICON("clone"), () => (cloneNpc(player, npc), self()));
   m.btn("Lock", ICON("lock"), () => {
     npc.setProperty("npcstudio:locked", true);
@@ -258,12 +261,12 @@ function poseTab(player, m, npc, self) {
   poseRows(m, player, npc);
   m.btn("Reset This Part", ICON("clear_x"), () => (resetPart(player, npc), self()));
   m.section("tools", "Pose tools", ICON("gizmo"));
-  m.btn("Pose Mode (Gizmo)", ICON("gizmo"), () => startGizmo(player, npc, () => openStudio(player, 1)));
   m.toggle("Walk in Pose Mode", poseWalkOn(player), () => (setPoseWalk(player, !poseWalkOn(player)), self()));
+  m.btn("Pose Mode", ICON("gizmo"), () => startGizmo(player, npc, () => openStudio(player, 1)));
   m.btn("Pose Library", ICON("pose_preset"), () => openPoseLibrary(player, npc, self));
   m.btn(`Undo (${h.undo})`, ICON("undo"), () => (undo(npc), self()));
   m.btn(`Redo (${h.redo})`, ICON("redo"), () => (redo(npc), self()));
-  m.btn("Mirror Left / Right", ICON("mirror"), () => {
+  m.btn("Mirror", ICON("mirror"), () => {
     pushUndo(npc);
     applyPose(npc, mirrorPose(readPose(npc)));
     self();
@@ -274,7 +277,7 @@ function poseTab(player, m, npc, self) {
     self();
   });
   m.section("adv", "More", ICON("pose_manual"));
-  m.btn("Copy / Paste / Saved Poses", ICON("pose_manual"), () => openPoseEditor(player, npc, self));
+  m.btn("Saved Poses", ICON("pose_manual"), () => openPoseEditor(player, npc, self));
 }
 
 // =====================================================================================
@@ -282,25 +285,25 @@ function poseTab(player, m, npc, self) {
 // =====================================================================================
 function presetsTab(player, m, npc, self) {
   m.section("saved", "Presets", ICON("preset"));
-  m.btn("Saved NPC Presets", ICON("preset"), () => openPresetsMenu(player, self));
-  if (npc) m.btn("Save NPC As Preset", ICON("save"), () => savePrompt(player, npc));
+  m.btn("NPC Presets", ICON("preset"), () => openPresetsMenu(player, self));
+  if (npc) m.btn("Save Preset", ICON("save"), () => savePrompt(player, npc));
   m.btn("Scene Presets", ICON("scene"), () => openScenesMenu(player, self));
   m.section("dup", "Duplicate", ICON("crowd"));
   if (npc) m.btn("Make A Crowd", ICON("crowd"), () => openCrowdMenu(player, npc, self));
-  m.btn("Select All Nearby", ICON("outline"), () => {
+  m.btn("Select Nearby", ICON("outline"), () => {
     const list = npcsNear(player, 24);
     selectMany(player, list);
     msg(player, `§b${list.length} NPCs selected.`);
     self();
   });
-  if (getSelection(player).length) m.btn("Clear Selection", ICON("clear"), () => (clearSelection(player), self()));
+  if (getSelection(player).length) m.btn("Deselect", ICON("clear"), () => (clearSelection(player), self()));
   m.btn("Bulk Tools", ICON("bulkequip"), () => openBulkMenu(player, self));
   m.section("props", "Props", ICON("prop"));
-  m.btn("Block & Item Props", ICON("prop"), () => openPropMenu(player, self));
-  m.btn("Particle Props", ICON("particle"), () => openParticleMenu(player, self));
-  m.btn("Mob & Vehicle Props", "textures/items/npcstudio_mob_tool", () => openMobToolMenu(player, self));
+  m.btn("Block Props", ICON("prop"), () => openPropMenu(player, self));
+  m.btn("Particles", ICON("particle"), () => openParticleMenu(player, self));
+  m.btn("Mob Props", "textures/items/npcstudio_mob_tool", () => openMobToolMenu(player, self));
   m.section("tools", "Tools", ICON("tools"));
-  m.btn("Get Studio Tools", ICON("tools"), () => openToolsMenu(player, self));
+  m.btn("Studio Tools", ICON("tools"), () => openToolsMenu(player, self));
   m.btn("Handbook", ICON("debug"), () => openHandbook(player, self));
 }
 
@@ -325,9 +328,9 @@ function worldTab(player, m, npc, self) {
   m.section("fog", "Depth fog", ICON("fog"));
   fogRows(m, player, self);
   m.section("scene", "Scene", ICON("rules"));
-  m.btn("Studio World Rules", ICON("rules"), () => openStudioRules(player, self));
-  m.btn("Play All Animations", ICON("play"), () => (playAllTimelines(player), self()));
-  m.btn("Stop All Animations", ICON("clear_x"), () => (stopAllTimelines(player), self()));
+  m.btn("World Rules", ICON("rules"), () => openStudioRules(player, self));
+  m.btn("Play All", ICON("play"), () => (playAllTimelines(player), self()));
+  m.btn("Stop All", ICON("clear_x"), () => (stopAllTimelines(player), self()));
 }
 
 // =====================================================================================
@@ -336,13 +339,14 @@ function worldTab(player, m, npc, self) {
 function cameraTab(player, m, npc, self) {
   const sel = getSelectedCamera(player);
   m.section("fly", "Camera", ICON("camera"));
+  if (isViewing(player)) m.btn("Exit Camera View", ICON("exit"), () => exitView(player));
   m.btn("Fly Cam", ICON("flycam"), () => flyCam(player, "camera"));
   m.btn("Fly Cam Path", ICON("waypoint"), () => flyCam(player, "path"));
-  m.btn("Place Camera At My View", ICON("plus"), () => placeCameraAtView(player));
-  m.btn("Preview Cameras", ICON("monitor"), () => peek(player));
+  m.btn("Place Camera", ICON("plus"), () => placeCameraAtView(player));
+  m.btn("Preview", ICON("monitor"), () => peek(player));
   m.toggle("Grid", guidesOn(player), () => (setGuides(player, !guidesOn(player)), self()));
   if (sel) m.field("Lens", `${sel.nameTag || "Camera"}`, ICON("fov"), () => openLiveCamera(player, sel, self));
-  m.btn("Cinematic Shots", ICON("film"), () => openShotsMenu(player, self));
+  m.btn("Cine Shots", ICON("film"), () => openShotsMenu(player, self));
   const cams = allCameras(player).slice(0, 30);
   if (cams.length) {
     m.section("list", "Cameras", ICON("camera"));
@@ -351,7 +355,6 @@ function cameraTab(player, m, npc, self) {
       m.btn(sel?.id === c.id ? `§b${name}` : name, ICON("camera"), () => openCameraPanel(player, c));
     }
   }
-  if (isViewing(player)) m.btn("Exit Camera View", ICON("exit"), () => exitView(player));
 }
 
 // =====================================================================================

@@ -8,6 +8,12 @@
       "-states": [
         "DisableCulling"
       ]
+    },
+    "npcstudio_gizmo:entity_alphatest": {
+      "depthFunc": "Always",
+      "+states": [
+        "DisableDepthWrite"
+      ]
     }
   }
 }

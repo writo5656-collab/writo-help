@@ -10,7 +10,7 @@
  * Copyright (c) 2026 NoxeelMC. All rights reserved. See LICENSE.md.
  */
 import { InputPermissionCategory } from "@minecraft/server";
-import { world, system, menu, modal, msg, sfx, actionbar, corner, clearCorner, ICON, clamp, wrapDeg, round, getJson, setJson, forward, right } from "./core.js";
+import { world, system, menu, modal, msg, sfx, editorHudReset, actionbar, corner, clearCorner, ICON, clamp, wrapDeg, round, getJson, setJson, forward, right } from "./core.js";
 import { BONES, getRot, setRot, getPos, setPos, getScale, setScale, readPose, applyPose, mirrorPose, expandPreset, pushUndo, undo, redo, historySize, snapPos, POS_LIMIT, getAnim, setAnim } from "./rig.js";
 import { POSE_CATEGORIES, LOOP_ANIMS } from "./poses.js";
 import { swapHotbar, restoreHotbar } from "./hotbar.js";
@@ -430,6 +430,7 @@ export function startGizmo(player, npc, back) {
     msg(player, "§cPose Mode needs your hotbar for its tools. Free up some inventory space (up to 9 slots) and try again.");
     return;
   }
+  editorHudReset(player); // Pose Mode needs the hotbar at once
   const st = stateFor(player);
   const r0 = player.getRotation();
   const s = {

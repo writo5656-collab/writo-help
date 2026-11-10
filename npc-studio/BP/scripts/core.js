@@ -2,7 +2,7 @@
  * NPC Studio — core.js (shared constants + helpers)
  * Copyright (c) 2026 NoxeelMC. All rights reserved. See LICENSE.md.
  */
-import { world, system, InputPermissionCategory } from "@minecraft/server";
+import { world, system, InputPermissionCategory, HudVisibility } from "@minecraft/server";
 import { ActionFormData, ModalFormData, MessageFormData } from "@minecraft/server-ui";
 import * as ui from "@minecraft/server-ui";
 
@@ -159,8 +159,25 @@ function showWithRetry(form, player, tries = 0) {
     if (res.canceled && res.cancelationReason === "UserBusy" && tries < 40) {
       return new Promise((resolve) => system.runTimeout(resolve, 2)).then(() => showWithRetry(form, player, tries + 1));
     }
+    if (tries > 0) tapLog(player, `§8[menu] opened after ${tries} busy ${tries === 1 ? "retry" : "retries"}`);
     return res;
   });
+}
+
+// ---------- tap log (/npcstudio:debug): what the game really sent for each tap, in chat ----------
+const debugOn = new Set();
+export function toggleDebug(player) {
+  if (debugOn.has(player.id)) debugOn.delete(player.id);
+  else debugOn.add(player.id);
+  return debugOn.has(player.id);
+}
+function tapLog(player, text) {
+  if (!debugOn.has(player.id)) return;
+  try {
+    player.sendMessage(text);
+  } catch {
+    /* player left */
+  }
 }
 
 /**
@@ -201,10 +218,13 @@ const A_SMALL = "§k§r", B_WIDE = "§y§r", C_SMALL = "§m§r";
 // §a§r in a, b and c: three equal buttons across the control column (choices like Line / Square /
 // Circle, slot tiles with an icon, X / Y / Z boxes)
 const THIRD = "§a§r";
+// 2 columns: the main entry (§d§r) is an empty spacer; a = left half, c = right half (§v§r)
+const DUO = "§d§r", HALF = "§v§r";
+const HALF_MAX = 13; // longest label that fits half a row
 // Values start with §f: text that starts with a digit after the tag ("100%", "1.0") showed nothing
 // in game (the UI formula seems to treat it as a number)
 const V = "§f";
-const RAIL_N = 24, BAR_N = 8, ROW_N = 48; // + button 38 = hide / show the panel; rows start at 39
+const RAIL_N = 24, BAR_N = 8, ROW_N = 36; // + button 38 = hide / show the panel; rows start at 39
 // Body tags (the body is a global binding, so the UI can read them anywhere):
 //   §g§r  thirds grid over the free space      §x§r  panel hidden (only the › handle, grid, hint)
 const GRID_TAG = "§g§r", MINI_TAG = "§x§r";
@@ -214,20 +234,39 @@ export const SWITCH = CHECKBOX;
 const TRACK = (frac) => `textures/ui/npcstudio/slider/s${String(clamp(Math.round(frac * 20), 0, 20)).padStart(2, "0")}`;
 
 /** panel.js fills these in: default tabs, the NPC heads on the right and the bottom tools. */
-const hooks = { tabs: (_player) => null, rail: (_player) => [], bar: (_player) => [], grid: (_player) => false };
+const hooks = { tabs: (_player) => null, rail: (_player) => [], bar: (_player) => [], grid: (_player) => false, hudBusy: (_player) => false };
 export function setEditorHooks(h) {
   Object.assign(hooks, h);
 }
 
-const folded = new Map(); // player.id -> Set(section ids)
-function isFolded(player, id) {
-  return folded.get(player.id)?.has(id) ?? false;
+// Accordion: one section open at a time per screen. The open rows fit without scrolling, so a redraw
+// (every tap closes the menu and opens a new one) never loses your place.
+const openSection = new Map(); // `${player.id}|${screen}` -> open section id ("" = all folded)
+
+// The HUD (hotbar, touch buttons, crosshair) is hidden for as long as you stay in the editor, so it
+// doesn't flash up in the short gap between two menus. It comes back a moment after the last one closes.
+const hudHidden = new Set();
+function editorHud(player, hide) {
+  try {
+    if (hide) {
+      if (hudHidden.has(player.id) || hooks.hudBusy(player)) return;
+      hudHidden.add(player.id);
+      player.onScreenDisplay.setHudVisibility(HudVisibility.Hide);
+    } else if (hudHidden.delete(player.id) && !hooks.hudBusy(player)) {
+      player.onScreenDisplay.setHudVisibility(HudVisibility.Reset);
+    }
+  } catch {
+    /* player left */
+  }
 }
-function toggleFold(player, id) {
-  let s = folded.get(player.id);
-  if (!s) folded.set(player.id, (s = new Set()));
-  if (s.has(id)) s.delete(id);
-  else s.add(id);
+/** Give the HUD back now (rejoin safety net, or a mode that needs the hotbar at once). */
+export function editorHudReset(player) {
+  hudHidden.delete(player.id);
+  try {
+    if (!hooks.hudBusy(player)) player.onScreenDisplay.setHudVisibility(HudVisibility.Reset);
+  } catch {
+    /* player left */
+  }
 }
 
 // ---------- free look: while the Studio panel is open you can turn your view in the free space on the
@@ -241,8 +280,16 @@ export function isEditing(player) {
 }
 const LOCK_INPUT = false; // free look is off until the panel works in game (it only matters with free look)
 export function editorLock(player, on) {
-  if (on) editing.add(player.id);
-  else editing.delete(player.id);
+  if (on) {
+    editing.add(player.id);
+    editorHud(player, true);
+  } else {
+    editing.delete(player.id);
+    // still no menu a moment later = the player left the editor
+    system.runTimeout(() => {
+      if (player.isValid && !editing.has(player.id)) editorHud(player, false);
+    }, 6);
+  }
   if (!LOCK_INPUT) return;
   try {
     const perms = player.inputPermissions;
@@ -376,7 +423,7 @@ export function menu(title, body) {
       const label = cleanLabel(text);
       // translated labels (skin names) are RawMessages: put the tag in front as plain text
       const tagged = typeof label === "string" ? PLAIN + (label || " ") : { rawtext: [{ text: PLAIN }, label] };
-      rows.push({ kind: "row", text: tagged, icon, fn, sec: section });
+      rows.push({ kind: "row", text: tagged, icon, fn, sec: section, plain: typeof label === "string" ? label : undefined });
       return api;
     },
     /** Up to 4 square tiles in one row: [{ icon, on, fn }] (inventory slots). */
@@ -444,9 +491,9 @@ export function menu(title, body) {
       });
       return api;
     },
-    back(fn) {
-      section = null;
-      rows.push({ kind: "row", text: PLAIN + "Back", icon: ICON("back"), fn, sec: null });
+    back(fn, label = "Back") {
+      section = null; // outside every section, so it never folds away
+      rows.push({ kind: "row", text: PLAIN + label, icon: ICON("back"), fn, sec: null });
       return api;
     },
     show(player) {
@@ -474,8 +521,23 @@ export function menu(title, body) {
       for (let i = 0; i < BAR_N; i++) add(bar[i] ? bar[i].label || " " : "", bar[i]?.icon, bar[i]?.fn);
       // 38 hide the panel (see the whole view), the › handle brings it back
       add(" ", ICON("eye"), keep(() => showMini(player, again)));
-      // 39+ rows, 4 buttons each (folded sections hide their rows)
-      const visible = rows.filter((r) => r.kind === "hdr" || !r.sec || !isFolded(player, r.sec));
+      // 39+ rows, 4 buttons each. Accordion: only the open section shows its rows.
+      const secIds = rows.filter((r) => r.kind === "hdr").map((r) => r.id);
+      const secKey = `${player.id}|${title}|${secIds.join(",")}`;
+      const open = openSection.get(secKey) ?? secIds[0];
+      const shown = rows.filter((r) => r.kind === "hdr" || !r.sec || r.sec === open);
+      // two short buttons in a row share it (2 columns)
+      const pairable = (r) => r && r.kind === "row" && r.plain !== undefined && r.plain.replace(/§./g, "").length <= HALF_MAX;
+      const visible = [];
+      for (let i = 0; i < shown.length; i++) {
+        const r = shown[i];
+        const n = shown[i + 1];
+        if (pairable(r) && pairable(n) && r.sec === n.sec) {
+          const half = (x) => ({ text: HALF + (x.plain || " "), icon: x.icon, fn: x.fn });
+          visible.push({ kind: "row", text: DUO + " ", sec: r.sec, a: half(r), c: half(n) });
+          i++;
+        } else visible.push(r);
+      }
       const per = ROW_N - 2;
       const pages = Math.max(1, Math.ceil(visible.length / per));
       page = Math.min(page, pages - 1);
@@ -489,8 +551,8 @@ export function menu(title, body) {
       if (page > 0) row({ text: PLAIN + "Previous page", icon: ICON("back"), fn: keep(() => stay(() => (page -= 1), true)) });
       for (const r of slice) {
         if (r.kind === "hdr") {
-          const shut = isFolded(player, r.id);
-          row({ text: `${shut ? HDR_SHUT : HDR_OPEN}${r.text}`, icon: r.icon, fn: keep(() => stay(() => toggleFold(player, r.id), true)) });
+          const shut = r.id !== open;
+          row({ text: `${shut ? HDR_SHUT : HDR_OPEN}${r.text}`, icon: r.icon, fn: keep(() => stay(() => openSection.set(secKey, shut ? r.id : ""), true)) });
         } else row({ ...r, text: r.text || PLAIN + " " });
       }
       if (page < pages - 1) row({ text: PLAIN + "Next page", icon: ICON("play"), fn: keep(() => stay(() => (page += 1), true)) });
@@ -499,10 +561,12 @@ export function menu(title, body) {
         .then((res) => {
           editorLock(player, false); // before the action, so Pose Mode / camera view can set their own locks
           if (res.canceled) {
+            tapLog(player, `§8[menu] "${title}" closed: ${res.cancelationReason}`);
             if (res.cancelationReason !== "UserBusy") runLeave();
             return;
           }
           const fn = actions[res.selection];
+          tapLog(player, `§8[tap] #${res.selection} "${title}" ${fn ? (fn.stay ? "redraw" : "open") : "§cno action"}`);
           if (!fn) return runLeave();
           sfx(player, "click");
           if (!fn.stay) runLeave();

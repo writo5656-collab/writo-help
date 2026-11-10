@@ -4,7 +4,8 @@
     "description": {
       "identifier": "npcstudio:gizmo",
       "materials": {
-        "default": "entity_alphatest"
+        "default": "entity_alphatest",
+        "top": "npcstudio_gizmo"
       },
       "textures": {
         "default": "textures/entity/npcstudio/gizmo"
@@ -16,6 +17,7 @@
         "scale": "query.property('npcstudio:gscale')"
       },
       "render_controllers": [
+        "controller.render.npcstudio.gizmo_top",
         "controller.render.npcstudio.gizmo"
       ]
     }

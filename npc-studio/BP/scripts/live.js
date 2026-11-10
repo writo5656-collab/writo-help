@@ -158,7 +158,7 @@ export function trimPage(player, npc, back, onlySlots) {
   PIECE_NAMES.forEach((name, i) => m.toggle(name, st.pieces[i], keep(() => ((st.pieces[i] = !st.pieces[i]), st.pieces[i] && apply(), self()))));
   m.section("view", "View", ICON("eye"));
   m.cycle("Turn view", `${st.angle}°`, (d) => (st.angle = wrap(st.angle + d * 45 + 180, 360) - 180));
-  m.btn("Done", ICON("back"), () => back?.());
+  m.back(() => back?.(), "Done");
   m.show(player);
 }
 
@@ -250,6 +250,6 @@ export function cameraPage(player, marker, hooks, back) {
   m.cycle("Forward", "back · fwd", (d) => move(d * stepLen, 0, 0));
   m.cycle("Sideways", "left · right", (d) => move(0, d * stepLen, 0));
   m.cycle("Height", "down · up", (d) => move(0, 0, d * stepLen));
-  m.btn("Done", ICON("back"), () => back?.());
+  m.back(() => back?.(), "Done");
   m.show(player);
 }

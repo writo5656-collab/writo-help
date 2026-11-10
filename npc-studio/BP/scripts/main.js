@@ -9,7 +9,7 @@
  * See LICENSE.md in this pack for full terms.
  */
 import { ItemStack, EquipmentSlot, EntityComponentTypes, CommandPermissionLevel, CustomCommandStatus } from "@minecraft/server";
-import { world, system, safeOn, msg, sfx, actionbar, NPC_ID, CAMERA_ID, WAND_ID, CAMERA_TOOL_ID, MOB_TOOL_ID, HANDBOOK_ID, MONITOR_ID, STAMP_ID, ROTATOR_ID, TELEPORTER_ID, MOB_TAG, TOOL_IDS, isLocked } from "./core.js";
+import { world, system, safeOn, msg, sfx, actionbar, toggleDebug, editorHudReset, NPC_ID, CAMERA_ID, WAND_ID, CAMERA_TOOL_ID, MOB_TOOL_ID, HANDBOOK_ID, MONITOR_ID, STAMP_ID, ROTATOR_ID, TELEPORTER_ID, MOB_TAG, TOOL_IDS, isLocked } from "./core.js";
 import { peek, setDepth, depthOn } from "./studio.js";
 import { stampCopy, stampPaste, rotateToMe, teleportLook } from "./props.js";
 import { openHandbook } from "./handbook.js";
@@ -40,6 +40,8 @@ startMountLoop();
 system.runTimeout(cleanupGizmos, 20);
 // after a /reload nobody is mid-edit any more: give everyone their hotbar back
 system.runTimeout(() => world.getAllPlayers().forEach((p) => restoreAfterRejoin(p)), 25);
+// the editor hides the HUD while its menus are open: make sure nobody is left without one after a reload
+system.runTimeout(() => world.getAllPlayers().forEach((p) => !inCinema(p) && editorHudReset(p)), 30);
 
 // ---------- slash commands: /exitcam  /npc  /cameras ----------
 safeOn(() => system.beforeEvents.startup, (ev) => {
@@ -57,6 +59,7 @@ safeOn(() => system.beforeEvents.startup, (ev) => {
     }
   };
   add("depth", "Depth map view on / off (near white, far black)", (p) => setDepth(p, !depthOn(p)));
+  add("debug", "Tap log on / off: shows in chat what each menu tap did", (p) => msg(p, toggleDebug(p) ? "§bTap log on. §7Every menu tap now shows a grey line in chat." : "§7Tap log off."));
   add("exitcam", "Leave NPC Studio camera view", (p) => {
     if (inCinema(p)) exitCinema(p);
     else {

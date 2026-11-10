@@ -29,6 +29,11 @@ export const CHAPTERS = [
         "§7The NPC changes right away and the panel stays on the left, so you see the result on the right. Tap a value box to type an exact number.",
         "§7Pose tab: pick the part, pick the step (Fine, Normal, Big), then Tilt, Turn, Roll and Move."
       ]),
+      P("manage", "Panel: sections and columns", [
+        "One section is open at a time: tap a section name to open it, the others fold. Everything fits without scrolling.",
+        "Short buttons sit two in a row. The HUD stays hidden while you work in the panel and comes back when you close it.",
+        "§7/npcstudio:debug shows a grey line in chat for every menu tap (for bug reports)."
+      ]),
       P("gizmo", "Pose Mode: walk around", [
         "Pose tab > §bWalk in Pose Mode§f (on by default): walk, jump and look around while you pose.",
         "Red / green / blue arrows at the NPC's feet show X, Y and Z. Rings (rotate) or arrows (move) sit on the part you edit.",

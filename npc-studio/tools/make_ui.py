@@ -96,7 +96,7 @@ def label_from_button(size, offset, anchor, align, scale=1.0, strip_tab=False):
 # A row is [main, a, b, c]; the tag at the start of each label picks its look (see core.js):
 #   main: (none) button · §h§r/§i§r section · §w§r checkbox · §f§r field · §s§r slider · §t§r stepper
 #   a: §k§r small (minus / previous)   b: §p§r small (plus) · §y§r wide value   c: §v§r value · §m§r small · §z§r Choose
-TAB0, RAIL0, RAILN, BAR0, BARN, MINI_BTN, ROW0, ROWN = 0, 6, 24, 30, 8, 38, 39, 48
+TAB0, RAIL0, RAILN, BAR0, BARN, MINI_BTN, ROW0, ROWN = 0, 6, 24, 30, 8, 38, 39, 36
 # Features that are off until each one is proven in game (the panel crashed the game in 4.3-4.8):
 FREELOOK = bool(os.environ.get("NPCS_FREELOOK"))       # look around in the free space
 DARK_INPUTS = bool(os.environ.get("NPCS_DARK_INPUTS"))  # input forms inside the dark panel
@@ -110,6 +110,9 @@ NOT_MINI = f"(({BODY} - '{MINI_TAG}') = {BODY})"
 PLAIN, HDR, HDR_OPEN, HDR_SHUT, TILE = "§o§r", "§j§r", "§h§r", "§i§r", "§e§r"
 CAP, CHECK, FIELD, SLIDE, STEP = "§q§r", "§w§r", "§f§r", "§s§r", "§t§r"
 A_SMALL, B_WIDE, C_SMALL, THIRD = "§k§r", "§y§r", "§m§r", "§a§r"
+DUO, HALF = "§d§r", "§v§r"   # 2 columns: main entry = empty spacer, a = left half, c = right half
+# backup build (NPCS_NO_HALF=1): the 4.22 layout, no 2-column buttons, no new screen options
+NO_HALF = bool(os.environ.get("NPCS_NO_HALF"))
 PANEL_W = "34%"
 BAR_H = 24
 RAIL_W = 32
@@ -241,6 +244,16 @@ def third_slot(anchor):
     return {"v_third": variant(THIRD, [control_col([cell])])}
 
 
+def half_slot(anchor):
+    """Left or right half of a 2-column row: one button with its icon and name (same build as third_slot)."""
+    cell = {"cell": {"type": "panel", "size": ["49%", 18], "anchor_from": anchor, "anchor_to": anchor,
+                     "controls": [one_button("row", ("100%", "100%")),
+                                  {"icon": dict(icon([12, 12], [4, 0], "left_middle"), layer=7)},
+                                  {"text": dict(text_label(["79%", 10], [-1, 0], "right_middle", "left", [HALF], shown(),
+                                                           scale=0.8), layer=7)}]}}
+    return {"v_half": variant(HALF, [{"wide": {"type": "panel", "size": ["97%", "100%"], "controls": [cell]}}])}
+
+
 def row_templates():
     t = {}
     hdr_marks = [HDR, HDR_OPEN, HDR_SHUT]
@@ -250,7 +263,7 @@ def row_templates():
         image("bg_hdr", "hdr", ("100% - 6px", 18), has(HDR)),
         # two buttons that are never visible together, and never under the controls:
         #   full width on button / header / checkbox rows, only the label column on control rows
-        {"full": {"type": "panel", "size": ["100%", "100%"], "bindings": [coll(BTN), view(lacks(CAP))],
+        {"full": {"type": "panel", "size": ["100%", "100%"], "bindings": [coll(BTN), view(lacks(CAP) if NO_HALF else f"({lacks(CAP)} and {lacks(DUO)})")],
                   "controls": [one_button("hit", ("100% - 6px", 18))]}},
         {"cap": {"type": "panel", "size": [f"{LABEL_COL} - 3px", 18], "offset": [3, 0], "anchor_from": "left_middle",
                  "anchor_to": "left_middle", "bindings": [coll(BTN), view(has(CAP))],
@@ -272,7 +285,7 @@ def row_templates():
     ]}
     # a: small button at the start of the control column, or the left third
     t["npcs_aux_a"] = aux([{"v_small": variant(A_SMALL, [control_col(list(small_slot(A_SMALL, "left_middle", [2, 0]).values())[0]["controls"])])},
-                           third_slot("left_middle")])
+                           third_slot("left_middle")] + ([] if NO_HALF else [half_slot("left_middle")]))
     # b: the value box between a and c (a slider's track is its picture, the number on the right), or the middle third
     box = {"box": {"type": "panel", "size": ["48%", 14], "anchor_from": "right_middle", "anchor_to": "right_middle",
                    "offset": [-18, 0], "controls": [one_button("row", ("100%", "100%"))] + ([] if AUX_BARE else [
@@ -285,7 +298,8 @@ def row_templates():
     else:
         t["npcs_aux_b"] = aux([{"v_wide": variant(B_WIDE, [box])}, third_slot("center")])
     # c: small button at the right edge, or the right third
-    t["npcs_aux_c"] = aux([small_slot(C_SMALL, "right_middle", [-4, 0]), third_slot("right_middle")])
+    t["npcs_aux_c"] = aux([small_slot(C_SMALL, "right_middle", [-4, 0]), third_slot("right_middle")]
+                          + ([] if NO_HALF else [half_slot("right_middle")]))
     return t
 
 
@@ -346,10 +360,7 @@ def wrap_vanilla(name):
     return {"block@server_form.npcs_blocker": {"controls": [{name: {}}]}}
 
 
-ANIM_EVENTS = [("npcs_in_push", "screen.entrance_push", "screen.entrance_end"),
-               ("npcs_in_pop", "screen.entrance_pop", "screen.entrance_end"),
-               ("npcs_out_push", "screen.exit_push", "screen.exit_end"),
-               ("npcs_out_pop", "screen.exit_pop", "screen.exit_end")]
+ANIM_EVENTS = [("npcs_out_pop", "screen.exit_pop", "screen.exit_end")]
 NO_ANIMS = [f"@server_form.{n}" for n, _, _ in ANIM_EVENTS]
 
 
@@ -358,8 +369,9 @@ def build():
 
     # instant menus: no slide/fade between screens, so folding a section or switching tabs is immediate
     d["third_party_server_screen"] = {
-        # every screen event gets a 0-length animation WITH its end event: with only the exit one, the
-        # entrance never "ended" and the first tap on a freshly opened panel did nothing
+        # Same screen setup as SjnExe/AddonExe (a shipped panel add-on): one 0-length exit animation,
+        # and the screen is built at once instead of over several frames. A panel this size loaded
+        # slowly, and a tap that landed before it finished was dropped (the "tap twice" problem).
         "$screen_animations": NO_ANIMS,
         "$background_animations": NO_ANIMS,
         "render_game_behind": True
@@ -373,6 +385,8 @@ def build():
     # panel, like Mojang's own popups, so their buttons still work
     if FREELOOK:
         d["npcs_blocker"] = {"type": "input_panel", "size": ["100%", "100%"], "modal": True, "prevent_touch_input": True}
+    if not NO_HALF:
+        d["third_party_server_screen"].update({"force_render_below": True, "load_screen_immediately": True})
     for name, play, end in ANIM_EVENTS:
         d[name] = {"anim_type": "offset", "easing": "linear", "duration": 0, "from": [0, 0], "to": [0, 0],
                    "play_event": play, "end_event": end}
@@ -718,7 +732,7 @@ def validate(d):
                 n += count_buttons(v)
         return n
     for name in ("npcs_aux_a", "npcs_aux_b", "npcs_aux_c"):
-        want = 1 if (NO_BOX and name == "npcs_aux_b") else 2
+        want = 1 if (NO_BOX and name == "npcs_aux_b") else 2 if (name == "npcs_aux_b" or NO_HALF) else 3
         if name in d and count_buttons(d[name]) != want:
             errors.append(f"{name} has {count_buttons(d[name])} buttons (must be {want}: one per look, shown by different tags)")
         sizes = []
