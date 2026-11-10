@@ -1,3 +1,10 @@
+## NPC Studio V3.5: your own capes and 3D models
+
+- Empty custom skin slots now show Steve (with the slot number on the head) instead of the coloured placeholder skins
+- 7 custom cape slots: Display > Cloak, after the 8 built-in capes
+- 10 custom 3D model slots: Display > 3D model (Blockbench Bedrock models; bones named like a player can be posed)
+- Pack Builder website: Skins / Capes / Models tabs, get a skin or cape by player name, Steve as the preview
+
 ## NPC Studio V3.4: closer to the Java editor
 
 - Outline hugs the NPC: skins without a hat / jacket layer get a tight outline (it floated away from the head and shoulders before)

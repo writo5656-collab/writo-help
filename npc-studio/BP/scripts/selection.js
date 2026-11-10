@@ -99,6 +99,13 @@ export function setItemFrame(npc, n) {
   setFlags(npc, (getFlags(npc) & ~(7 << 11)) | ((n & 7) << 11));
 }
 export const CAPE_NAMES = ["Studio Cyan", "Crimson", "Shadow", "Snow", "Royal", "Gold", "Forest", "Ocean"];
+// capes 9-15 are custom slots a player's pack fills (tools/make_custom.py); names come from the pack
+export const CAPE_COUNT = 16; // 0 = none
+export function capeLabel(c) {
+  if (!c) return "None";
+  if (c <= CAPE_NAMES.length) return CAPE_NAMES[c - 1];
+  return { rawtext: [{ translate: `npcstudio.cape.${c}` }] };
+}
 
 // ---------- selection ----------
 function mapOf(player) {

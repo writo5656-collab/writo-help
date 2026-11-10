@@ -51,7 +51,24 @@
         "cape6": "textures/entity/npcstudio/capes/cape6",
         "cape7": "textures/entity/npcstudio/capes/cape7",
         "cape8": "textures/entity/npcstudio/capes/cape8",
-        "outline_sil": "textures/entity/npcstudio/outline_sil"
+        "outline_sil": "textures/entity/npcstudio/outline_sil",
+        "custom_cape1": "textures/entity/npcstudio/capes/custom_cape1",
+        "custom_cape2": "textures/entity/npcstudio/capes/custom_cape2",
+        "custom_cape3": "textures/entity/npcstudio/capes/custom_cape3",
+        "custom_cape4": "textures/entity/npcstudio/capes/custom_cape4",
+        "custom_cape5": "textures/entity/npcstudio/capes/custom_cape5",
+        "custom_cape6": "textures/entity/npcstudio/capes/custom_cape6",
+        "custom_cape7": "textures/entity/npcstudio/capes/custom_cape7",
+        "custom_model1": "textures/entity/npcstudio/models/model1",
+        "custom_model2": "textures/entity/npcstudio/models/model2",
+        "custom_model3": "textures/entity/npcstudio/models/model3",
+        "custom_model4": "textures/entity/npcstudio/models/model4",
+        "custom_model5": "textures/entity/npcstudio/models/model5",
+        "custom_model6": "textures/entity/npcstudio/models/model6",
+        "custom_model7": "textures/entity/npcstudio/models/model7",
+        "custom_model8": "textures/entity/npcstudio/models/model8",
+        "custom_model9": "textures/entity/npcstudio/models/model9",
+        "custom_model10": "textures/entity/npcstudio/models/model10"
       },
       "geometry": {
         "default": "geometry.humanoid.custom",
@@ -89,7 +106,17 @@
         "sil_2_slim_t1": "geometry.npcstudio.sil_2_slim_t1",
         "sil_2_slim_t2": "geometry.npcstudio.sil_2_slim_t2",
         "sil_2_slim_t3": "geometry.npcstudio.sil_2_slim_t3",
-        "sil_2_slim_armor": "geometry.npcstudio.sil_2_slim_armor"
+        "sil_2_slim_armor": "geometry.npcstudio.sil_2_slim_armor",
+        "custom_model1": "geometry.npcstudio.custom_model1",
+        "custom_model2": "geometry.npcstudio.custom_model2",
+        "custom_model3": "geometry.npcstudio.custom_model3",
+        "custom_model4": "geometry.npcstudio.custom_model4",
+        "custom_model5": "geometry.npcstudio.custom_model5",
+        "custom_model6": "geometry.npcstudio.custom_model6",
+        "custom_model7": "geometry.npcstudio.custom_model7",
+        "custom_model8": "geometry.npcstudio.custom_model8",
+        "custom_model9": "geometry.npcstudio.custom_model9",
+        "custom_model10": "geometry.npcstudio.custom_model10"
       },
       "animations": {
         "freepose": "animation.npcstudio.freepose",
@@ -178,19 +205,25 @@
       },
       "render_controllers": [
         {
-          "controller.render.npcstudio.default": "math.mod(math.floor(query.property('npcstudio:flags') / 2), 2) == 0"
+          "controller.render.npcstudio.default": "(query.property('npcstudio:skin_index') < 32) && math.mod(math.floor(query.property('npcstudio:flags') / 2), 2) == 0"
         },
         {
-          "controller.render.npcstudio.bright": "math.mod(math.floor(query.property('npcstudio:flags') / 2), 2) == 1"
+          "controller.render.npcstudio.bright": "(query.property('npcstudio:skin_index') < 32) && math.mod(math.floor(query.property('npcstudio:flags') / 2), 2) == 1"
         },
         {
-          "controller.render.npcstudio.outline": "math.mod(query.property('npcstudio:flags'), 2) == 1 && math.mod(math.floor(query.property('npcstudio:flags') / 64), 2) == 0 && math.mod(math.floor(query.property('npcstudio:flags') / 512), 2) == 1"
+          "controller.render.npcstudio.custom_model": "(query.property('npcstudio:skin_index') >= 32) && math.mod(math.floor(query.property('npcstudio:flags') / 64), 2) == 0 && math.mod(math.floor(query.property('npcstudio:flags') / 2), 2) == 0"
         },
         {
-          "controller.render.npcstudio.outline_sil": "math.mod(query.property('npcstudio:flags'), 2) == 1 && math.mod(math.floor(query.property('npcstudio:flags') / 64), 2) == 0 && math.mod(math.floor(query.property('npcstudio:flags') / 512), 2) == 0"
+          "controller.render.npcstudio.custom_model_bright": "(query.property('npcstudio:skin_index') >= 32) && math.mod(math.floor(query.property('npcstudio:flags') / 64), 2) == 0 && math.mod(math.floor(query.property('npcstudio:flags') / 2), 2) == 1"
         },
         {
-          "controller.render.npcstudio.cape": "math.mod(math.floor(query.property('npcstudio:flags') / 4), 16) > 0 && math.mod(math.floor(query.property('npcstudio:flags') / 64), 2) == 0"
+          "controller.render.npcstudio.outline": "(query.property('npcstudio:skin_index') < 32) && math.mod(query.property('npcstudio:flags'), 2) == 1 && math.mod(math.floor(query.property('npcstudio:flags') / 64), 2) == 0 && math.mod(math.floor(query.property('npcstudio:flags') / 512), 2) == 1"
+        },
+        {
+          "controller.render.npcstudio.outline_sil": "(query.property('npcstudio:skin_index') < 32) && math.mod(query.property('npcstudio:flags'), 2) == 1 && math.mod(math.floor(query.property('npcstudio:flags') / 64), 2) == 0 && math.mod(math.floor(query.property('npcstudio:flags') / 512), 2) == 0"
+        },
+        {
+          "controller.render.npcstudio.cape": "(query.property('npcstudio:skin_index') < 32) && math.mod(math.floor(query.property('npcstudio:flags') / 4), 16) > 0 && math.mod(math.floor(query.property('npcstudio:flags') / 64), 2) == 0"
         }
       ],
       "enable_attachables": true,

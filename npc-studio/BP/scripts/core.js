@@ -450,9 +450,9 @@ export function menu(title, body) {
       return api;
     },
     field(label, value, _icon, fn, onClear) {
-      const v = String(value).replace(/§./g, "") || "None";
+      const v = typeof value === "object" && value ? value : String(value).replace(/§./g, "") || "None";
       const c = onClear ? { text: C_SMALL + " ", icon: ICON("delete"), fn: keep(() => stay(onClear)) } : undefined;
-      rows.push({ kind: "row", text: FIELD + label, fn, sec: section, b: { text: B_WIDE + V + v, fn }, c });
+      rows.push({ kind: "row", text: FIELD + label, fn, sec: section, b: { text: typeof v === "object" ? { rawtext: [{ text: B_WIDE + V }, v] } : B_WIDE + V + v, fn }, c });
       return api;
     },
     toggle(text, on, fn) {
@@ -487,7 +487,8 @@ export function menu(title, body) {
       rows.push({
         kind: "row", text: STEP + label, fn: go(1), sec: section,
         a: { text: A_SMALL + " ", icon: ICON("prev"), fn: go(-1) },
-        b: { text: B_WIDE + V + (String(value).replace(/§./g, "") || "None"), fn: go(1) },
+        // value: plain text, or a translated name ({ rawtext }) that a player's pack can change
+        b: { text: typeof value === "object" && value ? { rawtext: [{ text: B_WIDE + V }, value] } : B_WIDE + V + (String(value).replace(/§./g, "") || "None"), fn: go(1) },
         c: { text: C_SMALL + " ", icon: ICON("next"), fn: go(1) }
       });
       return api;

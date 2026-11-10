@@ -14,7 +14,7 @@ import {
 import { menu, modal, msg, confirm, ICON, npcLabel, npcsNear, isLocked, setEditorHooks, NPC_FAMILY } from "./core.js";
 import { getAnim, readPose, applyPose, mirrorPose, pushUndo, undo, redo, historySize } from "./rig.js";
 import { LOOP_ANIMS } from "./poses.js";
-import { pickSkin, setSkin, skinPlainName, npcHead } from "./skins.js";
+import { pickSkin, setSkin, skinLabel, npcHead, headIcon, pickModel, setModel, isCustomModel } from "./skins.js";
 import { openWardrobe, openSlotMenu, getEquip, equipIcon, SLOTS } from "./wardrobe.js";
 import { openPoseEditor, openPoseLibrary, openLoopAnims, startGizmo, poseWalkOn, setPoseWalk } from "./poseEditor.js";
 import { openAnimator, playAllTimelines, stopAllTimelines } from "./animator.js";
@@ -27,7 +27,7 @@ import {
 } from "./npc.js";
 import { placeCameraAtView, openCameraPanel, flyCam, allCameras, getSelectedCamera, openLiveCamera, exitView, isViewing } from "./camera.js";
 import {
-  select, selectMany, clearSelection, getSelection, isBright, setBright, getCape, setCape, CAPE_NAMES, isProp, areOutlinesHidden, setOutlinesHidden,
+  select, selectMany, clearSelection, getSelection, isBright, setBright, getCape, setCape, CAPE_COUNT, capeLabel, isProp, areOutlinesHidden, setOutlinesHidden,
   getOutlineLook, setOutlineLook, THICKNESS, OUTLINE_STYLES, refreshOutline
 } from "./selection.js";
 import { poseRows, resetPart, transformRows, trimPage, timeRows, fogRows, setPoseBone } from "./live.js";
@@ -189,11 +189,18 @@ function displayTab(player, m, npc, self) {
     { text: "Slim", on: slim, fn: setSlim(true), stay: true },
     { text: "Mobs", fn: () => openMobToolMenu(player, self) }
   ]);
-  m.field("Skin", skinPlainName(npc.getProperty("npcstudio:skin_index") ?? 0), npcHead(npc), () =>
+  const skinIdx = Number(npc.getProperty("npcstudio:skin_index") ?? 0);
+  const model = isCustomModel(npc);
+  m.field("Skin", model ? "-" : skinLabel(skinIdx), npcHead(npc), () =>
     pickSkin(player, "Choose Skin", (i) => (setSkin(npc, i), self()), self),
-    () => setSkin(npc, 0)
+    model ? undefined : () => setSkin(npc, 0)
   );
-  m.cycle("Cloak", cape ? CAPE_NAMES[cape - 1] : "None", (d) => setCape(npc, (cape + d + 9) % 9));
+  // custom 3D models from the player's own pack (Pack Builder website > Models)
+  m.field("3D model", model ? skinLabel(skinIdx) : "None", model ? headIcon(skinIdx) : ICON("prop"), () =>
+    pickModel(player, (n) => (setModel(npc, n), self()), self),
+    model ? () => setModel(npc, 0) : undefined
+  );
+  if (!model) m.cycle("Cloak", capeLabel(cape), (d) => setCape(npc, (cape + d + CAPE_COUNT) % CAPE_COUNT));
   m.field("Nametag", npc.getDynamicProperty("npcstudio:real_name") !== undefined ? "Hidden" : npcLabel(npc), ICON("nametag"), () => openNameTag(player, npc, self));
   m.toggle("Sneak", isSneaking(npc), () => (setSneak(npc, !isSneaking(npc)), self()));
   m.toggle("Living", isLiving(npc), () => (setLiving(npc, !isLiving(npc)), self()));

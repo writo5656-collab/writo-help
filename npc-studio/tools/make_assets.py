@@ -40,18 +40,5 @@ for n, r in ICONS.items():
     assert len(r) == 16, n
     icon(n, r)
 
-# placeholder skins for custom slots 4..20: hue-shifted copies of slot 1
-base = Image.open(os.path.join(ROOT, "entity", "npcstudio", "custom_slot1.png")).convert("RGBA")
-for i in range(4, 21):
-    shift = (i * 0.137) % 1.0
-    im = base.copy()
-    px = im.load()
-    for y in range(im.height):
-        for x in range(im.width):
-            r, g, b, a = px[x, y]
-            if a == 0: continue
-            h, s, v = colorsys.rgb_to_hsv(r / 255, g / 255, b / 255)
-            r2, g2, b2 = colorsys.hsv_to_rgb((h + shift) % 1.0, max(s, 0.35), v)
-            px[x, y] = (int(r2 * 255), int(g2 * 255), int(b2 * 255), a)
-    im.save(os.path.join(ROOT, "entity", "npcstudio", f"custom_slot{i}.png"))
+# placeholder skins for the custom slots: tools/make_custom.py (Steve)
 print("ok")

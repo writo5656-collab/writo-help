@@ -145,7 +145,14 @@
             "Texture.cape5",
             "Texture.cape6",
             "Texture.cape7",
-            "Texture.cape8"
+            "Texture.cape8",
+            "Texture.custom_cape1",
+            "Texture.custom_cape2",
+            "Texture.custom_cape3",
+            "Texture.custom_cape4",
+            "Texture.custom_cape5",
+            "Texture.custom_cape6",
+            "Texture.custom_cape7"
           ]
         }
       },
@@ -204,6 +211,89 @@
       ],
       "textures": [
         "Texture.outline_sil"
+      ],
+      "ignore_lighting": true
+    },
+    "controller.render.npcstudio.custom_model": {
+      "arrays": {
+        "textures": {
+          "Array.tex": [
+            "Texture.custom_model1",
+            "Texture.custom_model2",
+            "Texture.custom_model3",
+            "Texture.custom_model4",
+            "Texture.custom_model5",
+            "Texture.custom_model6",
+            "Texture.custom_model7",
+            "Texture.custom_model8",
+            "Texture.custom_model9",
+            "Texture.custom_model10"
+          ]
+        },
+        "geometries": {
+          "Array.geo": [
+            "Geometry.custom_model1",
+            "Geometry.custom_model2",
+            "Geometry.custom_model3",
+            "Geometry.custom_model4",
+            "Geometry.custom_model5",
+            "Geometry.custom_model6",
+            "Geometry.custom_model7",
+            "Geometry.custom_model8",
+            "Geometry.custom_model9",
+            "Geometry.custom_model10"
+          ]
+        }
+      },
+      "geometry": "Array.geo[query.property('npcstudio:skin_index') - 32]",
+      "materials": [
+        {
+          "*": "Material.default"
+        }
+      ],
+      "textures": [
+        "Array.tex[query.property('npcstudio:skin_index') - 32]"
+      ]
+    },
+    "controller.render.npcstudio.custom_model_bright": {
+      "arrays": {
+        "textures": {
+          "Array.tex": [
+            "Texture.custom_model1",
+            "Texture.custom_model2",
+            "Texture.custom_model3",
+            "Texture.custom_model4",
+            "Texture.custom_model5",
+            "Texture.custom_model6",
+            "Texture.custom_model7",
+            "Texture.custom_model8",
+            "Texture.custom_model9",
+            "Texture.custom_model10"
+          ]
+        },
+        "geometries": {
+          "Array.geo": [
+            "Geometry.custom_model1",
+            "Geometry.custom_model2",
+            "Geometry.custom_model3",
+            "Geometry.custom_model4",
+            "Geometry.custom_model5",
+            "Geometry.custom_model6",
+            "Geometry.custom_model7",
+            "Geometry.custom_model8",
+            "Geometry.custom_model9",
+            "Geometry.custom_model10"
+          ]
+        }
+      },
+      "geometry": "Array.geo[query.property('npcstudio:skin_index') - 32]",
+      "materials": [
+        {
+          "*": "Material.default"
+        }
+      ],
+      "textures": [
+        "Array.tex[query.property('npcstudio:skin_index') - 32]"
       ],
       "ignore_lighting": true
     }

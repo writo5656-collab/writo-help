@@ -798,7 +798,7 @@ ITEM_ICONS = {  # hotbar tool item -> icon it reuses
     "tool_undo": "undo", "tool_reset": "clear", "tool_done": "done",
 }
 
-SKIN_FILES = ["steve", "alex", "dream", "technoblade", "warden", "soldier", "knight", "mage", "assassin", "noxeelmc", "mercenary", "scientist"] + [f"custom_slot{i}" for i in range(1, 21)]
+SKIN_FILES = ["steve", "alex", "dream", "technoblade", "warden", "soldier", "knight", "mage", "assassin", "noxeelmc", "mercenary", "scientist"]  # custom slot heads: tools/make_custom.py
 
 
 def make_head(skin_png, out_png):

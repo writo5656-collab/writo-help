@@ -1,4 +1,4 @@
-<title>NPC Studio Skin Pack Builder</title>
+<title>NPC Studio Pack Builder</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@500;700&family=Manrope:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
 <style>
@@ -145,6 +145,16 @@ code { font: 13px var(--mono); background: var(--panel-2); border: 1px solid var
 .faq p { color: var(--muted); margin: 8px 0 0; }
 footer.site { border-top: 1px solid var(--line); padding-block: 18px 0; display: flex; flex-wrap: wrap; gap: 10px 20px; justify-content: space-between; color: var(--muted); font-size: 13px; }
 footer.site a { color: var(--accent); }
+
+.tabs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); width: 100%; }
+.tabs button { padding: 11px 8px; font: 700 14px var(--body); border-right: 1px solid var(--line); }
+.tabs button:last-child { border-right: 0; }
+.tabs button[aria-selected="true"] { background: var(--accent); color: var(--accent-ink); }
+.tabs .tc { font: 600 11px var(--mono); opacity: .75; margin-left: 4px; font-variant-numeric: tabular-nums; }
+.tile img { width: 76%; height: 76%; image-rendering: auto; }
+.tile canvas.capecv { width: 38%; height: 61%; }
+.tile.half { border-style: dashed; border-color: var(--rec); }
+#ignForm .btn { align-self: end; }
 </style>
 
 <div class="wrap" id="top">
@@ -159,11 +169,11 @@ footer.site a { color: var(--accent); }
   <header>
     <div class="brand">
       <span class="eyebrow"><span class="rec-dot" aria-hidden="true"></span>NPC Studio V3 · resource pack tool</span>
-      <h1>Skin Pack Builder</h1>
-      <p class="lede">Put your own skins on NPC Studio NPCs. Drop in PNG skins, check them on the live model, name them, and download one small pack. Everything stays in your browser.</p>
+      <h1>Pack Builder</h1>
+      <p class="lede">Put your own skins, capes and 3D models on NPC Studio NPCs. Grab a skin by player name or drop in PNGs, check them on the live model, name them, and download one small pack. Your files stay in your browser.</p>
     </div>
     <ol class="steps" aria-label="How it works">
-      <li><b>1</b> Drop skins</li>
+      <li><b>1</b> Add skins, capes or models</li>
       <li><b>2</b> Name them</li>
       <li><b>3</b> Download pack</li>
       <li><b>4</b> Activate above NPC Studio</li>
@@ -174,17 +184,17 @@ footer.site a { color: var(--accent); }
     <section class="stage" aria-label="Live preview">
       <div class="viewport" id="viewport">
         <canvas id="three"></canvas>
-        <div class="slate"><span id="slateSlot">Slot 01</span><span id="slateName">Example</span></div>
-        <div class="example-tag" id="exampleTag">Example</div>
+        <div class="slate"><span id="slateSlot">Skin 01</span><span id="slateName">Steve</span></div>
+        <div class="example-tag" id="exampleTag">Empty slot</div>
         <div class="hint">Drag to turn</div>
       </div>
       <div class="stage-controls">
         <div class="row">
           <div class="field">
-            <label for="slotName">Name shown in the skin picker</label>
+            <label for="slotName" id="slotNameLbl">Name shown in the skin picker</label>
             <input type="text" id="slotName" maxlength="32" placeholder="e.g. Ninja" disabled>
           </div>
-          <div class="field" style="flex:0 0 auto">
+          <div class="field" style="flex:0 0 auto" id="armsField">
             <span class="lbl">Arms (preview)</span>
             <div class="seg" role="group" aria-label="Arm model">
               <button type="button" id="armClassic" aria-pressed="true">Classic</button>
@@ -192,29 +202,50 @@ footer.site a { color: var(--accent); }
             </div>
           </div>
         </div>
+        <form class="row" id="ignForm" autocomplete="off">
+          <div class="field">
+            <label for="ign" id="ignLbl">Get a player's skin by name</label>
+            <input type="text" id="ign" maxlength="32" placeholder="e.g. Dream" spellcheck="false">
+          </div>
+          <div class="field" style="flex:0 0 auto" id="editionField">
+            <span class="lbl">Edition</span>
+            <div class="seg" role="group" aria-label="Minecraft edition">
+              <button type="button" id="edJava" aria-pressed="true">Java</button>
+              <button type="button" id="edBedrock" aria-pressed="false">Bedrock</button>
+            </div>
+          </div>
+          <button class="btn ghost" id="ignBtn" type="submit">Get skin</button>
+        </form>
         <div class="row">
           <button class="btn ghost" id="replaceBtn" type="button">Choose PNG for this slot</button>
+          <button class="btn ghost" id="texBtn" type="button" hidden>Choose texture (.png)</button>
           <button class="btn ghost" id="removeBtn" type="button" hidden>Remove</button>
           <input type="file" id="singleFile" accept="image/png" hidden>
+          <input type="file" id="texFile" accept="image/png" hidden>
         </div>
-        <p class="err" id="slotErr" hidden></p>
-        <p class="note">For Alex-style skins, set <b>Skin &amp; Size → Arm Model → Slim</b> on the NPC in game.</p>
+        <p class="err" id="slotErr" role="alert" hidden></p>
+        <p class="note" id="slotNote"></p>
       </div>
     </section>
 
-    <section class="sheet" aria-label="Skin slots">
+    <section class="sheet" aria-label="Pack slots">
+      <div class="seg tabs" role="tablist" aria-label="What to add">
+        <button type="button" role="tab" id="tab-skin" aria-selected="true">Skins <span class="tc" id="tc-skin">0/20</span></button>
+        <button type="button" role="tab" id="tab-cape" aria-selected="false">Capes <span class="tc" id="tc-cape">0/7</span></button>
+        <button type="button" role="tab" id="tab-model" aria-selected="false">Models <span class="tc" id="tc-model">0/10</span></button>
+      </div>
       <label class="drop" id="drop">
         <input type="file" id="multiFile" accept="image/png" multiple>
-        <strong>Drop skins here</strong>
-        <span class="note">or tap to choose · up to 20 PNGs at once · 64×64 or 128×128</span>
+        <strong id="dropTitle">Drop skins here</strong>
+        <span class="note" id="dropNote">or tap to choose · up to 20 PNGs at once · 64×64 or 128×128</span>
       </label>
       <div class="grid" id="grid"></div>
 
       <div class="panel">
         <h2>Pack</h2>
         <div class="row">
-          <div class="field"><label for="packName">Pack name</label><input type="text" id="packName" value="My NPC Skins" maxlength="40"></div>
-          <div class="field"><label for="packDesc">Description</label><input type="text" id="packDesc" value="Custom skins for NPC Studio V3" maxlength="80"></div>
+          <div class="field"><label for="packName">Pack name</label><input type="text" id="packName" value="My NPC Studio Pack" maxlength="40"></div>
+          <div class="field"><label for="packDesc">Description</label><input type="text" id="packDesc" value="Custom skins, capes and models for NPC Studio V3" maxlength="80"></div>
         </div>
         <details>
           <summary>After downloading</summary>
@@ -222,7 +253,7 @@ footer.site a { color: var(--accent); }
             <li>If the file saved as <code>.zip</code>, rename it to <code>.mcpack</code>.</li>
             <li>Open it: Minecraft imports the pack.</li>
             <li>World <b>Settings → Resource Packs</b>: activate it and move it <b>above</b> NPC Studio.</li>
-            <li>In game: <b>Spawn NPC → Custom skin slots</b>. Your skins show with their faces and names.</li>
+            <li>Skins: <b>Display → Skin</b>, the Custom slots. Capes: <b>Display → Cloak</b>, after the 8 built-in ones. Models: <b>Display → 3D model</b>.</li>
           </ol>
         </details>
       </div>
@@ -231,7 +262,16 @@ footer.site a { color: var(--accent); }
   <section class="log" aria-labelledby="whatsnew">
     <h2 class="section-title" id="whatsnew">What's new in NPC Studio V3</h2>
     <article class="release">
-      <header><span class="ver">V3</span><h3>The studio update</h3><span class="when">latest</span></header>
+      <header><span class="ver">V3.4</span><h3>Your own capes and models</h3><span class="when">latest</span></header>
+      <ul class="features">
+        <li><b><span class="tag new">new</span>Skins by player name</b><span>Type a Java name (or a Bedrock gamertag seen through Geyser) and the skin lands in a slot.</span></li>
+        <li><b><span class="tag new">new</span>7 custom capes</b><span>Java and OptiFine cape PNGs, or a Java player's cape by name. Display → Cloak.</span></li>
+        <li><b><span class="tag new">new</span>10 custom 3D models</b><span>Blockbench Bedrock models with their texture. Display → 3D model. Bones named like a player can be posed.</span></li>
+        <li><b><span class="tag new">new</span>Java-style Display tab</b><span>Sneak, Living, On Fire, Look at, Flip, Rotation X/Y/Z, gamerules and a Cross camera guide.</span></li>
+      </ul>
+    </article>
+    <article class="release">
+      <header><span class="ver old">V3</span><h3>The studio update</h3><span class="when">earlier</span></header>
       <ul class="features">
         <li><b><span class="tag new">new</span>Studio Panel</b><span>One dark panel on the left with six tabs: Display, Pose, Presets, World, Camera, Layers.</span></li>
         <li><b><span class="tag new">new</span>Live editors</b><span>Drag a slider and the NPC changes while the menu stays open: size, pose, lens, fog, time.</span></li>
@@ -273,7 +313,9 @@ footer.site a { color: var(--accent); }
     <details><summary>Do I need NPC Studio V3 installed?</summary><p>Yes. This page only makes a skin pack; the NPCs come from the NPC Studio add-on on CurseForge.</p></details>
     <details><summary>My download is a .zip, not .mcpack</summary><p>Rename the file so it ends in .mcpack, then open it. Minecraft imports it.</p></details>
     <details><summary>My skins don't show in game</summary><p>In your world's Resource Packs, make sure the skin pack is active and sits above NPC Studio in the list.</p></details>
-    <details><summary>Are my skins uploaded anywhere?</summary><p>No. Everything happens on your device; the pack is built right in your browser.</p></details>
+    <details><summary>Are my skins uploaded anywhere?</summary><p>No. Your files stay on your device and the pack is built in your browser. Name search asks playerdb.co (Java) or GeyserMC (Bedrock) for that player's public skin.</p></details>
+    <details><summary>Why can't it find a Bedrock player?</summary><p>Microsoft doesn't publish Bedrock skins. GeyserMC only knows a skin after that player joined a Java server through Geyser. Ask them for the PNG instead.</p></details>
+    <details><summary>Which models work?</summary><p>Bedrock entity models from Blockbench: File → Export → Export Bedrock Geometry gives the .geo.json; also save its texture PNG. Name bones head, body, rightArm, leftArm, rightLeg and leftLeg to pose them. Position, turn and scale work on any model.</p></details>
     <details><summary>Can I add more skins later?</summary><p>Yes. Build a new pack with all your skins and replace the old one. NPCs keep their slot numbers.</p></details>
   </section>
 
@@ -310,72 +352,87 @@ const fl = document.getElementById("footLinks");
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
-const SLOTS = 20, FIRST_INDEX = 12;
-const slots = Array.from({ length: SLOTS }, (_, i) => ({ n: i + 1, file: null, img: null, name: "", error: "" }));
-let sel = 0, slim = false;
+// Slots in NPC Studio: 20 skins (skin index 12-31), 7 capes (cloak 9-15), 10 models (skin index 32-41).
+// A pack replaces the files at the same paths (tools/make_custom.py in the add-on makes the placeholders).
+const KINDS = {
+  skin: { count: 20, first: 12, one: "skin", label: "Skin" },
+  cape: { count: 7, first: 9, one: "cape", label: "Cape" },
+  model: { count: 10, first: 32, one: "model", label: "Model" }
+};
+const slots = {};
+for (const k in KINDS) slots[k] = Array.from({ length: KINDS[k].count }, (_, i) => ({ n: i + 1, blob: null, img: null, geo: null, name: "", error: "", icon: null }));
+let kind = "skin", sel = 0, slim = false, edition = "java";
 const $ = (id) => document.getElementById(id);
+const cur = () => slots[kind][sel];
+const filled = (s, k = kind) => (k === "model" ? !!(s.geo && s.img) : !!s.img);
+const pad = (n) => String(n).padStart(2, "0");
 
-// ---------- example skin (drawn, so the stage is never empty) ----------
-function exampleSkin() {
-  const c = document.createElement("canvas"); c.width = c.height = 64; const g = c.getContext("2d");
-  const R = (x, y, w, h, col) => { g.fillStyle = col; g.fillRect(x, y, w, h); };
-  R(0, 0, 32, 16, "#c68863"); R(8, 0, 16, 8, "#2b1b12"); R(0, 8, 32, 3, "#2b1b12");           // head + hair
-  R(9, 12, 2, 1, "#ffffff"); R(10, 12, 1, 1, "#2f6fd8"); R(13, 12, 2, 1, "#ffffff"); R(13, 12, 1, 1, "#2f6fd8");
-  R(11, 14, 2, 1, "#8a4b36");
-  R(16, 16, 24, 16, "#16a5c1"); R(20, 20, 8, 12, "#16a5c1"); R(20, 26, 8, 2, "#0d6f84");      // shirt
-  R(40, 16, 16, 16, "#16a5c1"); R(44, 27, 4, 5, "#c68863"); R(40, 28, 16, 4, "#c68863");      // right arm
-  R(32, 48, 16, 16, "#16a5c1"); R(32, 60, 16, 4, "#c68863");                                   // left arm
-  R(0, 16, 16, 16, "#2f3a7a"); R(0, 28, 16, 4, "#2a2a2a");                                     // right leg
-  R(16, 48, 16, 16, "#2f3a7a"); R(16, 60, 16, 4, "#2a2a2a");                                   // left leg
-  const im = new Image(); im.src = c.toDataURL(); return im;
-}
-const EXAMPLE = exampleSkin();
+// Steve: the preview for every empty slot (same picture the add-on uses for empty slots)
+const STEVE = new Image();
+STEVE.src = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAIKklEQVR4Xu2beWwUVRzHvzOzR9ul3YJrl7sghxwVS8RgxHAkKiqJ0ohEI4mJaCT4n/FIIGKMUVFIVMSKigZNNBhUNF7URCUYiAk1RUTlqFCOVFrAnrvt7s5hfm/27c7MTme73dJtl75/due938y83+d3vNf9vQpI02ZNKNZIJBqLweN2M2n6Ti3WLWHl/KmOT9hU87uQ7h25HE87OQJACvu8Xl1pVU0AoOuq669FKCJg/FUunLsks09qLZ06pLwA4BZFpkxXLAaXJNkCqDnbYTLk0gnF8Hm1oQ9g6ugCjazPLc/DgKBQ37JZ1zAPyFsAFAJcWVlRmJUL47ngigFASluV5/mgJw+43i1hSnnh0A8B8gBSnqweVRQoqopIWECp32UKAbtMnhc5gABomsYUNzZKhtTIA5zaoF8FZowrYuu8qgGCIEAUBBR6XYjp4Q4RCmQVcAkiIooMWVYgiiLcLgmaBkhxEG4J6IrIUDUNBEyML7CiqIPqaR9xujWUdim+nPsEwQiAXuRxuZi1RVFAgceF7qiceD9d+z0CFEi41BmBrCrwFXiYjKpqkEQRUVmXNwJw2kfUn+/OLYCKiSVaNKoAoq4AWVdRFMiKBreLrgVsevwheN0eFBaUoCvUDkgiWs43YuPuPQh1RRGTVbgkgXmDqqp6uKgCPB6JeYTTPiLnAJgHaBLckgBNoGwvQ4MAtyRBcklY/+B9KPJ6EY5EIEletLS3oDxYhtMNx5ml36zZD0VWEFMUCNDgklwQNCCmUEwRSJXtInvaR/x1tiO3HsBDQM8DuvUfWTIXV/t8+GB/HdategDL1m/BvQtfxeqFJ+Ep8eHtb4L4fN/T2LXhMby+6ws8vGAuLoRC2P5zHfMCUUgmTMoBTvuIwQNA093X4/Hg/nmTMKq4FO2xbgQKixEcPR4ubym+/uknZvUVd9yCc2dO4GTTJRR43ShxF+C/jlbsrG1ANBplYUTWZ7kgngR72kfkHADlAHJ7t+jCjdMnY8G1k6BEQrjY2sr+oBkXDMAjKPj04J+4afQkptSv5xuwfN5MtIdi6OwMY+QINwKlpZC8Puw/1oCDx08hpsosHCgHOO0jcg7gpXvnsWWQFCClywIBRLsj6IxG0dzSyWKbPOPwvxdMq9Gts6ejK9KNaFRG2cgRuNpfAkXToCoiREmFKsvsedQI5Fd/nDDdf8910xi4dZ/X5jYHWNfYlXfWMiC8HT61yiRy9OhR5wnX1mpPrV9tu3RvevF9YOtW52V9xw7n5+/cqWFq/DeI+nqs3bYR/7aFMMbvY5+7605kBDRFuD8ArH3yEVslqzdvzx5ArdlA9K4rF0B9PapeeTZhffKC6r2Hcu8BAxkCWQOonPEEi/lwpAlF3iDKRt1gct/m/35LjNGAcbyz6xwO3B1OytfXAwsXAm43nv/2PUwOluBUUzsbf27Zo7rc6dPm8CgvB4qKkn3xn94Qieh9f/9tL09yJGMdr6w0y1dVOXqEQABIeWqZAqB7frjtONCk349gEJg5U/8eDjMICeVHjtT7Dx1KytP14sUAV9o4dQ5g795kLz2fFKQxuqelRQdqfH9fAZDyVgvTtZMHMABzfkmdIPXQJMNhgH5B9vuTStbUmC20dKn52gqBLGwFbARmBMoBGZ/RWw/oM4DJ3wHFxforOzqAFSuSrycLEYCysmTfZ5/Zyzc363IErq0t+d0KgEKGe9NAeQDz6HiOKCrUPYW3A/NP6YrzRjmAuVJcaa4YfVLbt89scQJmVZoDAFD95ZaEfFs4iikzZpvu/+fon/AXeRJ9gYnTTOMrX3i3dznA6AGU3KiNKByfCAG6JpkUALMOJ19InjB3bhKAnWJ1dUlgJE8hwOEYPSAeNnYALraHECjxsfdcPHMCBIZD6BcARoS9ygHcAzgAo/V5/HMYHAAPGwLAx7isAcjLn2xOKMc9gAOgT7Q2pgBg/bS9L/GhVx5gVDiTZZDuS1kFxo41u78VQGOjeRXgSZCUTgOAKWVwcSsAuxDpFwBOgFIAGJcho1L0ELo2ArDL2uYMAe4B3M3tAPBb+gRg0aJFbCPU1qRvgOw8gPr9wd/YeEVFhWmKbwUCukVJGWrkAbwZrU9Llx0AozyFjiUfVH//DnuaHQCeA4wTIkDGEFn7xsfOSZAD4A+xKnjkyBGTwtbx/T/Sz2X6LpI+J425y2JDgO0YN0xPAJj+UT2T4RsvnnQPPFOuL4EAbt7WypLw8mnbbQFwJfkqYASUMwB2HsRpMAhrSlH52jHnrfWaUtz+4YgERA4g0VE6liU3nujaGhtSlsGMAKSY6wrryOhPx3xkMwwgH62aiU7DHpAJrXyUHfaAfLRqJjoNe0AmtPJRdtgD8tGqmeg07AGZ0MpH2WEPyEerZqJTv3tA1uV1S/0/2+JnOhiDD4Cl/l/16ANZlb+HHgCjBwDI9gDE0AbQD0dgLjuATM8XUGmNfu3ljdUVjI3K67z2T9Vl63mCDMvfgwYATcTu/EFKYYVXf/kZAOt5Ams5PU35e1AAoEn0dALFsbLET4BkcQBi6AHo5/r/gADg1qWX9VRa6+l8wao5exJzvBz1/wEDYIxx6/kCYwhYzxdwANban7X0xRXJtP4/IACcYpzOFziNW2t/MJS+qARmPAFiPB9Az+xN/X/QAOATsYbIknHVrLaXOOURB8Dl6QQIb30pfw8YgJ4U5B6QDkBiojYAOJxBCSDb8wWzO/8yGcka49YzQNYQSXcC5LJ7QLbnCwiA1cJOh6DyEoAxxv1j9X/KSJwBaG00G9GSJLP1gP8BncOHjCbselwAAAAASUVORK5CYII=";
 
-// ---------- 3D player model ----------
+// ---------- 3D stage ----------
 const canvas = $("three");
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, alpha: true });
 renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
 const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(30, 1, 1, 400);
-camera.position.set(0, 17, 96); camera.lookAt(0, 15.5, 0);
-scene.add(new THREE.AmbientLight(0xffffff, 0.75));
-const sun = new THREE.DirectionalLight(0xffffff, 0.55); sun.position.set(30, 60, 50); scene.add(sun);
+const camera = new THREE.PerspectiveCamera(30, 1, 1, 2000);
+const lights = () => {
+  const g = new THREE.Group();
+  g.add(new THREE.AmbientLight(0xffffff, 0.75));
+  const sun = new THREE.DirectionalLight(0xffffff, 0.55); sun.position.set(30, 60, 50); g.add(sun);
+  return g;
+};
+scene.add(lights());
 const shadow = new THREE.Mesh(new THREE.CircleGeometry(9, 32), new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.22 }));
 shadow.rotation.x = -Math.PI / 2; shadow.position.y = 0.05; scene.add(shadow);
 const rig = new THREE.Group(); scene.add(rig);
-let parts = {}, texture = null;
+let parts = {}, textures = [];
+let view = { y: 15.5, dist: 96 }; // camera target height and distance
 
-function faceUV(geo, u, v, w, h, d, inflate) {
-  const S = 64, uv = geo.attributes.uv;
-  const R = (x, y, ww, hh) => [x / S, 1 - y / S, (x + ww) / S, 1 - (y + hh) / S];
-  // BoxGeometry faces: +x, -x, +y, -y, +z, -z  ->  left, right, top, bottom, front, back
-  const f = [R(u + d + w, v + d, d, h), R(u, v + d, d, h), R(u + d, v, w, d), R(u + d + w, v, w, d), R(u + d, v + d, w, h), R(u + 2 * d + w, v + d, w, h)];
-  for (let i = 0; i < 6; i++) {
-    const [x0, y0, x1, y1] = f[i];
+function canvasTexture(img, w, h) {
+  const c = document.createElement("canvas"); c.width = w; c.height = h;
+  const g = c.getContext("2d"); g.imageSmoothingEnabled = false; g.drawImage(img, 0, 0, w, h);
+  const t = new THREE.CanvasTexture(c); t.magFilter = t.minFilter = THREE.NearestFilter; textures.push(t);
+  return t;
+}
+// rects in texture pixels for the faces of a THREE.BoxGeometry, in its order: +x, -x, +y, -y, +z, -z
+function setFaceUVs(geo, rects, W, H) {
+  const uv = geo.attributes.uv;
+  rects.forEach((r, i) => {
+    if (!r) return;
+    const [x, y, w, h] = r;
+    const x0 = x / W, x1 = (x + w) / W, y0 = 1 - y / H, y1 = 1 - (y + h) / H;
     const flip = i === 3; // bottom faces are stored upside down
     const q = flip ? [[x0, y1], [x1, y1], [x0, y0], [x1, y0]] : [[x0, y0], [x1, y0], [x0, y1], [x1, y1]];
     q.forEach(([a, b], k) => uv.setXY(i * 4 + k, a, b));
-  }
+  });
   uv.needsUpdate = true;
 }
-function box(w, h, d, u, v, overlay) {
+// Minecraft box UV for a part facing +z (the player preview)
+const boxRects = (u, v, w, h, d) => [[u + d + w, v + d, d, h], [u, v + d, d, h], [u + d, v, w, d], [u + d + w, v, w, d], [u + d, v + d, w, h], [u + 2 * d + w, v + d, w, h]];
+function boxMesh(tex, w, h, d, u, v, overlay, W = 64, H = 64) {
   const k = overlay ? 0.5 : 0;
   const g = new THREE.BoxGeometry(w + k, h + k, d + k);
-  faceUV(g, u, v, w, h, d);
-  const m = new THREE.MeshLambertMaterial({ map: texture, transparent: true, alphaTest: 0.5, side: overlay ? THREE.DoubleSide : THREE.FrontSide });
+  setFaceUVs(g, boxRects(u, v, w, h, d), W, H);
+  const m = new THREE.MeshLambertMaterial({ map: tex, transparent: true, alphaTest: 0.5, side: overlay ? THREE.DoubleSide : THREE.FrontSide });
   return new THREE.Mesh(g, m);
 }
-function limb(name, x, y, w, h, d, uv, ov, pivotY) {
-  const pivot = new THREE.Group(); pivot.position.set(x, pivotY, 0);
-  const a = box(w, h, d, uv[0], uv[1]); const b = box(w, h, d, ov[0], ov[1], true);
-  a.position.y = b.position.y = y - pivotY; pivot.add(a, b); rig.add(pivot); parts[name] = pivot;
-}
-function buildModel(img) {
+function clearRig() {
+  rig.traverse((o) => { if (o.geometry) o.geometry.dispose(); if (o.material) [].concat(o.material).forEach((m) => m.dispose()); });
   rig.clear(); parts = {};
-  if (texture) texture.dispose();
-  const c = document.createElement("canvas"); c.width = c.height = 64;
-  const g = c.getContext("2d"); g.imageSmoothingEnabled = false; g.drawImage(img, 0, 0, 64, 64);
-  texture = new THREE.CanvasTexture(c); texture.magFilter = texture.minFilter = THREE.NearestFilter;
+  textures.forEach((t) => t.dispose()); textures = [];
+  rig.rotation.set(0, 0, 0); rig.position.set(0, 0, 0); rig.scale.set(1, 1, 1);
+}
+function buildPlayer(skinImg, capeImg) {
+  clearRig();
+  const tex = canvasTexture(skinImg, 64, 64);
+  const body = new THREE.Group(); rig.add(body);
+  const limb = (name, x, y, w, h, d, uv, ov, pivotY) => {
+    const pivot = new THREE.Group(); pivot.position.set(x, pivotY, 0);
+    const a = boxMesh(tex, w, h, d, uv[0], uv[1]); const b = boxMesh(tex, w, h, d, ov[0], ov[1], true);
+    a.position.y = b.position.y = y - pivotY; pivot.add(a, b); body.add(pivot); parts[name] = pivot;
+  };
   const aw = slim ? 3 : 4, ax = slim ? 5.5 : 6;
   limb("head", 0, 28, 8, 8, 8, [0, 0], [32, 0], 24);
   limb("body", 0, 18, 8, 12, 4, [16, 16], [16, 32], 18);
@@ -383,6 +440,88 @@ function buildModel(img) {
   limb("larm", ax, 18, aw, 12, 4, [32, 48], [48, 48], 22);
   limb("rleg", -2, 6, 4, 12, 4, [0, 16], [0, 32], 12);
   limb("lleg", 2, 6, 4, 12, 4, [16, 48], [0, 48], 12);
+  if (capeImg) {
+    // Java cape layout (64x32): the side you see from behind is at 1,1 (10x16), the inside at 12,1
+    const ct = canvasTexture(capeImg, 64, 32);
+    const g = new THREE.BoxGeometry(10, 16, 1);
+    setFaceUVs(g, [[11, 1, 1, 16], [0, 1, 1, 16], [1, 0, 10, 1], [11, 0, 10, 1], [12, 1, 10, 16], [1, 1, 10, 16]], 64, 32);
+    const mesh = new THREE.Mesh(g, new THREE.MeshLambertMaterial({ map: ct, transparent: true, alphaTest: 0.5 }));
+    const pivot = new THREE.Group(); pivot.position.set(0, 24, -2.2); pivot.rotation.x = 0.14;
+    mesh.position.set(0, -8, -0.5); pivot.add(mesh); body.add(pivot); parts.cape = pivot;
+  }
+  view = { y: 15.5, dist: 96 };
+}
+
+// ---------- Bedrock geometry (.geo.json from Blockbench) ----------
+const D = Math.PI / 180;
+function readGeo(json) {
+  let g = Array.isArray(json["minecraft:geometry"]) ? json["minecraft:geometry"][0] : null;
+  if (!g) { // old 1.8 format: { "geometry.name": { bones, texturewidth } }
+    const key = Object.keys(json).find((k) => k.startsWith("geometry."));
+    if (key) {
+      const o = json[key];
+      g = { description: { identifier: key.split(":")[0], texture_width: o.texturewidth, texture_height: o.textureheight,
+        visible_bounds_width: o.visible_bounds_width, visible_bounds_height: o.visible_bounds_height }, bones: o.bones || [] };
+    }
+  }
+  if (!g && (json.elements || json.textures) && json.meta) throw new Error("That's a Blockbench project (.bbmodel). In Blockbench use File → Export → Export Bedrock Geometry, then add that .geo.json here.");
+  if (!g && json.elements) throw new Error("That's a Java block or item model. Make a Bedrock Entity model in Blockbench and export it with Export Bedrock Geometry.");
+  if (!g || !Array.isArray(g.bones)) throw new Error("No Bedrock model found in that file. Export it from Blockbench with File → Export → Export Bedrock Geometry.");
+  if (!g.bones.some((b) => (b.cubes || []).length)) throw new Error("That model has no cubes. Mesh-only models don't work in Bedrock entities.");
+  return g;
+}
+const faceOrder = ["west", "east", "up", "down", "south", "north"]; // BoxGeometry +x,-x,+y,-y,+z,-z in Blockbench space
+function cubeRects(c, mirror) {
+  const [w, h, d] = c.size || [0, 0, 0];
+  if (Array.isArray(c.uv) || !c.uv) {
+    const [u, v] = c.uv || [0, 0];
+    // model faces -z: +x = its right side
+    let r = [[u, v + d, d, h], [u + d + w, v + d, d, h], [u + d, v, w, d], [u + d + w, v, w, d], [u + 2 * d + w, v + d, w, h], [u + d, v + d, w, h]];
+    if (mirror) { r = [r[1], r[0], r[2], r[3], r[4], r[5]].map(([x, y, ww, hh]) => [x + ww, y, -ww, hh]); }
+    return r;
+  }
+  return faceOrder.map((f) => (c.uv[f] ? [c.uv[f].uv[0], c.uv[f].uv[1], (c.uv[f].uv_size || [0, 0])[0], (c.uv[f].uv_size || [0, 0])[1]] : null));
+}
+function geoGroup(g, img) {
+  const W = g.description?.texture_width || img.width, H = g.description?.texture_height || img.height;
+  const tex = canvasTexture(img, img.width, img.height);
+  const mat = new THREE.MeshLambertMaterial({ map: tex, transparent: true, alphaTest: 0.1, side: THREE.DoubleSide });
+  const none = new THREE.MeshBasicMaterial({ visible: false });
+  const root = new THREE.Group();
+  const groups = {};
+  const P = (p) => new THREE.Vector3(-(p?.[0] || 0), p?.[1] || 0, p?.[2] || 0); // Bedrock -> Blockbench space
+  g.bones.forEach((b) => { groups[String(b.name).toLowerCase()] = { b, grp: new THREE.Group() }; });
+  g.bones.forEach((b) => {
+    const { grp } = groups[String(b.name).toLowerCase()];
+    const parent = b.parent ? groups[String(b.parent).toLowerCase()] : null;
+    const pv = P(b.pivot), ppv = parent ? P(parent.b.pivot) : new THREE.Vector3();
+    grp.position.copy(pv).sub(ppv);
+    if (b.rotation) grp.rotation.set(-b.rotation[0] * D, -b.rotation[1] * D, b.rotation[2] * D, "ZYX");
+    (parent ? parent.grp : root).add(grp);
+    for (const c of b.cubes || []) {
+      const [sx, sy, sz] = c.size || [0, 0, 0], inf = c.inflate || 0, o = c.origin || [0, 0, 0];
+      const geo = new THREE.BoxGeometry(Math.max(sx + 2 * inf, 0.01), Math.max(sy + 2 * inf, 0.01), Math.max(sz + 2 * inf, 0.01));
+      const rects = cubeRects(c, c.mirror ?? b.mirror);
+      setFaceUVs(geo, rects, W, H);
+      const mesh = new THREE.Mesh(geo, rects.map((r) => (r ? mat : none)));
+      const center = P([o[0] + sx / 2, o[1] + sy / 2, o[2] + sz / 2]);
+      if (c.rotation) {
+        const cp = P(c.pivot || [o[0] + sx / 2, o[1] + sy / 2, o[2] + sz / 2]);
+        const piv = new THREE.Group(); piv.position.copy(cp).sub(pv);
+        piv.rotation.set(-c.rotation[0] * D, -c.rotation[1] * D, c.rotation[2] * D, "ZYX");
+        mesh.position.copy(center).sub(cp); piv.add(mesh); grp.add(piv);
+      } else { mesh.position.copy(center).sub(pv); grp.add(mesh); }
+    }
+  });
+  root.rotation.y = Math.PI; // Blockbench models face -z; turn to the camera
+  return root;
+}
+function buildGeo(g, img) {
+  clearRig();
+  const root = geoGroup(g, img); rig.add(root);
+  const box = new THREE.Box3().setFromObject(rig), size = box.getSize(new THREE.Vector3());
+  const h = Math.max(size.y, size.x * 0.8, size.z * 0.8, 4);
+  view = { y: box.min.y + size.y / 2, dist: (h / 2) / Math.tan(15 * D) * 1.35 };
 }
 
 let yaw = -0.5, dragging = false, lastX = 0, auto = true, t0 = performance.now();
@@ -400,13 +539,18 @@ function frame(now) {
   const t = (now - t0) / 1000;
   if (auto && !reduce) yaw += 0.006;
   rig.rotation.y = yaw;
+  camera.position.set(0, view.y + view.dist * 0.02, view.dist); camera.lookAt(0, view.y, 0);
   const s = reduce ? 0 : Math.sin(t * 3.2) * 0.45;
-  if (parts.rarm) { parts.rarm.rotation.x = s; parts.larm.rotation.x = -s; parts.rleg.rotation.x = -s; parts.lleg.rotation.x = s; parts.head.rotation.y = reduce ? 0 : Math.sin(t * 0.9) * 0.25; }
+  if (parts.rarm) {
+    parts.rarm.rotation.x = s; parts.larm.rotation.x = -s; parts.rleg.rotation.x = -s; parts.lleg.rotation.x = s;
+    parts.head.rotation.y = reduce ? 0 : Math.sin(t * 0.9) * 0.25;
+    if (parts.cape) parts.cape.rotation.x = 0.14 + Math.abs(s) * 0.25;
+  }
   renderer.render(scene, camera);
   requestAnimationFrame(frame);
 }
 
-// ---------- faces for tiles / head icons ----------
+// ---------- icons ----------
 function drawFace(cv, img) {
   const g = cv.getContext("2d"); g.imageSmoothingEnabled = false; g.clearRect(0, 0, cv.width, cv.height);
   if (!img) return;
@@ -414,99 +558,269 @@ function drawFace(cv, img) {
   g.drawImage(img, 8 * s, 8 * s, 8 * s, 8 * s, 0, 0, cv.width, cv.height);
   g.drawImage(img, 40 * s, 8 * s, 8 * s, 8 * s, 0, 0, cv.width, cv.height);
 }
-function headIcon(img) {
+function framed(draw) { // the add-on's head icon look: dark frame, drop shadow, 64x64
   const c = document.createElement("canvas"); c.width = c.height = 64;
   const g = c.getContext("2d"); g.imageSmoothingEnabled = false;
   g.fillStyle = "rgba(0,0,0,0.35)"; g.fillRect(6, 8, 56, 56);
   g.fillStyle = "#14181e"; g.fillRect(4, 4, 56, 56);
-  g.fillStyle = "#000"; g.fillRect(8, 8, 48, 48);
-  const f = document.createElement("canvas"); f.width = f.height = 64; drawFace(f, img);
-  g.drawImage(f, 8, 8, 48, 48);
+  g.fillStyle = "#1c222c"; g.fillRect(8, 8, 48, 48);
+  draw(g);
   return c;
+}
+const headIcon = (img) => framed((g) => { const f = document.createElement("canvas"); f.width = f.height = 64; drawFace(f, img); g.fillStyle = "#000"; g.fillRect(8, 8, 48, 48); g.drawImage(f, 8, 8, 48, 48); });
+const capeThumb = (cv, img) => { const g = cv.getContext("2d"); g.imageSmoothingEnabled = false; g.clearRect(0, 0, cv.width, cv.height); const k = img.width / 64; g.drawImage(img, 1 * k, 1 * k, 10 * k, 16 * k, 0, 0, cv.width, cv.height); };
+let iconRenderer = null;
+function modelIcon(geo, img) {
+  try {
+    if (!iconRenderer) iconRenderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
+    iconRenderer.setSize(128, 128, false);
+    const sc = new THREE.Scene(); sc.add(lights());
+    const holder = new THREE.Group(); sc.add(holder);
+    const saved = textures; textures = [];
+    holder.add(geoGroup(geo, img)); holder.rotation.y = -0.6;
+    const box = new THREE.Box3().setFromObject(holder), size = box.getSize(new THREE.Vector3()), mid = box.getCenter(new THREE.Vector3());
+    const r = Math.max(size.x, size.y, size.z) * 0.62;
+    const cam = new THREE.PerspectiveCamera(30, 1, 0.1, 5000);
+    cam.position.set(mid.x, mid.y + r * 0.35, mid.z + r / Math.tan(15 * D)); cam.lookAt(mid);
+    iconRenderer.render(sc, cam);
+    const out = framed((g) => { g.imageSmoothingEnabled = true; g.drawImage(iconRenderer.domElement, 8, 8, 48, 48); });
+    holder.traverse((o) => { if (o.geometry) o.geometry.dispose(); });
+    textures.forEach((t) => t.dispose()); textures = saved;
+    return out;
+  } catch (e) {
+    return framed((g) => { g.fillStyle = "#27d3f5"; g.fillRect(20, 20, 24, 24); });
+  }
 }
 
 // ---------- UI ----------
+const COPY = {
+  skin: { drop: "Drop skins here", dropNote: "or tap to choose · up to 20 PNGs at once · 64×64 or 128×128", accept: "image/png", multiple: true,
+    nameLbl: "Name shown in the skin picker", placeholder: "e.g. Ninja", choose: "Choose PNG for this slot", replace: "Replace PNG",
+    note: "For Alex-style skins, turn on <b>Display → Model → Slim</b> on the NPC in game.", ign: "Get a player's skin by name", ignBtn: "Get skin" },
+  cape: { drop: "Drop capes here", dropNote: "or tap to choose · Java cape PNGs (64×32), OptiFine capes work too", accept: "image/png", multiple: true,
+    nameLbl: "Name shown in the cloak list", placeholder: "e.g. Founder's cape", choose: "Choose PNG for this slot", replace: "Replace PNG",
+    note: "In game: <b>Display → Cloak</b>. Your capes come after the 8 built-in ones.", ign: "Get a Java player's cape by name", ignBtn: "Get cape" },
+  model: { drop: "Drop a model here", dropNote: "or tap to choose · a .geo.json and its .png texture (Blockbench → Export Bedrock Geometry)", accept: ".json,application/json,image/png", multiple: true,
+    nameLbl: "Name shown in the model picker", placeholder: "e.g. Robot", choose: "Choose model (.geo.json)", replace: "Replace model",
+    note: "Name bones <code>head</code>, <code>body</code>, <code>rightArm</code>, <code>leftArm</code>, <code>rightLeg</code>, <code>leftLeg</code> and the Pose tab can move them. In game: <b>Display → 3D model</b>." }
+};
 function renderGrid() {
   const grid = $("grid"); grid.textContent = "";
-  slots.forEach((s, i) => {
+  grid.classList.toggle("wide", kind === "cape");
+  slots[kind].forEach((s, i) => {
     const b = document.createElement("button"); b.type = "button";
-    b.className = "tile" + (s.img ? " filled" : "") + (i === sel ? " sel" : "");
-    b.setAttribute("aria-label", `Slot ${s.n}${s.name ? ": " + s.name : s.img ? "" : " (empty)"}`);
-    b.innerHTML = `<span class="n">${String(s.n).padStart(2, "0")}</span>`;
-    if (s.img) { const cv = document.createElement("canvas"); cv.width = cv.height = 8; drawFace(cv, s.img); b.appendChild(cv); if (s.name) { const nm = document.createElement("span"); nm.className = "nm"; nm.textContent = s.name; b.appendChild(nm); } }
-    else { const p = document.createElement("span"); p.className = "plus"; p.textContent = "+"; b.appendChild(p); }
+    const ok = filled(s);
+    b.className = "tile" + (ok ? " filled" : s.img || s.geo ? " half" : "") + (i === sel ? " sel" : "");
+    b.setAttribute("aria-label", `${KINDS[kind].label} ${s.n}${s.name ? ": " + s.name : ok ? "" : " (empty)"}`);
+    b.innerHTML = `<span class="n">${pad(s.n)}</span>`;
+    if (kind === "skin" && s.img) { const cv = document.createElement("canvas"); cv.width = cv.height = 8; drawFace(cv, s.img); b.appendChild(cv); }
+    else if (kind === "cape" && s.img) { const cv = document.createElement("canvas"); cv.width = 10; cv.height = 16; cv.className = "capecv"; capeThumb(cv, s.img); b.appendChild(cv); }
+    else if (kind === "model" && s.icon) { const im = document.createElement("img"); im.src = s.icon.toDataURL(); im.alt = ""; b.appendChild(im); }
+    else { const p = document.createElement("span"); p.className = "plus"; p.textContent = s.geo || s.img ? "½" : "+"; b.appendChild(p); }
+    if (s.name && (ok || s.img || s.geo)) { const nm = document.createElement("span"); nm.className = "nm"; nm.textContent = s.name; b.appendChild(nm); }
     b.onclick = () => { sel = i; refresh(); };
     grid.appendChild(b);
   });
-  const count = slots.filter((s) => s.img).length;
-  $("count").textContent = count;
-  $("build").disabled = count === 0;
+  let total = 0;
+  for (const k in KINDS) { const c = slots[k].filter((s) => filled(s, k)).length; total += c; $("tc-" + k).textContent = `${c}/${KINDS[k].count}`; }
+  $("count").textContent = total;
+  $("build").disabled = total === 0;
   const st = $("status"); st.className = "status";
-  st.textContent = count ? `of 20 slots filled. Ready to build.` : "of 20 slots filled. Drop skins to start.";
+  st.textContent = total ? `${total === 1 ? "item" : "items"} in your pack. Ready to build.` : "items in your pack. Add a skin, cape or model to start.";
+}
+function preview() {
+  const s = cur();
+  if (kind === "skin") buildPlayer(s.img || STEVE);
+  else if (kind === "cape") buildPlayer(STEVE, s.img || PLAIN_CAPE);
+  else if (filled(s)) buildGeo(s.geo, s.img);
+  else buildPlayer(STEVE);
 }
 function refresh() {
-  const s = slots[sel];
-  $("slateSlot").textContent = `Slot ${String(s.n).padStart(2, "0")}`;
-  $("slateName").textContent = s.img ? (s.name || "Unnamed") : "Example";
-  $("exampleTag").hidden = !!s.img;
-  const nm = $("slotName"); nm.disabled = !s.img; nm.value = s.name;
-  $("removeBtn").hidden = !s.img;
-  $("replaceBtn").textContent = s.img ? "Replace PNG" : "Choose PNG for this slot";
+  const s = cur(), c = COPY[kind], ok = filled(s);
+  $("slateSlot").textContent = `${KINDS[kind].label} ${pad(s.n)}`;
+  $("slateName").textContent = ok ? s.name || "Unnamed" : kind === "model" && (s.geo || s.img) ? "Needs " + (s.geo ? "texture" : "model") : "Steve";
+  $("exampleTag").hidden = ok;
+  const nm = $("slotName"); nm.disabled = !(s.img || s.geo); nm.value = s.name; nm.placeholder = c.placeholder;
+  $("slotNameLbl").textContent = c.nameLbl;
+  $("armsField").hidden = kind === "model";
+  $("ignForm").hidden = kind === "model";
+  $("editionField").hidden = kind !== "skin";
+  $("ignLbl").textContent = c.ign || "";
+  $("ignBtn").textContent = c.ignBtn || "";
+  $("removeBtn").hidden = !(s.img || s.geo);
+  $("replaceBtn").textContent = (kind === "model" ? s.geo : s.img) ? c.replace : c.choose;
+  $("texBtn").hidden = kind !== "model";
+  $("texBtn").textContent = s.img ? "Replace texture" : "Choose texture (.png)";
+  $("singleFile").accept = kind === "model" ? ".json,application/json" : "image/png";
+  $("dropTitle").textContent = c.drop; $("dropNote").textContent = c.dropNote;
+  const mf = $("multiFile"); mf.accept = c.accept;
+  $("slotNote").innerHTML = c.note;
   const e = $("slotErr"); e.hidden = !s.error; e.textContent = s.error;
-  buildModel(s.img || EXAMPLE);
+  ["skin", "cape", "model"].forEach((k) => $("tab-" + k).setAttribute("aria-selected", String(k === kind)));
+  preview();
   renderGrid();
 }
-function loadInto(i, file) {
-  return new Promise((resolve) => {
-    const s = slots[i]; s.error = "";
-    const img = new Image();
-    img.onload = () => {
-      if (img.width === img.height && [64, 128, 256].includes(img.width)) {
-        s.file = file; s.img = img;
-        if (!s.name) s.name = file.name.replace(/\.png$/i, "").replace(/[_-]+/g, " ").slice(0, 32);
-      } else {
-        s.error = img.width === 64 && img.height === 32 ? "That's an old 64×32 skin. Save it as 64×64 in a skin editor first." : `This image is ${img.width}×${img.height}. Skins must be square: 64×64 or 128×128.`;
-      }
-      resolve();
-    };
-    img.onerror = () => { s.error = "Couldn't read that file. Pick a PNG image."; resolve(); };
-    img.src = URL.createObjectURL(file);
-  });
+
+// ---------- loading files ----------
+const loadImage = (blob) => new Promise((ok, no) => { const im = new Image(); im.onload = () => ok(im); im.onerror = () => no(new Error("Couldn't read that image. Pick a PNG file.")); im.src = URL.createObjectURL(blob); });
+const toBlob = (c) => new Promise((r) => c.toBlob(r, "image/png"));
+async function canvasImage(c) { const blob = await toBlob(c); return { blob, img: await loadImage(blob) }; }
+async function asSkin(blob) {
+  const img = await loadImage(blob);
+  if (img.width === img.height && img.width >= 64 && img.width % 64 === 0) return { blob, img };
+  if (img.width === 64 && img.height === 32) { // old skin: copy the right arm and leg to the left side
+    const c = document.createElement("canvas"); c.width = c.height = 64; const g = c.getContext("2d");
+    g.drawImage(img, 0, 0); g.drawImage(img, 0, 16, 16, 16, 16, 48, 16, 16); g.drawImage(img, 40, 16, 16, 16, 32, 48, 16, 16);
+    return canvasImage(c);
+  }
+  throw new Error(`This image is ${img.width}×${img.height}. Skins must be square: 64×64 or 128×128.`);
+}
+async function asCape(blob) {
+  const img = await loadImage(blob);
+  if (img.width === img.height * 2 && img.width >= 64) return { blob, img };
+  if (Math.abs(img.width / img.height - 46 / 22) < 0.02) { // OptiFine cape: same layout, smaller sheet
+    const k = img.width / 46, c = document.createElement("canvas"); c.width = 64 * k; c.height = 32 * k;
+    c.getContext("2d").drawImage(img, 0, 0); return canvasImage(c);
+  }
+  throw new Error(`This image is ${img.width}×${img.height}. Capes are 64×32 (Java cape layout).`);
+}
+async function asGeo(file) {
+  let json;
+  try { json = JSON.parse((await file.text()).replace(/^﻿/, "")); } catch { throw new Error("That file isn't valid JSON. Export the model again from Blockbench."); }
+  return readGeo(json);
+}
+function nameFrom(file) { return file.name.replace(/\.(geo\.)?(png|json)$/i, "").replace(/[_-]+/g, " ").slice(0, 32); }
+async function updateIcon(s) { if (s.geo && s.img) s.icon = modelIcon(s.geo, s.img); }
+async function loadInto(k, i, file) {
+  const s = slots[k][i]; s.error = "";
+  try {
+    const isJson = /\.json$/i.test(file.name) || file.type === "application/json";
+    if (k === "model") {
+      if (isJson) s.geo = await asGeo(file);
+      else { const r = await loadImage(file); s.img = r; s.blob = file; }
+      await updateIcon(s);
+    } else {
+      if (isJson) throw new Error("That's a model file. Switch to the Models tab to add it.");
+      Object.assign(s, k === "skin" ? await asSkin(file) : await asCape(file));
+    }
+    if (!s.name) s.name = nameFrom(file);
+  } catch (e) { s.error = e.message || String(e); }
 }
 async function addFiles(list) {
-  const files = [...list].filter((f) => /png$/i.test(f.type) || /\.png$/i.test(f.name));
+  const files = [...list].filter((f) => /\.(png|json)$/i.test(f.name) || /png|json/.test(f.type));
+  if (!files.length) return;
+  if (kind === "model") { // a model and its texture go into the same slot
+    let i = filled(cur()) ? slots.model.findIndex((s) => !s.geo && !s.img) : sel;
+    if (i < 0) i = sel;
+    for (const f of files.sort((a, b) => /json/i.test(a.name) ? -1 : 1)) await loadInto("model", i, f);
+    sel = i; refresh(); return;
+  }
   let first = -1;
   for (const f of files) {
-    let i = slots.findIndex((s) => !s.img);
+    let i = slots[kind].findIndex((s) => !s.img);
+    if (!cur().img && first < 0) i = sel;
     if (i < 0) break;
-    if (!slots[sel].img && first < 0) i = sel;
-    await loadInto(i, f);
+    await loadInto(kind, i, f);
     if (first < 0) first = i;
   }
   if (first >= 0) sel = first;
   refresh();
 }
+
+// ---------- get skins and capes by player name ----------
+const https = (u) => String(u || "").replace(/^http:/, "https:");
+async function getJSON(url) { const r = await fetch(url); return r.json(); }
+async function javaProfile(name) {
+  const j = await getJSON(`https://playerdb.co/api/player/minecraft/${encodeURIComponent(name)}`);
+  if (!j.success || !j.data?.player) throw new Error(`No Java player is called "${name}". Check the spelling.`);
+  const p = j.data.player;
+  let skin = p.skin_texture, cape = p.cape_texture, isSlim = false;
+  const prop = (p.properties || []).find((x) => x.name === "textures");
+  if (prop) {
+    try { const t = JSON.parse(atob(prop.value)).textures || {}; skin = t.SKIN?.url || skin; cape = t.CAPE?.url || cape; isSlim = t.SKIN?.metadata?.model === "slim"; } catch { /* use the plain links */ }
+  }
+  return { name: p.username || name, skin: https(skin), cape: https(cape), slim: isSlim };
+}
+async function bedrockProfile(tag) {
+  const x = await getJSON(`https://api.geysermc.org/v2/xbox/xuid/${encodeURIComponent(tag)}`);
+  if (!x.xuid) throw new Error(`No Xbox gamertag is called "${tag}". Check the spelling.`);
+  const s = await getJSON(`https://api.geysermc.org/v2/skin/${x.xuid}`);
+  if (!s.texture_id) throw new Error(`"${tag}" exists, but their Bedrock skin isn't public. Bedrock skins only show up after the player joins a Java server through Geyser. Ask them for the PNG instead.`);
+  return { name: tag, skin: `https://textures.minecraft.net/texture/${s.texture_id}`, cape: "", slim: s.is_steve === false };
+}
+async function getByName(e) {
+  e.preventDefault();
+  const name = $("ign").value.trim();
+  const s = cur(), btn = $("ignBtn");
+  if (!name) { s.error = "Type a player name first."; return refresh(); }
+  btn.disabled = true; btn.textContent = "Looking…"; s.error = "";
+  try {
+    const p = kind === "skin" && edition === "bedrock" ? await bedrockProfile(name) : await javaProfile(name);
+    const url = kind === "skin" ? p.skin : p.cape;
+    if (!url) throw new Error(kind === "cape" ? `${p.name} has no Minecraft cape. OptiFine and mod capes can't be fetched; upload the PNG instead.` : `${p.name} uses a default skin, so there's nothing to download.`);
+    const blob = await (await fetch(url)).blob();
+    Object.assign(s, kind === "skin" ? await asSkin(blob) : await asCape(blob));
+    s.name = p.name;
+    if (kind === "skin") setArms(p.slim, false);
+  } catch (err) {
+    const offline = err instanceof TypeError;
+    s.error = offline ? "Couldn't reach the skin servers. Check your internet, or upload the PNG instead." + (window.claude ? " (Name search only works on the website, not in this preview.)" : "") : err.message;
+  }
+  btn.disabled = false;
+  refresh();
+}
+$("ignForm").addEventListener("submit", getByName);
+function setEdition(v) { edition = v; $("edJava").setAttribute("aria-pressed", String(v === "java")); $("edBedrock").setAttribute("aria-pressed", String(v === "bedrock")); $("ign").placeholder = v === "java" ? "e.g. Dream" : "e.g. an Xbox gamertag"; }
+$("edJava").onclick = () => setEdition("java");
+$("edBedrock").onclick = () => setEdition("bedrock");
+
+// ---------- controls ----------
 $("multiFile").addEventListener("change", (e) => { addFiles(e.target.files); e.target.value = ""; });
 const drop = $("drop");
 ["dragenter", "dragover"].forEach((ev) => drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.add("over"); }));
 ["dragleave", "drop"].forEach((ev) => drop.addEventListener(ev, () => drop.classList.remove("over")));
 drop.addEventListener("drop", (e) => { e.preventDefault(); addFiles(e.dataTransfer.files); });
 $("replaceBtn").onclick = () => $("singleFile").click();
-$("singleFile").addEventListener("change", async (e) => { if (e.target.files[0]) { await loadInto(sel, e.target.files[0]); refresh(); } e.target.value = ""; });
-$("removeBtn").onclick = () => { Object.assign(slots[sel], { file: null, img: null, name: "", error: "" }); refresh(); };
-$("slotName").addEventListener("input", (e) => { slots[sel].name = e.target.value; $("slateName").textContent = e.target.value || "Unnamed"; renderGrid(); });
-function setArms(v) { slim = v; $("armClassic").setAttribute("aria-pressed", String(!v)); $("armSlim").setAttribute("aria-pressed", String(v)); buildModel(slots[sel].img || EXAMPLE); }
+$("texBtn").onclick = () => $("texFile").click();
+$("singleFile").addEventListener("change", async (e) => { if (e.target.files[0]) { await loadInto(kind, sel, e.target.files[0]); refresh(); } e.target.value = ""; });
+$("texFile").addEventListener("change", async (e) => { if (e.target.files[0]) { await loadInto("model", sel, e.target.files[0]); refresh(); } e.target.value = ""; });
+$("removeBtn").onclick = () => { Object.assign(cur(), { blob: null, img: null, geo: null, icon: null, name: "", error: "" }); refresh(); };
+$("slotName").addEventListener("input", (e) => { cur().name = e.target.value; $("slateName").textContent = e.target.value || "Unnamed"; renderGrid(); });
+function setArms(v, rebuild = true) { slim = v; $("armClassic").setAttribute("aria-pressed", String(!v)); $("armSlim").setAttribute("aria-pressed", String(v)); if (rebuild) preview(); }
 $("armClassic").onclick = () => setArms(false);
 $("armSlim").onclick = () => setArms(true);
+["skin", "cape", "model"].forEach((k) => ($("tab-" + k).onclick = () => { kind = k; sel = Math.max(0, slots[k].findIndex((s) => !filled(s, k))); refresh(); }));
 
 // ---------- pack ----------
 function uuid() {
   if (crypto.randomUUID) return crypto.randomUUID();
   return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => { const r = (Math.random() * 16) | 0; return (c === "x" ? r : (r & 3) | 8).toString(16); });
 }
-const toBlob = (c) => new Promise((r) => c.toBlob(r, "image/png"));
+const langSafe = (t) => String(t).replace(/[\r\n=]/g, " ").trim();
+function packGeo(g, n, img) {
+  const out = JSON.parse(JSON.stringify(g));
+  const d = (out.description = { ...(out.description || {}) });
+  d.identifier = `geometry.npcstudio.custom_model${n}`; // the add-on looks for exactly this name
+  d.texture_width = d.texture_width || img.width;
+  d.texture_height = d.texture_height || img.height;
+  let w = 0, h = 0;
+  for (const b of out.bones) for (const c of b.cubes || []) {
+    const o = c.origin || [0, 0, 0], s = c.size || [0, 0, 0];
+    w = Math.max(w, Math.abs(o[0]), Math.abs(o[0] + s[0]), Math.abs(o[2]), Math.abs(o[2] + s[2]));
+    h = Math.max(h, o[1] + s[1]);
+  }
+  d.visible_bounds_width = Math.max(d.visible_bounds_width || 0, Math.ceil((w * 2) / 16) + 1);
+  d.visible_bounds_height = Math.max(d.visible_bounds_height || 0, Math.ceil(h / 16) + 1);
+  d.visible_bounds_offset = d.visible_bounds_offset || [0, d.visible_bounds_height / 2, 0];
+  // the pose animations turn, move and scale the whole NPC through a bone called "root"
+  if (!out.bones.some((b) => String(b.name).toLowerCase() === "root")) {
+    out.bones.forEach((b) => { if (!b.parent) b.parent = "root"; });
+    out.bones.unshift({ name: "root", pivot: [0, 0, 0] });
+  }
+  return { format_version: "1.12.0", "minecraft:geometry": [out] };
+}
 async function buildPack() {
-  const packName = $("packName").value.trim() || "My NPC Skins";
+  const packName = $("packName").value.trim() || "My NPC Studio Pack";
   const zip = new JSZip();
   zip.file("manifest.json", JSON.stringify({
     format_version: 2,
@@ -514,21 +828,34 @@ async function buildPack() {
     modules: [{ type: "resources", uuid: uuid(), version: [1, 0, 0] }]
   }, null, 2));
   const lang = [];
-  for (const s of slots) {
-    if (!s.img) continue;
-    const idx = FIRST_INDEX + s.n - 1;
-    zip.file(`textures/entity/npcstudio/custom_slot${s.n}.png`, s.file);
-    zip.file(`textures/ui/npcstudio/heads/skin${idx}.png`, await toBlob(headIcon(s.img)));
-    lang.push(`npcstudio.skin.${idx}=${(s.name || `Custom ${s.n}`).replace(/[\r\n=]/g, " ").trim()}`);
+  let icon = null;
+  for (const s of slots.skin.filter((x) => filled(x, "skin"))) {
+    const idx = KINDS.skin.first + s.n - 1, ic = headIcon(s.img);
+    zip.file(`textures/entity/npcstudio/custom_slot${s.n}.png`, s.blob);
+    zip.file(`textures/ui/npcstudio/heads/skin${idx}.png`, await toBlob(ic));
+    lang.push(`npcstudio.skin.${idx}=${langSafe(s.name || `Custom ${s.n}`)}`);
+    icon = icon || ic;
+  }
+  for (const s of slots.cape.filter((x) => filled(x, "cape"))) {
+    zip.file(`textures/entity/npcstudio/capes/custom_cape${s.n}.png`, s.blob);
+    lang.push(`npcstudio.cape.${KINDS.cape.first + s.n - 1}=${langSafe(s.name || `Custom cape ${s.n}`)}`);
+  }
+  for (const s of slots.model.filter((x) => filled(x, "model"))) {
+    const idx = KINDS.model.first + s.n - 1;
+    zip.file(`models/entity/npcstudio_custom_model${s.n}.geo.json`, JSON.stringify(packGeo(s.geo, s.n, s.img)));
+    zip.file(`textures/entity/npcstudio/models/model${s.n}.png`, s.blob);
+    zip.file(`textures/ui/npcstudio/heads/skin${idx}.png`, await toBlob(s.icon));
+    lang.push(`npcstudio.skin.${idx}=${langSafe(s.name || `Custom model ${s.n}`)}`);
+    icon = icon || s.icon;
   }
   zip.file("texts/en_US.lang", lang.join("\n") + "\n");
   zip.file("texts/languages.json", JSON.stringify(["en_US"]));
-  const icon = document.createElement("canvas"); icon.width = icon.height = 256;
-  const ig = icon.getContext("2d"); ig.imageSmoothingEnabled = false;
-  ig.drawImage(headIcon(slots.find((s) => s.img).img), 0, 0, 256, 256);
-  zip.file("pack_icon.png", await toBlob(icon));
+  const pc = document.createElement("canvas"); pc.width = pc.height = 256;
+  const pg = pc.getContext("2d"); pg.imageSmoothingEnabled = false;
+  pg.drawImage(icon || headIcon(STEVE), 0, 0, 256, 256);
+  zip.file("pack_icon.png", await toBlob(pc));
   const blob = await zip.generateAsync({ type: "blob", compression: "DEFLATE" });
-  const base = packName.replace(/[^\w\- ]+/g, "").trim().replace(/\s+/g, "_") || "NPC_Skins";
+  const base = packName.replace(/[^\w\- ]+/g, "").trim().replace(/\s+/g, "_") || "NPC_Studio_Pack";
   return { blob, base };
 }
 $("build").addEventListener("click", async () => {
@@ -539,8 +866,8 @@ $("build").addEventListener("click", async () => {
     const dl = window.claude ? await window.claude.use("downloads") : null;
     if (dl) {
       try {
-        await dl.save({ filename: `${base}.zip`, data: blob });
-        st.className = "status ok"; st.textContent = `Saved ${base}.zip — rename it to .mcpack and open it with Minecraft.`;
+        await dl.save({ filename: `${base}.mcpack`, data: blob });
+        st.className = "status ok"; st.textContent = `Saved ${base}.mcpack. Open it with Minecraft.`;
       } catch (e) {
         st.className = "status no";
         st.textContent = e && e.code === "declined" ? "Download cancelled." : "This view can't save files. Open the builder page directly in your browser.";
@@ -548,7 +875,7 @@ $("build").addEventListener("click", async () => {
     } else {
       const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = `${base}.mcpack`;
       document.body.append(a); a.click(); a.remove();
-      st.className = "status ok"; st.textContent = `Downloaded ${base}.mcpack — open it with Minecraft.`;
+      st.className = "status ok"; st.textContent = `Downloaded ${base}.mcpack. Open it with Minecraft.`;
     }
   } catch (e) {
     st.className = "status no"; st.textContent = "Building failed: " + (e && e.message ? e.message : e);
@@ -556,7 +883,14 @@ $("build").addEventListener("click", async () => {
   btn.disabled = false;
 });
 
+// a plain grey cape for empty cape slots
+const PLAIN_CAPE = (() => {
+  const c = document.createElement("canvas"); c.width = 64; c.height = 32; const g = c.getContext("2d");
+  g.fillStyle = "#4a4e58"; g.fillRect(0, 0, 64, 32); g.fillStyle = "#60646e"; g.fillRect(1, 1, 10, 16); g.fillRect(12, 1, 10, 16);
+  return c;
+})();
+
 // start
 const startWhenReady = () => { refresh(); resize(); requestAnimationFrame(frame); };
-if (EXAMPLE.complete) startWhenReady(); else EXAMPLE.onload = startWhenReady;
+if (STEVE.complete) startWhenReady(); else STEVE.onload = startWhenReady;
 </script>
