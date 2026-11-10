@@ -316,34 +316,88 @@ SIL_THICK = [0.15, 0.3, 0.55]  # V3.2: thin by default, just enough to notice
 ARMOR_EXTRA = 1.0
 
 
+def skin_overlays():
+    """Which premade skins have pixels on the outer layer: [[hat, body-or-limbs], ...] (by skin index)."""
+    ent = json.load(open(os.path.join(RP, "entity", "npc_studio.json")))["minecraft:client_entity"]["description"]["textures"]
+    regions = {"hat": [(32, 0, 64, 16)], "body": [(16, 32, 40, 48), (40, 32, 56, 48), (0, 32, 16, 48), (0, 48, 16, 64), (48, 48, 64, 64)]}
+    out = []
+    i = 0
+    while f"skin{i}" in ent:
+        path = os.path.join(RP, ent[f"skin{i}"] + ".png")
+        row = [True, True]  # unknown (custom slots): assume an outer layer, the outline stays outside it
+        if os.path.exists(path) and "custom_slot" not in path:
+            im = Image.open(path).convert("RGBA")
+            k = im.size[0] // 64
+            if im.size[0] == im.size[1] and k >= 1:
+                def used(rs):
+                    return any(v > 8 for (x0, y0, x1, y1) in rs
+                               for v in im.crop((x0 * k, y0 * k, x1 * k, y1 * k)).getchannel("A").get_flattened_data())
+                row = [used(regions["hat"]), used(regions["body"])]
+        out.append(row)
+        i += 1
+    return out
+
+
 def make_silhouette():
-    geos = []
+    """Inverted hull per body part. Tight variants hug the skin where it has no outer layer
+    (t0 = layers everywhere, t1 = body tight, t2 = head tight, t3 = both), so the outline is a thin
+    line on skins like Steve instead of floating half a pixel away."""
+    geos, names = [], []
     for ti, t in enumerate(SIL_THICK):
         for slim in (False, True):
-            for armored in (False, True):
-                extra = ARMOR_EXTRA if armored else 0.0
+            for variant in ("t0", "t1", "t2", "t3", "armor"):
                 bones = []
                 for name, parent, pivot, cubes in humanoid(slim):
                     b = {"name": name, "pivot": pivot}
                     if parent:
                         b["parent"] = parent
-                    layer = 0.5 if name == "head" else 0.25  # hat / sleeve layers
-                    cs = [{"origin": o, "size": sz, "inflate": round(max(layer, extra) + t, 3), "uv": [0, 0]} for o, sz in cubes]
+                    if variant == "armor":
+                        base = ARMOR_EXTRA
+                    else:
+                        v = int(variant[1])
+                        head_tight, body_tight = bool(v & 2), bool(v & 1)
+                        base = (0.0 if head_tight else 0.5) if name == "head" else (0.0 if body_tight else 0.25)
+                    cs = [{"origin": o, "size": sz, "inflate": round(base + t, 3), "uv": [0, 0]} for o, sz in cubes]
                     if cs:
                         b["cubes"] = cs
                     bones.append(b)
+                key = f"sil_{ti}{'_slim' if slim else ''}_{variant}"
+                names.append(key)
                 geos.append({"description": {
-                    "identifier": f"geometry.npcstudio.sil_{ti}{'_slim' if slim else ''}{'_armor' if armored else ''}",
-                    "texture_width": 4, "texture_height": 4,
+                    "identifier": f"geometry.npcstudio.{key}", "texture_width": 4, "texture_height": 4,
                     "visible_bounds_width": 2, "visible_bounds_height": 3, "visible_bounds_offset": [0, 1.5, 0]},
                     "bones": bones})
     save_geo("npcstudio_silhouette.geo.json", geos)
     Image.new("RGBA", (4, 4), (64, 228, 255, 255)).save(os.path.join(TEX, "outline_sil.png"))
-    mats = os.path.join(RP, "materials")
-    os.makedirs(mats, exist_ok=True)
-    with open(os.path.join(mats, "entity.material"), "w") as f:
-        json.dump({"materials": {"version": "1.0.0",
-                                 "npcstudio_outline:entity": {"+states": ["InvertCulling"], "-states": ["DisableCulling"]}}}, f, indent=2)
+    # materials: keep whatever else is in the file (the gizmo's see-through material)
+    mp = os.path.join(RP, "materials", "entity.material")
+    os.makedirs(os.path.dirname(mp), exist_ok=True)
+    mats = json.load(open(mp)) if os.path.exists(mp) else {"materials": {"version": "1.0.0"}}
+    mats["materials"]["npcstudio_outline:entity"] = {"+states": ["InvertCulling"], "-states": ["DisableCulling"]}
+    with open(mp, "w") as f:
+        json.dump(mats, f, indent=2)
+    # client entity + render controller: index = thick * 10 + slim * 5 + (armored ? 4 : headTight * 2 + bodyTight)
+    ep = os.path.join(RP, "entity", "npc_studio.json")
+    ent = json.load(open(ep))
+    g = ent["minecraft:client_entity"]["description"]["geometry"]
+    for k in [k for k in g if k.startswith("sil_")]:
+        del g[k]
+    for k in names:
+        g[k] = f"geometry.npcstudio.{k}"
+    json.dump(ent, open(ep, "w"), indent=2)
+    rp = os.path.join(RP, "render_controllers", "npcstudio.rc.json")
+    rc = json.load(open(rp))
+    c = rc["render_controllers"]["controller.render.npcstudio.outline_sil"]
+    c["arrays"]["geometries"]["Array.sil"] = [f"Geometry.{k}" for k in names]
+    fl = "query.property('npcstudio:flags')"
+    bit = lambda n: f"math.mod(math.floor({fl} / {n}), 2)"
+    c["geometry"] = (f"Array.sil[math.mod(math.floor({fl} / 128), 4) * 10 + (query.property('npcstudio:slim') ? 5 : 0) + "
+                     f"({bit(1024)} == 1 ? 4 : {bit(16384)} * 2 + {bit(32768)})]")
+    json.dump(rc, open(rp, "w"), indent=2)
+    # which premade skins have an outer layer (selection.js picks the tight hull from this)
+    with open(os.path.join(ROOT, "BP", "scripts", "skinmeta.js"), "w") as f:
+        f.write("// written by tools/make_models.py: [hat layer used, body / limb layer used] per skin index\n"
+                f"export const SKIN_LAYERS = {json.dumps(skin_overlays())};\n")
 
 
 if __name__ == "__main__":

@@ -1,0 +1,2 @@
+// written by tools/make_models.py: [hat layer used, body / limb layer used] per skin index
+export const SKIN_LAYERS = [[false, false], [false, false], [false, false], [true, true], [true, true], [true, true], [true, true], [false, true], [true, true], [false, true], [true, true], [true, true], [true, true], [true, true], [true, true], [true, true], [true, true], [true, true], [true, true], [true, true], [true, true], [true, true], [true, true], [true, true], [true, true], [true, true], [true, true], [true, true], [true, true], [true, true], [true, true], [true, true]];

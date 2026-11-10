@@ -103,6 +103,9 @@
     "grid@server_form.npcs_grid_free": {}
    },
    {
+    "cross@server_form.npcs_grid_cross": {}
+   },
+   {
     "left@server_form.npcs_left": {}
    },
    {
@@ -133,6 +136,27 @@
    {
     "binding_type": "view",
     "source_property_name": "(not ((#form_text - '§g§r') = #form_text))",
+    "target_property_name": "#visible"
+   }
+  ]
+ },
+ "npcs_grid_cross": {
+  "type": "image",
+  "texture": "textures/ui/npcstudio/panel/grid_cross",
+  "layer": 1,
+  "size": [
+   "100%",
+   "100%"
+  ],
+  "anchor_from": "top_left",
+  "anchor_to": "top_left",
+  "bindings": [
+   {
+    "binding_name": "#form_text"
+   },
+   {
+    "binding_type": "view",
+    "source_property_name": "(not ((#form_text - '§t§r') = #form_text))",
     "target_property_name": "#visible"
    }
   ]

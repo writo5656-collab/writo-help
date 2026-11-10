@@ -1,26 +1,31 @@
 {
-  "format_version": "1.10.0",
-  "render_controllers": {
-    "controller.render.npcstudio.camera": {
-      "arrays": {
-        "textures": {
-          "Array.cam": [
-            "Texture.blue",
-            "Texture.green",
-            "Texture.grey"
-          ]
-        }
-      },
-      "geometry": "Geometry.default",
-      "materials": [
-        {
-          "*": "Material.default"
-        }
-      ],
-      "textures": [
-        "Array.cam[query.property('npcstudio:cam_state')]"
-      ],
-      "ignore_lighting": true
+ "format_version": "1.10.0",
+ "render_controllers": {
+  "controller.render.npcstudio.camera": {
+   "arrays": {
+    "textures": {
+     "Array.cam": [
+      "Texture.blue",
+      "Texture.green",
+      "Texture.grey"
+     ]
     }
+   },
+   "geometry": "Geometry.default",
+   "materials": [
+    {
+     "*": "Material.default"
+    }
+   ],
+   "textures": [
+    "Array.cam[query.property('npcstudio:cam_state')]"
+   ],
+   "ignore_lighting": true,
+   "part_visibility": [
+    {
+     "*": "query.distance_from_camera > 2.5"
+    }
+   ]
   }
+ }
 }

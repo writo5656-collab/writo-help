@@ -34,6 +34,13 @@ export const CHAPTERS = [
         "Short buttons sit two in a row. The HUD stays hidden while you work in the panel and comes back when you close it.",
         "§7/npcstudio:debug shows a grey line in chat for every menu tap (for bug reports)."
       ]),
+      P("skin", "Display tab, like the Java editor", [
+        "§bModel settings§f: Classic / Slim / Mobs, Skin, Cloak, Nametag, §bSneak§f, §bLiving§f (breathing), Animation.",
+        "§bInventory§f: the six slots, Item State, Wardrobe, Trim Studio.",
+        "§bTransform§f: Position, Rotation X / Y / Z, Scale, and Look: §bAt me§f turns the NPC to you once, §bHead§f keeps its head following players, §bFlip§f turns it around.",
+        "§bEffects§f: NPC Bright and §bOn Fire§f (flames, no damage).",
+        "§7World tab: Gamerules and Lighting (World Bright = you see everything fully lit). Camera tab: Guide Off / Thirds / Cross. Cameras also sit in the strip on the right."
+      ]),
       P("gizmo", "Pose Mode: walk around", [
         "Pose tab > §bWalk in Pose Mode§f (on by default): walk, jump and look around while you pose.",
         "Red / green / blue arrows at the NPC's feet show X, Y and Z. Rings (rotate) or arrows (move) sit on the part you edit.",

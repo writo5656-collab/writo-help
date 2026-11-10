@@ -23,15 +23,24 @@ export const BACKDROP_COLORS = ["Green Screen", "Black", "White", "Blue Screen"]
 // =====================================================================================
 // Thirds guide (HUD overlay, RP/ui/hud_screen.json shows titles that start with "npcg:")
 // =====================================================================================
+// Guide styles like the Java camera guide: Off, Thirds, Cross (stored: false / true / "cross")
+export const GUIDE_STYLES = ["Off", "Thirds", "Cross"];
+export function guideStyle(player) {
+  const v = player.getDynamicProperty("npcstudio:guides");
+  return v === false ? 0 : v === "cross" ? 2 : 1;
+}
+export function setGuideStyle(player, i) {
+  player.setDynamicProperty("npcstudio:guides", i === 0 ? false : i === 2 ? "cross" : true);
+}
 export function guidesOn(player) {
-  return player.getDynamicProperty("npcstudio:guides") !== false;
+  return guideStyle(player) > 0;
 }
 export function setGuides(player, on) {
-  player.setDynamicProperty("npcstudio:guides", on);
+  if (on !== guidesOn(player)) setGuideStyle(player, on ? 1 : 0);
 }
 function showGuides(player, on) {
   try {
-    if (on) player.onScreenDisplay.setTitle("npcg:thirds", { fadeInDuration: 0, stayDuration: 2000000, fadeOutDuration: 0 });
+    if (on) player.onScreenDisplay.setTitle(guideStyle(player) === 2 ? "npcg:cross" : "npcg:thirds", { fadeInDuration: 0, stayDuration: 2000000, fadeOutDuration: 0 });
     else {
       player.onScreenDisplay.setTitle("npcg:", { fadeInDuration: 0, stayDuration: 1, fadeOutDuration: 0 });
       player.onScreenDisplay.clearTitle();

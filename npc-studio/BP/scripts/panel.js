@@ -8,6 +8,9 @@
 import { VERSION } from "./version.js";
 import { inCinema } from "./cinema.js";
 import { itemStateRow } from "./itemstate.js";
+import {
+  isSneaking, setSneak, isLiving, setLiving, lookAtPlayer, flip, isOnFire, setOnFire, worldBright, setWorldBright, GAMERULES, ruleOn, setRule
+} from "./extras.js";
 import { menu, modal, msg, confirm, ICON, npcLabel, npcsNear, isLocked, setEditorHooks, NPC_FAMILY } from "./core.js";
 import { getAnim, readPose, applyPose, mirrorPose, pushUndo, undo, redo, historySize } from "./rig.js";
 import { LOOP_ANIMS } from "./poses.js";
@@ -30,7 +33,7 @@ import {
 import { poseRows, resetPart, transformRows, trimPage, timeRows, fogRows, setPoseBone } from "./live.js";
 import {
   peek, photoMode, layerShot, placeBackdrop, removeBackdrop, getBackdrop, BACKDROP_COLORS, npcsHidden, setNpcsHidden,
-  camerasHidden, setCamerasHidden, nameTagsHidden, setNameTagsHidden, guidesOn, setGuides,
+  camerasHidden, setCamerasHidden, nameTagsHidden, setNameTagsHidden, guidesOn, setGuides, guideStyle, setGuideStyle, GUIDE_STYLES,
   depthOn, setDepth, depthStart, depthLength, setDepthStart, setDepthLength, DEPTH_STARTS, DEPTH_LENGTHS, chunks,
   HAZE_LEVELS, hazeLevel, setHazeLevel
 } from "./studio.js";
@@ -50,7 +53,7 @@ function currentNpc(player) {
 
 // ---------- the parts every editor screen shares: tabs, NPC heads, bottom tools ----------
 setEditorHooks({
-  grid: (player) => guidesOn(player),
+  grid: (player) => guideStyle(player),
   // camera view, Preview, Photo Mode and Depth map hide the HUD themselves: leave it to them
   hudBusy: (player) => inCinema(player) || depthOn(player),
   tabs: (player) => ({ names: TABS, active: lastTab.get(player.id) ?? 0, onTab: (i) => openStudio(player, i) }),
@@ -59,7 +62,7 @@ setEditorHooks({
     const near = npcsNear(player, 48)
       .filter((n) => n.id !== cur?.id)
       .sort((a, b) => dist(player, a) - dist(player, b))
-      .slice(0, cur ? 22 : 23);
+      .slice(0, cur ? 16 : 17);
     const list = cur?.isValid ? [cur, ...near] : near;
     // Spawn sits first so it never moves when the list grows; the rail scrolls
     const slots = [{ label: "Spawn", icon: ICON("plus"), fn: () => openSpawnMenu(player, () => openStudio(player)) }];
@@ -70,6 +73,13 @@ setEditorHooks({
         select(player, n);
         openStudio(player, lastTab.get(player.id) === 1 ? 1 : 0);
       }
+    });
+    // cameras share the strip, like in the Java editor
+    const selCam = getSelectedCamera(player);
+    for (const c of allCameras(player).slice(0, 6)) slots.push({
+      label: (selCam?.id === c.id ? "§b" : "") + (c.nameTag || "Camera"),
+      icon: ICON("camera"),
+      fn: () => openCameraPanel(player, c)
     });
     return slots;
   },
@@ -168,27 +178,26 @@ function displayTab(player, m, npc, self) {
     m.btn("Clone", ICON("clone"), () => (cloneNpc(player, npc), self()));
     return;
   }
+  // Same order as the Java editor's Display tab: Model settings, Inventory, Transform
   const slim = !!npc.getProperty("npcstudio:slim");
   const anim = getAnim(npc);
   const cape = getCape(npc);
+  const setSlim = (v) => () => npc.setProperty("npcstudio:slim", v);
   m.section("model", "Model settings", ICON("skin"));
+  m.trio("Model", [
+    { text: "Classic", on: !slim, fn: setSlim(false), stay: true },
+    { text: "Slim", on: slim, fn: setSlim(true), stay: true },
+    { text: "Mobs", fn: () => openMobToolMenu(player, self) }
+  ]);
   m.field("Skin", skinPlainName(npc.getProperty("npcstudio:skin_index") ?? 0), npcHead(npc), () =>
     pickSkin(player, "Choose Skin", (i) => (setSkin(npc, i), self()), self),
     () => setSkin(npc, 0)
   );
-  m.cycle("Cape", cape ? CAPE_NAMES[cape - 1] : "None", (d) => setCape(npc, (cape + d + 9) % 9));
-  m.field("Name tag", npc.getDynamicProperty("npcstudio:real_name") !== undefined ? "Hidden" : npcLabel(npc), ICON("nametag"), () => openNameTag(player, npc, self));
-  m.field("Animation", anim ? LOOP_ANIMS[anim - 1] : "None", ICON("animate"), () => openLoopAnims(player, npc, self));
-  m.toggle("Slim arms", slim, () => (npc.setProperty("npcstudio:slim", !slim), self()));
-  m.toggle("Look at me", isLooking(npc), () => (setLookAtPlayers(npc, !isLooking(npc)), self()));
-  m.toggle("Bright", isBright(npc), () => (setBright(npc, !isBright(npc)), self()));
-
-  m.section("tr", "Transform", ICON("move"));
-  const at = npc.location;
-  const move = () => openMoveMenu(player, npc, self);
-  m.trio("Position", [at.x, at.y, at.z].map((v) => ({ text: (Math.round(v * 10) / 10).toFixed(1), fn: move })));
-  transformRows(m, npc);
-  m.btn("Move / Turn", ICON("move"), () => openMoveMenu(player, npc, self));
+  m.cycle("Cloak", cape ? CAPE_NAMES[cape - 1] : "None", (d) => setCape(npc, (cape + d + 9) % 9));
+  m.field("Nametag", npc.getDynamicProperty("npcstudio:real_name") !== undefined ? "Hidden" : npcLabel(npc), ICON("nametag"), () => openNameTag(player, npc, self));
+  m.toggle("Sneak", isSneaking(npc), () => (setSneak(npc, !isSneaking(npc)), self()));
+  m.toggle("Living", isLiving(npc), () => (setLiving(npc, !isLiving(npc)), self()));
+  m.field("Animation", anim ? LOOP_ANIMS[anim - 1] : "Idle", ICON("animate"), () => openLoopAnims(player, npc, self));
 
   m.section("inv", "Inventory", ICON("equip"));
   const slot = (def) => ({ label: def.key, icon: equipIcon(npc, def.key), on: !!getEquip(npc, def.key), fn: () => openSlotMenu(player, npc, def.key, self) });
@@ -196,6 +205,21 @@ function displayTab(player, m, npc, self) {
   itemStateRow(m, npc); // bow pull, crossbow charge, trident raise, shield block...
   m.btn("Wardrobe", ICON("equip"), () => openWardrobe(player, npc, self));
   m.btn("Trim Studio", ICON("trim"), () => trimPage(player, npc, self));
+
+  m.section("tr", "Transform", ICON("move"));
+  const at = npc.location;
+  const move = () => openMoveMenu(player, npc, self);
+  m.trio("Position", [at.x, at.y, at.z].map((v) => ({ text: (Math.round(v * 10) / 10).toFixed(1), fn: move })));
+  transformRows(m, npc);
+  m.trio("Look", [
+    { text: "At me", fn: () => lookAtPlayer(npc, player), stay: true },
+    { text: "Head", on: isLooking(npc), fn: () => setLookAtPlayers(npc, !isLooking(npc)), stay: true },
+    { text: "Flip", fn: () => flip(npc), stay: true }
+  ]);
+
+  m.section("fx", "Effects", ICON("bright"));
+  m.toggle("NPC Bright", isBright(npc), () => (setBright(npc, !isBright(npc)), self()));
+  m.toggle("On Fire", isOnFire(npc), () => (setOnFire(npc, !isOnFire(npc)), self()));
 
   const look = getOutlineLook();
   m.section("ol", "Outline", ICON("outline"));
@@ -325,6 +349,11 @@ function worldTab(player, m, npc, self) {
   m.btn("Noon", ICON("day"), run("time set 6000"));
   m.btn("Sunset", ICON("sunset"), run("time set 12000"));
   m.btn("Night", ICON("night"), run("time set 18000"));
+  m.section("rules", "Gamerules", ICON("rules"));
+  for (const [label, name] of GAMERULES) m.toggle(label, ruleOn(name), () => (setRule(player, name, !ruleOn(name)), self()));
+  m.section("light", "Lighting", ICON("bright"));
+  m.toggle("World Bright", worldBright(player), () => (setWorldBright(player, !worldBright(player)), self()));
+  if (npc) m.toggle("NPC Bright", isBright(npc), () => (setBright(npc, !isBright(npc)), self()));
   m.section("fog", "Depth fog", ICON("fog"));
   fogRows(m, player, self);
   m.section("scene", "Scene", ICON("rules"));
@@ -344,7 +373,7 @@ function cameraTab(player, m, npc, self) {
   m.btn("Fly Cam Path", ICON("waypoint"), () => flyCam(player, "path"));
   m.btn("Place Camera", ICON("plus"), () => placeCameraAtView(player));
   m.btn("Preview", ICON("monitor"), () => peek(player));
-  m.toggle("Grid", guidesOn(player), () => (setGuides(player, !guidesOn(player)), self()));
+  m.choices("Guide", GUIDE_STYLES, guideStyle(player), (i) => setGuideStyle(player, i));
   if (sel) m.field("Lens", `${sel.nameTag || "Camera"}`, ICON("fov"), () => openLiveCamera(player, sel, self));
   m.btn("Cine Shots", ICON("film"), () => openShotsMenu(player, self));
   const cams = allCameras(player).slice(0, 30);

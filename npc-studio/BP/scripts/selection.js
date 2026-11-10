@@ -10,11 +10,14 @@
  *   bits 7-8         outline thickness (0 thin, 1 medium, 2 thick)
  *   bit 9 (512)      outline style: 0 silhouette (custom material), 1 wireframe boxes
  *   bit 10 (1024)    wears armor (silhouette sits outside the armor)
+ *   bit 14 (16384)   outline hugs the head (the skin has no hat layer)
+ *   bit 15 (32768)   outline hugs body and limbs (the skin has no jacket / sleeve layer)
  *   bits 11-13       Item State picture (bow pulling 0-3, crossbow 0-5), read by RP/attachables
  * Outlines are hidden for everyone while anybody is filming (camera view, peek, Photo Mode),
  * so a selection never ends up in a shot.
  */
 import { world, system, NPC_FAMILY } from "./core.js";
+import { SKIN_LAYERS } from "./skinmeta.js";
 
 const selections = new Map(); // player.id -> Map(npc.id -> npc)
 const filming = new Set(); // player ids currently looking through a camera / taking a photo
@@ -67,7 +70,10 @@ export function setOutlineLook(look) {
 function lookBits(npc) {
   // the wardrobe remembers what each NPC wears (equipment can't be read from non-player entities)
   const armored = ["head", "chest", "legs", "feet"].some((k) => npc.getDynamicProperty(`npcstudio:equip_${k}`) !== undefined);
-  return (outlineLook.thick << 7) | (outlineLook.style << 9) | (armored ? 1024 : 0);
+  // premade skins without an outer layer get a tight outline; custom slots are unknown, so theirs
+  // stays outside where a layer could be
+  const layers = SKIN_LAYERS[Number(npc.getProperty("npcstudio:skin_index") ?? 0)] ?? [true, true];
+  return (outlineLook.thick << 7) | (outlineLook.style << 9) | (armored ? 1024 : 0) | (layers[0] ? 0 : 16384) | (layers[1] ? 0 : 32768);
 }
 system.runTimeout(() => {
   try {
@@ -149,7 +155,7 @@ function refresh(npcs) {
   const show = !outlinesHidden && filming.size === 0;
   for (const npc of npcs) {
     if (!npc?.isValid) continue;
-    const f = getFlags(npc) & ~(1 | (3 << 7) | 512 | 1024);
+    const f = getFlags(npc) & ~(1 | (3 << 7) | 512 | 1024 | 16384 | 32768);
     setFlags(npc, show && selectedByAnyone(npc) ? f | 1 | lookBits(npc) : f);
   }
 }

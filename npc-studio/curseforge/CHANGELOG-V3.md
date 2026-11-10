@@ -1,3 +1,13 @@
+## NPC Studio V3.4: closer to the Java editor
+
+- Outline hugs the NPC: skins without a hat / jacket layer get a tight outline (it floated away from the head and shoulders before)
+- Camera markers no longer fill your screen when you stand inside one
+- Display tab in the Java order: Model (Classic / Slim / Mobs), Skin, Cloak, Nametag, Sneak, Living, Animation, then Inventory, Transform, Effects
+- Transform: Rotation X / Y / Z and Scale sliders, Look At me / Head / Flip
+- New switches: Sneak, Living, On Fire, World Bright
+- World tab: Gamerules (day cycle, weather cycle, mob spawn, fire spread, keep inventory, block drops) and Lighting
+- Camera tab: Guide Off / Thirds / Cross; cameras show in the strip on the right next to the NPC heads
+
 ## NPC Studio V3.3: Pose Lab
 
 - Panel: one section open at a time (no scrolling), short buttons in two columns, HUD stays hidden between menus, faster opening

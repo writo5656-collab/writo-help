@@ -227,7 +227,8 @@ const V = "§f";
 const RAIL_N = 24, BAR_N = 8, ROW_N = 36; // + button 38 = hide / show the panel; rows start at 39
 // Body tags (the body is a global binding, so the UI can read them anywhere):
 //   §g§r  thirds grid over the free space      §x§r  panel hidden (only the › handle, grid, hint)
-const GRID_TAG = "§g§r", MINI_TAG = "§x§r";
+const GRID_TAG = "§g§r", MINI_TAG = "§x§r", CROSS_TAG = "§t§r"; // hooks.grid: 0 off, 1 thirds, 2 cross
+const guideTag = (player) => ["", GRID_TAG, CROSS_TAG][Number(hooks.grid(player)) || 0] ?? "";
 
 export const CHECKBOX = (on) => ICON(on ? "check_on" : "check_off");
 export const SWITCH = CHECKBOX;
@@ -373,7 +374,7 @@ function dragSlider(player, label, value, min, max, step, unit, set, done, tries
 
 /** The panel tucked away: only a › handle on the left, the thirds grid and a hint. */
 function showMini(player, reopen) {
-  const form = new ActionFormData().title(EDITOR_TAG + "Studio").body(MINI_TAG + GRID_TAG + "Panel hidden");
+  const form = new ActionFormData().title(EDITOR_TAG + "Studio").body(MINI_TAG + guideTag(player) + "Panel hidden");
   for (let i = 0; i < 38; i++) form.button("");
   form.button(" ", ICON("next"));
   editorLock(player, true);
@@ -499,8 +500,8 @@ export function menu(title, body) {
     show(player) {
       lastPlayer = player;
       const form = new ActionFormData().title(EDITOR_TAG + title);
-      const grid = !!hooks.grid(player);
-      if (body || grid) form.body((grid ? GRID_TAG : "") + (body ?? ""));
+      const grid = guideTag(player);
+      if (body || grid) form.body(grid + (body ?? ""));
       const actions = [];
       const add = (label, icon, fn) => {
         if (icon) form.button(label, icon);

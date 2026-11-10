@@ -79,17 +79,21 @@ export function resetPart(player, npc) {
 
 /** Size + turn rows (Display tab). */
 export function transformRows(m, npc) {
-  m.slider("Size", Math.round(getScale(npc) * 100), { min: 10, max: 500, step: 10, unit: "%" }, (v) => {
+  // Rotation X / Y / Z of the whole NPC, then its scale (like the Java Transform section)
+  const r = getRot(npc, "root");
+  ["Rotation X", "Rotation Y", "Rotation Z"].forEach((name, i) =>
+    m.slider(name, Math.round(r[i]), { min: -180, max: 180, step: 15, unit: "°" }, (v) => {
+      if (!npc.isValid) return;
+      undoOnce(npc);
+      const now = getRot(npc, "root");
+      now[i] = v;
+      setRot(npc, "root", [now[0], now[1], now[2]]);
+    })
+  );
+  m.slider("Scale", Math.round(getScale(npc) * 100), { min: 10, max: 500, step: 10, unit: "%" }, (v) => {
     if (!npc.isValid) return;
     undoOnce(npc);
     setScale(npc, v / 100);
-  });
-  const r = getRot(npc, "root");
-  m.slider("Turn", Math.round(r[1]), { min: -180, max: 180, step: 15, unit: "°" }, (v) => {
-    if (!npc.isValid) return;
-    undoOnce(npc);
-    const now = getRot(npc, "root");
-    setRot(npc, "root", [now[0], v, now[2]]);
   });
 }
 

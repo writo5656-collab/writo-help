@@ -102,9 +102,10 @@ FREELOOK = bool(os.environ.get("NPCS_FREELOOK"))       # look around in the free
 DARK_INPUTS = bool(os.environ.get("NPCS_DARK_INPUTS"))  # input forms inside the dark panel
 TILES = bool(os.environ.get("NPCS_TILES"))              # inventory slot tiles (core.js TILES must match)
 # body tags (global #form_text): thirds grid · panel hidden
-GRID_TAG, MINI_TAG = "§g§r", "§x§r"
+GRID_TAG, MINI_TAG, CROSS_TAG = "§g§r", "§x§r", "§t§r"
 BODY = "#form_text"
 HAS_GRID = f"(not (({BODY} - '{GRID_TAG}') = {BODY}))"
+HAS_CROSS = f"(not (({BODY} - '{CROSS_TAG}') = {BODY}))"
 IS_MINI = f"(not (({BODY} - '{MINI_TAG}') = {BODY}))"
 NOT_MINI = f"(({BODY} - '{MINI_TAG}') = {BODY})"
 PLAIN, HDR, HDR_OPEN, HDR_SHUT, TILE = "§o§r", "§j§r", "§h§r", "§i§r", "§e§r"
@@ -412,6 +413,7 @@ def build():
         "bindings": [global_title(), view(HAS_PANEL)],
         "controls": [
             {"grid@server_form.npcs_grid_free": {}},
+            {"cross@server_form.npcs_grid_cross": {}},
             {"left@server_form.npcs_left": {}},
             {"rail@server_form.npcs_rail": {}},
             {"bar@server_form.npcs_bar": {}},
@@ -423,6 +425,11 @@ def build():
         "type": "image", "texture": "textures/ui/npcstudio/panel/grid_thirds", "layer": 1,
         "size": ["100%", "100%"], "anchor_from": "top_left", "anchor_to": "top_left",
         "bindings": [{"binding_name": BODY}, view(HAS_GRID)]
+    }
+    d["npcs_grid_cross"] = {  # Camera tab > Guide > Cross: one line down and one across the middle
+        "type": "image", "texture": "textures/ui/npcstudio/panel/grid_cross", "layer": 1,
+        "size": ["100%", "100%"], "anchor_from": "top_left", "anchor_to": "top_left",
+        "bindings": [{"binding_name": BODY}, view(HAS_CROSS)]
     }
     # panel hidden: the whole view with the grid, a › handle on the left and a hint at the bottom
     d["npcs_mini"] = {
@@ -625,6 +632,11 @@ def textures():
     for y in (H // 3, 2 * H // 3):
         g.rectangle([0, y - 1, W - 1, y], fill=(255, 255, 255, 110))
     img.save(os.path.join(TEX, "grid_thirds.png"))
+    img = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+    g = ImageDraw.Draw(img)
+    g.rectangle([W // 2 - 1, 0, W // 2, H - 1], fill=(255, 255, 255, 110))
+    g.rectangle([0, H // 2 - 1, W - 1, H // 2], fill=(255, 255, 255, 110))
+    img.save(os.path.join(TEX, "grid_cross.png"))
     nine("sel_ring", (0, 0, 0, 0), (39, 211, 245, 255))
     nine("tab", (16, 21, 30, 0), None)
     nine("tab_hover", (35, 35, 37, 255), None)

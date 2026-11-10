@@ -23,6 +23,9 @@
           },
           {
             "npcstudio_guides@hud.npcstudio_guides": {}
+          },
+          {
+            "npcstudio_cross@hud.npcstudio_cross": {}
           }
         ]
       }
@@ -160,6 +163,60 @@
           "offset": [
             0,
             "66.66%"
+          ],
+          "anchor_from": "top_left",
+          "anchor_to": "top_left",
+          "layer": 1
+        }
+      }
+    ]
+  },
+  "npcstudio_cross": {
+    "type": "panel",
+    "size": [
+      "100%",
+      "100%"
+    ],
+    "layer": 29,
+    "bindings": [
+      {
+        "binding_name": "#hud_title_text_string"
+      },
+      {
+        "binding_type": "view",
+        "source_property_name": "(not ((#hud_title_text_string - 'npcg:cross') = #hud_title_text_string))",
+        "target_property_name": "#visible"
+      }
+    ],
+    "controls": [
+      {
+        "v": {
+          "type": "image",
+          "texture": "textures/ui/npcstudio/guide_line",
+          "size": [
+            1,
+            "100%"
+          ],
+          "offset": [
+            "50%",
+            0
+          ],
+          "anchor_from": "top_left",
+          "anchor_to": "top_left",
+          "layer": 1
+        }
+      },
+      {
+        "h": {
+          "type": "image",
+          "texture": "textures/ui/npcstudio/guide_line",
+          "size": [
+            "100%",
+            1
+          ],
+          "offset": [
+            0,
+            "50%"
           ],
           "anchor_from": "top_left",
           "anchor_to": "top_left",

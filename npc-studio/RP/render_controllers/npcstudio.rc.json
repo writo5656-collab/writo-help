@@ -163,22 +163,40 @@
       "arrays": {
         "geometries": {
           "Array.sil": [
-            "Geometry.sil_0",
+            "Geometry.sil_0_t0",
+            "Geometry.sil_0_t1",
+            "Geometry.sil_0_t2",
+            "Geometry.sil_0_t3",
             "Geometry.sil_0_armor",
-            "Geometry.sil_0_slim",
+            "Geometry.sil_0_slim_t0",
+            "Geometry.sil_0_slim_t1",
+            "Geometry.sil_0_slim_t2",
+            "Geometry.sil_0_slim_t3",
             "Geometry.sil_0_slim_armor",
-            "Geometry.sil_1",
+            "Geometry.sil_1_t0",
+            "Geometry.sil_1_t1",
+            "Geometry.sil_1_t2",
+            "Geometry.sil_1_t3",
             "Geometry.sil_1_armor",
-            "Geometry.sil_1_slim",
+            "Geometry.sil_1_slim_t0",
+            "Geometry.sil_1_slim_t1",
+            "Geometry.sil_1_slim_t2",
+            "Geometry.sil_1_slim_t3",
             "Geometry.sil_1_slim_armor",
-            "Geometry.sil_2",
+            "Geometry.sil_2_t0",
+            "Geometry.sil_2_t1",
+            "Geometry.sil_2_t2",
+            "Geometry.sil_2_t3",
             "Geometry.sil_2_armor",
-            "Geometry.sil_2_slim",
+            "Geometry.sil_2_slim_t0",
+            "Geometry.sil_2_slim_t1",
+            "Geometry.sil_2_slim_t2",
+            "Geometry.sil_2_slim_t3",
             "Geometry.sil_2_slim_armor"
           ]
         }
       },
-      "geometry": "Array.sil[math.mod(math.floor(query.property('npcstudio:flags') / 128), 4) * 4 + (query.property('npcstudio:slim') ? 2 : 0) + math.mod(math.floor(query.property('npcstudio:flags') / 1024), 2)]",
+      "geometry": "Array.sil[math.mod(math.floor(query.property('npcstudio:flags') / 128), 4) * 10 + (query.property('npcstudio:slim') ? 5 : 0) + (math.mod(math.floor(query.property('npcstudio:flags') / 1024), 2) == 1 ? 4 : math.mod(math.floor(query.property('npcstudio:flags') / 16384), 2) * 2 + math.mod(math.floor(query.property('npcstudio:flags') / 32768), 2))]",
       "materials": [
         {
           "*": "Material.outline_sil"
