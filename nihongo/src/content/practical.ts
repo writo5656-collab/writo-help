@@ -61,9 +61,9 @@ export const PRACTICAL_LESSONS: Lesson[] = [
     scene: {
       title: 'Cashier counter', place: 'Convenience store', kind: 'screen', items: [
         { f: 'お弁当[べんとう] 温[あたた]めますか', en: 'Shall I warm up your boxed meal?', action: 'Answer はい、おねがいします (yes please) or だいじょうぶです (no thanks).' },
-        { f: 'レジ袋[ぶくろ] 有料[ゆうりょう]', en: 'Plastic bags cost extra', action: 'Bags are not free. Say ふくろをください if you need one.' },
+        { look: 'paper', f: 'レジ袋[ぶくろ] 有料[ゆうりょう]', en: 'Plastic bags cost extra', action: 'Bags are not free. Say ふくろをください if you need one.' },
         { f: 'お支払[しはら]い方法[ほうほう]', en: 'Payment method', action: 'Choose on the screen: 現金 (cash), カード (card) or 電子マネー (e-money).' },
-        { f: '年齢[ねんれい]確認[かくにん]', en: 'Age verification', action: 'Shown when buying alcohol. Touch the button to confirm you are 20 or older.' },
+        { look: 'red', f: '年齢[ねんれい]確認[かくにん]', en: 'Age verification', action: 'Shown when buying alcohol. Touch the button to confirm you are 20 or older.' },
       ],
     },
     dialogue: [
@@ -102,9 +102,9 @@ export const PRACTICAL_LESSONS: Lesson[] = [
     scene: {
       title: 'Lunch menu', place: 'Restaurant', kind: 'menu', items: [
         { f: '日替[ひが]わり定食[ていしょく] 850円[えん]', en: 'Daily set meal — 850 yen', action: 'A set with rice, soup and a main dish that changes each day. Good value at lunch.' },
-        { f: '大盛[おおも]り +100円[えん]', en: 'Large portion +100 yen', action: 'Say 大盛りでおねがいします to get a bigger serving.' },
-        { f: '税込[ぜいこみ]', en: 'Tax included', action: 'The price shown is what you pay. 税抜 (ぜいぬき) means tax is added later.' },
-        { f: '食券[しょっけん]をお買[か]い求[もと]めください', en: 'Please buy a meal ticket', action: 'Buy a ticket from the machine at the entrance first, then hand it to the staff.' },
+        { look: 'paper', f: '大盛[おおも]り +100円[えん]', en: 'Large portion +100 yen', action: 'Say 大盛りでおねがいします to get a bigger serving.' },
+        { look: 'paper', f: '税込[ぜいこみ]', en: 'Tax included', action: 'The price shown is what you pay. 税抜 (ぜいぬき) means tax is added later.' },
+        { look: 'paper', f: '食券[しょっけん]をお買[か]い求[もと]めください', en: 'Please buy a meal ticket', action: 'Buy a ticket from the machine at the entrance first, then hand it to the staff.' },
       ],
     },
     dialogue: [
@@ -141,11 +141,11 @@ export const PRACTICAL_LESSONS: Lesson[] = [
     ],
     scene: {
       title: 'Station signs', place: 'Train station', kind: 'sign', items: [
-        { f: '北口[きたぐち]', en: 'North Exit', action: 'Exits are named by direction: 北 north, 南 south, 東 east, 西 west. Check which one your destination is near.' },
-        { f: 'のりば 3番線[ばんせん]', en: 'Platform 3', action: 'Follow the number to your platform.' },
-        { f: '各駅停車[かくえきていしゃ]', en: 'Local train (stops at every station)', action: 'Safe choice if you are unsure. 急行 (express) and 快速 (rapid) skip stations.' },
-        { f: 'きっぷうりば', en: 'Ticket machines', action: 'Buy a ticket here, or charge your IC card (Suica / PASMO).' },
-        { f: '精算機[せいさんき]', en: 'Fare adjustment machine', action: 'If your ticket or card balance is short, pay the difference here before the gate.' },
+        { look: 'yellow', f: '北口[きたぐち]', en: 'North Exit', action: 'Exits are named by direction: 北 north, 南 south, 東 east, 西 west. Check which one your destination is near.' },
+        { look: 'dark', f: 'のりば 3番線[ばんせん]', en: 'Platform 3', action: 'Follow the number to your platform.' },
+        { look: 'dark', f: '各駅停車[かくえきていしゃ]', en: 'Local train (stops at every station)', action: 'Safe choice if you are unsure. 急行 (express) and 快速 (rapid) skip stations.' },
+        { look: 'blue', f: 'きっぷうりば', en: 'Ticket machines', action: 'Buy a ticket here, or charge your IC card (Suica / PASMO).' },
+        { look: 'blue', f: '精算機[せいさんき]', en: 'Fare adjustment machine', action: 'If your ticket or card balance is short, pay the difference here before the gate.' },
       ],
     },
     dialogue: [
@@ -210,9 +210,9 @@ export const PRACTICAL_LESSONS: Lesson[] = [
     scene: {
       title: 'Front desk', place: 'Hotel', kind: 'desk', items: [
         { f: 'フロント', en: 'Front desk / reception', action: 'Check in and out here. Have your passport ready — hotels must copy it for foreign visitors.' },
-        { f: 'チェックアウト 10時[じ]', en: 'Check-out 10:00', action: 'Leave the room by this time.' },
+        { look: 'paper', f: 'チェックアウト 10時[じ]', en: 'Check-out 10:00', action: 'Leave the room by this time.' },
         { f: '朝食[ちょうしょく] 7:00〜9:30', en: 'Breakfast 7:00–9:30', action: '朝食 is the formal word for 朝ごはん.' },
-        { f: '大浴場[だいよくじょう]', en: 'Large public bath', action: 'Shared bath. Wash before getting in; 男 is the men\'s side and 女 the women\'s.' },
+        { look: 'blue', f: '大浴場[だいよくじょう]', en: 'Large public bath', action: 'Shared bath. Wash before getting in; 男 is the men\'s side and 女 the women\'s.' },
       ],
     },
     dialogue: [
@@ -308,10 +308,10 @@ export const PRACTICAL_LESSONS: Lesson[] = [
     ],
     scene: {
       title: 'Emergency signs', place: 'Around town', kind: 'sign', items: [
-        { f: '非常口[ひじょうぐち]', en: 'Emergency exit', action: 'The green running-figure sign. Note where it is in hotels and stations.' },
-        { f: '119', en: 'Fire and ambulance: dial 119', action: 'Say 救急です (きゅうきゅうです) for an ambulance, 火事です (かじです) for fire. Police is 110.' },
-        { f: '薬局[やっきょく]', en: 'Pharmacy', action: 'Buy medicine here. Say what hurts: 頭がいたいです.' },
-        { f: '避難場所[ひなんばしょ]', en: 'Evacuation area', action: 'Where to gather after an earthquake or other disaster.' },
+        { look: 'green', f: '非常口[ひじょうぐち]', en: 'Emergency exit', action: 'The green running-figure sign. Note where it is in hotels and stations.' },
+        { look: 'red', f: '119', en: 'Fire and ambulance: dial 119', action: 'Say 救急です (きゅうきゅうです) for an ambulance, 火事です (かじです) for fire. Police is 110.' },
+        { look: 'white', f: '薬局[やっきょく]', en: 'Pharmacy', action: 'Buy medicine here. Say what hurts: 頭がいたいです.' },
+        { look: 'green', f: '避難場所[ひなんばしょ]', en: 'Evacuation area', action: 'Where to gather after an earthquake or other disaster.' },
       ],
     },
   }),

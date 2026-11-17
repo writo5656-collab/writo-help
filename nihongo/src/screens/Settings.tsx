@@ -40,6 +40,7 @@ export default function Settings() {
         <Row title="Furigana" sub="Kana reading above kanji"><Switch on={s.showFurigana} onChange={v => set({ showFurigana: v })} label="Furigana" /></Row>
         <Row title="Romaji" sub="Latin letters under Japanese text"><Switch on={s.showRomaji} onChange={v => set({ showRomaji: v })} label="Romaji" /></Row>
         <Row title="Text size"><div className="seg">{([['A', 0.92], ['A', 1], ['A', 1.12], ['A', 1.25]] as const).map(([l, v], i) => <button key={v} className={s.textScale === v ? 'on' : ''} style={{ fontSize: `${0.75 + i * 0.1}rem`, padding: '0 12px' }} onClick={() => set({ textScale: v })} aria-label={`Text size ${i + 1}`}>{l}</button>)}</div></Row>
+        <Row title="Keyboard" sub="Kana keys built into the app, or your phone's keyboard"><div className="seg"><button className={s.keyboard === 'app' ? 'on' : ''} onClick={() => set({ keyboard: 'app' })} lang="ja">かな keys</button><button className={s.keyboard === 'phone' ? 'on' : ''} onClick={() => set({ keyboard: 'phone' })}>Phone</button></div></Row>
         <Row title="Notebook paper"><div className="seg"><button className={s.paper === 'lined' ? 'on' : ''} onClick={() => set({ paper: 'lined' })}>Lined</button><button className={s.paper === 'grid' ? 'on' : ''} onClick={() => set({ paper: 'grid' })}>Grid</button></div></Row>
         <Row title="Reduce motion" sub="Turn off animations"><Switch on={s.reducedMotion} onChange={v => set({ reducedMotion: v })} label="Reduce motion" /></Row>
         <Row title="Show streak" sub="Optional. Never the main measure."><Switch on={s.showStreak} onChange={v => set({ showStreak: v })} label="Show streak" /></Row>
@@ -47,6 +48,7 @@ export default function Settings() {
 
       <h2>Audio</h2>
       <section className="card flat list" style={{ padding: '2px 16px' }}>
+        <Row title="Sound effects" sub="Chimes, key clicks and page sounds"><Switch on={s.sfx} onChange={v => set({ sfx: v })} label="Sound effects" /></Row>
         <Row title="Autoplay new sentences" sub="Hear each sentence when it first appears"><Switch on={s.autoplay} onChange={v => set({ autoplay: v })} label="Autoplay" /></Row>
         <div className="li" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 8 }}>
           <div className="row between"><span style={{ fontWeight: 650 }}>Speech speed</span><span className="small muted num">{s.rate.toFixed(2)}×</span></div>
@@ -86,7 +88,7 @@ export default function Settings() {
         <button className="btn danger" onClick={() => { if (confirm('Erase all progress, mistakes and notes on this device? This cannot be undone.')) void resetAll(); }}><Icon n="trash" s={18} />Erase all data</button>
       </section>
 
-      <p className="tiny muted center">Nihongo — Personal Japanese Academy · v1.0<br />No hearts, no locks, no penalties.</p>
+      <p className="tiny muted center">Nihongo — Personal Japanese Academy · v1.0<br />No hearts, no locks, no penalties.<br />Stroke-order data © KanjiVG (Ulrich Apel), CC BY-SA 3.0.</p>
     </Screen>
   );
 }

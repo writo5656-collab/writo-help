@@ -5,6 +5,7 @@ import { Capacitor } from '@capacitor/core';
 import { App as NativeApp } from '@capacitor/app';
 import { useSettings } from './lib/settings';
 import { addSeconds } from './lib/db';
+import { setSfx } from './services/sfx';
 import { SettingsCtx, Icon } from './components/ui';
 import Onboarding from './screens/Onboarding';
 import Home from './screens/Home';
@@ -69,6 +70,7 @@ export default function App() {
     return () => { void h.then(x => x.remove()); };
   }, []);
   useEffect(() => { if (s) document.documentElement.style.setProperty('--scale', String(s.textScale)); }, [s?.textScale]); // eslint-disable-line
+  useEffect(() => { if (s) setSfx(s.sfx); }, [s?.sfx]); // eslint-disable-line
   if (!s) return null;
   return (
     <SettingsCtx.Provider value={s}>

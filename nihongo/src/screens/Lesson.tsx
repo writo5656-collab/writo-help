@@ -5,6 +5,8 @@ import { LESSON_MAP, KANJI_MAP, kanaRomaji, type Lesson as L, type Sent } from '
 import { parseFuri } from '../lib/jp';
 import { getKV, setKV } from '../lib/db';
 import { speak } from '../services/tts';
+import { sfx } from '../services/sfx';
+import { StrokeOrder } from '../components/Strokes';
 import { Screen, Icon, Furi, Audio, SpeakBtn, Bar, useS, Empty } from '../components/ui';
 
 type Card =
@@ -26,7 +28,7 @@ export default function Lesson() {
   const [i, setI] = useState(0);
   useEffect(() => { if (l) void getKV<Record<string, number>>('lessonPos', {}).then(p => setI(Math.min(p[l.id] ?? 0, cards.length - 1))); }, [l]); // eslint-disable-line
   if (!l) return <Screen back title="Lesson"><Empty title="Lesson not found" mood="think" /></Screen>;
-  const go = (n: number) => { const v = Math.max(0, Math.min(cards.length - 1, n)); setI(v); window.scrollTo(0, 0); void getKV<Record<string, number>>('lessonPos', {}).then(p => setKV('lessonPos', { ...p, [l.id]: v })); };
+  const go = (n: number) => { sfx.flip(); const v = Math.max(0, Math.min(cards.length - 1, n)); setI(v); window.scrollTo(0, 0); void getKV<Record<string, number>>('lessonPos', {}).then(p => setKV('lessonPos', { ...p, [l.id]: v })); };
   const c = cards[i];
 
   return (
@@ -80,7 +82,7 @@ function KanaCard({ ch, l }: { ch: string; l: L }) {
   return (
     <>
       <div className="card col center" style={{ alignItems: 'center', padding: '28px 16px' }}>
-        <span className="kana-big" lang="ja" style={{ fontSize: '7rem' }}>{ch}</span>
+        <StrokeOrder ch={ch} size={190} />
         <span style={{ fontSize: '1.6rem', fontWeight: 750, color: 'var(--forest)' }}>{kanaRomaji(ch)}</span>
         <button className="btn sm ghost" onClick={() => speak(ch, { rate: s.rate })}><Icon n="sound" s={18} />Hear it</button>
       </div>
@@ -126,8 +128,8 @@ function SceneCard({ l }: { l: L }) {
     <>
       <div className={`scene kind-${sc.kind}`}>
         <div className="row between"><span className="small" style={{ opacity: .8 }}>{sc.place}</span><span className="badge" style={{ background: 'rgba(255,255,255,.16)', color: 'var(--cream)' }}>{sc.title}</span></div>
-        {sc.items.map((x, i) => <button key={i} className={`sign ${i === sel ? 'on' : ''}`} onClick={() => setSel(i)}><Furi f={x.f} className="jp-l" furigana={i === sel} romaji={false} /></button>)}
-        <span className="tiny" style={{ opacity: .75 }}>Tap a sign to read it. Illustrated scene art is not included yet — signs are shown as text.</span>
+        {sc.items.map((x, i) => <button key={i} className={`sign look-${x.look ?? ({ sign: 'white', menu: 'board', screen: 'screen', desk: 'plate' } as const)[sc.kind]} ${i === sel ? 'on' : ''}`} onClick={() => { sfx.tap(); setSel(i); }}><Furi f={x.f} className="jp-l" furigana={i === sel} romaji={false} /></button>)}
+        <span className="tiny" style={{ opacity: .75 }}>Tap a sign to read it. These are drawn in the style of real Japanese signs; they are not photographs.</span>
       </div>
       <div className="card col gap-s">
         <div className="row between"><Furi f={it.f} className="jp-l" /><Audio f={it.f} compact /></div>

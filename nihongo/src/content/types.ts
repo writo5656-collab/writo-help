@@ -6,7 +6,8 @@ export type Level = 'Kana' | 'N5' | 'N4' | 'N3' | 'N2' | 'N1';
 export interface Sent { f: string; en: string; alt?: string[]; note?: string }
 export interface Vocab { jp: string; kana: string; en: string }
 export interface Grammar { p: string; e: string }
-export interface SceneItem { f: string; en: string; action: string }
+export type Look = 'white' | 'yellow' | 'green' | 'blue' | 'red' | 'dark' | 'board' | 'paper' | 'screen' | 'plate';
+export interface SceneItem { f: string; en: string; action: string; look?: Look }
 export interface Scene { title: string; place: string; kind: 'sign' | 'menu' | 'screen' | 'desk'; items: SceneItem[] }
 export interface Line { who: string; f: string; en: string }
 export interface Choice { q: string; options: string[]; a: number; why: string }

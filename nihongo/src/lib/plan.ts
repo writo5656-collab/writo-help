@@ -59,3 +59,20 @@ export function buildPlan(o: { items: ItemState[]; studyDays: string[]; lastSund
 
 function todayKey(d: Date) { const p = (n: number) => String(n).padStart(2, '0'); return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`; }
 export { LESSONS };
+
+/** Current and best run of consecutive study days. Today not studied yet does not break it. */
+export function streaks(studied: string[], now = new Date()): { current: number; best: number } {
+  const set = new Set(studied);
+  const key = (d: Date) => todayKey(d);
+  let current = 0;
+  const d = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  if (!set.has(key(d))) d.setDate(d.getDate() - 1);
+  while (set.has(key(d))) { current++; d.setDate(d.getDate() - 1); }
+  let best = 0, run = 0, prev = 0;
+  for (const s of [...set].sort()) {
+    const t = new Date(s + 'T12:00:00').getTime();
+    run = prev && Math.round((t - prev) / DAY) === 1 ? run + 1 : 1;
+    best = Math.max(best, run); prev = t;
+  }
+  return { current, best: Math.max(best, current) };
+}

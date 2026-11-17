@@ -8,6 +8,7 @@ import { type Ex, lessonExercises, reviewEx, drill, passageExercises, vocabEx, k
 import { LESSON_MAP, PASSAGES, PACKS, KANJI, ALL_SENTENCES } from '../content';
 import { sundayKey } from '../lib/plan';
 import { parseFuri } from '../lib/jp';
+import { sfx } from '../services/sfx';
 import { Exercise, type Outcome } from '../components/Exercise';
 import { Screen, Icon, Bar, Mascot, Furi, Empty, Audio } from '../components/ui';
 
@@ -20,6 +21,7 @@ export function promptOf(ex: Ex): string {
     case 'fill': return `Particle: ${ex.sent.en}`;
     case 'arrange': return `Build: ${ex.sent.en}`;
     case 'type': return `Translate: ${ex.sent.en}`;
+    case 'copy': return `Copy: ${ex.sent.en}`;
     case 'listen': return `Listening: ${ex.sent.en}`;
     case 'speak': return `Say: ${ex.sent.en}`;
     case 'word': return `Write: ${ex.word.en}`;
@@ -66,6 +68,10 @@ export default function Session() {
   const [idx, setIdx] = useState(0);
   const [tally, setTally] = useState<Tally[]>([]);
   const saw = useRef(new Set<string>());
+  const [score, setScore] = useState(0);
+  const [combo, setCombo] = useState(0);
+  const [secs, setSecs] = useState(0);
+  useEffect(() => { const t = setInterval(() => setSecs(Math.round((Date.now() - start.current) / 1000)), 1000); return () => clearInterval(t); }, []);
   const start = useRef(Date.now());
 
   useEffect(() => { build(m, q).then(setQueue); }, []); // eslint-disable-line
@@ -90,6 +96,8 @@ export default function Session() {
     else if (first) grade = 'again';
     else return; // further wrong tries on the same question are not counted against you
     if (first) setTally(t => [...t, { skill: ex.skill, ok: o.ok, prompt: promptOf(ex) }]);
+    setScore(x => x + (grade === 'good' ? 5 : grade === 'hard' ? 3 : grade === 'retry' ? 1 : 0));
+    if (first) setCombo(c => { const n = o.ok ? c + 1 : 0; if (n > 0 && n % 5 === 0) setTimeout(sfx.streak, 350); return n; });
     if (!o.ok) saw.current.add(ex.key);
     await recordAnswer({ itemId: ex.itemId, kind: ex.kind, skill: ex.skill, grade, lessonId: ex.lessonId });
     if (!o.ok) {
@@ -113,7 +121,7 @@ export default function Session() {
     window.scrollTo(0, 0);
   };
 
-  if (done) return <Done m={m} tally={tally} seconds={Math.round((Date.now() - start.current) / 1000)} />;
+  if (done) return <Done m={m} tally={tally} seconds={Math.round((Date.now() - start.current) / 1000)} score={score} />;
   const passage = m === 'passage' ? PASSAGES.find(p => p.id === q.get('id')) : undefined;
 
   return (
@@ -123,6 +131,12 @@ export default function Session() {
         <div className="grow"><Bar pct={(idx / queue.length) * 100} /></div>
         <span className="small muted num">{idx + 1}/{queue.length}</span>
       </header>
+      <div className="hud" aria-label="Session score">
+        <span className="pill"><Icon n="star" s={13} />{score}</span>
+        <span key={combo} className={`pill ${combo >= 3 ? 'hot' : ''}`}><Icon n="flame" s={13} />{combo} in a row</span>
+        <span className="grow" />
+        <span className="pill"><Icon n="clock" s={13} />{Math.floor(secs / 60)}:{String(secs % 60).padStart(2, '0')}</span>
+      </div>
       {ex.requeued && <span className="badge amber" style={{ alignSelf: 'flex-start' }}><Icon n="retry" s={13} />Second look</span>}
       {passage && (
         <div className="card flat col gap-s">
@@ -154,7 +168,8 @@ async function finishSunday(tally: Tally[]) {
 const SKILL_NAMES: Record<string, string> = { kana: 'Kana', vocab: 'Vocabulary', kanji: 'Kanji', grammar: 'Grammar and particles', reading: 'Reading', writing: 'Sentence writing', listening: 'Listening', speaking: 'Speaking' };
 export { SKILL_NAMES };
 
-function Done({ m, tally, seconds }: { m: string; tally: Tally[]; seconds: number }) {
+function Done({ m, tally, seconds, score }: { m: string; tally: Tally[]; seconds: number; score: number }) {
+  useEffect(() => { sfx.complete(); }, []);
   const right = tally.filter(t => t.ok).length, missed = tally.filter(t => !t.ok);
   const weak = [...new Set(missed.map(t => SKILL_NAMES[t.skill]))];
   return (
@@ -168,6 +183,7 @@ function Done({ m, tally, seconds }: { m: string; tally: Tally[]; seconds: numbe
         <div><div className="jp-xl num">{right}</div><div className="tiny muted">right first time</div></div>
         <div><div className="jp-xl num">{missed.length}</div><div className="tiny muted">to revisit</div></div>
         <div><div className="jp-xl num">{Math.max(1, Math.round(seconds / 60))}</div><div className="tiny muted">minutes</div></div>
+        <div><div className="jp-xl num">+{score}</div><div className="tiny muted">score</div></div>
       </div>
       {missed.length > 0 ? (
         <div className="card flat col gap-s">

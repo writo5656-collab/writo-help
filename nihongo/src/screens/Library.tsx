@@ -6,6 +6,7 @@ import { isKnown } from '../lib/srs';
 import { ROWS, YOON, KANJI, KANJI_MAP, PACKS, PASSAGES, kanaId, kanjiId, vocabId, LESSONS } from '../content';
 import { speak } from '../services/tts';
 import { Screen, Icon, Furi, SpeakBtn, useS } from '../components/ui';
+import { StrokeOrder } from '../components/Strokes';
 
 export function KanaChart() {
   const s = useS();
@@ -47,7 +48,7 @@ export function KanjiList() {
   if (sel) return (
     <Screen back title="Kanji">
       <div className="card col center" style={{ alignItems: 'center' }}>
-        <span className="kana-big" lang="ja" style={{ fontSize: '6.5rem' }}>{sel.k}</span>
+        <StrokeOrder ch={sel.k} size={190} />
         <h2>{sel.en}</h2>
         <div className="row wrap gap-s" style={{ justifyContent: 'center' }}>
           {sel.on && <span className="badge amber">On: <span lang="ja" className="jp">{sel.on}</span></span>}
@@ -65,7 +66,7 @@ export function KanjiList() {
       <div className="kana-grid">
         {KANJI.map(k => { const it = map.get(kanjiId(k.k)); return <button key={k.k} lang="ja" className={`kana-cell ${isKnown(it) ? 'known' : it && it.status !== 'new' ? 'weak' : ''}`} onClick={() => setQ({ k: k.k })}>{k.k}<small>{k.en.split(',')[0]}</small></button>; })}
       </div>
-      <div className="wip"><Icon n="flag" s={18} /><div>This set covers the standard N5 kanji. N4–N1 kanji and stroke-order diagrams are not included yet.</div></div>
+      <div className="wip"><Icon n="flag" s={18} /><div>This set covers the standard N5 kanji. N4–N1 kanji are not included yet.</div></div>
     </Screen>
   );
 }

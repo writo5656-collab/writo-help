@@ -11,7 +11,7 @@ const HELPER = ['。', '、', 'ー', '？', 'っ', 'ゃ', 'ゅ', 'ょ', '「', '
 export function PaperInput(p: {
   value: string; onChange: (v: string) => void;
   romajiMode?: boolean; placeholder?: string; minRows?: number; note?: boolean; disabled?: boolean;
-  autoFocus?: boolean; onEnter?: () => void; inputRef?: React.RefObject<HTMLTextAreaElement | null>;
+  autoFocus?: boolean; onEnter?: () => void; noSystemKeyboard?: boolean; inputRef?: React.RefObject<HTMLTextAreaElement | null>;
 }) {
   const own = useRef<HTMLTextAreaElement>(null);
   const ref = p.inputRef ?? own;
@@ -28,7 +28,7 @@ export function PaperInput(p: {
   return (
     <textarea
       ref={ref} className={`paper-input ${p.note ? 'note' : ''}`} lang="ja" value={p.value} disabled={p.disabled}
-      placeholder={p.placeholder} rows={p.minRows ?? 2}
+      placeholder={p.placeholder} rows={p.minRows ?? 2} inputMode={p.noSystemKeyboard ? 'none' : 'text'}
       autoCapitalize="off" autoCorrect="off" autoComplete="off" spellCheck={false} enterKeyHint={p.onEnter ? 'done' : 'enter'}
       onCompositionStart={() => { composing.current = true; }}
       onCompositionEnd={e => { composing.current = false; p.onChange(convert((e.target as HTMLTextAreaElement).value)); }}

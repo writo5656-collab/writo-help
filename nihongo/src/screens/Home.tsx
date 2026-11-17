@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { usePlan } from '../lib/hooks';
 import { db, dayKey } from '../lib/db';
-import { trackProgress } from '../lib/plan';
+import { trackProgress, streaks } from '../lib/plan';
 import { isKnown } from '../lib/srs';
 import { HIRA, KATA, KANJI, JLPT_LESSONS, PRACTICAL_LESSONS, kanaId, kanjiId, ROLEPLAYS } from '../content';
 import { Icon, Mascot, Ring, Bar, useS, fmtMin } from '../components/ui';
@@ -11,7 +11,7 @@ function greeting() { const h = new Date().getHours(); return h < 11 ? ['おは�
 
 export default function Home() {
   const s = useS();
-  const { plan, map } = usePlan();
+  const { plan, map, days } = usePlan();
   const today = useLiveQuery(() => db.days.get(dayKey()), []);
   const mistakes = useLiveQuery(() => db.mistakes.where('status').notEqual('remembered').count(), []) ?? 0;
   const pct = (ids: string[]) => Math.round((ids.filter(id => isKnown(map.get(id))).length / ids.length) * 100);
@@ -19,6 +19,9 @@ export default function Home() {
   const [jp, en] = greeting();
   const rp = ROLEPLAYS[(new Date().getDate()) % ROLEPLAYS.length];
   if (!plan) return null;
+  const studied = (days ?? []).filter(d => d.xp > 0).map(d => d.day);
+  const score = (days ?? []).reduce((a, d) => a + d.xp, 0);
+  const st = streaks(studied);
   const focusLabel = plan.focus === 'review' ? 'Sunday review' : plan.focus === 'jlpt' ? 'JLPT foundations' : 'Practical Japanese';
 
   return (
@@ -36,6 +39,13 @@ export default function Home() {
         </div>
         <Mascot size={76} />
       </section>
+
+      <section className="stats" aria-label="Your score">
+        <Link to="/progress" className="stat"><span className="ic" style={{ background: 'var(--amber-soft)', color: '#a8741a' }}><Icon n="flame" s={20} /></span><span><b>{st.current}</b><span className="tiny muted">day streak</span></span></Link>
+        <Link to="/progress" className="stat"><span className="ic" style={{ background: 'var(--sage-soft)', color: 'var(--forest)' }}><Icon n="star" s={20} /></span><span><b>{score.toLocaleString()}</b><span className="tiny muted">score</span></span></Link>
+        <Link to="/progress" className="stat"><span className="ic" style={{ background: 'var(--sakura-soft)', color: '#9c4a45' }}><Icon n="calendar" s={20} /></span><span><b>{studied.length}</b><span className="tiny muted">days studied</span></span></Link>
+      </section>
+      {st.current === 0 && st.best > 0 && <p className="tiny muted" style={{ marginTop: -8 }}>Your best run is {st.best} days. A missed day costs nothing — your score and progress are all still here.</p>}
 
       <section className="card green col">
         <div className="row between">

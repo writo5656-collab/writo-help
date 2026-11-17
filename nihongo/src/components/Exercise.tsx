@@ -9,7 +9,10 @@ import { speak } from '../services/tts';
 import { listenOnce, sttAvailable } from '../services/stt';
 import { readingOf } from '../services/reading';
 import { Furi, Audio, Icon, useS, useAsync } from './ui';
-import { Paper, PaperInput, HelperRow, ReadingLine } from './Paper';
+import { Paper, PaperInput, ReadingLine } from './Paper';
+import { KanaKeyboard } from './Keyboard';
+import { sfx } from '../services/sfx';
+import { saveSettings } from '../lib/settings';
 
 export interface Outcome { ok: boolean; hint: boolean; userAnswer: string; expected: string; explanation: string }
 interface Props { ex: Ex; onResult: (o: Outcome) => void; onNext: (requeue: boolean) => void; last: boolean }
@@ -25,11 +28,12 @@ export function Exercise({ ex, onResult, onNext, last }: Props) {
 
   const finish = (f: Fb, userAnswer: string, expected: string) => {
     setFb(f);
+    if (f.ok) sfx.correct(); else sfx.wrong();
     if (!f.ok) setEverWrong(true);
     onResult({ ok: f.ok, hint: hintRef.current, userAnswer, expected, explanation: f.notes.join(' ') });
     if (f.model && s.autoplay && !f.ok) void speak(parseFuri(f.model).jp, { rate: s.rate });
   };
-  const retry = () => { setFb(null); setAttempt(a => a + 1); };
+  const retry = () => { sfx.tap(); setFb(null); setAttempt(a => a + 1); };
 
   return (
     <div className="col gap-l grow" style={{ minHeight: 0 }}>
@@ -159,70 +163,78 @@ function Arrange({ ex, locked, finish }: { ex: Extract<Ex, { t: 'arrange' }>; lo
         {order.map((i, k) => <button key={k} lang="ja" className="tilebtn" disabled={locked} onClick={() => setOrder(order.filter((_x, j) => j !== k))}>{tiles.find(t => t.i === i)!.jp}</button>)}
       </div>
       <div className="tiles">
-        {tiles.map(t => <button key={t.i} lang="ja" className={`tilebtn ${order.includes(t.i) ? 'used' : ''}`} disabled={locked || order.includes(t.i)} onClick={() => setOrder([...order, t.i])}>{t.jp}</button>)}
+        {tiles.map(t => <button key={t.i} lang="ja" className={`tilebtn ${order.includes(t.i) ? 'used' : ''}`} disabled={locked || order.includes(t.i)} onClick={() => { sfx.tap(); setOrder([...order, t.i]); }}>{t.jp}</button>)}
       </div>
       {!locked && <div className="dock"><button className="btn" disabled={order.length !== tiles.length} onClick={check}>Check answer</button></div>}
     </div>
   );
 }
 
-function Typing({ ex, locked, fb, onHint, finish }: { ex: Extract<Ex, { t: 'type' | 'listen' | 'word' }>; locked: boolean; fb: Fb | null; onHint: () => void; finish: Fin }) {
+function Typing({ ex, locked, fb, onHint, finish }: { ex: Extract<Ex, { t: 'type' | 'copy' | 'listen' | 'word' }>; locked: boolean; fb: Fb | null; onHint: () => void; finish: Fin }) {
   const s = useS();
   const [value, setValue] = useState('');
-  const [romajiMode, setRomajiMode] = useState(false);
-  const [helper, setHelper] = useState(false);
   const [hints, setHints] = useState(0);
   const ref = useRef<HTMLTextAreaElement>(null);
+  const appKb = s.keyboard === 'app';
+  const romajiMode = !appKb && s.romajiInput;
   const f = ex.t === 'word' ? (ex.word.kana !== ex.word.jp ? `${ex.word.jp}[${ex.word.kana}]` : ex.word.jp) : ex.sent.f;
   const p = parseFuri(ex.t === 'word' ? ex.word.kana : f);
   const model = ex.t === 'word' && /[㐀-鿿]/.test(ex.word.jp) ? undefined : f;
-  useEffect(() => { if (ex.t === 'listen') void speak(parseFuri(f).jp, { rate: s.rate }); }, []); // eslint-disable-line
+  useEffect(() => {
+    if (ex.t === 'listen') void speak(parseFuri(f).jp, { rate: s.rate });
+    // Copying has the answer on screen, so it never counts as unaided recall.
+    if (ex.t === 'copy') { onHint(); if (s.autoplay) void speak(parseFuri(f).jp, { rate: s.rate }); }
+  }, []); // eslint-disable-line
 
   const check = () => {
+    if (!normalize(value)) { ref.current?.focus(); return; }
+    sfx.stamp();
     if (ex.t === 'word') {
       const ok = checkWord(ex.word.jp, ex.word.kana, value);
       finish({ ok, title: ok ? 'Correct' : `The answer is: ${ex.word.jp}${ex.word.kana !== ex.word.jp ? `（${ex.word.kana}）` : ''}`, notes: [`${ex.word.jp}${ex.word.kana !== ex.word.jp ? ` (${ex.word.kana})` : ''} means "${ex.word.en}".`], model }, value, ex.word.jp);
       return;
     }
     const r = checkSentence(ex.sent, value);
-    if (!normalize(value)) { ref.current?.focus(); return; }
-    finish({ ok: r.ok, title: r.ok ? 'Correct — well written' : 'Not quite. Here is the model answer', notes: r.notes, model: ex.sent.f, diff: r.diff }, value, parseFuri(ex.sent.f).jp);
+    const good = ex.t === 'copy' ? 'Copied correctly' : 'Correct — well written';
+    finish({ ok: r.ok, title: r.ok ? good : ex.t === 'copy' ? 'Almost — compare with the sentence' : 'Not quite. Here is the model answer', notes: r.notes, model: ex.sent.f, diff: r.diff }, value, parseFuri(ex.sent.f).jp);
   };
-  const hint = () => { onHint(); setHints(h => h + 1); };
+  const hint = () => { onHint(); sfx.tap(); setHints(h => h + 1); };
   const hintText = ex.t === 'listen' && hints === 1 ? `Meaning: ${ex.sent.en}` : p.chunks.slice(0, ex.t === 'listen' ? hints - 1 : hints).map(c => c.kana).join(' ') + (hints < p.chunks.length ? ' …' : '');
   const maxHints = p.chunks.length + (ex.t === 'listen' ? 1 : 0);
-  const title = ex.t === 'listen' ? 'Listening practice' : ex.t === 'word' ? 'Vocabulary' : 'Sentence practice';
+  const title = ex.t === 'listen' ? 'Listening practice' : ex.t === 'word' ? 'Vocabulary' : ex.t === 'copy' ? 'Copy writing' : 'Sentence practice';
+  const label = ex.t === 'listen' ? 'Listen and write what you hear' : ex.t === 'word' ? 'Write this word in Japanese' : ex.t === 'copy' ? 'Write this sentence out yourself' : 'Translate into Japanese';
 
   return (
     <div className="col">
-      <div className="row between">
-        <div className="seg" role="group" aria-label="Input mode">
-          <button className={!romajiMode ? 'on' : ''} onClick={() => setRomajiMode(false)} lang="ja">かな</button>
-          <button className={romajiMode ? 'on' : ''} onClick={() => setRomajiMode(true)}>Romaji → kana</button>
+      <div className="row between gap-s">
+        <div className="seg" role="group" aria-label="Keyboard">
+          <button className={appKb ? 'on' : ''} onClick={() => saveSettings({ keyboard: 'app' })} lang="ja">かな keys</button>
+          <button className={!appKb ? 'on' : ''} onClick={() => saveSettings({ keyboard: 'phone' })}>Phone keyboard</button>
         </div>
-        <button className={`iconbtn soft`} aria-label="Kana helper row" aria-pressed={helper} onClick={() => setHelper(h => !h)}><Icon n="key" /></button>
+        {!appKb && <button className={`chip ${s.romajiInput ? 'on' : ''}`} aria-pressed={s.romajiInput} onClick={() => saveSettings({ romajiInput: !s.romajiInput })}>Romaji → kana</button>}
       </div>
       <Paper title={title}>
-        <div className="paper-line"><span className="label">{ex.t === 'listen' ? 'Listen and write what you hear' : ex.t === 'word' ? 'Write this word in Japanese' : 'Translate into Japanese'}</span></div>
-        <div className="paper-line">
-          {ex.t === 'listen'
-            ? <span className="row gap-s"><button className="btn sm" onClick={() => speak(parseFuri(f).jp, { rate: s.rate })}><Icon n="sound" s={18} />Play</button><button className="btn sm ghost" onClick={() => speak(parseFuri(f).jp, { rate: s.rate, slow: true })}><Icon n="slow" s={18} />Slow</button></span>
-            : <span className="paper-prompt">{ex.t === 'word' ? ex.word.en : ex.sent.en}</span>}
-        </div>
-        <PaperInput inputRef={ref} value={value} onChange={setValue} romajiMode={romajiMode} disabled={locked} minRows={2} onEnter={check}
+        <div className="paper-line"><span className="label">{label}</span></div>
+        {ex.t === 'listen' && <div className="paper-line"><span className="row gap-s"><button className="btn sm" onClick={() => speak(parseFuri(f).jp, { rate: s.rate })}><Icon n="sound" s={18} />Play</button><button className="btn sm ghost" onClick={() => speak(parseFuri(f).jp, { rate: s.rate, slow: true })}><Icon n="slow" s={18} />Slow</button></span></div>}
+        {ex.t === 'copy' && <>
+          <div className="paper-line" style={{ minHeight: 'calc(var(--rule) * 2)', alignItems: 'flex-end', paddingBottom: 4 }}><Furi f={f} className="jp-l" /></div>
+          <div className="paper-line"><span className="small muted">{ex.sent.en}</span></div>
+        </>}
+        {(ex.t === 'type' || ex.t === 'word') && <div className="paper-line"><span className="paper-prompt">{ex.t === 'word' ? ex.word.en : ex.sent.en}</span></div>}
+        <PaperInput inputRef={ref} value={value} onChange={setValue} romajiMode={romajiMode} disabled={locked} minRows={2} onEnter={check} noSystemKeyboard={appKb} autoFocus={appKb}
           placeholder={romajiMode ? 'Type romaji, e.g. mizu → みず' : 'Write your answer here…'} />
         <ReadingLine text={value} known={ex.t === 'word' ? undefined : t => toKanaUsing(t, f)} romaji={s.showRomaji} />
         {fb && <div className="paper-line" style={{ justifyContent: 'flex-end', paddingBottom: 6 }}><span className={`stamp ${fb.ok ? 'ok' : ''}`} lang="ja">{fb.ok ? '正' : '惜'}</span></div>}
       </Paper>
-      {helper && !locked && <HelperRow inputRef={ref} value={value} onChange={setValue} />}
       {hints > 0 && !locked && <div className="card amber note-tip"><Icon n="bulb" s={18} /><span lang="ja" className="jp">{hintText}</span></div>}
       {!locked && (
         <div className="dock">
-          <div className="row">
-            <button className="btn line" disabled={hints >= maxHints} onClick={hint}><Icon n="bulb" s={18} />Hint</button>
-            {ex.t !== 'listen' && <button className="btn line" onClick={() => { onHint(); void speak(parseFuri(f).jp, { rate: s.rate }); }}><Icon n="sound" s={18} />Listen</button>}
+          <div className="row gap-s">
+            {ex.t !== 'copy' && <button className="btn sm line grow" disabled={hints >= maxHints} onClick={hint}><Icon n="bulb" s={16} />Hint</button>}
+            {ex.t !== 'listen' && <button className="btn sm line grow" onClick={() => { if (ex.t !== 'copy') onHint(); void speak(parseFuri(f).jp, { rate: s.rate }); }}><Icon n="sound" s={16} />Listen</button>}
+            <button className="btn sm grow" style={{ flex: 1.4 }} disabled={!value.trim()} onClick={check}>Check<Icon n="next" s={16} /></button>
           </div>
-          <button className="btn" disabled={!value.trim()} onClick={check}>Check answer<Icon n="next" s={18} /></button>
+          {appKb && <KanaKeyboard inputRef={ref} value={value} onChange={setValue} onEnter={check} enterLabel="OK" />}
         </div>
       )}
     </div>

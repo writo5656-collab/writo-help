@@ -6,6 +6,7 @@ import { Screen, Icon } from '../components/ui';
 
 const DRILLS: [string, string, string, string][] = [
   ['translate', 'pen', 'English → Japanese', 'Type full sentences on notebook paper'],
+  ['copy', 'note', 'Copy writing', 'Write out model sentences to make them stick'],
   ['meaning', 'eye', 'Japanese → English', 'Read a sentence and choose its meaning'],
   ['particles', 'star', 'Particles', 'Fill in は, を, に, で and friends'],
   ['arrange', 'shuffle', 'Sentence building', 'Put the parts in the right order'],

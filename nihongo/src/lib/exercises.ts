@@ -14,6 +14,7 @@ export type Ex = Base & (
   | { t: 'fill'; sent: Sent; blank: number; options: string[]; a: number }
   | { t: 'arrange'; sent: Sent }
   | { t: 'type'; sent: Sent }
+  | { t: 'copy'; sent: Sent }
   | { t: 'listen'; sent: Sent }
   | { t: 'speak'; sent: Sent }
   | { t: 'word'; word: Vocab }
@@ -69,7 +70,7 @@ export function kanjiEx(k: string, mode: 'meaning' | 'reading'): Ex | null {
 
 // ---- sentences ------------------------------------------------------------
 const PARTS = ['は', 'が', 'を', 'に', 'で', 'と', 'も', 'の', 'か', 'へ', 'から', 'まで'];
-export function sentEx(id: string, mode: 'meaning' | 'fill' | 'arrange' | 'type' | 'listen' | 'speak'): Ex | null {
+export function sentEx(id: string, mode: 'meaning' | 'fill' | 'arrange' | 'type' | 'copy' | 'listen' | 'speak'): Ex | null {
   const s = SENT_MAP.get(id); if (!s) return null;
   const sent: Sent = { f: s.f, en: s.en, alt: s.alt, note: s.note };
   const base = { key: key(), itemId: id, kind: 'sentence', lessonId: s.lessonId };
@@ -87,6 +88,7 @@ export function sentEx(id: string, mode: 'meaning' | 'fill' | 'arrange' | 'type'
     }
     case 'arrange': return p.chunks.length >= 2 ? { ...base, skill: 'writing', t: 'arrange', sent } : null;
     case 'type': return { ...base, skill: 'writing', t: 'type', sent };
+    case 'copy': return { ...base, skill: 'writing', t: 'copy', sent };
     case 'listen': return { ...base, skill: 'listening', t: 'listen', sent };
     case 'speak': return { ...base, skill: 'speaking', t: 'speak', sent };
   }
@@ -108,6 +110,8 @@ export function lessonExercises(l: Lesson): Ex[] {
   const vocab2 = shuffle(l.vocab).slice(0, 4).map(w => vocabEx(w, 'jp', l.id, l.vocab));
   out.push(...shuffle(vocab), ...vocab2);
   l.sentences.forEach((_s, i) => out.push(...[sentEx(sentId(l.id, i), 'meaning')].filter(ok)));
+  // Copy each new sentence by hand first: writing it out is how it starts to stick.
+  l.sentences.forEach((_s, i) => out.push(...[sentEx(sentId(l.id, i), 'copy')].filter(ok)));
   l.sentences.forEach((_s, i) => { const id = sentId(l.id, i); out.push(...[sentEx(id, 'fill') ?? sentEx(id, 'arrange')].filter(ok)); });
   (l.choices ?? []).forEach((c, i) => out.push({ key: key(), skill: 'grammar', itemId: `choice:${l.id}:${i}`, kind: 'grammar', lessonId: l.id, t: 'choice', prompt: 'Choose the natural expression', context: c.q, jpOptions: true, options: c.options, a: c.a, why: c.why }));
   l.sentences.forEach((_s, i) => out.push(...[sentEx(sentId(l.id, i), 'type')].filter(ok)));
@@ -141,6 +145,7 @@ export function drill(type: string, started: Set<string>, count = 10): Ex[] {
   const take = (mode: Parameters<typeof sentEx>[1]) => sents.map(s => sentEx(s.id, mode)).filter(ok).slice(0, count);
   switch (type) {
     case 'translate': return take('type');
+    case 'copy': return take('copy');
     case 'meaning': return take('meaning');
     case 'arrange': return take('arrange');
     case 'particles': return take('fill');

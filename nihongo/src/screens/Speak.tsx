@@ -11,6 +11,8 @@ import { listenOnce, sttAvailable } from '../services/stt';
 import { aiConfigured, tutorReply, type ChatMsg, type TutorReply } from '../services/ai';
 import { getKV } from '../lib/db';
 import { PaperInput } from '../components/Paper';
+import { KanaKeyboard } from '../components/Keyboard';
+import { saveSettings } from '../lib/settings';
 import { Screen, Icon, Furi, Wip, Mascot, useS, useAsync, fmtDate } from '../components/ui';
 
 export function Speak() {
@@ -43,8 +45,11 @@ export function Speak() {
 
 /** Text box + microphone used by both roleplay and tutor. */
 function Reply({ onSend, busy, hint }: { onSend: (t: string) => void; busy?: boolean; hint?: string }) {
+  const s = useS();
   const [v, setV] = useState('');
-  const [romajiMode, setRomajiMode] = useState(false);
+  const ref = useRef<HTMLTextAreaElement>(null);
+  const appKb = s.keyboard === 'app';
+  const romajiMode = !appKb && s.romajiInput;
   const [live, setLive] = useState(false);
   const [err, setErr] = useState('');
   const [showHint, setShowHint] = useState(false);
@@ -61,16 +66,17 @@ function Reply({ onSend, busy, hint }: { onSend: (t: string) => void; busy?: boo
       {showHint && hint && <div className="card amber note-tip"><Icon n="bulb" s={18} /><span lang="ja" className="jp">{hint}</span></div>}
       {err && <p className="small" style={{ color: 'var(--bad)' }}>{err}</p>}
       <div className="card flat" style={{ padding: '4px 12px', ['--rule' as string]: '40px' }}>
-        <PaperInput value={v} onChange={setV} romajiMode={romajiMode} minRows={1} note placeholder={live ? 'Listening…' : 'Type or speak your reply in Japanese'} onEnter={send} disabled={busy} />
+        <PaperInput inputRef={ref} value={v} onChange={setV} romajiMode={romajiMode} noSystemKeyboard={appKb} minRows={1} note placeholder={live ? 'Listening…' : 'Type or speak your reply in Japanese'} onEnter={send} disabled={busy} />
       </div>
       <div className="row gap-s">
-        <button className={`chip ${romajiMode ? 'on' : ''}`} onClick={() => setRomajiMode(!romajiMode)}>Romaji</button>
+        <button className={`chip ${appKb ? 'on' : ''}`} aria-pressed={appKb} onClick={() => saveSettings({ keyboard: appKb ? 'phone' : 'app' })} lang="ja">かな keys</button>
         {hint && <button className="chip" onClick={() => setShowHint(!showHint)}><Icon n="bulb" s={15} />Hint</button>}
         <span className="grow" />
         {mic && <button className={`iconbtn ${live ? '' : 'soft'}`} style={live ? { background: 'var(--bad)', color: '#fff' } : undefined} aria-label="Speak your reply" onClick={listen} disabled={live || busy}><Icon n="mic" /></button>}
         <button className="btn sm" onClick={send} disabled={!v.trim() || busy}>Send<Icon n="next" s={16} /></button>
       </div>
-      {mic === false && <p className="tiny muted">Speech input is not available on this device, so replies are typed.</p>}
+      {appKb && !busy && <KanaKeyboard inputRef={ref} value={v} onChange={setV} onEnter={send} enterLabel="送信" />}
+      {mic === false && !appKb && <p className="tiny muted">Speech input is not available on this device, so replies are typed.</p>}
     </div>
   );
 }

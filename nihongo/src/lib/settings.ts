@@ -18,11 +18,14 @@ export interface Settings {
   aiUrl: string;           // your own proxy URL — the API key never lives in the app
   aiToken: string;         // optional shared passphrase for your proxy
   paper: 'lined' | 'grid';
+  sfx: boolean;            // sound effects
+  keyboard: 'app' | 'phone'; // in-app kana keyboard, or the phone's own keyboard
+  romajiInput: boolean;    // with the phone keyboard: convert romaji to kana
 }
 export const DEFAULTS: Settings = {
   onboarded: false, name: '', level: 'zero', showFurigana: true, showRomaji: false, autoplay: true,
   rate: 1, textScale: 1, reducedMotion: false, showStreak: false, reminder: false, reminderTime: '19:30',
-  aiUrl: '', aiToken: '', paper: 'lined',
+  aiUrl: '', aiToken: '', paper: 'lined', sfx: true, keyboard: 'app', romajiInput: false,
 };
 
 export function useSettings(): Settings | undefined {
