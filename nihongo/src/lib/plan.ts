@@ -4,23 +4,24 @@ import { LESSONS, KANA_LESSONS, JLPT_LESSONS, PRACTICAL_LESSONS, lessonItemIds, 
 import { type ItemState, isKnown, isMastered, dueItems, DAY } from './srs';
 
 export interface LessonProgress { seen: number; mastered: number; total: number; pct: number; done: boolean }
-export function lessonProgress(l: Lesson, items: Map<string, ItemState>): LessonProgress {
+export function lessonProgress(l: Lesson, items: Map<string, ItemState>, finished?: Set<string>): LessonProgress {
   const ids = lessonItemIds(l);
   const seen = ids.filter(id => isKnown(items.get(id)) || items.get(id)?.status === 'uncertain').length;
   const mastered = ids.filter(id => isMastered(items.get(id))).length;
   const total = ids.length || 1;
   // A lesson counts as "done" when most of it is known. Missing a day never undoes this.
   const pct = Math.round(((seen * 0.5 + mastered * 0.5) / total) * 100);
-  return { seen, mastered, total, pct, done: seen / total >= 0.8 };
+  // Done once its practice has been completed (or it is already mostly known). Mistakes go to review; they never hold you back.
+  return { seen, mastered, total, pct, done: !!finished?.has(l.id) || seen / total >= 0.8 };
 }
 
-export function trackProgress(lessons: Lesson[], items: Map<string, ItemState>) {
-  const ps = lessons.map(l => lessonProgress(l, items));
-  return Math.round(ps.reduce((a, p) => a + p.pct, 0) / Math.max(1, ps.length));
+export function trackProgress(lessons: Lesson[], items: Map<string, ItemState>, finished?: Set<string>) {
+  const ps = lessons.map(l => lessonProgress(l, items, finished));
+  return Math.round(ps.reduce((a, p) => a + (p.done ? Math.max(p.pct, 60) : p.pct), 0) / Math.max(1, ps.length));
 }
 
-export function nextLesson(lessons: Lesson[], items: Map<string, ItemState>): Lesson | undefined {
-  return lessons.find(l => !lessonProgress(l, items).done);
+export function nextLesson(lessons: Lesson[], items: Map<string, ItemState>, finished?: Set<string>): Lesson | undefined {
+  return lessons.find(l => !lessonProgress(l, items, finished).done);
 }
 
 /** ISO-like week key for the Sunday that starts the week containing d. */
@@ -39,12 +40,12 @@ export interface Plan {
   sundayWeeks: number;              // how many weeks the cumulative review covers
 }
 
-export function buildPlan(o: { items: ItemState[]; studyDays: string[]; lastSunday: string; sundaysDone: number; now?: Date }): Plan {
+export function buildPlan(o: { items: ItemState[]; studyDays: string[]; lastSunday: string; sundaysDone: number; finished?: Set<string>; now?: Date }): Plan {
   const now = o.now ?? new Date();
   const map = new Map(o.items.map(i => [i.id, i]));
-  const kana = nextLesson(KANA_LESSONS, map);
-  const jlpt = nextLesson(JLPT_LESSONS, map);
-  const practical = nextLesson(PRACTICAL_LESSONS, map);
+  const kana = nextLesson(KANA_LESSONS, map, o.finished);
+  const jlpt = nextLesson(JLPT_LESSONS, map, o.finished);
+  const practical = nextLesson(PRACTICAL_LESSONS, map, o.finished);
   // The cycle counts days actually studied, never calendar days.
   const studied = o.studyDays.filter(d => d !== todayKey(now)).length;
   const cycleDay = (studied % 4) + 1;
@@ -75,4 +76,11 @@ export function streaks(studied: string[], now = new Date()): { current: number;
     best = Math.max(best, run); prev = t;
   }
   return { current, best: Math.max(best, current) };
+}
+
+/** The lesson that follows this one: kana → JLPT in order; practical in its own order. */
+export function lessonAfter(id: string): Lesson | undefined {
+  const main = [...KANA_LESSONS, ...JLPT_LESSONS];
+  for (const list of [main, PRACTICAL_LESSONS]) { const i = list.findIndex(l => l.id === id); if (i >= 0) return list[i + 1]; }
+  return undefined;
 }

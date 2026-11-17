@@ -1,7 +1,7 @@
 // Progress dashboard: skills and retention, not just streaks.
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db, dayKey } from '../lib/db';
-import { useItems } from '../lib/hooks';
+import { useItems, usePlan } from '../lib/hooks';
 import { isKnown, isMastered, dueItems, DAY } from '../lib/srs';
 import { trackProgress } from '../lib/plan';
 import { HIRA, KATA, KANJI, ALL_VOCAB, JLPT_LESSONS, PRACTICAL_LESSONS, kanaId, kanjiId, vocabId } from '../content';
@@ -11,6 +11,7 @@ import { Screen, Ring, Bar, useS, fmtMin, Empty } from '../components/ui';
 export default function Progress() {
   const s = useS();
   const { items, map } = useItems();
+  const { finished } = usePlan();
   const answers = useLiveQuery(() => db.answers.toArray(), []);
   const days = useLiveQuery(() => db.days.toArray(), []);
   const openMistakes = useLiveQuery(() => db.mistakes.where('status').notEqual('remembered').count(), []) ?? 0;
@@ -88,8 +89,8 @@ export default function Progress() {
 
       <h2>Tracks</h2>
       <section className="card col">
-        <div className="col" style={{ gap: 5 }}><div className="row between small"><span style={{ fontWeight: 650 }}>JLPT track (N5 → N4)</span><span className="muted num">{trackProgress(JLPT_LESSONS, map)}%</span></div><Bar pct={trackProgress(JLPT_LESSONS, map)} /></div>
-        <div className="col" style={{ gap: 5 }}><div className="row between small"><span style={{ fontWeight: 650 }}>Practical situations</span><span className="muted num">{trackProgress(PRACTICAL_LESSONS, map)}%</span></div><Bar pct={trackProgress(PRACTICAL_LESSONS, map)} /></div>
+        <div className="col" style={{ gap: 5 }}><div className="row between small"><span style={{ fontWeight: 650 }}>JLPT track (N5 → N4)</span><span className="muted num">{trackProgress(JLPT_LESSONS, map, finished)}%</span></div><Bar pct={trackProgress(JLPT_LESSONS, map, finished)} /></div>
+        <div className="col" style={{ gap: 5 }}><div className="row between small"><span style={{ fontWeight: 650 }}>Practical situations</span><span className="muted num">{trackProgress(PRACTICAL_LESSONS, map, finished)}%</span></div><Bar pct={trackProgress(PRACTICAL_LESSONS, map, finished)} /></div>
       </section>
 
       <h2>Time studied — last 14 days</h2>

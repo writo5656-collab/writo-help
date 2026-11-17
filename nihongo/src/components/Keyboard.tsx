@@ -7,6 +7,8 @@ import { toKatakana } from 'wanakana';
 import { ALL_VOCAB, ALL_SENTENCES, KANJI } from '../content';
 import { parseFuri } from '../lib/jp';
 import { sfx } from '../services/sfx';
+import { speak } from '../services/tts';
+import { useS } from './ui';
 import { Icon } from './ui';
 
 // Rows are vowels (a i u e o); columns run あ か さ た な は ま や ら わ.
@@ -47,18 +49,20 @@ export function suggestions(before: string): { len: number; jp: string }[] {
 export function KanaKeyboard({ inputRef, value, onChange, onEnter, enterLabel = '改行' }: {
   inputRef: React.RefObject<HTMLTextAreaElement | null>; value: string; onChange: (v: string) => void; onEnter?: () => void; enterLabel?: string;
 }) {
+  const st = useS();
   const [kata, setKata] = useState(false);
+  const say = (t: string) => { if (st.speakKeys && /[\u3041-\u30ff]/.test(t)) void speak(t, { rate: st.rate }); };
   const sel = () => { const el = inputRef.current; return [el?.selectionStart ?? value.length, el?.selectionEnd ?? value.length] as const; };
   const put = (next: string, caret: number) => {
     onChange(next);
     requestAnimationFrame(() => { const el = inputRef.current; if (el) { el.focus({ preventScroll: true }); el.setSelectionRange(caret, caret); } });
   };
-  const insert = (t: string) => { sfx.key(); const [a, b] = sel(); put(value.slice(0, a) + t + value.slice(b), a + t.length); };
+  const insert = (t: string) => { sfx.key(); say(t); const [a, b] = sel(); put(value.slice(0, a) + t + value.slice(b), a + t.length); };
   const back = () => { sfx.key(); const [a, b] = sel(); if (a !== b) put(value.slice(0, a) + value.slice(b), a); else if (a > 0) put(value.slice(0, a - 1) + value.slice(a), a - 1); };
-  const cycle = () => { sfx.key(); const [a] = sel(); const ch = value[a - 1]; const n = ch && NEXT.get(ch); if (n) put(value.slice(0, a - 1) + n + value.slice(a), a); };
+  const cycle = () => { sfx.key(); const [a] = sel(); const ch = value[a - 1]; const n = ch && NEXT.get(ch); if (n) { say(n); put(value.slice(0, a - 1) + n + value.slice(a), a); } };
   const [a] = sel();
   const sugg = useMemo(() => suggestions(value.slice(0, a)), [value, a]);
-  const pick = (s: { len: number; jp: string }) => { sfx.key(); put(value.slice(0, a - s.len) + s.jp + value.slice(a), a - s.len + s.jp.length); };
+  const pick = (s: { len: number; jp: string }) => { sfx.key(); say(s.jp); put(value.slice(0, a - s.len) + s.jp + value.slice(a), a - s.len + s.jp.length); };
   const hold = (e: React.SyntheticEvent) => e.preventDefault(); // keep the caret in the text area
 
   return (

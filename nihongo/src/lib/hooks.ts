@@ -15,9 +15,10 @@ export function usePlan() {
   const sunday = useLiveQuery(async () => ({
     last: ((await db.kv.get('lastSunday'))?.value as string) ?? '',
     done: ((await db.kv.get('sundaysDone'))?.value as number) ?? 0,
+    finished: new Set(Object.keys(((await db.kv.get('doneLessons'))?.value as Record<string, number>) ?? {})),
   }), []);
   const plan = useMemo(() => items && days && sunday ? buildPlan({
-    items, studyDays: days.filter(d => d.xp > 0).map(d => d.day).sort(), lastSunday: sunday.last, sundaysDone: sunday.done,
+    items, studyDays: days.filter(d => d.xp > 0).map(d => d.day).sort(), lastSunday: sunday.last, sundaysDone: sunday.done, finished: sunday.finished,
   }) : undefined, [items, days, sunday]);
-  return { plan, items, map, days };
+  return { plan, items, map, days, finished: sunday?.finished ?? new Set<string>() };
 }

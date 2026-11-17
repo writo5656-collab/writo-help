@@ -373,7 +373,7 @@ export const JLPT_LESSONS: Lesson[] = [
       { p: '[た-form] ことが あります', e: '"Have done before". The た-form is made like the て-form with た: 行って → 行った, 食べて → 食べた.' },
     ],
     sentences: [
-      { f: '日本[にほん]に 行[い]った ことが あります。', en: 'I have been to Japan.', alt: ['日本[にほん]へ 行[い]った ことが あります。'] },
+      { f: '日本[にほん]{に} 行[い]った ことが あります。', en: 'I have been to Japan.', alt: ['日本[にほん]へ 行[い]った ことが あります。'] },
       { f: 'なっとうを 食[た]べた ことが ありますか。', en: 'Have you ever eaten natto?' },
       { f: '富士山[ふじさん]に 登[のぼ]った ことが ありません。', en: 'I have never climbed Mt. Fuji.' },
       { f: '一度[いちど] 京都[きょうと]に 行[い]った ことが あります。', en: 'I have been to Kyoto once.', alt: ['一度[いちど] 京都[きょうと]へ 行[い]った ことが あります。'] },
@@ -393,7 +393,7 @@ export const JLPT_LESSONS: Lesson[] = [
     sentences: [
       { f: '日本語[にほんご]は むずかしいと 思[おも]います。', en: 'I think Japanese is difficult.' },
       { f: '田中[たなか]さんは あした 来[く]ると 思[おも]います。', en: 'I think Mr. Tanaka will come tomorrow.' },
-      { f: '電車[でんしゃ]は 便利[べんり]だと 思[おも]います。', en: 'I think trains are convenient.' },
+      { f: '電車[でんしゃ]{は} 便利[べんり]だと 思[おも]います。', en: 'I think trains are convenient.' },
       { f: 'たぶん 雨[あめ]が ふると 思[おも]います。', en: 'I think it will probably rain.' },
     ],
   }),

@@ -13,18 +13,22 @@ import { Paper, PaperInput, ReadingLine } from './Paper';
 import { KanaKeyboard } from './Keyboard';
 import { sfx } from '../services/sfx';
 import { saveSettings } from '../lib/settings';
+import { CAST } from '../content/cast';
+import { Badge } from './Manga';
 
 export interface Outcome { ok: boolean; hint: boolean; userAnswer: string; expected: string; explanation: string }
-interface Props { ex: Ex; onResult: (o: Outcome) => void; onNext: (requeue: boolean) => void; last: boolean }
+interface Props { ex: Ex; onResult: (o: Outcome) => void; onNext: (requeue: boolean) => void; last: boolean; cast?: { guide: string; goof: string } }
 
 interface Fb { ok: boolean; title: string; notes: string[]; model?: string; diff?: CheckResult['diff']; heard?: string }
 
-export function Exercise({ ex, onResult, onNext, last }: Props) {
+export function Exercise({ ex, onResult, onNext, last, cast }: Props) {
   const s = useS();
   const [fb, setFb] = useState<Fb | null>(null);
   const [attempt, setAttempt] = useState(0);
   const [everWrong, setEverWrong] = useState(false);
   const hintRef = useRef(false);
+  // A different line each time, picked once per answer.
+  const pickLine = useMemo(() => Math.floor(Math.random() * 1000), [fb]);
 
   const finish = (f: Fb, userAnswer: string, expected: string) => {
     setFb(f);
@@ -42,6 +46,21 @@ export function Exercise({ ex, onResult, onNext, last }: Props) {
         <div className="dock">
           <div className={`feedback ${fb.ok ? 'ok' : 'bad'}`} role="status">
             <h3><Icon n={fb.ok ? 'check' : 'bulb'} s={20} />{fb.title}</h3>
+            {cast && (() => {
+              const c = CAST[fb.ok ? cast.guide : cast.goof]; if (!c) return null;
+              const line = fb.ok ? c.cheers[pickLine % c.cheers.length] : null;
+              const oops = !fb.ok ? c.oops[pickLine % c.oops.length] : null;
+              return (
+                <div className="castline">
+                  <Badge id={c.id} size={36} />
+                  <div className="say small">
+                    <b>{c.name}</b>
+                    {line && <div><span lang="ja" className="jp" style={{ fontWeight: 600 }}>{line[0]}</span> <span className="muted">{line[1]}</span></div>}
+                    {oops && <div>{oops}</div>}
+                  </div>
+                </div>
+              );
+            })()}
             {fb.heard !== undefined && <p className="small">I heard: <span lang="ja" className="jp">{fb.heard || '— nothing clear —'}</span></p>}
             {fb.model && (
               <div className="row between">
@@ -84,6 +103,11 @@ function Choice({ ex, locked, finish }: { ex: Extract<Ex, { t: 'choice' }>; lock
     if (locked) return;
     setPicked(i);
     const ok = i === ex.a;
+    // Say the answer out loud: the tapped Japanese option, then the right one if it was wrong.
+    void (async () => {
+      if (ex.jpOptions) { await speak(ex.options[i], { rate: s.rate }); if (!ok) { await new Promise(r => setTimeout(r, 350)); await speak(ex.options[ex.a], { rate: s.rate }); } }
+      else if (ex.say) await speak(ex.say, { rate: s.rate });
+    })();
     finish({ ok, title: ok ? 'Correct' : `The answer is: ${ex.options[ex.a]}`, notes: [ex.why] }, ex.options[i], ex.options[ex.a]);
   };
   const short = ex.options.every(o => o.length <= 6);
@@ -111,6 +135,7 @@ function Choice({ ex, locked, finish }: { ex: Extract<Ex, { t: 'choice' }>; lock
 }
 
 function Fill({ ex, locked, finish }: { ex: Extract<Ex, { t: 'fill' }>; locked: boolean; finish: Fin }) {
+  const s = useS();
   const [picked, setPicked] = useState(-1);
   const p = parseFuri(ex.sent.f);
   const part = ex.options[ex.a];
@@ -118,6 +143,7 @@ function Fill({ ex, locked, finish }: { ex: Extract<Ex, { t: 'fill' }>; locked: 
     if (locked) return;
     setPicked(i);
     const ok = i === ex.a;
+    void speak(p.jp, { rate: s.rate });
     finish({ ok, title: ok ? 'Correct' : `It needs ${part}`, notes: [PARTICLE_INFO[part] ?? '', ...(ex.sent.note ? [ex.sent.note] : [])].filter(Boolean), model: ex.sent.f }, ex.options[i], part);
   };
   return (
@@ -145,12 +171,14 @@ function Fill({ ex, locked, finish }: { ex: Extract<Ex, { t: 'fill' }>; locked: 
 }
 
 function Arrange({ ex, locked, finish }: { ex: Extract<Ex, { t: 'arrange' }>; locked: boolean; finish: Fin }) {
+  const s = useS();
   const p = parseFuri(ex.sent.f);
   const tiles = useMemo(() => shuffle(p.chunks.map((c, i) => ({ i, jp: c.jp.replace(/[。、]$/g, '') }))), [ex.key]); // eslint-disable-line
   const [order, setOrder] = useState<number[]>([]);
   const check = () => {
     const built = order.map(i => p.chunks[i].jp).join('');
     const r = checkSentence(ex.sent, built);
+    void speak(p.jp, { rate: s.rate });
     finish({ ok: r.ok, title: r.ok ? 'Correct' : 'Not quite — here is the natural order', notes: r.ok ? r.notes : ['Japanese usually puts the topic first and the verb at the very end.', ...(ex.sent.note ? [ex.sent.note] : [])], model: ex.sent.f }, built, p.jp);
   };
   return (
@@ -163,7 +191,7 @@ function Arrange({ ex, locked, finish }: { ex: Extract<Ex, { t: 'arrange' }>; lo
         {order.map((i, k) => <button key={k} lang="ja" className="tilebtn" disabled={locked} onClick={() => setOrder(order.filter((_x, j) => j !== k))}>{tiles.find(t => t.i === i)!.jp}</button>)}
       </div>
       <div className="tiles">
-        {tiles.map(t => <button key={t.i} lang="ja" className={`tilebtn ${order.includes(t.i) ? 'used' : ''}`} disabled={locked || order.includes(t.i)} onClick={() => { sfx.tap(); setOrder([...order, t.i]); }}>{t.jp}</button>)}
+        {tiles.map(t => <button key={t.i} lang="ja" className={`tilebtn ${order.includes(t.i) ? 'used' : ''}`} disabled={locked || order.includes(t.i)} onClick={() => { void speak(t.jp, { rate: s.rate }); setOrder([...order, t.i]); }}>{t.jp}</button>)}
       </div>
       {!locked && <div className="dock"><button className="btn" disabled={order.length !== tiles.length} onClick={check}>Check answer</button></div>}
     </div>
@@ -201,7 +229,7 @@ function Typing({ ex, locked, fb, onHint, finish }: { ex: Extract<Ex, { t: 'type
   const hint = () => { onHint(); sfx.tap(); setHints(h => h + 1); };
   const hintText = ex.t === 'listen' && hints === 1 ? `Meaning: ${ex.sent.en}` : p.chunks.slice(0, ex.t === 'listen' ? hints - 1 : hints).map(c => c.kana).join(' ') + (hints < p.chunks.length ? ' …' : '');
   const maxHints = p.chunks.length + (ex.t === 'listen' ? 1 : 0);
-  const title = ex.t === 'listen' ? 'Listening practice' : ex.t === 'word' ? 'Vocabulary' : ex.t === 'copy' ? 'Copy writing' : 'Sentence practice';
+  const title = ex.tag === 'challenge' ? 'Final challenge' : ex.t === 'listen' ? 'Listening practice' : ex.t === 'word' ? 'Vocabulary' : ex.t === 'copy' ? 'Copy writing' : 'Sentence practice';
   const label = ex.t === 'listen' ? 'Listen and write what you hear' : ex.t === 'word' ? 'Write this word in Japanese' : ex.t === 'copy' ? 'Write this sentence out yourself' : 'Translate into Japanese';
 
   return (
@@ -230,8 +258,8 @@ function Typing({ ex, locked, fb, onHint, finish }: { ex: Extract<Ex, { t: 'type
       {!locked && (
         <div className="dock">
           <div className="row gap-s">
-            {ex.t !== 'copy' && <button className="btn sm line grow" disabled={hints >= maxHints} onClick={hint}><Icon n="bulb" s={16} />Hint</button>}
-            {ex.t !== 'listen' && <button className="btn sm line grow" onClick={() => { if (ex.t !== 'copy') onHint(); void speak(parseFuri(f).jp, { rate: s.rate }); }}><Icon n="sound" s={16} />Listen</button>}
+            {ex.t !== 'copy' && ex.tag !== 'challenge' && <button className="btn sm line grow" disabled={hints >= maxHints} onClick={hint}><Icon n="bulb" s={16} />Hint</button>}
+            {ex.t !== 'listen' && ex.tag !== 'challenge' && <button className="btn sm line grow" onClick={() => { if (ex.t !== 'copy') onHint(); void speak(parseFuri(f).jp, { rate: s.rate }); }}><Icon n="sound" s={16} />Listen</button>}
             <button className="btn sm grow" style={{ flex: 1.4 }} disabled={!value.trim()} onClick={check}>Check<Icon n="next" s={16} /></button>
           </div>
           {appKb && <KanaKeyboard inputRef={ref} value={value} onChange={setValue} onEnter={check} enterLabel="OK" />}

@@ -87,7 +87,7 @@ describe('content integrity', () => {
     for (const l of LESSONS) {
       const ex = lessonExercises(l);
       expect(ex.length, l.id).toBeGreaterThan(5);
-      for (const e of ex) { if (e.t === 'choice' || e.t === 'fill') { expect(e.a, l.id).toBeGreaterThanOrEqual(0); expect(new Set(e.options).size, `${l.id} ${JSON.stringify(e.options)}`).toBe(e.options.length); } expect(reviewEx(newItem(e.itemId, e.kind)) !== null || e.itemId.startsWith('choice'), e.itemId).toBe(true); }
+      for (const e of ex) { if (e.t === 'choice' || e.t === 'fill') { expect(e.a, l.id).toBeGreaterThanOrEqual(0); expect(new Set(e.options).size, `${l.id} ${JSON.stringify(e.options)}`).toBe(e.options.length); } expect(reviewEx(newItem(e.itemId, e.kind)) !== null || /^(choice|story):/.test(e.itemId), e.itemId).toBe(true); }
     }
   });
 });
@@ -121,5 +121,33 @@ describe('stroke data', () => {
     for (const k of KANJI) expect(d[k.k]?.length, k.k).toBeGreaterThan(0);
     for (const c of 'あいうえおアイウエオんンを') expect(d[c]?.length, c).toBeGreaterThan(0);
     expect(d['水'].length).toBe(4);
+  });
+});
+
+import { storyFor } from '../content/stories';
+import { LESSON_CAST, CAST } from '../content/cast';
+import { lessonAfter, lessonProgress } from './plan';
+
+describe('cast and stories', () => {
+  it('every lesson has a guide (female) and a goof (male), and a story whose correct answer differs from the wrong ones', () => {
+    for (const l of LESSONS) {
+      const c = LESSON_CAST[l.id];
+      expect(c, l.id).toBeTruthy();
+      expect(CAST[c.guide].role, l.id).toBe('guide');
+      expect(CAST[c.goof].role, l.id).toBe('goof');
+      const st = storyFor(l);
+      expect(st, l.id).toBeTruthy();
+      expect(st!.wrong.length, l.id).toBeGreaterThan(0);
+      for (const w of st!.wrong) expect(w, l.id).not.toBe(st!.correct);
+      for (const p of st!.panels) expect(hasKanji(parseFuri(p.f).kana), `${l.id} ${p.f}`).toBe(false);
+    }
+  });
+  it('finishing a lesson counts it as done and points to the next', () => {
+    const l = LESSONS.find(x => x.id === 'n5-01')!;
+    expect(lessonProgress(l, new Map()).done).toBe(false);
+    expect(lessonProgress(l, new Map(), new Set(['n5-01'])).done).toBe(true);
+    expect(lessonAfter('n5-01')?.id).toBe('n5-02');
+    expect(lessonAfter('kana-k4')?.id).toBe('n5-01');
+    expect(lessonAfter('p-01')?.id).toBe('p-02');
   });
 });

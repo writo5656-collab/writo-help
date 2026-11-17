@@ -7,11 +7,14 @@ import { getKV, setKV } from '../lib/db';
 import { speak } from '../services/tts';
 import { sfx } from '../services/sfx';
 import { StrokeOrder } from '../components/Strokes';
+import { storyFor } from '../content/stories';
+import { LESSON_CAST, CAST } from '../content/cast';
+import { MangaPage, Badge } from '../components/Manga';
 import { Screen, Icon, Furi, Audio, SpeakBtn, Bar, useS, Empty } from '../components/ui';
 
 type Card =
   | { t: 'intro' } | { t: 'kana'; ch: string } | { t: 'grammar' } | { t: 'sent'; s: Sent; i: number }
-  | { t: 'scene' } | { t: 'dialogue' } | { t: 'end' };
+  | { t: 'scene' } | { t: 'dialogue' } | { t: 'story' } | { t: 'end' };
 
 export default function Lesson() {
   const { id } = useParams();
@@ -23,6 +26,7 @@ export default function Lesson() {
     ...l.sentences.map((s, i) => ({ t: 'sent' as const, s, i })),
     ...(l.scene ? [{ t: 'scene' as const }] : []),
     ...(l.dialogue ? [{ t: 'dialogue' as const }] : []),
+    ...(storyFor(l) ? [{ t: 'story' as const }] : []),
     { t: 'end' },
   ], [l]);
   const [i, setI] = useState(0);
@@ -41,6 +45,7 @@ export default function Lesson() {
         {c.t === 'sent' && <SentCard s={c.s} l={l} n={c.i + 1} />}
         {c.t === 'scene' && <SceneCard l={l} />}
         {c.t === 'dialogue' && <DialogueCard l={l} />}
+        {c.t === 'story' && <><MangaPage story={storyFor(l)!} /><p className="small muted">Read it carefully — the practice starts with a question about who was right.</p></>}
         {c.t === 'end' && <EndCard l={l} />}
       </div>
       <div className="dock">
@@ -56,8 +61,21 @@ export default function Lesson() {
 }
 
 function Intro({ l }: { l: L }) {
+  const lc = LESSON_CAST[l.id]; const g = lc && CAST[lc.guide];
   return (
     <>
+      {g && (
+        <div className="card row" style={{ alignItems: 'flex-start' }}>
+          <Badge id={g.id} size={48} />
+          <div className="grow col" style={{ gap: 4 }}>
+            <span className="label">Your guide · {g.series}</span>
+            <b>{g.name}</b>
+            <Furi f={lc.intro[0]} className="jp-m" romaji={false} />
+            <span className="small muted">{lc.intro[1]}</span>
+          </div>
+          <SpeakBtn text={parseFuri(lc.intro[0]).jp} />
+        </div>
+      )}
       <div className="card sage col gap-s"><span className="label">In this lesson</span><p style={{ fontWeight: 650 }}>{l.goal}</p><span className="jp-l jp" lang="ja" style={{ color: 'var(--forest)' }}>{l.jp}</span></div>
       {l.kanji && <div className="card flat col gap-s"><h3>Kanji you will meet</h3><div className="row wrap gap-s">{[...l.kanji].filter(k => KANJI_MAP.has(k)).map(k => <Link key={k} to={`/kanji?k=${k}`} className="tile jp" lang="ja">{k}</Link>)}</div></div>}
       <div className="card flat">

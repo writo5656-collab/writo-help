@@ -21,11 +21,12 @@ export interface Settings {
   sfx: boolean;            // sound effects
   keyboard: 'app' | 'phone'; // in-app kana keyboard, or the phone's own keyboard
   romajiInput: boolean;    // with the phone keyboard: convert romaji to kana
+  speakKeys: boolean;      // say each kana aloud as you tap it
 }
 export const DEFAULTS: Settings = {
   onboarded: false, name: '', level: 'zero', showFurigana: true, showRomaji: false, autoplay: true,
   rate: 1, textScale: 1, reducedMotion: false, showStreak: false, reminder: false, reminderTime: '19:30',
-  aiUrl: '', aiToken: '', paper: 'lined', sfx: true, keyboard: 'app', romajiInput: false,
+  aiUrl: '', aiToken: '', paper: 'lined', sfx: true, keyboard: 'app', romajiInput: false, speakKeys: true,
 };
 
 export function useSettings(): Settings | undefined {

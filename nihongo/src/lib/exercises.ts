@@ -5,10 +5,12 @@ import {
   KANJI, KANJI_MAP, HIRA, KATA, kanaRomaji, PASSAGES, sentId, vocabId, kanaId, kanjiId,
 } from '../content';
 import { parseFuri } from './jp';
+import { LIB, libKanjiAsKanji } from '../content/library';
+import { storyFor } from '../content/stories';
 import type { ItemState } from './srs';
 
 export type Skill = 'kana' | 'vocab' | 'kanji' | 'grammar' | 'reading' | 'writing' | 'listening' | 'speaking';
-interface Base { key: string; skill: Skill; itemId: string; kind: string; lessonId?: string }
+interface Base { key: string; skill: Skill; itemId: string; kind: string; lessonId?: string; tag?: 'earlier' | 'challenge' | 'story' }
 export type Ex = Base & (
   | { t: 'choice'; prompt: string; jp?: string; say?: string; context?: string; options: string[]; jpOptions?: boolean; a: number; why: string }
   | { t: 'fill'; sent: Sent; blank: number; options: string[]; a: number }
@@ -58,14 +60,18 @@ export function vocabEx(w: Vocab, mode: 'meaning' | 'jp' | 'type', lessonId?: st
 
 // ---- kanji ----------------------------------------------------------------
 export function kanjiEx(k: string, mode: 'meaning' | 'reading'): Ex | null {
-  const info = KANJI_MAP.get(k); if (!info) return null;
+  const lk = !KANJI_MAP.has(k) && LIB ? LIB.kanjiMap.get(k) : undefined;
+  const info = KANJI_MAP.get(k) ?? (lk && LIB ? libKanjiAsKanji(lk, LIB) : undefined); if (!info) return null;
+  if (mode === 'reading' && !info.words.length) mode = 'meaning';
   const base = { key: key(), skill: 'kanji' as const, itemId: kanjiId(k), kind: 'kanji' };
   if (mode === 'reading') {
     const w = info.words[0]; const p = parseFuri(w.f);
     const pool = KANJI.flatMap(x => x.words.map(y => parseFuri(y.f).kana));
     return { ...base, t: 'choice', prompt: `How is this word read? (${w.en})`, jp: p.jp, say: p.jp, jpOptions: true, ...options(p.kana, pool), why: `${p.jp} is read ${p.kana} and means "${w.en}".` };
   }
-  return { ...base, t: 'choice', prompt: 'What does this kanji mean?', jp: k, ...options(info.en, KANJI.map(x => x.en)), why: `${k} means "${info.en}". Example: ${parseFuri(info.words[0].f).jp} (${parseFuri(info.words[0].f).kana}) = ${info.words[0].en}.` };
+  const pool = lk && LIB ? LIB.kanji.filter(x => x.lvl === lk.lvl).map(x => x.en) : KANJI.map(x => x.en);
+  const ex0 = info.words[0];
+  return { ...base, t: 'choice', prompt: 'What does this kanji mean?', jp: k, say: ex0 ? parseFuri(ex0.f).jp : undefined, ...options(info.en, pool), why: `${k} means "${info.en}".${ex0 ? ` Example: ${parseFuri(ex0.f).jp} (${parseFuri(ex0.f).kana}) = ${ex0.en}.` : ''}` };
 }
 
 // ---- sentences ------------------------------------------------------------
@@ -104,7 +110,8 @@ export function lessonExercises(l: Lesson): Ex[] {
     for (const ch of shuffle(l.kana).slice(0, Math.ceil(l.kana.length / 2))) out.push(kanaEx(ch, true, l.id));
     for (const w of l.vocab) out.push(vocabEx(w, 'meaning', l.id, l.vocab));
     for (const w of l.vocab.slice(0, 4)) out.push(vocabEx(w, 'type', l.id));
-    return [...shuffle(out.slice(0, l.kana.length)), ...shuffle(out.slice(l.kana.length))];
+    const st = storyEx(l);
+    return [...shuffle(out.slice(0, l.kana.length)), ...st, ...shuffle(out.slice(l.kana.length)), ...earlierEx(l), ...challengeEx(l)];
   }
   const vocab = l.vocab.map(w => vocabEx(w, 'meaning', l.id, l.vocab));
   const vocab2 = shuffle(l.vocab).slice(0, 4).map(w => vocabEx(w, 'jp', l.id, l.vocab));
@@ -116,14 +123,48 @@ export function lessonExercises(l: Lesson): Ex[] {
   (l.choices ?? []).forEach((c, i) => out.push({ key: key(), skill: 'grammar', itemId: `choice:${l.id}:${i}`, kind: 'grammar', lessonId: l.id, t: 'choice', prompt: 'Choose the natural expression', context: c.q, jpOptions: true, options: c.options, a: c.a, why: c.why }));
   l.sentences.forEach((_s, i) => out.push(...[sentEx(sentId(l.id, i), 'type')].filter(ok)));
   shuffle(l.sentences.map((_s, i) => i)).slice(0, 2).forEach(i => out.push(...[sentEx(sentId(l.id, i), 'listen')].filter(ok)));
+  // Every lesson runs in its own order, so no two feel the same.
+  const n = LESSONS.indexOf(l);
+  const vocabPart = out.slice(0, l.vocab.length + Math.min(4, l.vocab.length));
+  const rest = out.slice(vocabPart.length);
+  const rot = n % 3 === 1 ? [...rest.filter(e => e.t === 'listen'), ...rest.filter(e => e.t !== 'listen')] : n % 3 === 2 ? [...rest.filter(e => e.t === 'copy'), ...rest.filter(e => e.t !== 'copy')] : rest;
+  return [...vocabPart, ...storyEx(l), ...rot, ...earlierEx(l), ...challengeEx(l)];
+}
+
+/** Questions about the lesson's manga story. */
+export function storyEx(l: Lesson): Ex[] {
+  const st = storyFor(l); if (!st) return [];
+  const opts = shuffle([st.correct, ...st.wrong]);
+  const out: Ex[] = [{ key: key(), skill: 'reading', itemId: `story:${l.id}:0`, kind: 'reading', lessonId: l.id, tag: 'story', t: 'choice', prompt: 'Story check: who was right?', context: 'In the story, which version is correct?', jpOptions: true, options: opts, a: opts.indexOf(st.correct), why: st.mistakeNote }];
+  const lines = (l.dialogue ?? []).filter(d => d.who !== 'You');
+  if (lines.length >= 2) {
+    const d = lines[Math.floor(Math.random() * lines.length)];
+    const p = parseFuri(d.f);
+    out.push({ key: key(), skill: 'reading', itemId: `story:${l.id}:1`, kind: 'reading', lessonId: l.id, tag: 'story', t: 'choice', prompt: 'Story check: what did they mean?', jp: d.f, say: p.jp, ...options(d.en, (l.dialogue ?? []).map(x => x.en)), why: `${p.jp} = "${d.en}"` });
+  }
   return out;
+}
+
+/** A few sentences from the two lessons before this one, so nothing is forgotten. */
+function earlierEx(l: Lesson): Ex[] {
+  const same = LESSONS.filter(x => x.track === l.track || (l.track === 'jlpt' && x.track === 'kana'));
+  const i = same.indexOf(l);
+  const prev = same.slice(Math.max(0, i - 2), i);
+  const pool = prev.flatMap(p => p.kana ? p.vocab.map(w => vocabEx(w, 'type', p.id)) : p.sentences.map((_s, j) => sentEx(sentId(p.id, j), Math.random() < 0.5 ? 'arrange' : 'type')).filter(ok));
+  return shuffle(pool).slice(0, 3).map(e => ({ ...e, tag: 'earlier' as const }));
+}
+
+/** The final challenge: write full sentences with no hints. */
+function challengeEx(l: Lesson): Ex[] {
+  if (l.kana) return shuffle(l.vocab).slice(0, 3).map(w => ({ ...vocabEx(w, 'type', l.id), tag: 'challenge' as const }));
+  return shuffle(l.sentences.map((_s, i) => i)).slice(0, 3).map(i => sentEx(sentId(l.id, i), 'type')).filter(ok).map(e => ({ ...e, tag: 'challenge' as const }));
 }
 
 /** Pick an exercise for a review item; stronger items get harder formats. */
 export function reviewEx(it: ItemState): Ex | null {
   const [kind, ...rest] = it.id.split(':'); const id = rest.join(':');
   if (kind === 'kana') return kanaEx(id, it.reps >= 1 && Math.random() < 0.5);
-  if (kind === 'vocab') { const w = VOCAB_MAP.get(id); return w ? vocabEx(w, it.reps >= 2 ? 'type' : it.reps === 1 ? 'jp' : 'meaning', w.lessonId) : null; }
+  if (kind === 'vocab') { const w = VOCAB_MAP.get(id) ?? (LIB?.wordMap.get(id) && { ...LIB.wordMap.get(id)!, lessonId: undefined as unknown as string }); return w ? vocabEx(w, it.reps >= 2 ? 'type' : it.reps === 1 ? 'jp' : 'meaning', w.lessonId || undefined, LIB?.wordMap.has(id) && !VOCAB_MAP.has(id) ? LIB.words.filter(x => x.lvl === LIB!.wordMap.get(id)!.lvl).slice(0, 400) : ALL_VOCAB) : null; }
   if (kind === 'kanji') return kanjiEx(id, it.reps >= 1 ? 'reading' : 'meaning');
   if (kind === 'sent') {
     const mode = it.reps >= 2 ? (Math.random() < 0.5 ? 'type' : 'listen') : it.reps === 1 ? 'type' : 'arrange';

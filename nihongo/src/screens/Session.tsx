@@ -6,7 +6,9 @@ import { db, recordAnswer, addMistake, setKV, getKV } from '../lib/db';
 import { dueItems, risk, DAY, type Grade } from '../lib/srs';
 import { type Ex, lessonExercises, reviewEx, drill, passageExercises, vocabEx, kanjiEx, sentEx, shuffle } from '../lib/exercises';
 import { LESSON_MAP, PASSAGES, PACKS, KANJI, ALL_SENTENCES } from '../content';
-import { sundayKey } from '../lib/plan';
+import { sundayKey, lessonAfter } from '../lib/plan';
+import { loadLibrary } from '../content/library';
+import { castFor } from '../content/cast';
 import { parseFuri } from '../lib/jp';
 import { sfx } from '../services/sfx';
 import { Exercise, type Outcome } from '../components/Exercise';
@@ -31,6 +33,23 @@ const fresh = (e: Ex): QEx => ({ ...e, key: e.key + '-' + Math.random().toString
 
 async function build(m: string, q: URLSearchParams): Promise<QEx[]> {
   const ok = <T,>(x: T | null | undefined): x is T => !!x;
+  // Items from the big library can be due for review, so make sure it is loaded.
+  const lib = await loadLibrary();
+  if (m === 'lib') {
+    const lvl = Number(q.get('lvl') ?? 5), kind = q.get('kind') ?? 'vocab';
+    const states = new Map((await db.items.toArray()).map(i => [i.id, i]));
+    if (kind === 'kanji') {
+      const pool = lib.kanji.filter(k => k.lvl === lvl);
+      const fresh = pool.filter(k => !states.has(`kanji:${k.k}`)).slice(0, 8);
+      const weak = pool.filter(k => { const st = states.get(`kanji:${k.k}`); return st && st.status !== 'remembered'; }).slice(0, 4);
+      return shuffle([...fresh, ...weak].flatMap(k => [kanjiEx(k.k, 'meaning'), kanjiEx(k.k, 'reading')]).filter(ok));
+    }
+    const pool = lib.words.filter(w => w.lvl === lvl);
+    const fresh = pool.filter(w => !states.has(`vocab:${w.jp}`)).slice(0, 10);
+    const weak = pool.filter(w => { const st = states.get(`vocab:${w.jp}`); return st && st.status !== 'remembered'; }).slice(0, 5);
+    const lvlPool = pool.slice(0, 600);
+    return [...fresh.map(w => vocabEx(w, 'meaning', undefined, lvlPool)), ...shuffle([...fresh, ...weak]).map((w, i) => vocabEx(w, i % 3 === 2 ? 'type' : 'jp', undefined, lvlPool))];
+  }
   if (m === 'lesson') { const l = LESSON_MAP.get(q.get('id') ?? ''); return l ? lessonExercises(l) : []; }
   if (m === 'review') return dueItems(await db.items.toArray()).slice(0, 20).map(reviewEx).filter(ok);
   if (m === 'passage') return passageExercises(q.get('id') ?? '');
@@ -58,7 +77,7 @@ async function build(m: string, q: URLSearchParams): Promise<QEx[]> {
   return [];
 }
 
-const TITLES: Record<string, string> = { lesson: 'Lesson practice', review: 'Spaced review', passage: 'Reading', pack: 'Vocabulary', kanji: 'Kanji', mistakes: 'Mistake review', mistake: 'Mistake review', sunday: 'Sunday review', drill: 'Practice' };
+const TITLES: Record<string, string> = { lib: 'Library practice', lesson: 'Lesson practice', review: 'Spaced review', passage: 'Reading', pack: 'Vocabulary', kanji: 'Kanji', mistakes: 'Mistake review', mistake: 'Mistake review', sunday: 'Sunday review', drill: 'Practice' };
 
 export default function Session() {
   const [q] = useSearchParams();
@@ -96,7 +115,7 @@ export default function Session() {
     else if (first) grade = 'again';
     else return; // further wrong tries on the same question are not counted against you
     if (first) setTally(t => [...t, { skill: ex.skill, ok: o.ok, prompt: promptOf(ex) }]);
-    setScore(x => x + (grade === 'good' ? 5 : grade === 'hard' ? 3 : grade === 'retry' ? 1 : 0));
+    setScore(x => x + (grade === 'good' ? 5 : grade === 'hard' ? 3 : grade === 'retry' ? 1 : 0) * (ex.tag === 'challenge' && first ? 2 : 1));
     if (first) setCombo(c => { const n = o.ok ? c + 1 : 0; if (n > 0 && n % 5 === 0) setTimeout(sfx.streak, 350); return n; });
     if (!o.ok) saw.current.add(ex.key);
     await recordAnswer({ itemId: ex.itemId, kind: ex.kind, skill: ex.skill, grade, lessonId: ex.lessonId });
@@ -121,7 +140,7 @@ export default function Session() {
     window.scrollTo(0, 0);
   };
 
-  if (done) return <Done m={m} tally={tally} seconds={Math.round((Date.now() - start.current) / 1000)} score={score} />;
+  if (done) return <Done m={m} tally={tally} seconds={Math.round((Date.now() - start.current) / 1000)} score={score} lessonId={m === 'lesson' ? q.get('id') ?? undefined : undefined} />;
   const passage = m === 'passage' ? PASSAGES.find(p => p.id === q.get('id')) : undefined;
 
   return (
@@ -137,6 +156,9 @@ export default function Session() {
         <span className="grow" />
         <span className="pill"><Icon n="clock" s={13} />{Math.floor(secs / 60)}:{String(secs % 60).padStart(2, '0')}</span>
       </div>
+      {ex.tag === 'challenge' && <span className="badge sakura" style={{ alignSelf: 'flex-start' }}><Icon n="flame" s={13} />Final challenge · no hints · double score</span>}
+      {ex.tag === 'earlier' && <span className="badge plain" style={{ alignSelf: 'flex-start' }}><Icon n="retry" s={13} />From an earlier lesson</span>}
+      {ex.tag === 'story' && <span className="badge" style={{ alignSelf: 'flex-start' }}><Icon n="book" s={13} />Story check</span>}
       {ex.requeued && <span className="badge amber" style={{ alignSelf: 'flex-start' }}><Icon n="retry" s={13} />Second look</span>}
       {passage && (
         <div className="card flat col gap-s">
@@ -144,7 +166,7 @@ export default function Session() {
           {passage.lines.map((l, i) => <div key={i} className="row between"><Furi f={l.f} className="jp-m" /><Audio f={l.f} compact /></div>)}
         </div>
       )}
-      <Exercise key={ex.key} ex={ex} onResult={onResult} onNext={onNext} last={idx === queue.length - 1} />
+      <Exercise key={ex.key} ex={ex} onResult={onResult} onNext={onNext} last={idx === queue.length - 1} cast={castFor(ex.lessonId ?? (m === 'lesson' ? q.get('id') ?? undefined : undefined))} />
     </main>
   );
 }
@@ -168,7 +190,8 @@ async function finishSunday(tally: Tally[]) {
 const SKILL_NAMES: Record<string, string> = { kana: 'Kana', vocab: 'Vocabulary', kanji: 'Kanji', grammar: 'Grammar and particles', reading: 'Reading', writing: 'Sentence writing', listening: 'Listening', speaking: 'Speaking' };
 export { SKILL_NAMES };
 
-function Done({ m, tally, seconds, score }: { m: string; tally: Tally[]; seconds: number; score: number }) {
+function Done({ m, tally, seconds, score, lessonId }: { m: string; tally: Tally[]; seconds: number; score: number; lessonId?: string }) {
+  const next = lessonId ? lessonAfter(lessonId) : undefined;
   useEffect(() => { sfx.complete(); }, []);
   const right = tally.filter(t => t.ok).length, missed = tally.filter(t => !t.ok);
   const weak = [...new Set(missed.map(t => SKILL_NAMES[t.skill]))];
@@ -194,7 +217,9 @@ function Done({ m, tally, seconds, score }: { m: string; tally: Tally[]; seconds
       ) : <div className="card sage small">Everything right first time. These items will now wait longer before the next review.</div>}
       {m === 'sunday' && <Link className="btn ghost" to="/sunday">See your review report</Link>}
       {missed.length > 0 && <Link className="btn ghost" to="/mistakes">Open Mistake Notebook</Link>}
-      <Link className="btn" to="/" replace>Back to home</Link>
+      {next && <Link className="btn" to={`/lesson/${next.id}`} replace>Next lesson: {next.title}<Icon n="next" s={18} /></Link>}
+      {lessonId && !next && <div className="card sage small">That was the last lesson in this track for now. More are coming — meanwhile the library has every N5–N1 word and kanji.</div>}
+      <Link className={next ? 'btn ghost' : 'btn'} to="/" replace>Back to home</Link>
     </Screen>
   );
 }

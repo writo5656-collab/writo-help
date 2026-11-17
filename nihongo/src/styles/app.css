@@ -229,3 +229,25 @@ button.card:active, a.card:active { transform: scale(.985); }
 .sign.look-screen { background: linear-gradient(180deg, #2f6fc0, #1f55a0); color: #fff; border-radius: 10px; border: 2px solid #9cc0ee; }
 .sign.look-plate { background: linear-gradient(180deg, #e7d9a8, #c9b271); color: #2b2412; border-radius: 3px; border: 1px solid #a48d4f; }
 .sign.on { outline: 3px solid #fff; outline-offset: 2px; }
+
+/* ---- characters & manga ---- */
+.badge-av { display: inline-grid; place-items: center; border-radius: 50%; color: #fff; font-family: var(--jp); font-weight: 700; flex: none; box-shadow: 0 0 0 2px #fff, 0 1px 4px rgba(0,0,0,.2); }
+.manga { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; background: #fff; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-shadow: 0 6px 18px rgba(0,0,0,.12); }
+.manga.vert { direction: rtl; }
+.panel { direction: ltr; position: relative; border: 2.5px solid #161616; background: #fff; min-height: 140px; padding: 10px 8px 8px; display: flex; flex-direction: column; gap: 8px; text-align: left; overflow: hidden; }
+.panel.wide { grid-column: span 2; min-height: 110px; }
+.panel.tall { grid-row: span 2; }
+.panel.tone-0 { background-image: radial-gradient(#00000014 1px, transparent 1.4px); background-size: 6px 6px; }
+.panel.tone-1 { background-image: repeating-linear-gradient(135deg, #0000000d 0 2px, transparent 2px 7px); }
+.panel.oops { background-image: repeating-conic-gradient(from 0deg at 50% 60%, #0000000f 0 4deg, transparent 4deg 12deg); }
+.panel.fix { background-image: repeating-linear-gradient(90deg, #00000010 0 1px, transparent 1px 9px); }
+.panel .who { display: flex; align-items: center; gap: 6px; }
+.bubble-m { position: relative; background: #fff; border: 2px solid #161616; border-radius: 22px; padding: 9px 12px; align-self: stretch; line-height: 1.7; }
+.bubble-m::before { content: ''; position: absolute; top: -10px; left: 16px; border: 8px solid transparent; border-bottom-color: #161616; }
+.bubble-m::after { content: ''; position: absolute; top: -6px; left: 18px; border: 6px solid transparent; border-bottom-color: #fff; }
+.manga.vert .bubble-m { writing-mode: vertical-rl; min-height: 170px; align-self: flex-end; }
+.manga.vert .bubble-m rt { font-size: .45em; }
+.fx { position: absolute; right: 8px; top: 4px; font-family: var(--jp); font-weight: 900; font-size: 1.3rem; color: #161616; transform: rotate(8deg); -webkit-text-stroke: .5px #fff; }
+.fx.fix { color: #b9504a; }
+.castline { display: flex; gap: 10px; align-items: flex-start; }
+.castline .say { flex: 1; min-width: 0; }

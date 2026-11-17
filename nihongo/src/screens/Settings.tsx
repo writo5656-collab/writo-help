@@ -49,6 +49,7 @@ export default function Settings() {
       <h2>Audio</h2>
       <section className="card flat list" style={{ padding: '2px 16px' }}>
         <Row title="Sound effects" sub="Chimes, key clicks and page sounds"><Switch on={s.sfx} onChange={v => set({ sfx: v })} label="Sound effects" /></Row>
+        <Row title="Say kana as you type" sub="The in-app keyboard reads each letter aloud"><Switch on={s.speakKeys} onChange={v => set({ speakKeys: v })} label="Say kana as you type" /></Row>
         <Row title="Autoplay new sentences" sub="Hear each sentence when it first appears"><Switch on={s.autoplay} onChange={v => set({ autoplay: v })} label="Autoplay" /></Row>
         <div className="li" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 8 }}>
           <div className="row between"><span style={{ fontWeight: 650 }}>Speech speed</span><span className="small muted num">{s.rate.toFixed(2)}×</span></div>

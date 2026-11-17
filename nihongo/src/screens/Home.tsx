@@ -11,7 +11,7 @@ function greeting() { const h = new Date().getHours(); return h < 11 ? ['おは�
 
 export default function Home() {
   const s = useS();
-  const { plan, map, days } = usePlan();
+  const { plan, map, days, finished } = usePlan();
   const today = useLiveQuery(() => db.days.get(dayKey()), []);
   const mistakes = useLiveQuery(() => db.mistakes.where('status').notEqual('remembered').count(), []) ?? 0;
   const pct = (ids: string[]) => Math.round((ids.filter(id => isKnown(map.get(id))).length / ids.length) * 100);
@@ -80,12 +80,12 @@ export default function Home() {
 
       <Link to="/learn?t=jlpt" className="card row">
         <span className="tile green"><Icon n="star" /></span>
-        <div className="grow col gap-s"><div className="row between"><h3>JLPT track</h3><span className="small muted num">{trackProgress(JLPT_LESSONS, map)}%</span></div><Bar pct={trackProgress(JLPT_LESSONS, map)} /></div>
+        <div className="grow col gap-s"><div className="row between"><h3>JLPT track</h3><span className="small muted num">{trackProgress(JLPT_LESSONS, map, finished)}%</span></div><Bar pct={trackProgress(JLPT_LESSONS, map, finished)} /></div>
         <Icon n="next" />
       </Link>
       <Link to="/learn?t=practical" className="card row">
         <span className="tile sakura"><Icon n="torii" /></span>
-        <div className="grow col gap-s"><div className="row between"><h3>Real-life Japanese</h3><span className="small muted num">{trackProgress(PRACTICAL_LESSONS, map)}%</span></div><Bar pct={trackProgress(PRACTICAL_LESSONS, map)} /></div>
+        <div className="grow col gap-s"><div className="row between"><h3>Real-life Japanese</h3><span className="small muted num">{trackProgress(PRACTICAL_LESSONS, map, finished)}%</span></div><Bar pct={trackProgress(PRACTICAL_LESSONS, map, finished)} /></div>
         <Icon n="next" />
       </Link>
 
