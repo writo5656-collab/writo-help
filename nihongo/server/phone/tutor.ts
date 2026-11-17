@@ -1,6 +1,6 @@
 // Nihongo AI tutor — phone-friendly, single-file version (Gemini, free tier).
 // Paste this whole file into Supabase → Edge Functions → Deploy a new function → Via Editor.
-// Secrets (Edge Functions → Secrets):  GEMINI_API_KEY (required), APP_TOKEN (recommended), GEMINI_MODEL (optional)
+// Secrets (Edge Functions → Secrets):  GEMINI_API_KEY (required), APP_TOKEN (recommended), GEMINI_MODEL (optional — chosen automatically if empty)
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -15,6 +15,20 @@ const SCENARIOS: Record<string, string> = {
   call: "This is a friendly video call. Talk naturally about the learner's day, plans and interests. Ask one question at a time.",
   sunday: "This is the learner's weekly review. Revisit the items under 'Recent mistakes' through conversation.",
 };
+
+// Google renames models over time, so ask which Flash model this key can use (cached per instance).
+let cachedModel = "";
+async function bestModel(key: string): Promise<string> {
+  if (cachedModel) return cachedModel;
+  const r = await fetch("https://generativelanguage.googleapis.com/v1beta/models?pageSize=100", { headers: { "x-goog-api-key": key } });
+  const j = r.ok ? await r.json() : { models: [] };
+  const names: string[] = (j.models ?? []).filter((m: { supportedGenerationMethods?: string[] }) => (m.supportedGenerationMethods ?? []).includes("generateContent")).map((m: { name: string }) => m.name.replace(/^models\//, ""));
+  const ok = names.filter((n) => /^gemini-/.test(n) && /flash/.test(n) && !/(image|tts|audio|live|embedding|vision|thinking|native)/.test(n));
+  const ver = (n: string) => parseFloat(n.match(/gemini-(\d+(?:\.\d+)?)/)?.[1] ?? "0");
+  const score = (n: string) => ver(n) * 100 - (/lite/.test(n) ? 5 : 0) - (/(preview|exp)/.test(n) ? 20 : 0);
+  cachedModel = ok.sort((a, b) => score(b) - score(a))[0] ?? "gemini-flash-latest";
+  return cachedModel;
+}
 
 export async function handler(req: Request): Promise<Response> {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
@@ -41,7 +55,7 @@ export async function handler(req: Request): Promise<Response> {
     'Reply ONLY with JSON: {"jp": string, "kana": string (kana only), "en": string, "correction": {"said": string, "better": string, "why": string} or null}',
   ].filter(Boolean).join("\n");
 
-  const model = Deno.env.get("GEMINI_MODEL") || "gemini-2.5-flash";
+  const model = Deno.env.get("GEMINI_MODEL") || (await bestModel(key));
   const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
     method: "POST",
     headers: { "Content-Type": "application/json", "x-goog-api-key": key },

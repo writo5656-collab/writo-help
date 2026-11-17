@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { saveSettings, type Settings as S } from '../lib/settings';
+import { saveSettings, loadSettings, type Settings as S } from '../lib/settings';
 import { saveBackup, exportNotes, importData, resetAll } from '../lib/backup';
 import { getKV } from '../lib/db';
 import { speak, ttsAvailable } from '../services/tts';
@@ -8,7 +8,7 @@ import { setReminder, remindersSupported, testNotification, planReminders } from
 import { useDaily } from '../lib/hooks';
 import { CAST } from '../content/cast';
 import { Portrait } from '../components/Portrait';
-import { tutorReply } from '../services/ai';
+import { tutorReply, geminiModels } from '../services/ai';
 import { Link } from 'react-router-dom';
 import { Screen, Switch, Icon, useS, fmtDate, Wip } from '../components/ui';
 
@@ -22,6 +22,7 @@ export default function Settings() {
   const [msg, setMsg] = useState('');
   const [aiMsg, setAiMsg] = useState('');
   const [nMsg, setNMsg] = useState('');
+  const [models, setModels] = useState<string[]>([]);
   const [preview, setPreview] = useState(false);
   const daily = useDaily();
   const file = useRef<HTMLInputElement>(null);
@@ -29,7 +30,7 @@ export default function Settings() {
   const run = async (fn: () => Promise<string | void>) => { try { setMsg((await fn()) || 'Done.'); } catch (e) { setMsg((e as Error).message); } };
   const testAi = async () => {
     setAiMsg('Testing…');
-    try { const r = await tutorReply({ messages: [{ role: 'user', content: 'こんにちは' }], scenario: 'free', level: s.level, known: 'greetings' }); setAiMsg(`Connected. The tutor said: ${r.jp}`); }
+    try { const r = await tutorReply({ messages: [{ role: 'user', content: 'こんにちは' }], scenario: 'free', level: s.level, known: 'greetings' }); const st = await loadSettings(); setAiMsg(`Connected${st.aiMode === 'gemini' ? ` (model: ${st.aiModel})` : ''}. The tutor said: ${r.jp}`); }
     catch (e) { setAiMsg((e as Error).message); }
   };
   const reminder = async (on: boolean, time = s.reminderTime) => {
@@ -117,7 +118,9 @@ export default function Settings() {
           <label className="label" htmlFor="key">{s.aiMode === 'gemini' ? 'Gemini' : 'Claude'} API key</label>
           <input id="key" key={s.aiMode} className="field" type="password" defaultValue={s.aiKey} onBlur={e => set({ aiKey: e.target.value.trim() })} autoComplete="off" autoCapitalize="off" />
           <label className="label" htmlFor="mdl">Model (optional)</label>
-          <input id="mdl" key={s.aiMode + 'm'} className="field" defaultValue={s.aiModel} onBlur={e => set({ aiModel: e.target.value.trim() })} placeholder={s.aiMode === 'gemini' ? 'gemini-2.5-flash' : 'claude-opus-5-5'} autoCapitalize="off" />
+          <input id="mdl" key={s.aiMode + 'm' + s.aiModel} className="field" defaultValue={s.aiModel} onBlur={e => set({ aiModel: e.target.value.trim() })} placeholder={s.aiMode === 'gemini' ? 'Leave empty — chosen automatically' : 'claude-opus-5-5'} autoCapitalize="off" />
+          {s.aiMode === 'gemini' && <button className="chip" style={{ alignSelf: 'flex-start' }} disabled={!s.aiKey} onClick={async () => { try { setModels(await geminiModels(s.aiKey)); } catch (e) { setAiMsg((e as Error).message); } }}>Show models my key can use</button>}
+          {models.length > 0 && <select className="field" value={s.aiModel} onChange={e => set({ aiModel: e.target.value })} aria-label="Gemini model">{['', ...models].map(m => <option key={m} value={m}>{m || 'Automatic'}</option>)}</select>}
         </>}
         <button className="btn sm ghost" style={{ alignSelf: 'flex-start' }} onClick={testAi} disabled={s.aiMode === 'proxy' ? !s.aiUrl : !s.aiKey}>Test connection</button>
         {aiMsg && <p className="small" role="status">{aiMsg}</p>}

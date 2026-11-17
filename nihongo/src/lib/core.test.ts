@@ -216,3 +216,13 @@ describe('reminder schedule', () => {
     expect(open.every(p => p.at > now)).toBe(true);
   });
 });
+
+import { pickGeminiModel } from '../services/ai';
+describe('Gemini model choice', () => {
+  it('prefers the newest stable Flash chat model', () => {
+    expect(pickGeminiModel(['models/gemini-2.0-flash', 'models/gemini-2.5-flash', 'models/gemini-2.5-pro', 'models/gemini-2.5-flash-image', 'models/text-embedding-004'])).toBe('gemini-2.5-flash');
+    expect(pickGeminiModel(['models/gemini-3-flash-preview', 'models/gemini-3-flash', 'models/gemini-3-flash-lite', 'models/gemini-2.5-flash'])).toBe('gemini-3-flash');
+    expect(pickGeminiModel(['models/gemini-3.5-flash-lite', 'models/gemini-2.5-flash'])).toBe('gemini-3.5-flash-lite');
+    expect(pickGeminiModel(['models/gemini-2.5-pro'])).toBeUndefined();
+  });
+});

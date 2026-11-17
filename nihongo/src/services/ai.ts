@@ -3,7 +3,7 @@
 //  2. Claude — paste an Anthropic API key; requests go straight from this phone.
 //  3. Gemini — paste a Google AI Studio key (has a free tier); straight from this phone.
 // Direct keys are stored only on this device and are never included in backups.
-import { loadSettings } from '../lib/settings';
+import { loadSettings, saveSettings } from '../lib/settings';
 import { tutorSystem, withOpener, REPLY_SCHEMA, type TutorRequest } from './tutorPrompt';
 
 export interface ChatMsg { role: 'user' | 'assistant'; content: string }
@@ -45,8 +45,35 @@ async function viaClaude(o: TutorRequest, key: string, model: string): Promise<T
   }
 }
 
-async function viaGemini(o: TutorRequest, key: string, model: string): Promise<TutorReply> {
-  const m = model || 'gemini-2.5-flash';
+/** Pick the best everyday chat model from Google's list: a Flash model, stable before preview, newest version first. */
+export function pickGeminiModel(names: string[]): string | undefined {
+  const ok = names.map(n => n.replace(/^models\//, '')).filter(n => /^gemini-/.test(n) && /flash/.test(n) && !/(image|tts|audio|live|embedding|vision|thinking|native)/.test(n));
+  const ver = (n: string) => parseFloat(n.match(/gemini-(\d+(?:\.\d+)?)/)?.[1] ?? '0');
+  const score = (n: string) => ver(n) * 100 - (/lite/.test(n) ? 5 : 0) - (/(preview|exp)/.test(n) ? 20 : 0) - (/-\d{3,}$|\d{2}-\d{2}/.test(n) ? 2 : 0) + (/latest/.test(n) ? 1 : 0);
+  return ok.sort((a, b) => score(b) - score(a))[0];
+}
+
+/** Ask Google which models this key can use (only ones that can chat). */
+export async function geminiModels(key: string): Promise<string[]> {
+  const out: string[] = [];
+  let page = '';
+  for (let i = 0; i < 3; i++) {
+    const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?pageSize=100${page ? `&pageToken=${page}` : ''}`, { headers: { 'x-goog-api-key': key } });
+    if (r.status === 400 || r.status === 403) throw new Error('Gemini rejected the API key — copy it again from AI Studio.');
+    if (!r.ok) throw new Error(`Could not list Gemini models (${r.status}).`);
+    const j = await r.json();
+    for (const m of j.models ?? []) if ((m.supportedGenerationMethods ?? []).includes('generateContent')) out.push(String(m.name).replace(/^models\//, ''));
+    page = j.nextPageToken ?? ''; if (!page) break;
+  }
+  return out;
+}
+
+async function viaGemini(o: TutorRequest, key: string, model: string, retried = false): Promise<TutorReply> {
+  let m = model;
+  if (!m) { // no model chosen yet: ask Google once and remember the answer
+    m = pickGeminiModel(await geminiModels(key)) ?? 'gemini-flash-latest';
+    await saveSettings({ aiModel: m });
+  }
   const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(m)}:generateContent`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
@@ -56,9 +83,14 @@ async function viaGemini(o: TutorRequest, key: string, model: string): Promise<T
       generationConfig: { responseMimeType: 'application/json', temperature: 0.7 },
     }),
   });
-  if (res.status === 400 || res.status === 403) throw new Error('Gemini rejected the request — check the API key and model name in Settings.');
+  if (res.status === 404 && !retried) { // model retired or renamed: find a current one and try again
+    const next = pickGeminiModel(await geminiModels(key));
+    if (next && next !== m) { await saveSettings({ aiModel: next }); return viaGemini(o, key, next, true); }
+    throw new Error(`Gemini has no model called "${m}" for this key. Clear the Model box and test again.`);
+  }
+  if (res.status === 400 || res.status === 403) throw new Error('Gemini rejected the request — check the API key in Settings.');
   if (res.status === 429) throw new Error('Gemini\'s free limit was reached for now. Try again in a minute.');
-  if (!res.ok) throw new Error(`Gemini error (${res.status}).`);
+  if (!res.ok) throw new Error(`Gemini error (${res.status}) with model ${m}.`);
   const j = await res.json();
   const text = (j.candidates?.[0]?.content?.parts ?? []).map((p: { text?: string }) => p.text ?? '').join('');
   return parseReply(text);
