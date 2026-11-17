@@ -9,7 +9,8 @@ import { sfx } from '../services/sfx';
 import { StrokeOrder } from '../components/Strokes';
 import { storyFor } from '../content/stories';
 import { LESSON_CAST, CAST } from '../content/cast';
-import { MangaPage, Badge } from '../components/Manga';
+import { MangaPage } from '../components/Manga';
+import { Portrait } from '../components/Portrait';
 import { Screen, Icon, Furi, Audio, SpeakBtn, Bar, useS, Empty } from '../components/ui';
 
 type Card =
@@ -66,7 +67,7 @@ function Intro({ l }: { l: L }) {
     <>
       {g && (
         <div className="card row" style={{ alignItems: 'flex-start' }}>
-          <Badge id={g.id} size={48} />
+          <Portrait id={g.id} size={92} shape="card" />
           <div className="grow col" style={{ gap: 4 }}>
             <span className="label">Your guide · {g.series}</span>
             <b>{g.name}</b>

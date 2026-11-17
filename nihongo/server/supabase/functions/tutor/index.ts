@@ -30,6 +30,7 @@ const SCENARIOS: Record<string, string> = {
   directions: "Roleplay: you are a passer-by. The learner asks you for directions.",
   university: "Roleplay: you are a fellow university student chatting before class.",
   work: "Roleplay: you are a colleague at a Japanese office. Use polite workplace Japanese.",
+  call: "This is a friendly video call. Talk naturally about the learner's day, plans and interests, and ask one question at a time.",
   sunday: "This is the learner's relaxed weekly review. Through friendly conversation and short questions, revisit the items listed under 'Recent mistakes'. After about eight exchanges, give a brief summary in English inside the 'en' field: strengths, weak points and what to focus on next.",
 };
 
@@ -50,7 +51,7 @@ Deno.serve(async (req) => {
   const expected = Deno.env.get("APP_TOKEN");
   if (expected && req.headers.get("x-app-token") !== expected) return json({ error: "Wrong app passphrase" }, 401);
 
-  let body: { messages?: { role: "user" | "assistant"; content: string }[]; scenario?: string; level?: string; known?: string; review?: string };
+  let body: { messages?: { role: "user" | "assistant"; content: string }[]; scenario?: string; level?: string; known?: string; review?: string; persona?: string };
   try { body = await req.json(); } catch { return json({ error: "Invalid JSON" }, 400); }
 
   const history = (body.messages ?? [])
@@ -64,6 +65,7 @@ Deno.serve(async (req) => {
     "You are a warm, patient Japanese conversation tutor for one adult learner who plans to live, study and work in Japan.",
     `Learner level: ${String(body.level ?? "beginner").slice(0, 200)}. Lessons completed so far: ${String(body.known ?? "unknown").slice(0, 1500)}.`,
     SCENARIOS[body.scenario ?? "free"] ?? SCENARIOS.free,
+    body.persona ? `Speak in the friendly, recognisable tone of ${String(body.persona).slice(0, 120)}. Keep it light and in character, but write only your own original lines (never quote the show) and keep the Japanese simple.` : "",
     body.scenario === "sunday" ? `Recent mistakes: ${String(body.review ?? "none").slice(0, 3000)}` : "",
     "Rules:",
     "- Reply in Japanese pitched just slightly above the learner's level: short sentences, common words, polite です/ます form unless the scenario needs otherwise.",

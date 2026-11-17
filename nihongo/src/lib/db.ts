@@ -14,6 +14,7 @@ export interface Answer { id?: number; ts: number; day: string; skill: string; i
 export interface Note { id: string; title: string; folder: string; body: string; paper: 'lined' | 'grid'; created: number; updated: number; drawing?: string }
 export interface DayLog { day: string; seconds: number; xp: number }
 export interface KV { key: string; value: unknown }
+export interface PortraitRec { id: string; data?: string; url?: string; fetched?: number; custom?: Partial<Record<'teach' | 'happy' | 'oops', string>> }
 export interface Correction { id?: number; ts: number; said: string; better: string; why: string; source: string }
 
 class DB extends Dexie {
@@ -24,6 +25,7 @@ class DB extends Dexie {
   notes!: Table<Note, string>;
   days!: Table<DayLog, string>;
   corrections!: Table<Correction, number>;
+  portraits!: Table<PortraitRec, string>;
   constructor() {
     super('nihongo');
     this.version(1).stores({
@@ -35,6 +37,7 @@ class DB extends Dexie {
       days: 'day',
       corrections: '++id, ts',
     });
+    this.version(2).stores({ portraits: 'id' });
   }
 }
 export const db = new DB();

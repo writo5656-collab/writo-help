@@ -6,6 +6,7 @@ import type { Story } from '../content/stories';
 import { parseFuri } from '../lib/jp';
 import { speak } from '../services/tts';
 import { Furi, Icon, useS } from './ui';
+import { Portrait } from './Portrait';
 
 export function Badge({ id, size = 40 }: { id: string; size?: number }) {
   const c = CAST[id];
@@ -37,7 +38,7 @@ export function MangaPage({ story }: { story: Story }) {
             <button key={i} className={`panel ${p.size ?? 'normal'} tone-${i % 3} ${p.mood ?? ''}`} onClick={() => speak(parseFuri(p.f).jp, { rate: s.rate })} aria-label={`${nameOf(p.who)} says: ${parseFuri(p.f).jp}`}>
               {p.mood === 'oops' && <span className="fx" lang="ja">！？</span>}
               {p.mood === 'fix' && <span className="fx fix" lang="ja">ビシッ</span>}
-              <span className="who"><Badge id={p.who} size={34} /><span className="tiny" style={{ fontWeight: 700 }}>{c ? c.name.split(' ')[0] : nameOf(p.who)}</span></span>
+              <span className="who">{c ? <Portrait id={p.who} mood={p.mood === 'oops' ? 'oops' : p.mood === 'ok' && c.role === 'guide' ? 'happy' : 'teach'} size={i === 0 ? 72 : 56} shape="card" fx={false} /> : <Badge id={p.who} size={40} />}<span className="tiny" style={{ fontWeight: 700 }}>{c ? c.name.split(' ')[0] : nameOf(p.who)}</span></span>
               <span className="bubble-m"><Furi f={p.f} className="jp-m" romaji={false} />{en && <span className="tiny muted" style={{ display: 'block', writingMode: 'horizontal-tb' }}>{p.en}</span>}</span>
             </button>
           );

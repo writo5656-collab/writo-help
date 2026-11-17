@@ -6,6 +6,7 @@ import { getKV } from '../lib/db';
 import { speak, ttsAvailable } from '../services/tts';
 import { setReminder, remindersSupported } from '../services/notify';
 import { tutorReply } from '../services/ai';
+import { Link } from 'react-router-dom';
 import { Screen, Switch, Icon, useS, fmtDate, Wip } from '../components/ui';
 
 function Row({ title, sub, children }: { title: string; sub?: string; children: React.ReactNode }) {
@@ -35,6 +36,8 @@ export default function Settings() {
       <h2>Profile</h2>
       <section className="card flat"><label className="label" htmlFor="nm">Name</label><input id="nm" className="field mt" defaultValue={s.name} onBlur={e => set({ name: e.target.value.trim() })} placeholder="Your name" /></section>
 
+      <Link to="/characters" className="card row"><span className="tile sakura"><Icon n="star" /></span><div className="grow"><h3>Characters</h3><p className="small muted">Pictures, reaction pictures and voices</p></div><Icon n="next" /></Link>
+
       <h2>Display</h2>
       <section className="card flat list" style={{ padding: '2px 16px' }}>
         <Row title="Furigana" sub="Kana reading above kanji"><Switch on={s.showFurigana} onChange={v => set({ showFurigana: v })} label="Furigana" /></Row>
@@ -49,6 +52,7 @@ export default function Settings() {
       <h2>Audio</h2>
       <section className="card flat list" style={{ padding: '2px 16px' }}>
         <Row title="Sound effects" sub="Chimes, key clicks and page sounds"><Switch on={s.sfx} onChange={v => set({ sfx: v })} label="Sound effects" /></Row>
+        <Row title="Character voices" sub="Teachers and mistake-makers react out loud in Japanese"><Switch on={s.charVoices} onChange={v => set({ charVoices: v })} label="Character voices" /></Row>
         <Row title="Say kana as you type" sub="The in-app keyboard reads each letter aloud"><Switch on={s.speakKeys} onChange={v => set({ speakKeys: v })} label="Say kana as you type" /></Row>
         <Row title="Autoplay new sentences" sub="Hear each sentence when it first appears"><Switch on={s.autoplay} onChange={v => set({ autoplay: v })} label="Autoplay" /></Row>
         <div className="li" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 8 }}>

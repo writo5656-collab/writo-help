@@ -57,7 +57,7 @@ Run `npm test` afterwards: it checks every sentence has a clean reading and acce
 - **JLPT vocabulary (N5–N1, 8,034 words):** [open-anki-jlpt-decks](https://github.com/jamsinclair/open-anki-jlpt-decks) (MIT), from Jonathan Waller's JLPT lists; meanings from JMdict © EDRDG, CC BY-SA 4.0.
 - **Kanji (N5–N1, 2,211):** [kanji-data](https://github.com/davidluzgouveia/kanji-data) (MIT), KANJIDIC fields only, © EDRDG, CC BY-SA 4.0.
 - **Stroke order:** [KanjiVG](https://kanjivg.tagaini.net) © Ulrich Apel, CC BY-SA 3.0.
-- **Anime characters:** names only, used as a personal study aid. No official artwork, dialogue or manga pages are included; all lines and story pages are original.
+- **Anime characters:** used as a personal study aid. Their pictures are not stored in this project: the app downloads each one from [AniList](https://anilist.co) on your phone (extra pictures from MyAnimeList via the Jikan API), and you can replace any of them with your own. All lines and story pages are original.
 
 Rebuild the data with `node scripts/build-library.mjs` and `node scripts/fetch-strokes.mjs "$(cat src/content/library/kanji-chars.txt)"`.
 
@@ -68,7 +68,7 @@ Working: onboarding and placement check, kana (hiragana and katakana), 104 N5 ka
 Not finished — labelled inside the app too:
 
 - **N3, N2, N1 lessons are not written**, and N4 lessons are only started. Every N4–N1 word and kanji is in the Library with practice and review.
-- **AI tutor** needs you to deploy the proxy in `server/` with your own API key. The proxy has not been tested against a live key.
+- **AI tutor / video call:** calls work offline using the roleplay scripts. Free conversation needs the proxy in `server/` deployed with your own API key; it has not been tested against a live key.
 - **Handwriting** traces a stroke-order guide and counts strokes, but cannot judge stroke shape.
 - **Scenes and manga pages** are drawn by the app (signs, panels, speech bubbles). There are no photographs or real manga pages.
 - **Speech**: pronunciation is checked only by whether the phone's recogniser understood you. It is not a pronunciation score.

@@ -6,6 +6,9 @@ import { App as NativeApp } from '@capacitor/app';
 import { useSettings } from './lib/settings';
 import { addSeconds } from './lib/db';
 import { setSfx } from './services/sfx';
+import { syncPortraits } from './services/portraits';
+import { Characters } from './screens/Characters';
+import Call from './screens/Call';
 import { SettingsCtx, Icon } from './components/ui';
 import Onboarding from './screens/Onboarding';
 import Home from './screens/Home';
@@ -71,6 +74,8 @@ export default function App() {
   }, []);
   useEffect(() => { if (s) document.documentElement.style.setProperty('--scale', String(s.textScale)); }, [s?.textScale]); // eslint-disable-line
   useEffect(() => { if (s) setSfx(s.sfx); }, [s?.sfx]); // eslint-disable-line
+  // Download character pictures in the background (once, then monthly).
+  useEffect(() => { if (s?.onboarded && s.pictures) { const t = setTimeout(() => void syncPortraits(), 1500); return () => clearTimeout(t); } }, [s?.onboarded, s?.pictures]);
   if (!s) return null;
   return (
     <SettingsCtx.Provider value={s}>
@@ -99,6 +104,8 @@ export default function App() {
                 <Route path="/tutor" element={<Tutor />} />
                 <Route path="/progress" element={<Progress />} />
                 <Route path="/settings" element={<Settings />} />
+                <Route path="/characters" element={<Characters />} />
+                <Route path="/call" element={<Call />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
               <Tabs />

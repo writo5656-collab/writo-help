@@ -4,7 +4,7 @@ import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
 import { db, dayKey } from './db';
 
-const TABLES = ['kv', 'items', 'mistakes', 'answers', 'notes', 'days', 'corrections'] as const;
+const TABLES = ['kv', 'items', 'mistakes', 'answers', 'notes', 'days', 'corrections', 'portraits'] as const;
 
 export async function exportData(): Promise<string> {
   const data: Record<string, unknown> = { app: 'nihongo', version: 1, exported: new Date().toISOString() };

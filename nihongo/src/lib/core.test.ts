@@ -151,3 +151,13 @@ describe('cast and stories', () => {
     expect(lessonAfter('p-01')?.id).toBe('p-02');
   });
 });
+
+describe('character pictures and voices', () => {
+  it('every character has an AniList picture link and spoken reactions', () => {
+    for (const c of Object.values(CAST)) {
+      expect(c.al?.[0], c.id).toBeGreaterThan(0);
+      expect(c.al?.[1], c.id).toMatch(/^https:\/\/s4\.anilist\.co\//);
+      expect(c.say?.length, c.id).toBeGreaterThan(0);
+    }
+  });
+});

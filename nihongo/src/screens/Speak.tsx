@@ -14,12 +14,19 @@ import { PaperInput } from '../components/Paper';
 import { KanaKeyboard } from '../components/Keyboard';
 import { saveSettings } from '../lib/settings';
 import { Screen, Icon, Furi, Wip, Mascot, useS, useAsync, fmtDate } from '../components/ui';
+import { Portrait } from '../components/Portrait';
+import { dailyCast, CAST } from '../content/cast';
 
 export function Speak() {
   const ai = useAsync(aiConfigured, []);
   const corrections = useLiveQuery(() => db.corrections.orderBy('ts').reverse().limit(6).toArray(), []) ?? [];
   return (
     <Screen title="Speak" tabs>
+      <Link to="/call" className="card row" style={{ background: 'linear-gradient(135deg, #1f4d3a, #2c6a50)', color: 'var(--cream)', borderColor: 'transparent' }}>
+        <Portrait id={dailyCast().guide} size={66} />
+        <div className="grow"><h3>Video call a teacher</h3><p className="small" style={{ opacity: .8 }}>Talk out loud with {CAST[dailyCast().guide].name} or any other teacher. She answers in Japanese.</p></div>
+        <Icon n="mic" />
+      </Link>
       <Link to="/tutor" className="card green row">
         <Mascot size={58} mood="cheer" />
         <div className="grow"><h3>AI conversation tutor</h3><p className="small muted">{ai ? 'Free conversation with gentle corrections' : 'Not set up yet — tap to see how'}</p></div><Icon n="next" />
@@ -27,10 +34,10 @@ export function Speak() {
       <h2 className="mt">Roleplay situations</h2>
       <p className="small muted">Guided conversations that work offline. Answer by typing or speaking.</p>
       {ROLEPLAYS.map(r => (
-        <Link key={r.id} to={`/roleplay/${r.id}`} className="card row">
+        <div key={r.id} className="row gap-s"><Link to={`/roleplay/${r.id}`} className="card row grow">
           <span className="tile sakura"><Icon n="chat" /></span>
           <div className="grow"><h3>{r.title}</h3><p className="small muted">{r.place} · you are the {r.you.toLowerCase()}</p></div><Icon n="next" s={18} />
-        </Link>
+        </Link><Link to={`/call?rp=${r.id}`} className="iconbtn soft" aria-label={`Call: ${r.title}`} style={{ alignSelf: 'center' }}><Icon n="mic" /></Link></div>
       ))}
       <Link to="/session?m=drill&type=speaking" className="card row"><span className="tile"><Icon n="mic" /></span><div className="grow"><h3>Read aloud</h3><p className="small muted">Say sentences from your lessons</p></div><Icon n="next" s={18} /></Link>
       {corrections.length > 0 && <>

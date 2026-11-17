@@ -1,8 +1,8 @@
 // The cast: characters from anime the learner loves, used as a personal,
 // non-commercial study aid. Female characters teach and cheer; male
 // characters make the common mistakes so you can learn from them.
-// Only names and original lines are used — no official artwork, dialogue or
-// manga pages. Avatars are simple badges, not drawings of the characters.
+// Pictures are not bundled: the app downloads each character's AniList picture
+// on the device (or uses one you pick yourself). All lines are original.
 export interface Character {
   id: string; name: string; jp: string; series: string;
   role: 'guide' | 'goof';
@@ -10,70 +10,72 @@ export interface Character {
   polite: boolean;                  // speaks in です/ます form
   cheers: [string, string][];       // [Japanese, English] when you get it right
   oops: string[];                   // goofs: what they say when you slip (English)
+  al?: [number, string];            // AniList character id and picture (downloaded at runtime, never bundled)
+  say?: string[];                   // short spoken reactions in Japanese
 }
 
 const C = (c: Character) => c;
 export const CAST: Record<string, Character> = Object.fromEntries([
   // ---- Rascal Does Not Dream of Bunny Girl Senpai
   C({ id: 'mai', name: 'Mai Sakurajima', jp: '桜島麻衣', series: 'Bunny Girl Senpai', role: 'guide', color: '#5b4a8b', mark: '麻', polite: false,
-    cheers: [['よくできました。', 'Well done.'], ['ふふ、合格。', 'Heh. You pass.'], ['その調子。', 'Keep it up.']], oops: [] }),
+    cheers: [['よくできました。', 'Well done.'], ['ふふ、合格。', 'Heh. You pass.'], ['その調子。', 'Keep it up.']], oops: [], al: [127222, 'https://s4.anilist.co/file/anilistcdn/character/large/b127222-Jh5hhP7vZ7s1.png'], say: ["やった！", "すごい！", "いいね！", "完璧！", "ナイス！"] }),
   C({ id: 'rio', name: 'Rio Futaba', jp: '双葉理央', series: 'Bunny Girl Senpai', role: 'guide', color: '#3d6f8e', mark: '理', polite: false,
-    cheers: [['論理的に正しい。', 'Logically correct.'], ['仮説どおりだね。', 'Just as the hypothesis said.']], oops: [] }),
+    cheers: [['論理的に正しい。', 'Logically correct.'], ['仮説どおりだね。', 'Just as the hypothesis said.']], oops: [], al: [127633, 'https://s4.anilist.co/file/anilistcdn/character/large/b127633-FcCwWK5sQRhK.png'], say: ["やった！", "すごい！", "いいね！", "完璧！", "ナイス！"] }),
   C({ id: 'tomoe', name: 'Tomoe Koga', jp: '古賀朋絵', series: 'Bunny Girl Senpai', role: 'guide', color: '#d77b5e', mark: '朋', polite: false,
-    cheers: [['やったー！', 'Yay!'], ['すごいじゃん！', 'That\'s amazing!']], oops: [] }),
+    cheers: [['やったー！', 'Yay!'], ['すごいじゃん！', 'That\'s amazing!']], oops: [], al: [127840, 'https://s4.anilist.co/file/anilistcdn/character/large/b127840-z2LUox2R2Ivg.jpg'], say: ["やった！", "すごい！", "いいね！", "完璧！", "ナイス！"] }),
   C({ id: 'sakuta', name: 'Sakuta Azusagawa', jp: '梓川咲太', series: 'Bunny Girl Senpai', role: 'goof', color: '#4a5560', mark: '咲', polite: false, cheers: [],
-    oops: ['I said it the same way, and Mai-san just sighed at me. Let\'s look at it again.', 'Yeah, I fell for that one too. Here\'s the fix.'] }),
+    oops: ['I said it the same way, and Mai-san just sighed at me. Let\'s look at it again.', 'Yeah, I fell for that one too. Here\'s the fix.'], al: [127221, 'https://s4.anilist.co/file/anilistcdn/character/large/n127221-Wxg4xFtW4kaJ.png'], say: ["しまった！", "あれ？", "うわっ！", "ごめん！", "くっ…"] }),
   // ---- The Angel Next Door Spoils Me Rotten
   C({ id: 'mahiru', name: 'Mahiru Shiina', jp: '椎名真昼', series: 'The Angel Next Door', role: 'guide', color: '#b8925a', mark: '昼', polite: true,
-    cheers: [['よくできましたね。', 'You did well.'], ['完璧です。', 'Perfect.'], ['えらいですね。', 'Good job.']], oops: [] }),
+    cheers: [['よくできましたね。', 'You did well.'], ['完璧です。', 'Perfect.'], ['えらいですね。', 'Good job.']], oops: [], al: [195602, 'https://s4.anilist.co/file/anilistcdn/character/large/b195602-Cc0vrUDl7r15.png'], say: ["すごいです！", "よくできました！", "完璧です！", "さすがです！"] }),
   C({ id: 'amane', name: 'Amane Fujimiya', jp: '藤宮周', series: 'The Angel Next Door', role: 'goof', color: '#5d6b77', mark: '周', polite: false, cheers: [],
-    oops: ['I got that wrong too, and Shiina corrected me without even looking up. Here\'s what she said.', 'Same mistake I made. Not a big deal — check the model and try again.'] }),
+    oops: ['I got that wrong too, and Shiina corrected me without even looking up. Here\'s what she said.', 'Same mistake I made. Not a big deal — check the model and try again.'], al: [195601, 'https://s4.anilist.co/file/anilistcdn/character/large/b195601-rDhWj5yC1BAe.png'], say: ["しまった！", "あれ？", "うわっ！", "ごめん！", "くっ…"] }),
   // ---- Horimiya
   C({ id: 'hori', name: 'Kyouko Hori', jp: '堀京子', series: 'Horimiya', role: 'guide', color: '#c0605a', mark: '堀', polite: false,
-    cheers: [['いいじゃん！', 'Nice!'], ['ばっちり！', 'Spot on!']], oops: [] }),
+    cheers: [['いいじゃん！', 'Nice!'], ['ばっちり！', 'Spot on!']], oops: [], al: [66171, 'https://s4.anilist.co/file/anilistcdn/character/large/b66171-o2vk3689wWFK.png'], say: ["やった！", "すごい！", "いいね！", "完璧！", "ナイス！"] }),
   C({ id: 'miyamura', name: 'Izumi Miyamura', jp: '宮村伊澄', series: 'Horimiya', role: 'goof', color: '#3b4250', mark: '宮', polite: false, cheers: [],
-    oops: ['I mixed that up too, and Hori-san laughed at me. Here\'s the right way.', 'That one gets me every time. Let\'s look at it together.'] }),
+    oops: ['I mixed that up too, and Hori-san laughed at me. Here\'s the right way.', 'That one gets me every time. Let\'s look at it together.'], al: [66173, 'https://s4.anilist.co/file/anilistcdn/character/large/b66173-g8eU1LGWPB8O.png'], say: ["しまった！", "あれ？", "うわっ！", "ごめん！", "くっ…"] }),
   // ---- The Fragrant Flower Blooms with Dignity
   C({ id: 'kaoruko', name: 'Kaoruko Waguri', jp: '和栗薫子', series: 'The Fragrant Flower Blooms with Dignity', role: 'guide', color: '#c77a94', mark: '薫', polite: true,
-    cheers: [['すごいです！', 'That\'s great!'], ['ケーキみたいに完璧です！', 'Perfect, like a cake!']], oops: [] }),
+    cheers: [['すごいです！', 'That\'s great!'], ['ケーキみたいに完璧です！', 'Perfect, like a cake!']], oops: [], al: [268676, 'https://s4.anilist.co/file/anilistcdn/character/large/b268676-aQmqvqj0DNoJ.png'], say: ["すごいです！", "よくできました！", "完璧です！", "さすがです！"] }),
   C({ id: 'rintaro', name: 'Rintaro Tsumugi', jp: '紬凛太郎', series: 'The Fragrant Flower Blooms with Dignity', role: 'goof', color: '#4b5b4e', mark: '凛', polite: false, cheers: [],
-    oops: ['I made that exact mistake. Waguri-san didn\'t laugh, she just explained it. Here it is.', 'Looks scarier than it is. Read the fix, then go again.'] }),
+    oops: ['I made that exact mistake. Waguri-san didn\'t laugh, she just explained it. Here it is.', 'Looks scarier than it is. Read the fix, then go again.'], al: [268677, 'https://s4.anilist.co/file/anilistcdn/character/large/b268677-APMPGH67QqPr.jpg'], say: ["しまった！", "あれ？", "うわっ！", "ごめん！", "くっ…"] }),
   // ---- Alya Sometimes Hides Her Feelings in Russian
   C({ id: 'alya', name: 'Alya Kujou', jp: '九条アリサ', series: 'Alya Sometimes Hides Her Feelings in Russian', role: 'guide', color: '#7d9bb8', mark: 'ア', polite: false,
-    cheers: [['当然ね。', 'Naturally.'], ['…まあ、悪くないわ。', '…Well, not bad.']], oops: [] }),
+    cheers: [['当然ね。', 'Naturally.'], ['…まあ、悪くないわ。', '…Well, not bad.']], oops: [], al: [217334, 'https://s4.anilist.co/file/anilistcdn/character/large/b217334-buImnwO26SgS.jpg'], say: ["…まあね。", "当然よ。", "悪くないわ。"] }),
   C({ id: 'yuki', name: 'Yuki Suou', jp: '周防有希', series: 'Alya Sometimes Hides Her Feelings in Russian', role: 'guide', color: '#4d6a8a', mark: '有', polite: true,
-    cheers: [['お見事です。', 'Splendid.'], ['さすがですね。', 'As expected of you.']], oops: [] }),
+    cheers: [['お見事です。', 'Splendid.'], ['さすがですね。', 'As expected of you.']], oops: [], al: [243404, 'https://s4.anilist.co/file/anilistcdn/character/large/b243404-X1fmwpqHPdyb.jpg'], say: ["すごいです！", "よくできました！", "完璧です！", "さすがです！"] }),
   C({ id: 'masha', name: 'Masha Kujou', jp: '九条マリヤ', series: 'Alya Sometimes Hides Her Feelings in Russian', role: 'guide', color: '#c89a5e', mark: 'マ', polite: false,
-    cheers: [['えらいえらい！', 'Good job, good job!'], ['すてき！', 'Lovely!']], oops: [] }),
+    cheers: [['えらいえらい！', 'Good job, good job!'], ['すてき！', 'Lovely!']], oops: [], al: [291294, 'https://s4.anilist.co/file/anilistcdn/character/large/b291294-dlnliQB6b8YS.jpg'], say: ["やった！", "すごい！", "いいね！", "完璧！", "ナイス！"] }),
   C({ id: 'masachika', name: 'Masachika Kuze', jp: '久世政近', series: 'Alya Sometimes Hides Her Feelings in Russian', role: 'goof', color: '#505a66', mark: '政', polite: false, cheers: [],
-    oops: ['Yep, I tried that too and Alya gave me a very cold look. Here\'s the version she accepted.', 'Classic slip. I\'ll pretend I didn\'t see it — check the fix.'] }),
+    oops: ['Yep, I tried that too and Alya gave me a very cold look. Here\'s the version she accepted.', 'Classic slip. I\'ll pretend I didn\'t see it — check the fix.'], al: [217335, 'https://s4.anilist.co/file/anilistcdn/character/large/b217335-PXJgLsemVaQZ.jpg'], say: ["しまった！", "あれ？", "うわっ！", "ごめん！", "くっ…"] }),
   // ---- Blue Box
   C({ id: 'chinatsu', name: 'Chinatsu Kano', jp: '鹿野千夏', series: 'Blue Box', role: 'guide', color: '#3f7fb5', mark: '千', polite: false,
-    cheers: [['ナイス！', 'Nice shot!'], ['いいね、その調子！', 'Good, keep that pace!']], oops: [] }),
+    cheers: [['ナイス！', 'Nice shot!'], ['いいね、その調子！', 'Good, keep that pace!']], oops: [], al: [191241, 'https://s4.anilist.co/file/anilistcdn/character/large/b191241-FaDEXRL1CgJr.png'], say: ["やった！", "すごい！", "いいね！", "完璧！", "ナイス！"] }),
   C({ id: 'hina', name: 'Hina Chono', jp: '蝶野雛', series: 'Blue Box', role: 'guide', color: '#d36b8f', mark: '雛', polite: false,
-    cheers: [['やるじゃん！', 'Not bad at all!'], ['完璧な演技！', 'A perfect routine!']], oops: [] }),
+    cheers: [['やるじゃん！', 'Not bad at all!'], ['完璧な演技！', 'A perfect routine!']], oops: [], al: [218648, 'https://s4.anilist.co/file/anilistcdn/character/large/b218648-kXxXy8lPkeGV.png'], say: ["やった！", "すごい！", "いいね！", "完璧！", "ナイス！"] }),
   C({ id: 'taiki', name: 'Taiki Inomata', jp: '猪股大喜', series: 'Blue Box', role: 'goof', color: '#4c6a52', mark: '大', polite: false, cheers: [],
-    oops: ['Missed it — me too! Practice is just reps. Here\'s the right form.', 'I lost a point on that exact one. Let\'s fix it and go again!'] }),
+    oops: ['Missed it — me too! Practice is just reps. Here\'s the right form.', 'I lost a point on that exact one. Let\'s fix it and go again!'], al: [191242, 'https://s4.anilist.co/file/anilistcdn/character/large/b191242-uQJUPMyknaTb.png'], say: ["しまった！", "あれ？", "うわっ！", "ごめん！", "くっ…"] }),
   // ---- My Dress-Up Darling
   C({ id: 'marin', name: 'Marin Kitagawa', jp: '喜多川海夢', series: 'My Dress-Up Darling', role: 'guide', color: '#e0719a', mark: '海', polite: false,
-    cheers: [['ヤバい、天才じゃん！', 'Whoa, you\'re a genius!'], ['めっちゃいい！', 'Super good!']], oops: [] }),
+    cheers: [['ヤバい、天才じゃん！', 'Whoa, you\'re a genius!'], ['めっちゃいい！', 'Super good!']], oops: [], al: [133676, 'https://s4.anilist.co/file/anilistcdn/character/large/b133676-kV2czE3C8Qls.png'], say: ["ヤバい！", "すご！", "天才じゃん！"] }),
   C({ id: 'juju', name: 'Juju Inui', jp: '乾紗寿叶', series: 'My Dress-Up Darling', role: 'guide', color: '#8b6fb3', mark: '紗', polite: false,
-    cheers: [['ふん、合格よ。', 'Hmph. You pass.'], ['まあまあね。', 'Not too bad.']], oops: [] }),
+    cheers: [['ふん、合格よ。', 'Hmph. You pass.'], ['まあまあね。', 'Not too bad.']], oops: [], al: [133677, 'https://s4.anilist.co/file/anilistcdn/character/large/b133677-PqshvUeVFB7u.jpg'], say: ["やった！", "すごい！", "いいね！", "完璧！", "ナイス！"] }),
   C({ id: 'gojo', name: 'Wakana Gojo', jp: '五条新菜', series: 'My Dress-Up Darling', role: 'goof', color: '#5a5f6b', mark: '新', polite: true, cheers: [],
-    oops: ['I made the same mistake… sorry! Here is the correct version.', 'Like a costume: one wrong stitch and it shows. Let\'s redo that part.'] }),
+    oops: ['I made the same mistake… sorry! Here is the correct version.', 'Like a costume: one wrong stitch and it shows. Let\'s redo that part.'], al: [133678, 'https://s4.anilist.co/file/anilistcdn/character/large/b133678-IitCgjDxQGgu.png'], say: ["しまった…", "あれ？", "すみません！"] }),
   // ---- Naruto
   C({ id: 'sakura', name: 'Sakura Haruno', jp: '春野サクラ', series: 'Naruto', role: 'guide', color: '#d9849b', mark: '桜', polite: false,
-    cheers: [['しゃーんなろー！', 'Cha!'], ['やるじゃない！', 'Not bad!']], oops: [] }),
+    cheers: [['しゃーんなろー！', 'Cha!'], ['やるじゃない！', 'Not bad!']], oops: [], al: [145, 'https://s4.anilist.co/file/anilistcdn/character/large/b145-IorfpI8arxeX.png'], say: ["しゃーんなろー！", "やった！", "すごい！"] }),
   C({ id: 'hinata', name: 'Hinata Hyuga', jp: '日向ヒナタ', series: 'Naruto', role: 'guide', color: '#6c63a8', mark: '日', polite: true,
-    cheers: [['す、すごいです…！', 'A-amazing…!'], ['がんばりましたね。', 'You worked hard.']], oops: [] }),
+    cheers: [['す、すごいです…！', 'A-amazing…!'], ['がんばりましたね。', 'You worked hard.']], oops: [], al: [1555, 'https://s4.anilist.co/file/anilistcdn/character/large/b1555-Q41GLTV3FvYF.png'], say: ["す、すごいです…！", "やりましたね！"] }),
   C({ id: 'tsunade', name: 'Tsunade', jp: '綱手', series: 'Naruto', role: 'guide', color: '#4f8a5b', mark: '綱', polite: false,
-    cheers: [['合格だ。', 'Passed.'], ['いい腕だな。', 'Good skill.']], oops: [] }),
+    cheers: [['合格だ。', 'Passed.'], ['いい腕だな。', 'Good skill.']], oops: [], al: [2767, 'https://s4.anilist.co/file/anilistcdn/character/large/b2767-r61Cj9v8I0wl.png'], say: ["よし！", "合格だ！", "いいぞ！"] }),
   C({ id: 'ino', name: 'Ino Yamanaka', jp: '山中いの', series: 'Naruto', role: 'guide', color: '#c9a83c', mark: 'い', polite: false,
-    cheers: [['さすがね！', 'As expected!'], ['かんぺき！', 'Perfect!']], oops: [] }),
+    cheers: [['さすがね！', 'As expected!'], ['かんぺき！', 'Perfect!']], oops: [], al: [2009, 'https://s4.anilist.co/file/anilistcdn/character/large/b2009-H7n38Ns1fr0Y.jpg'], say: ["やった！", "すごい！", "いいね！", "完璧！", "ナイス！"] }),
   C({ id: 'naruto', name: 'Naruto Uzumaki', jp: 'うずまきナルト', series: 'Naruto', role: 'goof', color: '#e08a2e', mark: 'ナ', polite: false, cheers: [],
-    oops: ['I wrote it like that too, dattebayo! Sakura-chan made me copy it ten times. Here\'s the right way!', 'Never give up — that\'s my ninja way! Check the fix and try again!', 'I mess this up all the time. Let\'s get it together!'] }),
+    oops: ['I wrote it like that too, dattebayo! Sakura-chan made me copy it ten times. Here\'s the right way!', 'Never give up — that\'s my ninja way! Check the fix and try again!', 'I mess this up all the time. Let\'s get it together!'], al: [17, 'https://s4.anilist.co/file/anilistcdn/character/large/b17-phjcWCkRuIhu.png'], say: ["しまったってばよ！", "あれ？", "くっそー！"] }),
   C({ id: 'lee', name: 'Rock Lee', jp: 'ロック・リー', series: 'Naruto', role: 'goof', color: '#3f8a4c', mark: 'リ', polite: true, cheers: [],
-    oops: ['A mistake is just training! I made it too. One hundred more repetitions!', 'Youth is about failing and rising again! Here is the correct form!'] }),
+    oops: ['A mistake is just training! I made it too. One hundred more repetitions!', 'Youth is about failing and rising again! Here is the correct form!'], al: [306, 'https://s4.anilist.co/file/anilistcdn/character/large/b306-oUTOO45xInXt.png'], say: ["まだまだ！", "くっ…！", "修行が足りない！"] }),
 ].map(c => [c.id, c]));
 
 /** Who guides each lesson, and who makes the mistakes in its story. */

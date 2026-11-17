@@ -5,7 +5,7 @@ import type { Ex } from '../lib/exercises';
 import { shuffle } from '../lib/exercises';
 import { checkSentence, checkWord, PARTICLE_INFO, type CheckResult } from '../lib/check';
 import { parseFuri, normalize, toKanaUsing, romajiOf } from '../lib/jp';
-import { speak } from '../services/tts';
+import { speak, speakSeq } from '../services/tts';
 import { listenOnce, sttAvailable } from '../services/stt';
 import { readingOf } from '../services/reading';
 import { Furi, Audio, Icon, useS, useAsync } from './ui';
@@ -14,12 +14,12 @@ import { KanaKeyboard } from './Keyboard';
 import { sfx } from '../services/sfx';
 import { saveSettings } from '../lib/settings';
 import { CAST } from '../content/cast';
-import { Badge } from './Manga';
+import { Portrait } from './Portrait';
 
 export interface Outcome { ok: boolean; hint: boolean; userAnswer: string; expected: string; explanation: string }
-interface Props { ex: Ex; onResult: (o: Outcome) => void; onNext: (requeue: boolean) => void; last: boolean; cast?: { guide: string; goof: string } }
+interface Props { ex: Ex; onResult: (o: Outcome) => void; onNext: (requeue: boolean, solved: boolean) => void; last: boolean; cast?: { guide: string; goof: string } }
 
-interface Fb { ok: boolean; title: string; notes: string[]; model?: string; diff?: CheckResult['diff']; heard?: string }
+interface Fb { ok: boolean; title: string; notes: string[]; model?: string; diff?: CheckResult['diff']; heard?: string; say?: string[] }
 
 export function Exercise({ ex, onResult, onNext, last, cast }: Props) {
   const s = useS();
@@ -30,37 +30,45 @@ export function Exercise({ ex, onResult, onNext, last, cast }: Props) {
   // A different line each time, picked once per answer.
   const pickLine = useMemo(() => Math.floor(Math.random() * 1000), [fb]);
 
+  const [burst, setBurst] = useState(0);
   const finish = (f: Fb, userAnswer: string, expected: string) => {
     setFb(f);
+    setBurst(b => b + 1);
     if (f.ok) sfx.correct(); else sfx.wrong();
     if (!f.ok) setEverWrong(true);
     onResult({ ok: f.ok, hint: hintRef.current, userAnswer, expected, explanation: f.notes.join(' ') });
-    if (f.model && s.autoplay && !f.ok) void speak(parseFuri(f.model).jp, { rate: s.rate });
+    // Spoken order: the answer you tapped, then the character's reaction, then the model answer if it was wrong.
+    const who = cast && CAST[f.ok ? cast.guide : cast.goof];
+    const seq: { text: string; rate?: number; pitch?: number }[] = (f.say ?? []).map(t => ({ text: t, rate: s.rate }));
+    if (who?.say && s.charVoices) seq.push({ text: who.say[Math.floor(Math.random() * who.say.length)], rate: 1.05, pitch: who.role === 'guide' ? 1.3 : 0.75 });
+    if (f.model && s.autoplay && !f.ok) seq.push({ text: parseFuri(f.model).jp, rate: s.rate });
+    if (seq.length) void speakSeq(seq);
   };
   const retry = () => { sfx.tap(); setFb(null); setAttempt(a => a + 1); };
+  const reactor = fb && cast ? CAST[fb.ok ? cast.guide : cast.goof] : undefined;
+  const reactLine = reactor?.say?.[pickLine % reactor.say.length];
 
   return (
     <div className="col gap-l grow" style={{ minHeight: 0 }}>
-      <Body key={attempt} ex={ex} locked={!!fb} fb={fb} onHint={() => { hintRef.current = true; }} finish={finish} />
+      <div key={`${attempt}-${burst}`} className={fb && !fb.ok ? 'shake' : ''}>
+        <Body key={attempt} ex={ex} locked={!!fb} fb={fb} onHint={() => { hintRef.current = true; }} finish={finish} />
+      </div>
+      {fb && <Reaction key={burst} ok={fb.ok} />}
       {fb && (
         <div className="dock">
           <div className={`feedback ${fb.ok ? 'ok' : 'bad'}`} role="status">
             <h3><Icon n={fb.ok ? 'check' : 'bulb'} s={20} />{fb.title}</h3>
-            {cast && (() => {
-              const c = CAST[fb.ok ? cast.guide : cast.goof]; if (!c) return null;
-              const line = fb.ok ? c.cheers[pickLine % c.cheers.length] : null;
-              const oops = !fb.ok ? c.oops[pickLine % c.oops.length] : null;
-              return (
-                <div className="castline">
-                  <Badge id={c.id} size={36} />
-                  <div className="say small">
-                    <b>{c.name}</b>
-                    {line && <div><span lang="ja" className="jp" style={{ fontWeight: 600 }}>{line[0]}</span> <span className="muted">{line[1]}</span></div>}
-                    {oops && <div>{oops}</div>}
-                  </div>
+            {reactor && (
+              <div className="castline" key={burst}>
+                <Portrait id={reactor.id} mood={fb.ok ? 'happy' : 'oops'} size={58} />
+                <div className="say small">
+                  <b>{reactor.name}</b>
+                  {reactLine && <div><span className="bub" lang="ja">{reactLine}</span></div>}
+                  {fb.ok ? <div className="muted">{reactor.cheers[pickLine % reactor.cheers.length]?.[1]}</div>
+                    : <div>{reactor.oops[pickLine % reactor.oops.length]}</div>}
                 </div>
-              );
-            })()}
+              </div>
+            )}
             {fb.heard !== undefined && <p className="small">I heard: <span lang="ja" className="jp">{fb.heard || '— nothing clear —'}</span></p>}
             {fb.model && (
               <div className="row between">
@@ -74,10 +82,15 @@ export function Exercise({ ex, onResult, onNext, last, cast }: Props) {
             {fb.notes.length > 0 && <ul>{fb.notes.map((n, i) => <li key={i}>{n}</li>)}</ul>}
             {fb.ok && everWrong && <p className="tiny muted">Nice recovery. Because you saw the answer first, this one will come back later to check it has stuck.</p>}
           </div>
-          <div className="row">
-            {!fb.ok && <button className="btn ghost" onClick={retry}><Icon n="retry" s={18} />Try again</button>}
-            <button className="btn" onClick={() => onNext(everWrong)}>{last && !everWrong ? 'Finish' : 'Continue'}<Icon n="next" s={18} /></button>
-          </div>
+          {fb.ok ? (
+            <button className="btn" onClick={() => onNext(everWrong, true)}>{last && !everWrong ? 'Finish' : 'Continue'}<Icon n="next" s={18} /></button>
+          ) : (
+            <div className="row">
+              <button className="btn line" onClick={() => onNext(true, false)}>Later</button>
+              <button className="btn" style={{ flex: 2 }} onClick={retry}><Icon n="retry" s={18} />Try again</button>
+            </div>
+          )}
+          {!fb.ok && <p className="tiny muted center">Not solved yet — it stays in this lesson until you get it right.</p>}
         </div>
       )}
     </div>
@@ -104,11 +117,8 @@ function Choice({ ex, locked, finish }: { ex: Extract<Ex, { t: 'choice' }>; lock
     setPicked(i);
     const ok = i === ex.a;
     // Say the answer out loud: the tapped Japanese option, then the right one if it was wrong.
-    void (async () => {
-      if (ex.jpOptions) { await speak(ex.options[i], { rate: s.rate }); if (!ok) { await new Promise(r => setTimeout(r, 350)); await speak(ex.options[ex.a], { rate: s.rate }); } }
-      else if (ex.say) await speak(ex.say, { rate: s.rate });
-    })();
-    finish({ ok, title: ok ? 'Correct' : `The answer is: ${ex.options[ex.a]}`, notes: [ex.why] }, ex.options[i], ex.options[ex.a]);
+    const say = ex.jpOptions ? (ok ? [ex.options[i]] : [ex.options[i], ex.options[ex.a]]) : ex.say ? [ex.say] : [];
+    finish({ ok, title: ok ? 'Correct' : `The answer is: ${ex.options[ex.a]}`, notes: [ex.why], say }, ex.options[i], ex.options[ex.a]);
   };
   const short = ex.options.every(o => o.length <= 6);
   return (
@@ -143,8 +153,7 @@ function Fill({ ex, locked, finish }: { ex: Extract<Ex, { t: 'fill' }>; locked: 
     if (locked) return;
     setPicked(i);
     const ok = i === ex.a;
-    void speak(p.jp, { rate: s.rate });
-    finish({ ok, title: ok ? 'Correct' : `It needs ${part}`, notes: [PARTICLE_INFO[part] ?? '', ...(ex.sent.note ? [ex.sent.note] : [])].filter(Boolean), model: ex.sent.f }, ex.options[i], part);
+    finish({ ok, title: ok ? 'Correct' : `It needs ${part}`, notes: [PARTICLE_INFO[part] ?? '', ...(ex.sent.note ? [ex.sent.note] : [])].filter(Boolean), model: ex.sent.f, say: ok ? [p.jp] : [] }, ex.options[i], part);
   };
   return (
     <div className="col gap-l">
@@ -178,8 +187,7 @@ function Arrange({ ex, locked, finish }: { ex: Extract<Ex, { t: 'arrange' }>; lo
   const check = () => {
     const built = order.map(i => p.chunks[i].jp).join('');
     const r = checkSentence(ex.sent, built);
-    void speak(p.jp, { rate: s.rate });
-    finish({ ok: r.ok, title: r.ok ? 'Correct' : 'Not quite — here is the natural order', notes: r.ok ? r.notes : ['Japanese usually puts the topic first and the verb at the very end.', ...(ex.sent.note ? [ex.sent.note] : [])], model: ex.sent.f }, built, p.jp);
+    finish({ say: r.ok ? [p.jp] : [], ok: r.ok, title: r.ok ? 'Correct' : 'Not quite — here is the natural order', notes: r.ok ? r.notes : ['Japanese usually puts the topic first and the verb at the very end.', ...(ex.sent.note ? [ex.sent.note] : [])], model: ex.sent.f }, built, p.jp);
   };
   return (
     <div className="col gap-l">
@@ -224,7 +232,7 @@ function Typing({ ex, locked, fb, onHint, finish }: { ex: Extract<Ex, { t: 'type
     }
     const r = checkSentence(ex.sent, value);
     const good = ex.t === 'copy' ? 'Copied correctly' : 'Correct — well written';
-    finish({ ok: r.ok, title: r.ok ? good : ex.t === 'copy' ? 'Almost — compare with the sentence' : 'Not quite. Here is the model answer', notes: r.notes, model: ex.sent.f, diff: r.diff }, value, parseFuri(ex.sent.f).jp);
+    finish({ say: r.ok ? [parseFuri(ex.sent.f).jp] : [], ok: r.ok, title: r.ok ? good : ex.t === 'copy' ? 'Almost — compare with the sentence' : 'Not quite. Here is the model answer', notes: r.notes, model: ex.sent.f, diff: r.diff }, value, parseFuri(ex.sent.f).jp);
   };
   const hint = () => { onHint(); sfx.tap(); setHints(h => h + 1); };
   const hintText = ex.t === 'listen' && hints === 1 ? `Meaning: ${ex.sent.en}` : p.chunks.slice(0, ex.t === 'listen' ? hints - 1 : hints).map(c => c.kana).join(' ') + (hints < p.chunks.length ? ' …' : '');
@@ -319,4 +327,18 @@ function similar(a: string, b: string): number {
   for (let j = 1; j <= b.length; j++) m[0][j] = j;
   for (let i = 1; i <= a.length; i++) for (let j = 1; j <= b.length; j++) m[i][j] = Math.min(m[i - 1][j] + 1, m[i][j - 1] + 1, m[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
   return 1 - m[a.length][b.length] / Math.max(a.length, b.length);
+}
+
+/** Full-screen motion graphics for an answer: petals and 正 for right, red flash and ✗ for wrong. */
+function Reaction({ ok }: { ok: boolean }) {
+  const s = useS();
+  const petals = useMemo(() => Array.from({ length: 14 }, () => ({ x: `${(Math.random() - 0.5) * 340}px`, y: `${-120 - Math.random() * 260}px`, r: `${Math.random() * 540 - 270}deg`, d: `${Math.random() * 0.15}s`, c: ['#f2b8c6', '#f6d36b', '#9ed3b0', '#f7a8a0'][Math.floor(Math.random() * 4)] })), []);
+  if (s.reducedMotion) return null;
+  return (
+    <div className={`react ${ok ? 'ok' : 'bad'}`} aria-hidden="true">
+      <div className="flash" />
+      <div className="stamp-big" lang="ja">{ok ? '正解！' : '惜しい！'}</div>
+      {ok && petals.map((p, i) => <i key={i} className="petal" style={{ ['--x' as string]: p.x, ['--y' as string]: p.y, ['--r' as string]: p.r, animationDelay: p.d, background: p.c }} />)}
+    </div>
+  );
 }

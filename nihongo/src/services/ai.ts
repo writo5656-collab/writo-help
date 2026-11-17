@@ -14,7 +14,7 @@ export interface TutorReply {
 
 export async function aiConfigured() { return !!(await loadSettings()).aiUrl.trim(); }
 
-export async function tutorReply(o: { messages: ChatMsg[]; scenario: string; level: string; known: string; review?: string }): Promise<TutorReply> {
+export async function tutorReply(o: { messages: ChatMsg[]; scenario: string; level: string; known: string; review?: string; persona?: string }): Promise<TutorReply> {
   const s = await loadSettings();
   if (!s.aiUrl.trim()) throw new Error('The AI tutor is not set up yet. Add your proxy URL in Settings.');
   const res = await fetch(s.aiUrl.trim(), {

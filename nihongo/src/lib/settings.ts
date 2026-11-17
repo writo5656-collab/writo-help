@@ -22,11 +22,13 @@ export interface Settings {
   keyboard: 'app' | 'phone'; // in-app kana keyboard, or the phone's own keyboard
   romajiInput: boolean;    // with the phone keyboard: convert romaji to kana
   speakKeys: boolean;      // say each kana aloud as you tap it
+  charVoices: boolean;     // characters react out loud in Japanese
+  pictures: boolean;       // download character pictures from AniList
 }
 export const DEFAULTS: Settings = {
   onboarded: false, name: '', level: 'zero', showFurigana: true, showRomaji: false, autoplay: true,
   rate: 1, textScale: 1, reducedMotion: false, showStreak: false, reminder: false, reminderTime: '19:30',
-  aiUrl: '', aiToken: '', paper: 'lined', sfx: true, keyboard: 'app', romajiInput: false, speakKeys: true,
+  aiUrl: '', aiToken: '', paper: 'lined', sfx: true, keyboard: 'app', romajiInput: false, speakKeys: true, charVoices: true, pictures: true,
 };
 
 export function useSettings(): Settings | undefined {

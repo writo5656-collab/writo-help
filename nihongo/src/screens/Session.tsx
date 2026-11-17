@@ -89,6 +89,7 @@ export default function Session() {
   const saw = useRef(new Set<string>());
   const [score, setScore] = useState(0);
   const [combo, setCombo] = useState(0);
+  const [banner, setBanner] = useState<{ n: number; k: number } | null>(null);
   const [secs, setSecs] = useState(0);
   useEffect(() => { const t = setInterval(() => setSecs(Math.round((Date.now() - start.current) / 1000)), 1000); return () => clearInterval(t); }, []);
   const start = useRef(Date.now());
@@ -116,7 +117,7 @@ export default function Session() {
     else return; // further wrong tries on the same question are not counted against you
     if (first) setTally(t => [...t, { skill: ex.skill, ok: o.ok, prompt: promptOf(ex) }]);
     setScore(x => x + (grade === 'good' ? 5 : grade === 'hard' ? 3 : grade === 'retry' ? 1 : 0) * (ex.tag === 'challenge' && first ? 2 : 1));
-    if (first) setCombo(c => { const n = o.ok ? c + 1 : 0; if (n > 0 && n % 5 === 0) setTimeout(sfx.streak, 350); return n; });
+    if (first) setCombo(c => { const n = o.ok ? c + 1 : 0; if (n > 0 && n % 5 === 0) { setTimeout(sfx.streak, 350); setBanner({ n, k: Date.now() }); } return n; });
     if (!o.ok) saw.current.add(ex.key);
     await recordAnswer({ itemId: ex.itemId, kind: ex.kind, skill: ex.skill, grade, lessonId: ex.lessonId });
     if (!o.ok) {
@@ -128,10 +129,15 @@ export default function Session() {
     }
   };
 
-  const onNext = async (requeue: boolean) => {
+  const onNext = async (requeue: boolean, solved = true) => {
     let len = queue.length;
-    // Missed questions come back once at the end of the session, without the answer on screen.
-    if (requeue && !ex.requeued) { setQueue([...queue, { ...fresh(ex), requeued: true }]); len++; }
+    // An unsolved question keeps coming back until you get it right; one solved
+    // only after a mistake comes back once more, without the answer on screen.
+    if (!solved || (requeue && !ex.requeued)) {
+      const at = Math.min(queue.length, idx + 1 + (solved ? queue.length : 3));
+      const next = [...queue]; next.splice(at, 0, { ...fresh(ex), requeued: true });
+      setQueue(next); len++;
+    }
     if (idx + 1 >= len) {
       if (m === 'lesson') { const d = await getKV<Record<string, number>>('doneLessons', {}); await setKV('doneLessons', { ...d, [q.get('id')!]: Date.now() }); }
       if (m === 'sunday') await finishSunday(tally);
@@ -150,9 +156,11 @@ export default function Session() {
         <div className="grow"><Bar pct={(idx / queue.length) * 100} /></div>
         <span className="small muted num">{idx + 1}/{queue.length}</span>
       </header>
+      {banner && <div key={banner.k} className="combo-banner" lang="ja" aria-live="polite">{banner.n}問連続！🔥</div>}
       <div className="hud" aria-label="Session score">
         <span className="pill"><Icon n="star" s={13} />{score}</span>
         <span key={combo} className={`pill ${combo >= 3 ? 'hot' : ''}`}><Icon n="flame" s={13} />{combo} in a row</span>
+        {queue.slice(idx).filter(x => x.requeued).length > 0 && <span className="pill" style={{ color: 'var(--bad)' }}><Icon n="retry" s={13} />{queue.slice(idx).filter(x => x.requeued).length} to fix</span>}
         <span className="grow" />
         <span className="pill"><Icon n="clock" s={13} />{Math.floor(secs / 60)}:{String(secs % 60).padStart(2, '0')}</span>
       </div>

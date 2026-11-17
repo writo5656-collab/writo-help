@@ -5,7 +5,11 @@ import { db, dayKey } from '../lib/db';
 import { trackProgress, streaks } from '../lib/plan';
 import { isKnown } from '../lib/srs';
 import { HIRA, KATA, KANJI, JLPT_LESSONS, PRACTICAL_LESSONS, kanaId, kanjiId, ROLEPLAYS } from '../content';
-import { Icon, Mascot, Ring, Bar, useS, fmtMin } from '../components/ui';
+import { Icon, Ring, Bar, useS, fmtMin } from '../components/ui';
+import { Portrait } from '../components/Portrait';
+import { dailyCast, CAST } from '../content/cast';
+import { useAsync, SpeakBtn } from '../components/ui';
+import { loadLibrary } from '../content/library';
 
 function greeting() { const h = new Date().getHours(); return h < 11 ? ['おはよう', 'Good morning'] : h < 18 ? ['こんにちは', 'Hello'] : ['こんばんは', 'Good evening']; }
 
@@ -36,8 +40,9 @@ export default function Home() {
         <div className="col gap-s">
           <h1><span lang="ja" className="jp">{jp}</span>{s.name ? `, ${s.name}` : ''}</h1>
           <p className="muted">{en}. {today?.seconds ? `${fmtMin(today.seconds)} studied today.` : 'Ready when you are.'}</p>
+          <p className="small">Today's guide: <b>{CAST[dailyCast().guide].name}</b> · <Link to="/call" style={{ color: 'var(--forest-2)', fontWeight: 700 }}>call her</Link></p>
         </div>
-        <Mascot size={76} />
+        <Link to="/call" aria-label={`Call ${CAST[dailyCast().guide].name}`} style={{ textAlign: 'center' }}><Portrait id={dailyCast().guide} size={78} /><span className="tiny" style={{ display: 'block', fontWeight: 700, marginTop: 4 }}>{CAST[dailyCast().guide].name.split(' ')[0]}</span></Link>
       </section>
 
       <section className="stats" aria-label="Your score">
@@ -67,6 +72,8 @@ export default function Home() {
           <Icon n="next" />
         </Link>
       )}
+
+      <WordOfDay />
 
       <div className="section-h"><h2>Your progress</h2><Link to="/progress" className="small" style={{ color: 'var(--forest-2)', fontWeight: 700 }}>Details</Link></div>
       <section className="card row" style={{ justifyContent: 'space-around' }}>
@@ -106,5 +113,28 @@ function Step({ to, min, title, sub }: { to: string; min: string; title: string;
       <span className="grow"><span style={{ fontWeight: 700, display: 'block' }}>{title}</span><span className="small muted" style={{ display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{sub}</span></span>
       <Icon n="next" s={18} />
     </Link>
+  );
+}
+
+/** A new word and kanji every day from the full library, a level above what you have finished. */
+function WordOfDay() {
+  const lib = useAsync(loadLibrary, []);
+  if (!lib) return null;
+  const d = new Date(); const seed = d.getFullYear() * 400 + d.getMonth() * 32 + d.getDate();
+  const words = lib.words.filter(w => w.lvl >= 4 && w.jp !== w.kana);
+  const w = words[(seed * 7919) % words.length];
+  const kj = lib.kanji.filter(k => k.lvl >= 4)[(seed * 104729) % lib.kanji.filter(k => k.lvl >= 4).length];
+  const g = dailyCast(d.getDate() + 3).guide;
+  return (
+    <section className="card row" style={{ alignItems: 'flex-start' }}>
+      <Portrait id={g} size={54} />
+      <div className="grow col" style={{ gap: 4 }}>
+        <span className="label">Word of the day · from {CAST[g].name.split(' ')[0]}</span>
+        <span className="row gap-s"><span className="jp-l jp" lang="ja">{w.jp}</span><span className="small muted jp" lang="ja">{w.kana}</span></span>
+        <span className="small">{w.en} <span className="badge plain">N{w.lvl}</span></span>
+        <Link to={`/kanji?k=${kj.k}`} className="small" style={{ color: 'var(--forest-2)', fontWeight: 700 }}>Kanji of the day: <span lang="ja" className="jp">{kj.k}</span> — {kj.en.split(',')[0]}</Link>
+      </div>
+      <SpeakBtn text={w.jp} />
+    </section>
   );
 }
