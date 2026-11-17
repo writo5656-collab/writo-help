@@ -89,7 +89,7 @@ export default function Settings() {
         <button className="btn danger" onClick={() => { if (confirm('Erase all progress, mistakes and notes on this device? This cannot be undone.')) void resetAll(); }}><Icon n="trash" s={18} />Erase all data</button>
       </section>
 
-      <p className="tiny muted center">Nihongo — Personal Japanese Academy · v1.0<br />No hearts, no locks, no penalties.<br />Stroke-order data © KanjiVG (Ulrich Apel), CC BY-SA 3.0.</p>
+      <p className="tiny muted center">Nihongo — Personal Japanese Academy · v1.0<br />No hearts, no locks, no penalties.<br />Stroke order © KanjiVG (Ulrich Apel), CC BY-SA 3.0. Dictionary data © EDRDG (JMdict, KANJIDIC), CC BY-SA 4.0.<br />Anime characters are named for personal study only; all lines are original.</p>
     </Screen>
   );
 }

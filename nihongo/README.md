@@ -52,15 +52,24 @@ Open `src/content/jlpt.ts` (or `practical.ts`) and copy an existing lesson. Sent
 
 Run `npm test` afterwards: it checks every sentence has a clean reading and accepts its own answers.
 
+## Data and credits
+
+- **JLPT vocabulary (N5–N1, 8,034 words):** [open-anki-jlpt-decks](https://github.com/jamsinclair/open-anki-jlpt-decks) (MIT), from Jonathan Waller's JLPT lists; meanings from JMdict © EDRDG, CC BY-SA 4.0.
+- **Kanji (N5–N1, 2,211):** [kanji-data](https://github.com/davidluzgouveia/kanji-data) (MIT), KANJIDIC fields only, © EDRDG, CC BY-SA 4.0.
+- **Stroke order:** [KanjiVG](https://kanjivg.tagaini.net) © Ulrich Apel, CC BY-SA 3.0.
+- **Anime characters:** names only, used as a personal study aid. No official artwork, dialogue or manga pages are included; all lines and story pages are original.
+
+Rebuild the data with `node scripts/build-library.mjs` and `node scripts/fetch-strokes.mjs "$(cat src/content/library/kanji-chars.txt)"`.
+
 ## What is and is not finished
 
 Working: onboarding and placement check, kana (hiragana and katakana), 104 N5 kanji, 14 N5 lessons, 3 N4 starter lessons, 9 practical lessons with scenes and dialogues, vocabulary packs, reading passages, all exercise types, notebook typing with romaji option and reading line, free notes, spaced repetition, Mistake Notebook, Sunday review with report, progress dashboard, offline roleplays, backup/restore, reminders.
 
 Not finished — labelled inside the app too:
 
-- **N3, N2, N1 content is not written**, and N4 is only started.
+- **N3, N2, N1 lessons are not written**, and N4 lessons are only started. Every N4–N1 word and kanji is in the Library with practice and review.
 - **AI tutor** needs you to deploy the proxy in `server/` with your own API key. The proxy has not been tested against a live key.
-- **Handwriting** is a free tracing canvas: no stroke-order animation or checking.
-- **Scenes** are shown as text signs; there is no illustrated art.
+- **Handwriting** traces a stroke-order guide and counts strokes, but cannot judge stroke shape.
+- **Scenes and manga pages** are drawn by the app (signs, panels, speech bubbles). There are no photographs or real manga pages.
 - **Speech**: pronunciation is checked only by whether the phone's recogniser understood you. It is not a pronunciation score.
 - Content was written for this app and should be spot-checked by a fluent speaker over time.
