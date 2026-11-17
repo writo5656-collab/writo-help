@@ -45,13 +45,21 @@ async function viaClaude(o: TutorRequest, key: string, model: string): Promise<T
   }
 }
 
-/** Pick the best everyday chat model from Google's list: a Flash model, stable before preview, newest version first. */
-export function pickGeminiModel(names: string[]): string | undefined {
+/** Flash chat models ranked best-first: stable before preview, newest version first. */
+export function rankGeminiModels(names: string[]): string[] {
   const ok = names.map(n => n.replace(/^models\//, '')).filter(n => /^gemini-/.test(n) && /flash/.test(n) && !/(image|tts|audio|live|embedding|vision|thinking|native)/.test(n));
   const ver = (n: string) => parseFloat(n.match(/gemini-(\d+(?:\.\d+)?)/)?.[1] ?? '0');
   const score = (n: string) => ver(n) * 100 - (/lite/.test(n) ? 5 : 0) - (/(preview|exp)/.test(n) ? 20 : 0) - (/-\d{3,}$|\d{2}-\d{2}/.test(n) ? 2 : 0) + (/latest/.test(n) ? 1 : 0);
-  return ok.sort((a, b) => score(b) - score(a))[0];
+  return ok.sort((a, b) => score(b) - score(a));
 }
+export const pickGeminiModel = (names: string[]) => rankGeminiModels(names)[0];
+
+let modelCache: { key: string; list: string[] } | null = null;
+async function rankedFor(key: string) {
+  if (modelCache?.key !== key) modelCache = { key, list: rankGeminiModels(await geminiModels(key)) };
+  return modelCache.list;
+}
+const wait = (ms: number) => new Promise(r => setTimeout(r, ms));
 
 /** Ask Google which models this key can use (only ones that can chat). */
 export async function geminiModels(key: string): Promise<string[]> {
@@ -68,12 +76,8 @@ export async function geminiModels(key: string): Promise<string[]> {
   return out;
 }
 
-async function viaGemini(o: TutorRequest, key: string, model: string, retried = false): Promise<TutorReply> {
-  let m = model;
-  if (!m) { // no model chosen yet: ask Google once and remember the answer
-    m = pickGeminiModel(await geminiModels(key)) ?? 'gemini-flash-latest';
-    await saveSettings({ aiModel: m });
-  }
+/** One request to one model. Returns the HTTP status and, on success, the parsed reply. */
+async function geminiOnce(o: TutorRequest, key: string, m: string): Promise<{ status: number; reply?: TutorReply }> {
   const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(m)}:generateContent`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
@@ -83,17 +87,42 @@ async function viaGemini(o: TutorRequest, key: string, model: string, retried = 
       generationConfig: { responseMimeType: 'application/json', temperature: 0.7 },
     }),
   });
-  if (res.status === 404 && !retried) { // model retired or renamed: find a current one and try again
-    const next = pickGeminiModel(await geminiModels(key));
-    if (next && next !== m) { await saveSettings({ aiModel: next }); return viaGemini(o, key, next, true); }
-    throw new Error(`Gemini has no model called "${m}" for this key. Clear the Model box and test again.`);
-  }
-  if (res.status === 400 || res.status === 403) throw new Error('Gemini rejected the request — check the API key in Settings.');
-  if (res.status === 429) throw new Error('Gemini\'s free limit was reached for now. Try again in a minute.');
-  if (!res.ok) throw new Error(`Gemini error (${res.status}) with model ${m}.`);
+  if (!res.ok) return { status: res.status };
   const j = await res.json();
   const text = (j.candidates?.[0]?.content?.parts ?? []).map((p: { text?: string }) => p.text ?? '').join('');
-  return parseReply(text);
+  return { status: 200, reply: parseReply(text) };
+}
+
+/**
+ * Gemini with automatic recovery:
+ *  - 404 (model retired): pick a current model and remember it.
+ *  - 503/500 (Google busy): wait and retry, then try the next Flash model for this message.
+ *  - 429 (free limit for that model): try the next model, which has its own free limit.
+ */
+async function viaGemini(o: TutorRequest, key: string, model: string): Promise<TutorReply> {
+  let ranked: string[] = [];
+  try { ranked = await rankedFor(key); } catch (e) { if (!model) throw e; }
+  const first = model || ranked[0] || 'gemini-flash-latest';
+  if (!model) await saveSettings({ aiModel: first });
+  const order = [first, ...ranked.filter(m => m !== first)].slice(0, 4);
+  let last = 0;
+  for (let i = 0; i < order.length; i++) {
+    const m = order[i];
+    for (let attempt = 0; attempt < (i === 0 ? 2 : 1); attempt++) {
+      const r = await geminiOnce(o, key, m);
+      if (r.reply) {
+        if (i > 0 && last === 404) await saveSettings({ aiModel: m }); // the saved one is gone for good
+        return r.reply;
+      }
+      last = r.status;
+      if (r.status === 400 || r.status === 401 || r.status === 403) throw new Error('Gemini rejected the request — check the API key in Settings.');
+      if (r.status === 503 || r.status === 500) { await wait(1200 * (attempt + 1)); continue; }
+      break; // 404 or 429: move straight to the next model
+    }
+  }
+  if (last === 429) throw new Error('Gemini\'s free limit is used up for now on every model. Try again later (limits reset daily).');
+  if (last === 503 || last === 500) throw new Error('Google\'s Gemini servers are busy right now. Wait a minute and try again.');
+  throw new Error(`Gemini error (${last}).`);
 }
 
 export async function tutorReply(o: TutorRequest): Promise<TutorReply> {
