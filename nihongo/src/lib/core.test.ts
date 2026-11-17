@@ -91,3 +91,35 @@ describe('content integrity', () => {
     }
   });
 });
+
+import { streaks } from './plan';
+import { suggestions } from '../components/Keyboard';
+import strokes from '../content/strokes.json';
+
+describe('score and streak', () => {
+  const now = new Date('2026-05-10T15:00:00');
+  it('counts the current run, and today not yet studied does not break it', () => {
+    expect(streaks(['2026-05-07', '2026-05-08', '2026-05-09'], now)).toEqual({ current: 3, best: 3 });
+    expect(streaks(['2026-05-08', '2026-05-09', '2026-05-10'], now).current).toBe(3);
+  });
+  it('a gap resets the current run but keeps the best', () => {
+    expect(streaks(['2026-05-01', '2026-05-02', '2026-05-03', '2026-05-04', '2026-05-09'], now)).toEqual({ current: 1, best: 4 });
+    expect(streaks(['2026-05-01'], now)).toEqual({ current: 0, best: 1 });
+  });
+});
+
+describe('kana keyboard', () => {
+  it('suggests kanji for known readings', () => {
+    expect(suggestions('わたしはみず').map(s => s.jp)).toContain('水');
+    expect(suggestions('がくせい').map(s => s.jp)).toContain('学生');
+  });
+});
+
+describe('stroke data', () => {
+  it('covers every kana and kanji taught', () => {
+    const d = strokes as Record<string, string[]>;
+    for (const k of KANJI) expect(d[k.k]?.length, k.k).toBeGreaterThan(0);
+    for (const c of 'あいうえおアイウエオんンを') expect(d[c]?.length, c).toBeGreaterThan(0);
+    expect(d['水'].length).toBe(4);
+  });
+});

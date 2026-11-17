@@ -200,9 +200,11 @@ button.card:active, a.card:active { transform: scale(.985); }
 
 /* ---- score strip ---- */
 .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-.stat { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 10px 12px; display: flex; align-items: center; gap: 9px; }
+.stat { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 10px; display: flex; align-items: center; gap: 8px; min-width: 0; }
+.stat > span:last-child { min-width: 0; }
+.stat .tiny { display: block; white-space: nowrap; }
 .stat b { font-size: 1.15rem; font-variant-numeric: tabular-nums; line-height: 1.1; display: block; }
-.stat .ic { width: 34px; height: 34px; border-radius: 11px; display: grid; place-items: center; flex: none; }
+.stat .ic { width: 30px; height: 30px; border-radius: 11px; display: grid; place-items: center; flex: none; }
 .hud { display: flex; align-items: center; gap: 8px; font-size: .8rem; font-weight: 700; color: var(--muted); font-variant-numeric: tabular-nums; }
 .hud .pill { display: inline-flex; align-items: center; gap: 4px; padding: 3px 9px; border-radius: 99px; background: var(--card); border: 1px solid var(--line); }
 .hud .pill.hot { background: var(--amber-soft); border-color: #ecd9a6; color: #7d5a12; animation: pop .3s ease; }

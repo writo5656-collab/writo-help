@@ -41,9 +41,9 @@ export default function Home() {
       </section>
 
       <section className="stats" aria-label="Your score">
-        <Link to="/progress" className="stat"><span className="ic" style={{ background: 'var(--amber-soft)', color: '#a8741a' }}><Icon n="flame" s={20} /></span><span><b>{st.current}</b><span className="tiny muted">day streak</span></span></Link>
+        <Link to="/progress" className="stat"><span className="ic" style={{ background: 'var(--amber-soft)', color: '#a8741a' }}><Icon n="flame" s={20} /></span><span><b>{st.current}</b><span className="tiny muted">{st.current === 1 ? "day" : "days"} streak</span></span></Link>
         <Link to="/progress" className="stat"><span className="ic" style={{ background: 'var(--sage-soft)', color: 'var(--forest)' }}><Icon n="star" s={20} /></span><span><b>{score.toLocaleString()}</b><span className="tiny muted">score</span></span></Link>
-        <Link to="/progress" className="stat"><span className="ic" style={{ background: 'var(--sakura-soft)', color: '#9c4a45' }}><Icon n="calendar" s={20} /></span><span><b>{studied.length}</b><span className="tiny muted">days studied</span></span></Link>
+        <Link to="/progress" className="stat"><span className="ic" style={{ background: 'var(--sakura-soft)', color: '#9c4a45' }}><Icon n="calendar" s={20} /></span><span><b>{studied.length}</b><span className="tiny muted">studied</span></span></Link>
       </section>
       {st.current === 0 && st.best > 0 && <p className="tiny muted" style={{ marginTop: -8 }}>Your best run is {st.best} days. A missed day costs nothing — your score and progress are all still here.</p>}
 
