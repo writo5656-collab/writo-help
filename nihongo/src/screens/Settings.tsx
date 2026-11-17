@@ -107,6 +107,8 @@ export default function Settings() {
           <input id="ai" className="field" inputMode="url" defaultValue={s.aiUrl} onBlur={e => set({ aiUrl: e.target.value.trim() })} placeholder="https://…" autoCapitalize="off" autoCorrect="off" />
           <label className="label" htmlFor="tok">App passphrase (if your proxy uses one)</label>
           <input id="tok" className="field" type="password" defaultValue={s.aiToken} onBlur={e => set({ aiToken: e.target.value.trim() })} autoComplete="off" />
+          <label className="label" htmlFor="pk">Supabase key (only if the test says Supabase asked for a login)</label>
+          <input id="pk" className="field" type="password" defaultValue={s.aiProxyKey} onBlur={e => set({ aiProxyKey: e.target.value.trim() })} autoComplete="off" placeholder="anon / publishable key" />
         </>}
         {s.aiMode !== 'proxy' && <>
           <p className="small muted">{s.aiMode === 'gemini'

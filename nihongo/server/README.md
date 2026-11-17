@@ -26,7 +26,25 @@ Google's free tier has a daily limit. If you hit it, the tutor says so; try agai
 
 ---
 
-## Your own free server (proxy) — step by step
+## Phone only (no computer, no Termux)
+
+Everything happens in your phone's browser. Use Chrome and turn on **Desktop site** (⋮ menu) if a page looks cramped.
+
+1. **Get a free Gemini key:** aistudio.google.com → **Get API key** → **Create API key** → copy it.
+2. **Create a Supabase project:** supabase.com → sign up (free) → **New project** → any name and password → wait until it's ready.
+3. **Create the function:** in your project, open **Edge Functions** → **Deploy a new function** → **Via Editor**.
+   - Name it `tutor`.
+   - Delete the example code. Paste the **whole** of [`server/phone/tutor.ts`](phone/tutor.ts) (on GitHub, open the file and use the copy button).
+   - Tap **Deploy function** and wait about 30 seconds.
+4. **Add secrets:** **Edge Functions → Secrets** → add `GEMINI_API_KEY` = your key, and `APP_TOKEN` = any long passphrase you invent → **Save**.
+5. **Allow the app to call it:** open the `tutor` function → **Details / Settings** → turn **off** "Verify JWT" (wording may differ slightly) → save.
+   If you can't find that switch, go to **Project Settings → API Keys**, copy the **anon** (legacy) key, and paste it later into the app's *Supabase key* box.
+6. **Copy the address:** on the function page you'll see `https://YOUR-PROJECT.supabase.co/functions/v1/tutor`.
+7. **Connect the app:** Nihongo → **Settings → AI tutor → My proxy** → paste the address and your passphrase (and the anon key if step 5 needed it) → **Test connection**.
+
+If the test shows an error, the message tells you which step to recheck.
+
+## Your own free server (proxy) — with a computer, step by step
 
 You need a computer once, for about 15 minutes. After that, nothing runs on your computer.
 

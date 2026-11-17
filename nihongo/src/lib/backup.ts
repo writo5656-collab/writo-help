@@ -10,7 +10,7 @@ export async function exportData(): Promise<string> {
   const data: Record<string, unknown> = { app: 'nihongo', version: 1, exported: new Date().toISOString() };
   for (const t of TABLES) data[t] = await db.table(t).toArray();
   // Never include the AI proxy passphrase in a backup file.
-  data.kv = (data.kv as { key: string; value: any }[]).map(r => r.key === 'settings' ? { ...r, value: { ...r.value, aiToken: '', aiKey: '' } } : r);
+  data.kv = (data.kv as { key: string; value: any }[]).map(r => r.key === 'settings' ? { ...r, value: { ...r.value, aiToken: '', aiKey: '', aiProxyKey: '' } } : r);
   return JSON.stringify(data);
 }
 

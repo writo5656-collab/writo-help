@@ -71,9 +71,10 @@ export async function tutorReply(o: TutorRequest): Promise<TutorReply> {
   if (!s.aiUrl.trim()) throw new Error('The AI tutor is not set up yet. Choose a connection in Settings → AI tutor.');
   const res = await fetch(s.aiUrl.trim(), {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...(s.aiToken ? { 'x-app-token': s.aiToken } : {}) },
+    headers: { 'Content-Type': 'application/json', ...(s.aiToken ? { 'x-app-token': s.aiToken } : {}), ...(s.aiProxyKey ? { Authorization: `Bearer ${s.aiProxyKey}`, apikey: s.aiProxyKey } : {}) },
     body: JSON.stringify(o),
   });
+  if (res.status === 401) { const t = await res.text(); throw new Error(/passphrase/i.test(t) ? 'Wrong app passphrase — it must match APP_TOKEN on Supabase.' : 'Supabase asked for a login: turn off "Verify JWT" for the function, or paste your anon key in Settings → AI tutor → Supabase key.'); }
   if (!res.ok) throw new Error(`The tutor service answered with an error (${res.status}). Check the proxy address in Settings.`);
   return parseReply(JSON.stringify(await res.json()));
 }
