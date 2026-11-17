@@ -11,7 +11,7 @@
   --ui: 'Figtree Variable', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --jp: 'Noto Sans JP', 'Noto Sans CJK JP', 'Hiragino Sans', 'Yu Gothic', 'IPAGothic', sans-serif;
   --scale: 1; --rule: 44px;
-  --safe-b: env(safe-area-inset-bottom, 0px); --safe-t: env(safe-area-inset-top, 0px);
+  --safe-b: var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)); --safe-t: var(--safe-area-inset-top, env(safe-area-inset-top, 0px));
 }
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html { font-size: calc(16px * var(--scale)); }

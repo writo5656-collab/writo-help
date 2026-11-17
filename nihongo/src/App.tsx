@@ -1,6 +1,8 @@
 // App shell: routes, bottom tabs, settings provider and time tracking.
 import { useEffect, useRef } from 'react';
 import { HashRouter, Routes, Route, NavLink, useLocation, Navigate } from 'react-router-dom';
+import { Capacitor } from '@capacitor/core';
+import { App as NativeApp } from '@capacitor/app';
 import { useSettings } from './lib/settings';
 import { addSeconds } from './lib/db';
 import { SettingsCtx, Icon } from './components/ui';
@@ -60,6 +62,12 @@ function ScrollTop() { const { pathname } = useLocation(); useEffect(() => { win
 export default function App() {
   const s = useSettings();
   useStudyClock();
+  // Android back button: go back one screen, or leave the app from the first screen.
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform()) return;
+    const h = NativeApp.addListener('backButton', ({ canGoBack }) => { if (canGoBack) window.history.back(); else void NativeApp.exitApp(); });
+    return () => { void h.then(x => x.remove()); };
+  }, []);
   useEffect(() => { if (s) document.documentElement.style.setProperty('--scale', String(s.textScale)); }, [s?.textScale]); // eslint-disable-line
   if (!s) return null;
   return (
