@@ -27,11 +27,14 @@ export interface Settings {
   speakKeys: boolean;      // say each kana aloud as you tap it
   charVoices: boolean;     // characters react out loud in Japanese
   pictures: boolean;       // download character pictures from AniList
+  haptics: boolean;        // vibrate on right / wrong answers
+  autoNext: boolean;       // move on automatically after a right answer
+  short: boolean;          // shorter practice sessions
 }
 export const DEFAULTS: Settings = {
   onboarded: false, name: '', level: 'zero', showFurigana: true, showRomaji: false, autoplay: true,
   rate: 1, textScale: 1, reducedMotion: false, showStreak: false, reminder: false, reminderTime: '19:30',
-  aiUrl: '', aiToken: '', aiMode: 'proxy', aiKey: '', aiModel: '', paper: 'lined', sfx: true, keyboard: 'app', romajiInput: false, speakKeys: true, charVoices: true, pictures: true,
+  aiUrl: '', aiToken: '', aiMode: 'proxy', aiKey: '', aiModel: '', paper: 'lined', sfx: true, keyboard: 'app', romajiInput: false, speakKeys: true, charVoices: true, pictures: true, haptics: true, autoNext: true, short: false,
 };
 
 export function useSettings(): Settings | undefined {

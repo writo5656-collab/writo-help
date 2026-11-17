@@ -51,6 +51,9 @@ export default function Settings() {
         <Row title="Text size"><div className="seg">{([['A', 0.92], ['A', 1], ['A', 1.12], ['A', 1.25]] as const).map(([l, v], i) => <button key={v} className={s.textScale === v ? 'on' : ''} style={{ fontSize: `${0.75 + i * 0.1}rem`, padding: '0 12px' }} onClick={() => set({ textScale: v })} aria-label={`Text size ${i + 1}`}>{l}</button>)}</div></Row>
         <Row title="Keyboard" sub="Kana keys built into the app, or your phone's keyboard"><div className="seg"><button className={s.keyboard === 'app' ? 'on' : ''} onClick={() => set({ keyboard: 'app' })} lang="ja">かな keys</button><button className={s.keyboard === 'phone' ? 'on' : ''} onClick={() => set({ keyboard: 'phone' })}>Phone</button></div></Row>
         <Row title="Notebook paper"><div className="seg"><button className={s.paper === 'lined' ? 'on' : ''} onClick={() => set({ paper: 'lined' })}>Lined</button><button className={s.paper === 'grid' ? 'on' : ''} onClick={() => set({ paper: 'grid' })}>Grid</button></div></Row>
+        <Row title="Auto-continue" sub="Right answers move on by themselves"><Switch on={s.autoNext} onChange={v => set({ autoNext: v })} label="Auto-continue" /></Row>
+        <Row title="Shorter sessions" sub="Fewer questions in reviews and drills"><Switch on={s.short} onChange={v => set({ short: v })} label="Shorter sessions" /></Row>
+        <Row title="Vibration" sub="A small buzz on right and wrong answers"><Switch on={s.haptics} onChange={v => set({ haptics: v })} label="Vibration" /></Row>
         <Row title="Reduce motion" sub="Turn off animations"><Switch on={s.reducedMotion} onChange={v => set({ reducedMotion: v })} label="Reduce motion" /></Row>
         <Row title="Show streak" sub="Optional. Never the main measure."><Switch on={s.showStreak} onChange={v => set({ showStreak: v })} label="Show streak" /></Row>
       </section>

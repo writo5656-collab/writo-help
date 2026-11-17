@@ -3,8 +3,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Ex } from '../lib/exercises';
 import { shuffle } from '../lib/exercises';
+import { ALL_SENTENCES } from '../content';
 import { checkSentence, checkWord, PARTICLE_INFO, type CheckResult } from '../lib/check';
-import { parseFuri, normalize, toKanaUsing, romajiOf } from '../lib/jp';
+import { parseFuri, normalize, toKanaUsing, romajiOf, kanaToRomaji } from '../lib/jp';
 import { speak, speakSeq } from '../services/tts';
 import { listenOnce, sttAvailable } from '../services/stt';
 import { readingOf } from '../services/reading';
@@ -14,6 +15,7 @@ import { KanaKeyboard } from './Keyboard';
 import { SpellingGuide } from './Spelling';
 import { db } from '../lib/db';
 import { sfx } from '../services/sfx';
+import { buzz } from '../services/haptics';
 import { saveSettings } from '../lib/settings';
 import { CAST } from '../content/cast';
 import { Portrait } from './Portrait';
@@ -37,7 +39,7 @@ export function Exercise({ ex, onResult, onNext, last, cast }: Props) {
   const finish = (f: Fb, userAnswer: string, expected: string) => {
     setFb(f);
     setBurst(b => b + 1);
-    if (f.ok) sfx.correct(); else sfx.wrong();
+    if (f.ok) { sfx.correct(); buzz.ok(); } else { sfx.wrong(); buzz.bad(); }
     if (!f.ok) setEverWrong(true);
     onResult({ ok: f.ok, hint: hintRef.current, userAnswer, expected, explanation: f.notes.join(' ') });
     // Spoken order: the answer you tapped, then the character's reaction, then the model answer if it was wrong.
@@ -48,6 +50,13 @@ export function Exercise({ ex, onResult, onNext, last, cast }: Props) {
     if (seq.length) void speakSeq(seq);
   };
   const retry = () => { sfx.tap(); setFb(null); setAttempt(a => a + 1); };
+  // Auto-continue: a right answer moves on by itself after a short pause (tap anywhere on the feedback to stay).
+  const [hold, setHold] = useState(false);
+  useEffect(() => {
+    if (!fb?.ok || !s.autoNext || hold || everWrong) return;
+    const t = setTimeout(() => onNext(false, true), ex.t === 'choice' || ex.t === 'fill' || ex.t === 'chat' ? 1500 : 2300);
+    return () => clearTimeout(t);
+  }, [fb, hold]); // eslint-disable-line
   const reactor = fb && cast ? CAST[fb.ok ? cast.guide : cast.goof] : undefined;
   const reactLine = reactor?.say?.[pickLine % reactor.say.length];
 
@@ -59,7 +68,8 @@ export function Exercise({ ex, onResult, onNext, last, cast }: Props) {
       {fb && <Reaction key={burst} ok={fb.ok} />}
       {fb && (
         <div className="dock">
-          <div className={`feedback ${fb.ok ? 'ok' : 'bad'}`} role="status">
+          <div className={`feedback ${fb.ok ? 'ok' : 'bad'}`} role="status" onClick={() => setHold(true)}>
+            {fb.ok && s.autoNext && !hold && !everWrong && <span className="autobar" aria-hidden="true" />}
             <h3><Icon n={fb.ok ? 'check' : 'bulb'} s={20} />{fb.title}</h3>
             {reactor && (
               <div className="castline" key={burst}>
@@ -220,11 +230,26 @@ function Typing({ ex, locked, fb, onHint, finish }: { ex: Extract<Ex, { t: 'type
   // Never in the final challenge or in listening (that would give the answer away).
   const seenBefore = useAsync(async () => { const it = await db.items.get(ex.itemId); return !!it && it.seen > 0; }, [ex.itemId]);
   const [askSpell, setAskSpell] = useState(false);
+
   const canSpell = ex.tag !== 'challenge' && ex.t !== 'listen' && ex.t !== 'word';
   const showSpell = canSpell && (ex.t === 'copy' || askSpell || fb?.ok === false || (seenBefore === false && ex.tag !== 'earlier'));
   const romajiMode = !appKb && s.romajiInput;
   const f = ex.t === 'word' ? (ex.word.kana !== ex.word.jp ? `${ex.word.jp}[${ex.word.kana}]` : ex.word.jp) : ex.sent.f;
   const p = parseFuri(ex.t === 'word' ? ex.word.kana : f);
+  // Word bank: tap whole words instead of typing every kana (off in the final challenge).
+  const [bank, setBank] = useState(ex.tag !== 'challenge' && ex.t !== 'word');
+  const bankWords = useMemo(() => {
+    if (ex.t === 'word') return [];
+    const strip = (x: string) => x.replace(/[。、？！]/g, '');
+    // Romaji from the reading, with particles written as said (は = wa, を = o).
+    const tile = (c: { jp: string; segs: { text: string; reading?: string }[]; particle?: string }) => ({ jp: strip(c.jp), ro: romajiOf(c.segs.map(x => (x.reading ? `${x.text}[${x.reading}]` : x.text)).join('').replace(/(.)(は|を|へ)$/, c.particle ? '$1{$2}' : '$1$2')) });
+    const mine = parseFuri(f).chunks.map(tile).filter(t => t.jp);
+    const others = shuffle(ALL_SENTENCES.filter(x => x.f !== f).flatMap(x => parseFuri(x.f).chunks.map(tile)))
+      .filter((t, i, a) => t.jp && !mine.some(m => m.jp === t.jp) && a.findIndex(y => y.jp === t.jp) === i)
+      .slice(0, Math.min(3, Math.max(2, Math.ceil(mine.length / 2))));
+    return shuffle([...mine, ...others]);
+  }, [ex.key]); // eslint-disable-line
+  const addWord = (w: string) => { sfx.key(); void speak(w, { rate: s.rate }); setValue(v => v + w); };
   const model = ex.t === 'word' && /[㐀-鿿]/.test(ex.word.jp) ? undefined : f;
   useEffect(() => {
     if (ex.t === 'listen') void speak(parseFuri(f).jp, { rate: s.rate });
@@ -276,14 +301,23 @@ function Typing({ ex, locked, fb, onHint, finish }: { ex: Extract<Ex, { t: 'type
       {hints > 0 && !locked && <div className="card amber note-tip"><Icon n="bulb" s={18} /><span lang="ja" className="jp">{hintText}</span></div>}
       {!locked && (
         <div className="dock">
-          {showSpell && <SpellingGuide f={f} typed={value} />}
-          {canSpell && !showSpell && <button className="chip" style={{ alignSelf: 'flex-start' }} onClick={() => { onHint(); setAskSpell(true); }}><Icon n="key" s={15} />How to spell it</button>}
+          {bank && bankWords.length > 0 && (
+            <div className="bank" aria-label="Word bank">
+              {bankWords.map((w, i) => <button key={i} type="button" lang="ja" className="tilebtn" onMouseDown={e => e.preventDefault()} onClick={() => addWord(w.jp)}><small>{w.ro}</small>{w.jp}</button>)}
+              <button type="button" className="tilebtn undo" aria-label="Clear" onMouseDown={e => e.preventDefault()} onClick={() => setValue('')}>⌫</button>
+            </div>
+          )}
+          {showSpell && !bank && <SpellingGuide f={f} typed={value} />}
+          <div className="row gap-s wrap">
+            {ex.tag !== 'challenge' && ex.t !== 'word' && <button className={`chip ${bank ? 'on' : ''}`} aria-pressed={bank} onClick={() => setBank(!bank)}>{bank ? 'Word bank on' : 'Use word bank'}</button>}
+            {canSpell && !showSpell && !bank && <button className="chip" onClick={() => { onHint(); setAskSpell(true); }}><Icon n="key" s={15} />How to spell it</button>}
+          </div>
           <div className="row gap-s">
             {ex.t !== 'copy' && ex.tag !== 'challenge' && <button className="btn sm line grow" disabled={hints >= maxHints} onClick={hint}><Icon n="bulb" s={16} />Hint</button>}
             {ex.t !== 'listen' && ex.tag !== 'challenge' && <button className="btn sm line grow" onClick={() => { if (ex.t !== 'copy') onHint(); void speak(parseFuri(f).jp, { rate: s.rate }); }}><Icon n="sound" s={16} />Listen</button>}
             <button className="btn sm grow" style={{ flex: 1.4 }} disabled={!value.trim()} onClick={check}>Check<Icon n="next" s={16} /></button>
           </div>
-          {appKb && <KanaKeyboard inputRef={ref} value={value} onChange={setValue} onEnter={check} enterLabel="OK" />}
+          {appKb && !bank && <KanaKeyboard inputRef={ref} value={value} onChange={setValue} onEnter={check} enterLabel="OK" />}
         </div>
       )}
     </div>

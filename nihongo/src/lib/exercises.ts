@@ -126,12 +126,14 @@ export function lessonExercises(l: Lesson, part?: 1 | 2): Ex[] {
     one.push(...storyEx(l));
     const meaning = l.sentences.map((_s, i) => sentEx(sentId(l.id, i), 'meaning')).filter(ok);
     // Copy each new sentence by hand first: writing it out is how it starts to stick.
-    const copy = l.sentences.map((_s, i) => sentEx(sentId(l.id, i), 'copy')).filter(ok);
+    const copy = shuffle(l.sentences.map((_s, i) => i)).slice(0, 2).map(i => sentEx(sentId(l.id, i), 'copy')).filter(ok);
     const choices: Ex[] = (l.choices ?? []).map((c, i) => ({ key: key(), skill: 'grammar', itemId: `choice:${l.id}:${i}`, kind: 'grammar', lessonId: l.id, t: 'choice', prompt: 'Choose the natural expression', context: c.q, jpOptions: true, options: c.options, a: c.a, why: c.why }));
     // Every lesson runs in its own order, so no two feel the same.
     one.push(...(n % 2 ? [...copy, ...meaning] : [...meaning, ...copy]), ...choices);
     const build = l.sentences.map((_s, i) => { const id = sentId(l.id, i); return sentEx(id, 'fill') ?? sentEx(id, 'arrange'); }).filter(ok);
-    const write = l.sentences.map((_s, i) => sentEx(sentId(l.id, i), 'type')).filter(ok);
+    // Write two sentences in full; the rest are built with tiles (faster, same structure practice).
+    const pickW = shuffle(l.sentences.map((_s, i) => i)).slice(0, 2);
+    const write = pickW.map(i => sentEx(sentId(l.id, i), 'type')).filter(ok);
     const listen = shuffle(l.sentences.map((_s, i) => i)).slice(0, 2).map(i => sentEx(sentId(l.id, i), 'listen')).filter(ok);
     two.push(...chatFromLesson(l).slice(0, 2), ...(n % 3 === 1 ? [...listen, ...build, ...write] : n % 3 === 2 ? [...build, ...listen, ...write] : [...build, ...write, ...listen]), ...earlierEx(l), ...challengeEx(l));
   }
@@ -163,8 +165,8 @@ function earlierEx(l: Lesson): Ex[] {
 
 /** The final challenge: write full sentences with no hints. */
 function challengeEx(l: Lesson): Ex[] {
-  if (l.kana) return shuffle(l.vocab).slice(0, 3).map(w => ({ ...vocabEx(w, 'type', l.id), tag: 'challenge' as const }));
-  return shuffle(l.sentences.map((_s, i) => i)).slice(0, 3).map(i => sentEx(sentId(l.id, i), 'type')).filter(ok).map(e => ({ ...e, tag: 'challenge' as const }));
+  if (l.kana) return shuffle(l.vocab).slice(0, 2).map(w => ({ ...vocabEx(w, 'type', l.id), tag: 'challenge' as const }));
+  return shuffle(l.sentences.map((_s, i) => i)).slice(0, 2).map(i => sentEx(sentId(l.id, i), 'type')).filter(ok).map(e => ({ ...e, tag: 'challenge' as const }));
 }
 
 /** Pick an exercise for a review item; stronger items get harder formats. */
@@ -193,8 +195,9 @@ export function drill(type: string, started: Set<string>, count = 10): Ex[] {
   const vocab = shuffle(ALL_VOCAB.filter(w => started.has(w.lessonId)).length >= 6 ? ALL_VOCAB.filter(w => started.has(w.lessonId)) : ALL_VOCAB.slice(0, 60));
   const take = (mode: Parameters<typeof sentEx>[1]) => sents.map(s => sentEx(s.id, mode)).filter(ok).slice(0, count);
   switch (type) {
-    case 'translate': return take('type');
-    case 'copy': return take('copy');
+    // Mostly quick tile-building, with every third one typed in full.
+    case 'translate': return sents.slice(0, 8).map((x, i) => sentEx(x.id, i % 3 === 2 ? 'type' : 'arrange') ?? sentEx(x.id, 'type')).filter(ok);
+    case 'copy': return take('copy').slice(0, 6);
     case 'meaning': return take('meaning');
     case 'arrange': return take('arrange');
     case 'particles': return take('fill');

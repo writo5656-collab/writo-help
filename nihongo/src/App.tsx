@@ -13,7 +13,8 @@ import Call from './screens/Call';
 import Plan from './screens/Plan';
 import Grammar from './screens/Grammar';
 import { useDaily } from './lib/hooks';
-import { scheduleStreakReminders } from './services/notify';
+import { scheduleStreakReminders, onNotificationTap } from './services/notify';
+import { setHaptics } from './services/haptics';
 import { updateWidget } from './services/widget';
 import { dailyCast, CAST } from './content/cast';
 import { Portrait } from './components/Portrait';
@@ -137,7 +138,8 @@ export default function App() {
     return () => { void h.then(x => x.remove()); };
   }, []);
   useEffect(() => { if (s) document.documentElement.style.setProperty('--scale', String(s.textScale)); }, [s?.textScale]); // eslint-disable-line
-  useEffect(() => { if (s) setSfx(s.sfx); }, [s?.sfx]); // eslint-disable-line
+  useEffect(() => { if (s) { setSfx(s.sfx); setHaptics(s.haptics); } }, [s?.sfx, s?.haptics]); // eslint-disable-line
+  useEffect(() => onNotificationTap(path => { window.location.hash = '#' + path; }), []);
   // Download character pictures in the background (once, then monthly).
   useEffect(() => { if (s?.onboarded && s.pictures) { const t = setTimeout(() => void syncPortraits(), 1500); return () => clearTimeout(t); } }, [s?.onboarded, s?.pictures]);
   if (!s) return null;

@@ -181,10 +181,10 @@ function InCall({ id, mode, ai, rpId, plan, quiz }: { id: string; mode: string; 
     <div className="call" style={{ ['--c' as string]: c.color }}>
       <div className="row between" style={{ width: '100%' }}>
         <span className="small" style={{ opacity: .85 }}>{free ? 'Free talk' : mode === 'mistakes' ? 'Mistake quiz' : rp.title} · <span className="num">{mmss}</span></span>
-        {!free && <span className="row gap-s"><span className="small num" style={{ opacity: .85 }}>{Math.min(turn + 1, turns.length)}/{turns.length} · ★ {score}</span><button className="chip" onClick={() => setEasy(!easy)} aria-pressed={easy} style={{ background: easy ? '#fff' : 'rgba(255,255,255,.15)', color: easy ? 'var(--forest)' : '#fff', borderColor: 'transparent', minHeight: 32 }}>{easy ? 'Easy' : 'Hard'}</button></span>}
+        {!free && <span className="row gap-s"><span className="small num" style={{ opacity: .85 }}>{Math.min(turn + 1, turns.length)}/{turns.length} · ★ {score}</span><button className="chip" onClick={() => setEasy(!easy)} aria-pressed={easy} style={{ background: easy ? '#fff' : 'rgba(255,255,255,.15)', color: easy ? 'var(--forest)' : '#fff', borderColor: 'transparent', minHeight: 32 }}>{easy ? 'Hints on' : 'Hints off'}</button></span>}
       </div>
       <div className="stage">
-        <Portrait id={id} mood={mood} talking={talking} shape="full" size={easy && t ? 96 : 200} />
+        <Portrait id={id} mood={mood} talking={talking} shape="full" size={170} />
         <div className="col center" style={{ alignItems: 'center', gap: 4 }}>
           <b style={{ fontSize: '1.15rem' }}>{c.name}</b>
           <span className="small" style={{ opacity: .8 }}>{ended ? 'Call ended' : talking ? 'speaking…' : listening ? 'listening to you — speak now' : 'tap the microphone to answer'}</span>
@@ -201,18 +201,16 @@ function InCall({ id, mode, ai, rpId, plan, quiz }: { id: string; mode: string; 
             </div>
           </> : <span className="small" style={{ opacity: .7 }}>Calling {c.name.split(' ')[0]}…</span>}
           {t && <div className="tiny" style={{ marginTop: 8, opacity: .8 }}>Your goal: {t.goal}</div>}
+          {t && (easy || tries >= 1) && !talking && (
+            <button className="say-glow" disabled={tries < 2} onClick={() => void choose(t.expect[0])} aria-label="What to say">
+              <span className="tiny">{tries >= 2 ? 'Tap to say it together with her' : 'You can say (politely):'}</span>
+              <WordRomaji f={t.expect[0]} />
+            </button>
+          )}
           {mine && <div className="small" style={{ marginTop: 8 }}>You said: <span lang="ja">{mine.said}</span></div>}
-          {mine?.fix && !(easy && t) && <div className="small" style={{ marginTop: 4, color: '#ffd27a' }} lang="ja">Say: {mine.fix}</div>}
+          {mine?.fix && !t && <div className="small" style={{ marginTop: 4, color: '#ffd27a' }} lang="ja">Say: {mine.fix}</div>}
           {err && <div className="small" style={{ marginTop: 6, color: '#ffb3a8' }}>{err}</div>}
         </div>
-        {t && easy && (
-          <div className="col gap-s" style={{ width: '100%' }}>
-            <span className="tiny" style={{ opacity: .8 }}>{tries >= 2 ? 'Tap the reply you meant — she\'ll say it with you:' : 'Say one of these out loud:'}</span>
-            {replyOpts(Math.min(turn, turns.length - 1)).options.map((o, i) => (
-              <button key={i} className="reply-card" disabled={tries < 2 || talking} onClick={() => void choose(o)}><WordRomaji f={o} /></button>
-            ))}
-          </div>
-        )}
       </div>
       <div className="ctl">
         {!ended && <button className={listening ? 'mic-on' : ''} style={{ width: 78, height: 78 }} aria-label="Speak" onClick={() => void listen()} disabled={talking || listening}><Icon n="mic" s={34} /></button>}

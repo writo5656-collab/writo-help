@@ -3,7 +3,7 @@
 // which also quietly teaches the table. A suggestion bar offers kanji for
 // words the app knows.
 import { useMemo, useState } from 'react';
-import { toKatakana } from 'wanakana';
+import { toKatakana, toRomaji } from 'wanakana';
 import { ALL_VOCAB, ALL_SENTENCES, KANJI } from '../content';
 import { parseFuri } from '../lib/jp';
 import { sfx } from '../services/sfx';
@@ -74,7 +74,7 @@ export function KanaKeyboard({ inputRef, value, onChange, onEnter, enterLabel = 
       <div className="kb-grid">
         {GRID.flatMap((row, r) => row.map((ch, c) => ch === '　'
           ? <span key={`${r}-${c}`} />
-          : <button key={`${r}-${c}`} type="button" lang="ja" className="kb-key" onClick={() => insert(kata && ch !== 'ー' ? toKatakana(ch) : ch)}>{kata && ch !== 'ー' ? toKatakana(ch) : ch}</button>))}
+          : <button key={`${r}-${c}`} type="button" lang="ja" className="kb-key" onClick={() => insert(kata && ch !== 'ー' ? toKatakana(ch) : ch)}>{kata && ch !== 'ー' ? toKatakana(ch) : ch}{ch !== 'ー' && <small>{toRomaji(ch)}</small>}</button>))}
       </div>
       <div className="kb-fn">
         <button type="button" className={`kb-key fn ${kata ? 'on' : ''}`} onClick={() => { sfx.key(); setKata(!kata); }} aria-pressed={kata} lang="ja">{kata ? 'あ' : 'ア'}</button>

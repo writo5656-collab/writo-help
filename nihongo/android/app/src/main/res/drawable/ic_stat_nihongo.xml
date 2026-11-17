@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Status-bar icon for notifications: a white torii (Android tints it). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp" android:height="24dp"
+    android:viewportWidth="24" android:viewportHeight="24">
+    <path android:fillColor="#FFFFFFFF"
+        android:pathData="M2.5,4.2C8.8,5.9 15.2,5.9 21.5,4.2L21.9,6.3C19.9,6.8 18.4,7.1 17.6,7.2L17.6,9H19.6V11H17.6V20.5H15.6V11H8.4V20.5H6.4V11H4.4V9H6.4V7.2C5.6,7.1 4.1,6.8 2.1,6.3ZM8.4,7.5V9H15.6V7.5C13.2,7.8 10.8,7.8 8.4,7.5Z" />
+</vector>

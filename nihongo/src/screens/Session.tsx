@@ -14,6 +14,7 @@ import { loadLibrary } from '../content/library';
 import { castFor } from '../content/cast';
 import { parseFuri } from '../lib/jp';
 import { sfx } from '../services/sfx';
+import { loadSettings } from '../lib/settings';
 import { Exercise, type Outcome } from '../components/Exercise';
 import { Portrait } from '../components/Portrait';
 import { Screen, Icon, Bar, Mascot, Furi, Empty, Audio } from '../components/ui';
@@ -97,12 +98,14 @@ export default function Session() {
   const [combo, setCombo] = useState(0);
   const [banner, setBanner] = useState<{ n: number; k: number } | null>(null);
   const [bestCombo, setBestCombo] = useState(0);
+  // The banner is shown for 1.7 s, then removed (so it can never get stuck on screen).
+  useEffect(() => { if (!banner) return; const t = setTimeout(() => setBanner(null), 1700); return () => clearTimeout(t); }, [banner]);
   const [comboScreen, setComboScreen] = useState<number | null>(null);
   const [secs, setSecs] = useState(0);
   useEffect(() => { const t = setInterval(() => setSecs(Math.round((Date.now() - start.current) / 1000)), 1000); return () => clearInterval(t); }, []);
   const start = useRef(Date.now());
 
-  useEffect(() => { build(m, q).then(setQueue); }, []); // eslint-disable-line
+  useEffect(() => { build(m, q).then(async list => { const st = await loadSettings(); setQueue(st.short && m !== 'lesson' && m !== 'mistake' ? list.slice(0, Math.max(5, Math.ceil(list.length * 0.6))) : list); }); }, []); // eslint-disable-line
 
   if (!queue) return <Screen back title={TITLES[m]}><p className="muted center mt-l">Preparing…</p></Screen>;
   if (queue.length === 0) return (

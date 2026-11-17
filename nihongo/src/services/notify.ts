@@ -51,7 +51,7 @@ export async function scheduleStreakReminders(o: { on: boolean; time: string; st
     await LocalNotifications.cancel({ notifications: IDS.map(id => ({ id })) });
     if (!o.on) return;
     if ((await LocalNotifications.checkPermissions()).display !== 'granted') return;
-    const list = planReminders(o).map(p => ({ id: p.id, title: p.title, body: p.body, schedule: { at: p.at }, group: 'nihongo' }));
+    const list = planReminders(o).map(p => ({ id: p.id, title: p.title, body: p.body, schedule: { at: p.at }, group: 'nihongo', smallIcon: 'ic_stat_nihongo', largeIcon: 'ic_large_nihongo', iconColor: '#1F4D3A', extra: { go: '/plan' } }));
     if (list.length) await LocalNotifications.schedule({ notifications: list });
   } catch { /* reminders are best-effort */ }
 }
@@ -63,6 +63,13 @@ export async function testNotification(): Promise<string> {
   if (!Capacitor.isNativePlatform()) return `Notifications only work in the Android app. This is what one looks like:\n${who?.name}: ${nd.text(7)}`;
   const perm = await LocalNotifications.requestPermissions();
   if (perm.display !== 'granted') return 'Notifications are blocked. Allow them in Android Settings → Apps → Nihongo → Notifications.';
-  await LocalNotifications.schedule({ notifications: [{ id: 399, title: `${who?.name ?? 'Nihongo'} 🌸`, body: nd.text(7), schedule: { at: new Date(Date.now() + 5000) } }] });
+  await LocalNotifications.schedule({ notifications: [{ id: 399, title: `${who?.name ?? 'Nihongo'} 🌸`, body: nd.text(7), schedule: { at: new Date(Date.now() + 5000) }, smallIcon: 'ic_stat_nihongo', largeIcon: 'ic_large_nihongo', iconColor: '#1F4D3A', extra: { go: '/plan' } }] });
   return 'A test notification will arrive in about 5 seconds. You can lock your phone to see it.';
+}
+
+/** Tapping a notification opens today's plan. */
+export function onNotificationTap(go: (path: string) => void) {
+  if (!Capacitor.isNativePlatform()) return () => undefined;
+  const h = LocalNotifications.addListener('localNotificationActionPerformed', e => go((e.notification.extra as { go?: string } | undefined)?.go ?? '/plan'));
+  return () => { void h.then(x => x.remove()); };
 }
