@@ -103,32 +103,35 @@ export function sentEx(id: string, mode: 'meaning' | 'fill' | 'arrange' | 'type'
 const ok = <T,>(x: T | null): x is T => x !== null;
 
 /** The practice set that follows a lesson's teaching cards. */
-export function lessonExercises(l: Lesson): Ex[] {
-  const out: Ex[] = [];
-  if (l.kana) {
-    for (const ch of l.kana) out.push(kanaEx(ch, false, l.id));
-    for (const ch of shuffle(l.kana).slice(0, Math.ceil(l.kana.length / 2))) out.push(kanaEx(ch, true, l.id));
-    for (const w of l.vocab) out.push(vocabEx(w, 'meaning', l.id, l.vocab));
-    for (const w of l.vocab.slice(0, 4)) out.push(vocabEx(w, 'type', l.id));
-    const st = storyEx(l);
-    return [...shuffle(out.slice(0, l.kana.length)), ...st, ...shuffle(out.slice(l.kana.length)), ...earlierEx(l), ...challengeEx(l)];
-  }
-  const vocab = l.vocab.map(w => vocabEx(w, 'meaning', l.id, l.vocab));
-  const vocab2 = shuffle(l.vocab).slice(0, 4).map(w => vocabEx(w, 'jp', l.id, l.vocab));
-  out.push(...shuffle(vocab), ...vocab2);
-  l.sentences.forEach((_s, i) => out.push(...[sentEx(sentId(l.id, i), 'meaning')].filter(ok)));
-  // Copy each new sentence by hand first: writing it out is how it starts to stick.
-  l.sentences.forEach((_s, i) => out.push(...[sentEx(sentId(l.id, i), 'copy')].filter(ok)));
-  l.sentences.forEach((_s, i) => { const id = sentId(l.id, i); out.push(...[sentEx(id, 'fill') ?? sentEx(id, 'arrange')].filter(ok)); });
-  (l.choices ?? []).forEach((c, i) => out.push({ key: key(), skill: 'grammar', itemId: `choice:${l.id}:${i}`, kind: 'grammar', lessonId: l.id, t: 'choice', prompt: 'Choose the natural expression', context: c.q, jpOptions: true, options: c.options, a: c.a, why: c.why }));
-  l.sentences.forEach((_s, i) => out.push(...[sentEx(sentId(l.id, i), 'type')].filter(ok)));
-  shuffle(l.sentences.map((_s, i) => i)).slice(0, 2).forEach(i => out.push(...[sentEx(sentId(l.id, i), 'listen')].filter(ok)));
-  // Every lesson runs in its own order, so no two feel the same.
+/**
+ * A lesson's practice, in two parts so each sitting stays manageable:
+ *  Part 1 "Learn": recognise the new kana / words, read the story, understand and copy each sentence.
+ *  Part 2 "Use it": build and write sentences yourself, listen, review earlier lessons, final challenge.
+ * Leave out `part` to get both.
+ */
+export function lessonExercises(l: Lesson, part?: 1 | 2): Ex[] {
+  const one: Ex[] = [], two: Ex[] = [];
   const n = LESSONS.indexOf(l);
-  const vocabPart = out.slice(0, l.vocab.length + Math.min(4, l.vocab.length));
-  const rest = out.slice(vocabPart.length);
-  const rot = n % 3 === 1 ? [...rest.filter(e => e.t === 'listen'), ...rest.filter(e => e.t !== 'listen')] : n % 3 === 2 ? [...rest.filter(e => e.t === 'copy'), ...rest.filter(e => e.t !== 'copy')] : rest;
-  return [...vocabPart, ...storyEx(l), ...rot, ...earlierEx(l), ...challengeEx(l)];
+  if (l.kana) {
+    const recog = l.kana.map(ch => kanaEx(ch, false, l.id));
+    const reverse = shuffle(l.kana).slice(0, Math.ceil(l.kana.length / 2)).map(ch => kanaEx(ch, true, l.id));
+    one.push(...shuffle(recog), ...storyEx(l), ...reverse);
+    two.push(...shuffle(l.vocab.map(w => vocabEx(w, 'meaning', l.id, l.vocab))), ...l.vocab.slice(0, 4).map(w => vocabEx(w, 'type', l.id)), ...earlierEx(l), ...challengeEx(l));
+  } else {
+    one.push(...shuffle(l.vocab.map(w => vocabEx(w, 'meaning', l.id, l.vocab))), ...shuffle(l.vocab).slice(0, 4).map(w => vocabEx(w, 'jp', l.id, l.vocab)));
+    one.push(...storyEx(l));
+    const meaning = l.sentences.map((_s, i) => sentEx(sentId(l.id, i), 'meaning')).filter(ok);
+    // Copy each new sentence by hand first: writing it out is how it starts to stick.
+    const copy = l.sentences.map((_s, i) => sentEx(sentId(l.id, i), 'copy')).filter(ok);
+    const choices: Ex[] = (l.choices ?? []).map((c, i) => ({ key: key(), skill: 'grammar', itemId: `choice:${l.id}:${i}`, kind: 'grammar', lessonId: l.id, t: 'choice', prompt: 'Choose the natural expression', context: c.q, jpOptions: true, options: c.options, a: c.a, why: c.why }));
+    // Every lesson runs in its own order, so no two feel the same.
+    one.push(...(n % 2 ? [...copy, ...meaning] : [...meaning, ...copy]), ...choices);
+    const build = l.sentences.map((_s, i) => { const id = sentId(l.id, i); return sentEx(id, 'fill') ?? sentEx(id, 'arrange'); }).filter(ok);
+    const write = l.sentences.map((_s, i) => sentEx(sentId(l.id, i), 'type')).filter(ok);
+    const listen = shuffle(l.sentences.map((_s, i) => i)).slice(0, 2).map(i => sentEx(sentId(l.id, i), 'listen')).filter(ok);
+    two.push(...(n % 3 === 1 ? [...listen, ...build, ...write] : n % 3 === 2 ? [...build, ...listen, ...write] : [...build, ...write, ...listen]), ...earlierEx(l), ...challengeEx(l));
+  }
+  return part === 1 ? one : part === 2 ? two : [...one, ...two];
 }
 
 /** Questions about the lesson's manga story. */

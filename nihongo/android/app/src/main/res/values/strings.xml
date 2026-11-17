@@ -4,4 +4,6 @@
     <string name="title_activity_main">Nihongo</string>
     <string name="package_name">app.nihongo.academy</string>
     <string name="custom_url_scheme">app.nihongo.academy</string>
+    <string name="widget_name">Nihongo streak</string>
+    <string name="widget_description">Your Japanese streak and today\'s 25-minute plan</string>
 </resources>

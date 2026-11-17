@@ -8,6 +8,7 @@ export * from './types';
 export * from './kana';
 export * from './kanji';
 export * from './extras';
+export * from './cast';
 
 export const LESSONS: Lesson[] = [...KANA_LESSONS, ...JLPT_LESSONS, ...PRACTICAL_LESSONS];
 export const LESSON_MAP = new Map(LESSONS.map(l => [l.id, l]));

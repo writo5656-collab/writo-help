@@ -9,6 +9,7 @@ import { parseFuri } from '../lib/jp';
 import { speak } from '../services/tts';
 import { listenOnce, sttAvailable } from '../services/stt';
 import { aiConfigured, tutorReply, type ChatMsg, type TutorReply } from '../services/ai';
+import { markBlock } from '../lib/hooks';
 import { getKV } from '../lib/db';
 import { PaperInput } from '../components/Paper';
 import { KanaKeyboard } from '../components/Keyboard';
@@ -92,6 +93,8 @@ interface Msg { me: boolean; f?: string; text?: string; en?: string; note?: stri
 
 export function Roleplay() {
   const { id } = useParams();
+  const [sp] = useSearchParams();
+  const inPlan = sp.get('plan') === '1';
   const rp = ROLEPLAYS.find(r => r.id === id);
   const s = useS();
   const [turn, setTurn] = useState(0);
@@ -103,6 +106,7 @@ export function Roleplay() {
   useEffect(() => { end.current?.scrollIntoView({ behavior: 'smooth', block: 'end' }); }, [msgs]);
   if (!rp) return <Screen back title="Roleplay"><p className="muted">Not found.</p></Screen>;
   const done = turn >= rp.turns.length;
+  useEffect(() => { if (done && inPlan) void markBlock('real'); }, [done]); // eslint-disable-line
   const t = rp.turns[Math.min(turn, rp.turns.length - 1)];
 
   const advance = (extra: Msg[]) => {
@@ -146,7 +150,7 @@ export function Roleplay() {
       {done ? (
         <div className="dock">
           <div className="card sage col gap-s center"><h3>Conversation complete</h3><p className="small muted">{fixes === 0 ? 'Every reply was natural. Try it again by speaking instead of typing.' : `${fixes} repl${fixes === 1 ? 'y was' : 'ies were'} adjusted — they are saved under Recent corrections.`}</p></div>
-          <div className="row"><button className="btn ghost" onClick={() => { setTurn(0); setFixes(0); setMsgs([{ me: false, f: rp.turns[0].npc.f, en: rp.turns[0].npc.en }]); }}>Again</button><Link className="btn" to="/speak">Done</Link></div>
+          <div className="row"><button className="btn ghost" onClick={() => { setTurn(0); setFixes(0); setMsgs([{ me: false, f: rp.turns[0].npc.f, en: rp.turns[0].npc.en }]); }}>Again</button><Link className="btn" to={inPlan ? '/plan' : '/speak'}>{inPlan ? 'Back to plan' : 'Done'}</Link></div>
         </div>
       ) : (
         <>

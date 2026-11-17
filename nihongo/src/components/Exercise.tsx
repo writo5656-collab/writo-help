@@ -39,8 +39,8 @@ export function Exercise({ ex, onResult, onNext, last, cast }: Props) {
     onResult({ ok: f.ok, hint: hintRef.current, userAnswer, expected, explanation: f.notes.join(' ') });
     // Spoken order: the answer you tapped, then the character's reaction, then the model answer if it was wrong.
     const who = cast && CAST[f.ok ? cast.guide : cast.goof];
-    const seq: { text: string; rate?: number; pitch?: number }[] = (f.say ?? []).map(t => ({ text: t, rate: s.rate }));
-    if (who?.say && s.charVoices) seq.push({ text: who.say[Math.floor(Math.random() * who.say.length)], rate: 1.05, pitch: who.role === 'guide' ? 1.3 : 0.75 });
+    const seq: { text: string; rate?: number; pitch?: number; who?: string }[] = (f.say ?? []).map(t => ({ text: t, rate: s.rate }));
+    if (who?.say && s.charVoices) seq.push({ text: who.say[Math.floor(Math.random() * who.say.length)], who: who.id });
     if (f.model && s.autoplay && !f.ok) seq.push({ text: parseFuri(f.model).jp, rate: s.rate });
     if (seq.length) void speakSeq(seq);
   };

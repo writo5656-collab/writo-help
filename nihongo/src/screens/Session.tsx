@@ -7,6 +7,8 @@ import { dueItems, risk, DAY, type Grade } from '../lib/srs';
 import { type Ex, lessonExercises, reviewEx, drill, passageExercises, vocabEx, kanjiEx, sentEx, shuffle } from '../lib/exercises';
 import { LESSON_MAP, PASSAGES, PACKS, KANJI, ALL_SENTENCES } from '../content';
 import { sundayKey, lessonAfter } from '../lib/plan';
+import { markBlock } from '../lib/hooks';
+import type { BlockId } from '../lib/daily';
 import { loadLibrary } from '../content/library';
 import { castFor } from '../content/cast';
 import { parseFuri } from '../lib/jp';
@@ -50,7 +52,7 @@ async function build(m: string, q: URLSearchParams): Promise<QEx[]> {
     const lvlPool = pool.slice(0, 600);
     return [...fresh.map(w => vocabEx(w, 'meaning', undefined, lvlPool)), ...shuffle([...fresh, ...weak]).map((w, i) => vocabEx(w, i % 3 === 2 ? 'type' : 'jp', undefined, lvlPool))];
   }
-  if (m === 'lesson') { const l = LESSON_MAP.get(q.get('id') ?? ''); return l ? lessonExercises(l) : []; }
+  if (m === 'lesson') { const l = LESSON_MAP.get(q.get('id') ?? ''); const part = q.get('part') === '1' ? 1 : q.get('part') === '2' ? 2 : undefined; return l ? lessonExercises(l, part) : []; }
   if (m === 'review') return dueItems(await db.items.toArray()).slice(0, 20).map(reviewEx).filter(ok);
   if (m === 'passage') return passageExercises(q.get('id') ?? '');
   if (m === 'pack') { const p = PACKS.find(x => x.id === q.get('id')); return p ? [...p.words.map(w => vocabEx(w, 'meaning', p.id, p.words)), ...shuffle(p.words).slice(0, 6).map(w => vocabEx(w, 'jp', p.id, p.words))] : []; }
@@ -139,14 +141,21 @@ export default function Session() {
       setQueue(next); len++;
     }
     if (idx + 1 >= len) {
-      if (m === 'lesson') { const d = await getKV<Record<string, number>>('doneLessons', {}); await setKV('doneLessons', { ...d, [q.get('id')!]: Date.now() }); }
+      const blk = q.get('block'); if (q.get('plan') === '1' && blk && blk !== 'extra') await markBlock(blk as BlockId);
+      if (m === 'lesson') {
+        const id = q.get('id')!, part = q.get('part');
+        const parts = await getKV<Record<string, number[]>>('lessonParts', {});
+        await setKV('lessonParts', { ...parts, [id]: [...new Set([...(parts[id] ?? []), part === '1' ? 1 : 2])] });
+        // A lesson is complete once its second part is done (or it was played in one go).
+        if (part !== '1') { const d = await getKV<Record<string, number>>('doneLessons', {}); await setKV('doneLessons', { ...d, [id]: Date.now() }); }
+      }
       if (m === 'sunday') await finishSunday(tally);
     }
     setIdx(idx + 1);
     window.scrollTo(0, 0);
   };
 
-  if (done) return <Done m={m} tally={tally} seconds={Math.round((Date.now() - start.current) / 1000)} score={score} lessonId={m === 'lesson' ? q.get('id') ?? undefined : undefined} />;
+  if (done) return <Done m={m} tally={tally} seconds={Math.round((Date.now() - start.current) / 1000)} score={score} lessonId={m === 'lesson' ? q.get('id') ?? undefined : undefined} part={q.get('part') ?? undefined} plan={q.get('plan') === '1'} />;
   const passage = m === 'passage' ? PASSAGES.find(p => p.id === q.get('id')) : undefined;
 
   return (
@@ -198,8 +207,8 @@ async function finishSunday(tally: Tally[]) {
 const SKILL_NAMES: Record<string, string> = { kana: 'Kana', vocab: 'Vocabulary', kanji: 'Kanji', grammar: 'Grammar and particles', reading: 'Reading', writing: 'Sentence writing', listening: 'Listening', speaking: 'Speaking' };
 export { SKILL_NAMES };
 
-function Done({ m, tally, seconds, score, lessonId }: { m: string; tally: Tally[]; seconds: number; score: number; lessonId?: string }) {
-  const next = lessonId ? lessonAfter(lessonId) : undefined;
+function Done({ m, tally, seconds, score, lessonId, part, plan }: { m: string; tally: Tally[]; seconds: number; score: number; lessonId?: string; part?: string; plan?: boolean }) {
+  const next = lessonId && part !== '1' ? lessonAfter(lessonId) : undefined;
   useEffect(() => { sfx.complete(); }, []);
   const right = tally.filter(t => t.ok).length, missed = tally.filter(t => !t.ok);
   const weak = [...new Set(missed.map(t => SKILL_NAMES[t.skill]))];
@@ -225,9 +234,11 @@ function Done({ m, tally, seconds, score, lessonId }: { m: string; tally: Tally[
       ) : <div className="card sage small">Everything right first time. These items will now wait longer before the next review.</div>}
       {m === 'sunday' && <Link className="btn ghost" to="/sunday">See your review report</Link>}
       {missed.length > 0 && <Link className="btn ghost" to="/mistakes">Open Mistake Notebook</Link>}
-      {next && <Link className="btn" to={`/lesson/${next.id}`} replace>Next lesson: {next.title}<Icon n="next" s={18} /></Link>}
-      {lessonId && !next && <div className="card sage small">That was the last lesson in this track for now. More are coming — meanwhile the library has every N5–N1 word and kanji.</div>}
-      <Link className={next ? 'btn ghost' : 'btn'} to="/" replace>Back to home</Link>
+      {plan && <Link className="btn" to="/plan" replace>Continue today's plan<Icon n="next" s={18} /></Link>}
+      {!plan && lessonId && part === '1' && <Link className="btn" to={`/session?m=lesson&id=${lessonId}&part=2`} replace>Continue: Part 2 — use it<Icon n="next" s={18} /></Link>}
+      {!plan && next && <Link className="btn" to={`/lesson/${next.id}`} replace>Next lesson: {next.title}<Icon n="next" s={18} /></Link>}
+      {lessonId && part !== '1' && !next && <div className="card sage small">That was the last lesson in this track for now. More are coming — meanwhile the library has every N5–N1 word and kanji.</div>}
+      <Link className={next || plan || part === '1' ? 'btn ghost' : 'btn'} to="/" replace>Back to home</Link>
     </Screen>
   );
 }

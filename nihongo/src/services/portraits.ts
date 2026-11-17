@@ -27,7 +27,7 @@ async function freshUrls(): Promise<Record<number, string>> {
 }
 
 /** Download and store any missing or month-old pictures. Safe to call often. */
-export function syncPortraits(force = false): Promise<void> {
+export function syncPortraits(force = false, onProgress?: (done: number, total: number) => void): Promise<void> {
   return (running ??= (async () => {
     if (!(await loadSettings()).pictures || (typeof navigator !== 'undefined' && navigator.onLine === false)) return;
     const have = new Map((await db.portraits.toArray()).map(p => [p.id, p]));
@@ -35,7 +35,9 @@ export function syncPortraits(force = false): Promise<void> {
     if (!todo.length) return;
     let urls: Record<number, string> = {};
     try { urls = await freshUrls(); } catch { /* use the saved addresses */ }
+    let n = 0; onProgress?.(0, todo.length);
     for (const c of todo) {
+      onProgress?.(n++, todo.length);
       const url = urls[c.al![0]] ?? c.al![1];
       try {
         // 'reload' skips the browser's copy from <img> loads, which cannot be read back.
@@ -45,6 +47,7 @@ export function syncPortraits(force = false): Promise<void> {
         await db.portraits.put({ ...(have.get(c.id) ?? { id: c.id }), id: c.id, data, url, fetched: Date.now() });
       } catch { await db.portraits.put({ ...(have.get(c.id) ?? { id: c.id }), id: c.id, url }); }
     }
+    onProgress?.(todo.length, todo.length);
   })().finally(() => { running = null; }));
 }
 
@@ -86,4 +89,10 @@ export async function gallery(name: string): Promise<string[]> {
 export async function urlToData(url: string): Promise<string> {
   const r = await fetch(url, { cache: 'reload', mode: 'cors' }); if (!r.ok) throw new Error(String(r.status));
   return toDataUrl(await r.blob());
+}
+
+export async function picturesReady(): Promise<{ have: number; total: number }> {
+  const total = Object.values(CAST).filter(c => c.al).length;
+  const have = (await db.portraits.toArray()).filter(p => p.data).length;
+  return { have, total };
 }

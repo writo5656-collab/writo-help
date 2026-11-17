@@ -1,7 +1,9 @@
 // Progress dashboard: skills and retention, not just streaks.
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db, dayKey } from '../lib/db';
-import { useItems, usePlan } from '../lib/hooks';
+import { useItems, usePlan, useDaily } from '../lib/hooks';
+import { StreakBadge, PlanRing } from '../components/PlanWidgets';
+import { keyOf } from '../lib/daily';
 import { isKnown, isMastered, dueItems, DAY } from '../lib/srs';
 import { trackProgress } from '../lib/plan';
 import { HIRA, KATA, KANJI, ALL_VOCAB, JLPT_LESSONS, PRACTICAL_LESSONS, kanaId, kanjiId, vocabId } from '../content';
@@ -12,10 +14,11 @@ export default function Progress() {
   const s = useS();
   const { items, map } = useItems();
   const { finished } = usePlan();
+  const daily = useDaily();
   const answers = useLiveQuery(() => db.answers.toArray(), []);
   const days = useLiveQuery(() => db.days.toArray(), []);
   const openMistakes = useLiveQuery(() => db.mistakes.where('status').notEqual('remembered').count(), []) ?? 0;
-  if (!items || !answers || !days) return null;
+  if (!items || !answers || !days || !daily) return null;
 
   const count = (ids: string[]) => ({ known: ids.filter(id => isKnown(map.get(id))).length, mastered: ids.filter(id => isMastered(map.get(id))).length, total: ids.length });
   const sets = [
@@ -52,6 +55,18 @@ export default function Progress() {
 
   return (
     <Screen back title="Progress">
+      <StreakBadge current={daily.info.current} freezes={daily.info.freezes} atRisk={daily.info.atRisk} todayDone={daily.info.todayDone} />
+      <section className="card row">
+        <PlanRing seconds={daily.seconds} size={84} />
+        <div className="grow"><h3>Today: {Math.floor(daily.seconds / 60)} of 25 minutes</h3><p className="small muted">Best streak: <b className="num">{daily.info.best}</b> days · {daily.studied} full days · {daily.info.freezes} ❄ freeze{daily.info.freezes === 1 ? '' : 's'} left</p></div>
+      </section>
+      <h2>Streak calendar</h2>
+      <section className="card col gap-s">
+        <div className="cal">
+          {Array.from({ length: 35 }, (_, i) => { const d = new Date(); d.setDate(d.getDate() - 34 + i); const k = keyOf(d); const st = daily.info.status.get(k) ?? 'before'; return <span key={k} className={`cd ${st}`} title={`${k}: ${st}`}>{d.getDate()}</span>; })}
+        </div>
+        <div className="row gap-s wrap tiny muted"><span className="cd done sw" /> 25 min done <span className="cd frozen sw" /> frozen <span className="cd missed sw" /> missed <span className="cd today sw" /> today</div>
+      </section>
       {answers.length === 0 && <Empty title="Your progress will appear here">Complete a lesson or a few exercises and this page fills in with what you know, what is fading and where to focus.</Empty>}
       <section className="card row" style={{ justifyContent: 'space-around', textAlign: 'center' }}>
         <div><div className="jp-xl num">{studied.length}</div><div className="tiny muted">days studied</div></div>

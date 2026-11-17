@@ -3,8 +3,8 @@
 import { useState } from 'react';
 import { CAST } from '../content/cast';
 import type { Story } from '../content/stories';
-import { parseFuri } from '../lib/jp';
-import { speak } from '../services/tts';
+import { parseFuri, romajiOf } from '../lib/jp';
+import { speak, sayAs } from '../services/tts';
 import { Furi, Icon, useS } from './ui';
 import { Portrait } from './Portrait';
 
@@ -21,25 +21,26 @@ export const nameOf = (id: string) => CAST[id]?.name ?? (id === 'you' ? 'You' : 
 export function MangaPage({ story }: { story: Story }) {
   const s = useS();
   const [vertical, setVertical] = useState(false);
-  const [en, setEn] = useState(false);
+  const [en, setEn] = useState(true);
   return (
     <div className="col gap-s">
       <div className="row between">
         <span className="label">Story · {story.title}</span>
         <div className="row gap-s">
           <button className={`chip ${vertical ? 'on' : ''}`} onClick={() => setVertical(!vertical)} aria-pressed={vertical} lang="ja">縦書き</button>
-          <button className={`chip ${en ? 'on' : ''}`} onClick={() => setEn(!en)} aria-pressed={en}>EN</button>
+          <button className={`chip ${en ? 'on' : ''}`} onClick={() => setEn(!en)} aria-pressed={en}>Reading + meaning</button>
         </div>
       </div>
       <div className={`manga ${vertical ? 'vert' : ''}`}>
         {story.panels.map((p, i) => {
           const c = CAST[p.who];
           return (
-            <button key={i} className={`panel ${p.size ?? 'normal'} tone-${i % 3} ${p.mood ?? ''}`} onClick={() => speak(parseFuri(p.f).jp, { rate: s.rate })} aria-label={`${nameOf(p.who)} says: ${parseFuri(p.f).jp}`}>
+            <button key={i} className={`panel ${p.size ?? 'normal'} tone-${i % 3} ${p.mood ?? ''}`} onClick={() => (CAST[p.who] ? sayAs(p.who, parseFuri(p.f).jp, s.rate) : speak(parseFuri(p.f).jp, { rate: s.rate }))} aria-label={`${nameOf(p.who)} says: ${parseFuri(p.f).jp}`}>
               {p.mood === 'oops' && <span className="fx" lang="ja">！？</span>}
               {p.mood === 'fix' && <span className="fx fix" lang="ja">ビシッ</span>}
               <span className="who">{c ? <Portrait id={p.who} mood={p.mood === 'oops' ? 'oops' : p.mood === 'ok' && c.role === 'guide' ? 'happy' : 'teach'} size={i === 0 ? 72 : 56} shape="card" fx={false} /> : <Badge id={p.who} size={40} />}<span className="tiny" style={{ fontWeight: 700 }}>{c ? c.name.split(' ')[0] : nameOf(p.who)}</span></span>
-              <span className="bubble-m"><Furi f={p.f} className="jp-m" romaji={false} />{en && <span className="tiny muted" style={{ display: 'block', writingMode: 'horizontal-tb' }}>{p.en}</span>}</span>
+              <span className="bubble-m"><Furi f={p.f} className="jp-m" romaji={false} /></span>
+              {en && <span className="gloss"><span lang="ja" className="jp">{parseFuri(p.f).kana}</span><span className="romaji">{romajiOf(p.f)}</span><span>{p.en}</span></span>}
             </button>
           );
         })}

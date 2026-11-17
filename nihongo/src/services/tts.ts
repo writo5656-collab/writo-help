@@ -4,6 +4,7 @@
 // - In a browser: the Web Speech API.
 import { Capacitor } from '@capacitor/core';
 import { TextToSpeech } from '@capacitor-community/text-to-speech';
+import { voiceFor } from './voices';
 
 const native = Capacitor.isNativePlatform();
 let token = 0;
@@ -17,14 +18,15 @@ export function ttsAvailable(): boolean {
   return native || typeof window !== 'undefined' && 'speechSynthesis' in window;
 }
 
-function speakOne(text: string, rate: number, pitch = 1): Promise<void> {
+function speakOne(text: string, rate: number, pitch = 1, voice?: number): Promise<void> {
   const clean = text.replace(/\s+/g, '');
-  if (native) return TextToSpeech.speak({ text: clean, lang: 'ja-JP', rate, pitch, volume: 1 }).catch(() => undefined);
+  if (native) return TextToSpeech.speak({ text: clean, lang: 'ja-JP', rate, pitch, volume: 1, ...(voice !== undefined ? { voice } : {}) }).catch(() => undefined);
   return new Promise(resolve => {
     if (!('speechSynthesis' in window)) return resolve();
     const u = new SpeechSynthesisUtterance(clean);
     u.lang = 'ja-JP'; u.rate = rate; u.pitch = pitch;
-    const v = webVoice(); if (v) u.voice = v;
+    const all = window.speechSynthesis.getVoices();
+    const v = voice !== undefined && all[voice] ? all[voice] : webVoice(); if (v) u.voice = v;
     u.onend = () => resolve(); u.onerror = () => resolve();
     window.speechSynthesis.speak(u);
     setTimeout(resolve, 15000); // never hang the UI if the engine stays silent
@@ -57,12 +59,16 @@ export async function speakChunks(chunks: string[], rate = 1, onChunk?: (i: numb
 }
 
 /** Speak several lines in order (answer, then a character's reaction, …). */
-export async function speakSeq(items: { text: string; rate?: number; pitch?: number; slow?: boolean }[]) {
+export async function speakSeq(items: { text: string; rate?: number; pitch?: number; slow?: boolean; who?: string }[]) {
   await stop();
   const my = token;
   for (const it of items) {
     if (my !== token) return;
-    await speakOne(it.text, (it.rate ?? 1) * (it.slow ? 0.6 : 1), it.pitch);
+    const v = it.who ? await voiceFor(it.who, it.rate ?? 1) : undefined;
+    await speakOne(it.text, (v?.rate ?? it.rate ?? 1) * (it.slow ? 0.6 : 1), v?.pitch ?? it.pitch, v?.voice);
     await new Promise(r => setTimeout(r, 120));
   }
 }
+
+/** Say something in a character's own voice. */
+export function sayAs(who: string, text: string, rate = 1) { return speakSeq([{ text, who, rate }]); }

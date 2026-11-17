@@ -397,4 +397,190 @@ export const JLPT_LESSONS: Lesson[] = [
       { f: 'たぶん 雨[あめ]が ふると 思[おも]います。', en: 'I think it will probably rain.' },
     ],
   }),
+  L({
+    id: 'n4-04', level: 'N4', title: 'The "can" form', jp: '読める・食べられる', goal: 'Say what you can and cannot do with the short potential form.',
+    vocab: vs(`読めます|よめます|can read
+書けます|かけます|can write
+話せます|はなせます|can speak
+食べられます|たべられます|can eat
+来られます|こられます|can come
+英語|えいご|English
+写真|しゃしん|photo
+さしみ||sashimi`),
+    grammar: [
+      { p: 'u-verbs: -u → -eる', e: 'Change the last sound to the e-row and add る: 読む → 読める, 話す → 話せる, 泳ぐ → 泳げる. Polite: 読めます.' },
+      { p: 'ru-verbs: る → られる', e: '食べる → 食べられる, 見る → 見られる. Irregular: する → できる, くる → こられる.' },
+      { p: 'Object with が', e: 'With the potential form the object is usually marked with が: 漢字が読めます. を is also heard.' },
+    ],
+    sentences: [
+      { f: '私[わたし]は 漢字[かんじ]{が} 読[よ]めます。', en: 'I can read kanji.', alt: ['私[わたし]は 漢字[かんじ]を 読[よ]めます。'] },
+      { f: '田中[たなか]さんは 英語[えいご]{が} 話[はな]せます。', en: 'Mr. Tanaka can speak English.', alt: ['田中[たなか]さんは 英語[えいご]を 話[はな]せます。'] },
+      { f: '私[わたし]は さしみ{が} 食[た]べられません。', en: 'I can\'t eat sashimi.', alt: ['私[わたし]は さしみを 食[た]べられません。'] },
+      { f: 'ここで 写真[しゃしん]{が} とれます。', en: 'You can take photos here.', alt: ['ここで 写真[しゃしん]を とれます。', 'ここで 写真[しゃしん]が 撮[と]れます。'] },
+      { f: 'あした 来[こ]られますか。', en: 'Can you come tomorrow?' },
+    ],
+  }),
+  L({
+    id: 'n4-05', level: 'N4', title: 'If and when', jp: '〜たら', goal: 'Say what happens if or when something happens.',
+    vocab: vs(`雨|あめ|rain
+ふります||to fall (rain, snow)
+着きます|つきます|to arrive
+時間|じかん|time
+ひま||free (not busy)
+電話|でんわ|phone call
+映画|えいが|film, movie`),
+    grammar: [
+      { p: '[た-form] ら', e: 'Add ら to the past plain form for "if" or "when": 雨が降ったら = if it rains. 着いたら = when (I) arrive.' },
+      { p: 'Adjectives and nouns', e: 'い-adjectives: 安かったら. な-adjectives and nouns: ひまだったら, 学生だったら.' },
+    ],
+    sentences: [
+      { f: '雨[あめ]{が} ふったら、 行[い]きません。', en: 'If it rains, I won\'t go.', alt: ['雨[あめ]が 降[ふ]ったら、 行[い]きません。'] },
+      { f: '駅[えき]に 着[つ]いたら、 電話[でんわ]{を} ください。', en: 'Please call me when you arrive at the station.', alt: ['駅[えき]に 着[つ]いたら、 電話[でんわ]して ください。'] },
+      { f: '時間[じかん]{が} あったら、 映画[えいが]を 見[み]ます。', en: 'If I have time, I\'ll watch a film.' },
+      { f: '安[やす]かったら、 買[か]います。', en: 'If it\'s cheap, I\'ll buy it.' },
+      { f: 'ひまだったら、 いっしょに 行[い]きませんか。', en: 'If you\'re free, would you like to go together?' },
+    ],
+  }),
+  L({
+    id: 'n4-06', level: 'N4', title: 'Giving and receiving', jp: 'あげる・くれる・もらう', goal: 'Talk about gifts: who gives what to whom.',
+    vocab: vs(`あげます||to give (to someone else)
+くれます||to give (to me)
+もらいます||to receive
+プレゼント||present
+誕生日|たんじょうび|birthday
+花|はな|flower
+母|はは|my mother
+妹|いもうと|my younger sister`),
+    grammar: [
+      { p: 'A は B に X を あげます', e: 'A gives X to B, going away from the speaker. 私は友だちに本をあげました.' },
+      { p: 'A が 私に X を くれます', e: 'Someone gives X to me (or my family). The receiver is always the speaker\'s side.' },
+      { p: 'A は B に / から X を もらいます', e: 'A receives X from B. The giver takes に or から.' },
+    ],
+    sentences: [
+      { f: '私[わたし]は 友[とも]だち{に} 本[ほん]を あげました。', en: 'I gave a book to a friend.' },
+      { f: '友[とも]だちが 私[わたし]{に} 花[はな]を くれました。', en: 'A friend gave me flowers.' },
+      { f: '私[わたし]は 母[はは]{に} プレゼントを もらいました。', en: 'I received a present from my mother.', alt: ['私[わたし]は 母[はは]から プレゼントを もらいました。'] },
+      { f: '誕生日[たんじょうび]{に} 何[なに]を もらいましたか。', en: 'What did you get for your birthday?' },
+      { f: '妹[いもうと]{に} ケーキを あげます。', en: 'I\'ll give my younger sister some cake.' },
+    ],
+  }),
+  L({
+    id: 'n4-07', level: 'N4', title: 'Must and don\'t have to', jp: '〜なければなりません', goal: 'Say what you have to do, and what you don\'t need to do.',
+    vocab: vs(`薬|くすり|medicine
+宿題|しゅくだい|homework
+早く|はやく|early
+起きます|おきます|to get up
+払います|はらいます|to pay
+お金|おかね|money`),
+    grammar: [
+      { p: '[ない-form without い] + ければなりません', e: '"Must". 飲まない → 飲まなければなりません, しない → しなければなりません. In speech this is often shortened to 〜なきゃ.' },
+      { p: '[ない-form without い] + くてもいいです', e: '"Don\'t have to". 払わない → 払わなくてもいいです.' },
+    ],
+    sentences: [
+      { f: '毎日[まいにち] 薬[くすり]{を} 飲[の]まなければ なりません。', en: 'I have to take medicine every day.' },
+      { f: 'あした 早[はや]く 起[お]きなければ なりません。', en: 'I have to get up early tomorrow.' },
+      { f: '宿題[しゅくだい]{を} しなければ なりません。', en: 'I have to do my homework.' },
+      { f: 'お金[かね]{を} 払[はら]わなくても いいです。', en: 'You don\'t have to pay.' },
+      { f: 'あした 学校[がっこう]{に} 行[い]かなくても いいです。', en: 'You don\'t have to go to school tomorrow.', alt: ['あした 学校[がっこう]へ 行[い]かなくても いいです。'] },
+    ],
+  }),
+  L({
+    id: 'n4-08', level: 'N4', title: 'May I? You must not', jp: '〜てもいい・〜てはいけない', goal: 'Ask permission and understand rules and signs.',
+    vocab: vs(`とります||to take (a photo)
+すいます||to smoke
+たばこ||cigarette
+入ります|はいります|to enter
+座ります|すわります|to sit
+部屋|へや|room
+教室|きょうしつ|classroom`),
+    grammar: [
+      { p: '[て-form] も いいです(か)', e: '"May (I)…?" ここで写真をとってもいいですか = May I take photos here?' },
+      { p: '[て-form] は いけません', e: '"Must not". Common on signs and in rules: ここでたばこをすってはいけません.' },
+    ],
+    sentences: [
+      { f: 'ここで 写真[しゃしん]{を} とっても いいですか。', en: 'May I take photos here?', alt: ['ここで 写真[しゃしん]を 撮[と]っても いいですか。'] },
+      { f: 'ここで たばこ{を} すっては いけません。', en: 'You must not smoke here.', alt: ['ここで たばこを 吸[す]っては いけません。'] },
+      { f: 'この 部屋[へや]{に} 入[はい]っても いいです。', en: 'You may enter this room.' },
+      { f: 'ここに 座[すわ]っても いいですか。', en: 'May I sit here?' },
+      { f: '教室[きょうしつ]{で} 食[た]べては いけません。', en: 'You must not eat in the classroom.' },
+    ],
+  }),
+  L({
+    id: 'n4-09', level: 'N4', title: 'Plans and intentions', jp: '〜つもり・〜予定', goal: 'Talk about what you intend to do and what is scheduled.',
+    vocab: vs(`つもり||intention
+予定|よてい|plan, schedule
+夏休み|なつやすみ|summer holidays
+留学|りゅうがく|studying abroad
+来年|らいねん|next year
+会議|かいぎ|meeting`),
+    grammar: [
+      { p: '[dictionary form] つもりです', e: '"I intend to…". Negative intention: 〜ないつもりです.' },
+      { p: '[dictionary form / noun の] 予定です', e: 'Something scheduled or arranged: 三時からの予定です.' },
+    ],
+    sentences: [
+      { f: '来年[らいねん] 日本[にほん]{に} 留学[りゅうがく]する つもりです。', en: 'I intend to study in Japan next year.', alt: ['来年[らいねん] 日本[にほん]へ 留学[りゅうがく]する つもりです。', '来年[らいねん] 日本[にほん]に 留学[りゅうがく]するつもりです。'] },
+      { f: '夏休[なつやす]み{に} 京都[きょうと]へ 行[い]く つもりです。', en: 'I plan to go to Kyoto in the summer holidays.', alt: ['夏休[なつやす]みに 京都[きょうと]に 行[い]く つもりです。'] },
+      { f: 'あしたは 何[なに]{を} する 予定[よてい]ですか。', en: 'What are your plans for tomorrow?' },
+      { f: '会議[かいぎ]は 三時[さんじ]{から}の 予定[よてい]です。', en: 'The meeting is scheduled for three o\'clock.' },
+      { f: 'たばこは もう すわない つもりです。', en: 'I intend not to smoke any more.' },
+    ],
+  }),
+  L({
+    id: 'n4-10', level: 'N4', title: 'Because… so…', jp: '〜ので', goal: 'Give reasons politely with ので.',
+    vocab: vs(`熱|ねつ|fever
+休みます|やすみます|to take time off, rest
+遅れます|おくれます|to be late
+道|みち|road
+込んでいます|こんでいます|is crowded
+疲れました|つかれました|got tired
+寝ます|ねます|to go to bed`),
+    grammar: [
+      { p: '[plain form] ので', e: '"Because / so". Softer and more polite than から, good for excuses and requests: 熱があるので、休みます.' },
+      { p: 'Nouns and な-adjectives: なので', e: 'あしたは休みなので… = Because tomorrow is a day off…' },
+    ],
+    sentences: [
+      { f: '熱[ねつ]{が} あるので、 休[やす]みます。', en: 'I have a fever, so I\'ll take the day off.' },
+      { f: '道[みち]{が} 込[こ]んでいたので、 遅[おく]れました。', en: 'The road was crowded, so I was late.' },
+      { f: '疲[つか]れたので、 早[はや]く 寝[ね]ます。', en: 'I\'m tired, so I\'ll go to bed early.' },
+      { f: 'あしたは 休[やす]みなので、 映画[えいが]{を} 見[み]に 行[い]きます。', en: 'Tomorrow is a day off, so I\'ll go to see a film.' },
+      { f: '雨[あめ]{が} ふっているので、 タクシーで 帰[かえ]ります。', en: 'It\'s raining, so I\'ll go home by taxi.', alt: ['雨[あめ]が 降[ふ]っているので、 タクシーで 帰[かえ]ります。'] },
+    ],
+  }),
+  L({
+    id: 'n4-11', level: 'N4', title: 'Too much', jp: '〜すぎる', goal: 'Say that something is too much, too big or too difficult.',
+    vocab: vs(`食べすぎました|たべすぎました|ate too much
+高すぎます|たかすぎます|too expensive
+大きすぎます|おおきすぎます|too big
+くつ||shoes
+お酒|おさけ|alcohol`),
+    grammar: [
+      { p: '[verb stem] すぎます', e: '"Do too much": 食べます → 食べすぎます, 飲みます → 飲みすぎます.' },
+      { p: '[adjective] すぎます', e: 'い-adjectives drop い: 高い → 高すぎます. な-adjectives: しずかすぎます.' },
+    ],
+    sentences: [
+      { f: 'きのう ケーキ{を} 食[た]べすぎました。', en: 'I ate too much cake yesterday.' },
+      { f: 'この かばん{は} 高[たか]すぎます。', en: 'This bag is too expensive.' },
+      { f: 'この くつ{は} 私[わたし]には 大[おお]きすぎます。', en: 'These shoes are too big for me.' },
+      { f: 'お酒[さけ]{を} 飲[の]みすぎないで ください。', en: 'Please don\'t drink too much alcohol.' },
+    ],
+  }),
+  L({
+    id: 'n4-12', level: 'N4', title: 'While doing', jp: '〜ながら', goal: 'Say you do two things at the same time.',
+    vocab: vs(`ながら||while
+音楽|おんがく|music
+歌います|うたいます|to sing
+歩きます|あるきます|to walk
+アルバイト||part-time job
+通います|かよいます|to attend, commute`),
+    grammar: [
+      { p: '[verb stem] ながら', e: '"While doing": the same person does both actions, and the main action comes last. 聞きながら勉強します = study while listening.' },
+    ],
+    sentences: [
+      { f: '音楽[おんがく]{を} 聞[き]きながら 勉強[べんきょう]します。', en: 'I study while listening to music.' },
+      { f: '歩[ある]きながら 電話[でんわ]{を} しないで ください。', en: 'Please don\'t talk on the phone while walking.' },
+      { f: 'アルバイト{を} しながら 大学[だいがく]に 通[かよ]っています。', en: 'I go to university while working part-time.' },
+      { f: 'テレビ{を} 見[み]ながら ごはんを 食[た]べます。', en: 'I eat while watching TV.' },
+      { f: '歌[うた]いながら 料理[りょうり]{を} します。', en: 'I cook while singing.' },
+    ],
+  }),
 ];

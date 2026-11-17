@@ -22,3 +22,27 @@ export function usePlan() {
   }) : undefined, [items, days, sunday]);
   return { plan, items, map, days, finished: sunday?.finished ?? new Set<string>() };
 }
+
+import { streakInfo, lastWeek, PLAN_SECONDS, type BlockId } from './daily';
+import { dayKey, getKV, setKV } from './db';
+
+/** Today's plan progress and the streak, live from the database. */
+export function useDaily() {
+  const days = useLiveQuery(() => db.days.toArray(), []);
+  const today = dayKey();
+  const blocks = useLiveQuery(async () => ((await db.kv.get(`plan:${today}`))?.value as BlockId[]) ?? [], [today]);
+  return useMemo(() => {
+    if (!days || !blocks) return undefined;
+    const completed = new Set(days.filter(d => d.seconds >= PLAN_SECONDS).map(d => d.day));
+    const first = days.filter(d => d.seconds > 0 || d.xp > 0).map(d => d.day).sort()[0];
+    const info = streakInfo(completed, first, today);
+    const seconds = days.find(d => d.day === today)?.seconds ?? 0;
+    return { info, week: lastWeek(info, today), seconds, left: Math.max(0, PLAN_SECONDS - seconds), blocks, today, score: days.reduce((a, d) => a + d.xp, 0), studied: completed.size };
+  }, [days, blocks, today]);
+}
+
+export async function markBlock(id: BlockId) {
+  const k = `plan:${dayKey()}`;
+  const cur = await getKV<BlockId[]>(k, []);
+  if (!cur.includes(id)) await setKV(k, [...cur, id]);
+}

@@ -1,6 +1,9 @@
 import { Link } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { usePlan } from '../lib/hooks';
+import { usePlan, useDaily } from '../lib/hooks';
+import { BLOCKS } from '../lib/daily';
+import { JapanFlag } from '../components/Flag';
+import { StreakBadge, WeekStrip, PlanRing, mmss } from '../components/PlanWidgets';
 import { db, dayKey } from '../lib/db';
 import { trackProgress, streaks } from '../lib/plan';
 import { isKnown } from '../lib/srs';
@@ -22,47 +25,45 @@ export default function Home() {
   const hira = pct(Object.keys(HIRA).map(kanaId)), kata = pct(Object.keys(KATA).map(kanaId)), kanji = pct(KANJI.map(k => kanjiId(k.k)));
   const [jp, en] = greeting();
   const rp = ROLEPLAYS[(new Date().getDate()) % ROLEPLAYS.length];
-  if (!plan) return null;
-  const studied = (days ?? []).filter(d => d.xp > 0).map(d => d.day);
-  const score = (days ?? []).reduce((a, d) => a + d.xp, 0);
-  const st = streaks(studied);
-  const focusLabel = plan.focus === 'review' ? 'Sunday review' : plan.focus === 'jlpt' ? 'JLPT foundations' : 'Practical Japanese';
+  const daily = useDaily();
+  if (!plan || !daily) return null;
+  const g = CAST[dailyCast().guide];
+  const blocksLeft = BLOCKS.filter(x => !daily.blocks.includes(x.id));
 
   return (
     <main className="screen">
       <header className="topbar">
         <div className="brand grow"><span className="brand-mark"><Icon n="torii" s={20} w={2.2} /></span>Nihongo</div>
-        <Link className="iconbtn soft" to="/progress" aria-label="Progress"><Icon n="chart" /></Link>
+        <span className="lang-tag" title="You are learning Japanese"><JapanFlag w={24} /><span lang="ja">日本語</span></span>
         <Link className="iconbtn soft" to="/settings" aria-label="Settings"><Icon n="gear" /></Link>
       </header>
 
       <section className="row between" style={{ alignItems: 'flex-end' }}>
         <div className="col gap-s">
           <h1><span lang="ja" className="jp">{jp}</span>{s.name ? `, ${s.name}` : ''}</h1>
-          <p className="muted">{en}. {today?.seconds ? `${fmtMin(today.seconds)} studied today.` : 'Ready when you are.'}</p>
-          <p className="small">Today's guide: <b>{CAST[dailyCast().guide].name}</b> · <Link to="/call" style={{ color: 'var(--forest-2)', fontWeight: 700 }}>call her</Link></p>
+          <p className="muted">{en}. Learning <b>Japanese</b> 🇯🇵</p>
+          <p className="small">Today's teacher: <b>{g.name}</b> · <Link to="/call" style={{ color: 'var(--forest-2)', fontWeight: 700 }}>call her</Link></p>
         </div>
-        <Link to="/call" aria-label={`Call ${CAST[dailyCast().guide].name}`} style={{ textAlign: 'center' }}><Portrait id={dailyCast().guide} size={78} /><span className="tiny" style={{ display: 'block', fontWeight: 700, marginTop: 4 }}>{CAST[dailyCast().guide].name.split(' ')[0]}</span></Link>
+        <Link to="/call" aria-label={`Call ${g.name}`} style={{ textAlign: 'center' }}><Portrait id={g.id} size={78} mood={daily.info.todayDone ? 'happy' : 'teach'} /><span className="tiny" style={{ display: 'block', fontWeight: 700, marginTop: 4 }}>{g.name.split(' ')[0]}</span></Link>
       </section>
 
-      <section className="stats" aria-label="Your score">
-        <Link to="/progress" className="stat"><span className="ic" style={{ background: 'var(--amber-soft)', color: '#a8741a' }}><Icon n="flame" s={20} /></span><span><b>{st.current}</b><span className="tiny muted">{st.current === 1 ? "day" : "days"} streak</span></span></Link>
-        <Link to="/progress" className="stat"><span className="ic" style={{ background: 'var(--sage-soft)', color: 'var(--forest)' }}><Icon n="star" s={20} /></span><span><b>{score.toLocaleString()}</b><span className="tiny muted">score</span></span></Link>
-        <Link to="/progress" className="stat"><span className="ic" style={{ background: 'var(--sakura-soft)', color: '#9c4a45' }}><Icon n="calendar" s={20} /></span><span><b>{studied.length}</b><span className="tiny muted">studied</span></span></Link>
-      </section>
-      {st.current === 0 && st.best > 0 && <p className="tiny muted" style={{ marginTop: -8 }}>Your best run is {st.best} days. A missed day costs nothing — your score and progress are all still here.</p>}
+      <Link to="/progress"><StreakBadge current={daily.info.current} freezes={daily.info.freezes} atRisk={daily.info.atRisk} todayDone={daily.info.todayDone} /></Link>
+      <WeekStrip week={daily.week} />
+      {daily.info.atRisk && <div className="card amber small row"><Icon n="flame" s={18} /><span>Your {daily.info.current}-day streak needs today's 25 minutes before midnight{daily.info.freezes ? ` (or it uses a ❄ freeze — ${daily.info.freezes} left)` : ' — no freezes left!'}.</span></div>}
 
       <section className="card green col">
-        <div className="row between">
-          <div><h2>Today's 25-minute plan</h2><p className="small muted">Day {plan.cycleDay} of 4 · {focusLabel}</p></div>
-          <span className="badge" style={{ background: 'rgba(255,255,255,.14)', color: 'var(--cream)' }}>a guide, not a timer</span>
+        <div className="row" style={{ alignItems: 'center' }}>
+          <PlanRing seconds={daily.seconds} size={92} />
+          <div className="grow">
+            <h2>Today's 25-minute plan</h2>
+            <p className="small muted">{daily.info.todayDone ? 'Complete — streak secured for today.' : `${mmss(daily.left)} to go · ${blocksLeft.length ? `${blocksLeft.length} of 4 blocks left` : 'all blocks done'}`}</p>
+            <p className="small muted"><span className="num">{daily.score.toLocaleString()}</span> score · {daily.studied} full days</p>
+          </div>
         </div>
         <div className="list" style={{ ['--line' as string]: 'rgba(255,255,255,.14)' }}>
-          <Step to="/session?m=review" min="5" title="Spaced revision" sub={plan.due ? `${plan.due} item${plan.due === 1 ? '' : 's'} due` : 'Nothing due — you are up to date'} />
-          {plan.lesson && <Step to={`/lesson/${plan.lesson.id}`} min="8" title="New lesson" sub={plan.lesson.title} />}
-          <Step to="/session?m=drill&type=translate" min="7" title="Sentence practice" sub="Write full sentences in your notebook" />
-          <Step to={plan.focus === 'practical' && plan.practical ? `/lesson/${plan.practical.id}` : `/roleplay/${rp.id}`} min="5" title="Real-life challenge" sub={plan.focus === 'practical' && plan.practical ? plan.practical.title : `Roleplay: ${rp.title}`} />
+          {BLOCKS.map(b => <div key={b.id} className="li" style={{ minHeight: 40, padding: '8px 2px' }}><span className="num tiny" style={{ width: 40, opacity: .75, fontWeight: 700 }}>{b.min} min</span><span className="grow" style={{ fontWeight: 650, textDecoration: daily.blocks.includes(b.id) ? 'line-through' : 'none', opacity: daily.blocks.includes(b.id) ? .6 : 1 }}>{b.title}{b.id === 'lesson' && plan.lesson ? `: ${plan.lesson.title}` : ''}</span>{daily.blocks.includes(b.id) && <Icon n="check" s={18} />}</div>)}
         </div>
+        <Link to="/plan" className="btn cream">{daily.info.todayDone ? 'Keep learning' : daily.blocks.length || daily.seconds > 60 ? 'Continue learning' : 'Start today\'s plan'}<Icon n="next" s={18} /></Link>
       </section>
 
       {plan.sundayPending && (
@@ -101,7 +102,7 @@ export default function Home() {
         <Link to="/mistakes" className="card grow col gap-s"><span className="tile amber"><Icon n="bulb" /></span><h3>Mistakes</h3><p className="small muted">{mistakes ? `${mistakes} to revisit` : 'Nothing open'}</p></Link>
       </div>
 
-      {plan.lesson && <Link to={`/lesson/${plan.lesson.id}`} className="btn">Continue learning<Icon n="next" s={18} /></Link>}
+      <Link to="/plan" className="btn">Continue learning<Icon n="next" s={18} /></Link>
     </main>
   );
 }

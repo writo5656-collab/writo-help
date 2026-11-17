@@ -52,6 +52,13 @@ Open `src/content/jlpt.ts` (or `practical.ts`) and copy an existing lesson. Sent
 
 Run `npm test` afterwards: it checks every sentence has a clean reading and accepts its own answers.
 
+## Daily plan and streak
+
+- The **25-minute plan** has four blocks: review, a lesson part, sentence writing, and a spoken real-life call. Home → *Continue learning* walks you through them.
+- A day counts for the **streak** once you have studied 25 minutes. You hold **3 streak freezes**: a missed day uses one automatically. With none left, a missed day breaks the streak. Every 7 completed days earns a freeze back.
+- **Reminders**: your teachers message you at your chosen time, 22:00 and 23:15 if today's plan isn't done (Android only).
+- **Widget**: long-press your home screen → Widgets → *Nihongo streak*.
+
 ## Data and credits
 
 - **JLPT vocabulary (N5–N1, 8,034 words):** [open-anki-jlpt-decks](https://github.com/jamsinclair/open-anki-jlpt-decks) (MIT), from Jonathan Waller's JLPT lists; meanings from JMdict © EDRDG, CC BY-SA 4.0.

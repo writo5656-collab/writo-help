@@ -6,6 +6,7 @@ import { KANA_LESSONS, JLPT_LESSONS, kanaRomaji, lessonItemIds, kanaId, HIRA, KA
 import { shuffle } from '../lib/exercises';
 import { setReminder } from '../services/notify';
 import { Mascot, Icon, Switch, Bar } from '../components/ui';
+import { PictureDownload } from '../components/PictureGate';
 
 const LEVELS: { id: Settings['level']; title: string; sub: string }[] = [
   { id: 'zero', title: 'Complete beginner', sub: 'I cannot read Japanese yet.' },
@@ -46,7 +47,7 @@ export default function Onboarding() {
   const [step, setStep] = useState(0);
   const [name, setName] = useState('');
   const [level, setLevel] = useState<Settings['level']>('kana');
-  const [reminder, setRem] = useState(false);
+  const [reminder, setRem] = useState(true);
   const [time, setTime] = useState('19:30');
   const qs = useMemo(() => (step === 2 ? buildCheck(level) : []), [step, level]);
   const [qi, setQi] = useState(0);
@@ -74,7 +75,7 @@ export default function Onboarding() {
 
   return (
     <main className="screen no-tabs" style={{ justifyContent: 'space-between' }}>
-      <Bar pct={((step + 1) / 4) * 100} />
+      <Bar pct={((step + 1) / 5) * 100} />
       {step === 0 && (
         <>
           <div className="col center" style={{ alignItems: 'center', marginTop: 20 }}>
@@ -127,13 +128,14 @@ export default function Onboarding() {
           <div className="col">
             {right.length > 0 && <div className="card sage small">Placement check: {right.filter(Boolean).length} of {right.length} correct. What you already know has been marked, and will be re-checked in a few days to confirm it.</div>}
             <div className="card flat col">
-              <div className="row between"><div><h3>Daily reminder</h3><p className="small muted">A quiet nudge. No guilt if you skip.</p></div><Switch on={reminder} onChange={setRem} label="Daily reminder" /></div>
+              <div className="row between"><div><h3>Streak reminders</h3><p className="small muted">Your teachers message you in the evening if today's 25 minutes aren't done yet.</p></div><Switch on={reminder} onChange={setRem} label="Daily reminder" /></div>
               {reminder && <input type="time" className="field" value={time} onChange={e => setTime(e.target.value)} aria-label="Reminder time" />}
             </div>
           </div>
-          <button className="btn" onClick={finish}>Start learning<Icon n="next" s={18} /></button>
+          <button className="btn" onClick={() => setStep(4)}>Continue<Icon n="next" s={18} /></button>
         </>
       )}
+      {step === 4 && <PictureDownload onDone={finish} />}
     </main>
   );
 }

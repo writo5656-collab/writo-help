@@ -43,7 +43,7 @@ export function Characters() {
                 <div className="row">
                   <Portrait id={c.id} size={64} />
                   <div className="grow"><h3>{c.name} <span className="small muted jp" lang="ja">{c.jp}</span></h3><p className="small muted">{c.series} · {lessons} lesson{lessons === 1 ? '' : 's'}</p></div>
-                  <button className="iconbtn soft" aria-label={`Hear ${c.name}`} onClick={() => speakSeq([{ text: (c.say ?? ['こんにちは'])[0], pitch: c.role === 'guide' ? 1.3 : 0.75, rate: 1.05 }])}><Icon n="sound" /></button>
+                  <button className="iconbtn soft" aria-label={`Hear ${c.name}`} onClick={() => speakSeq([{ text: `${c.jp}です。 ${(c.say ?? ['よろしく'])[0]}`, who: c.id }])}><Icon n="sound" /></button>
                   <button className="iconbtn soft" aria-label="Edit pictures" aria-expanded={open === c.id} onClick={() => setOpen(open === c.id ? '' : c.id)}><Icon n={open === c.id ? 'close' : 'pen'} /></button>
                 </div>
                 {open === c.id && <Editor id={c.id} name={c.name} />}

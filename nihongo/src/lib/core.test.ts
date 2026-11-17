@@ -161,3 +161,35 @@ describe('character pictures and voices', () => {
     }
   });
 });
+
+import { streakInfo, lastWeek, nextBlock } from './daily';
+describe('daily plan streak with freezes', () => {
+  const days = (...d: string[]) => new Set(d);
+  it('counts consecutive completed days, today included', () => {
+    const r = streakInfo(days('2026-03-01', '2026-03-02', '2026-03-03'), '2026-03-01', '2026-03-03');
+    expect(r.current).toBe(3); expect(r.todayDone).toBe(true); expect(r.atRisk).toBe(false); expect(r.freezes).toBe(3);
+  });
+  it('today not yet done keeps the streak but marks it at risk', () => {
+    const r = streakInfo(days('2026-03-01', '2026-03-02'), '2026-03-01', '2026-03-03');
+    expect(r.current).toBe(2); expect(r.atRisk).toBe(true);
+  });
+  it('up to three missed days are frozen; the fourth breaks the streak', () => {
+    const three = streakInfo(days('2026-03-01', '2026-03-02', '2026-03-06'), '2026-03-01', '2026-03-06');
+    expect(three.current).toBe(3); expect(three.freezes).toBe(0);
+    expect(three.status.get('2026-03-04')).toBe('frozen');
+    const four = streakInfo(days('2026-03-01', '2026-03-02', '2026-03-07'), '2026-03-01', '2026-03-07');
+    expect(four.current).toBe(1); expect(four.status.get('2026-03-06')).toBe('missed'); expect(four.best).toBe(2);
+  });
+  it('earns a freeze back every 7 completed days', () => {
+    const d: string[] = []; for (let i = 1; i <= 2; i++) d.push(`2026-04-0${i}`);
+    for (let i = 4; i <= 9; i++) d.push(`2026-04-${String(i).padStart(2, '0')}`);
+    d.push('2026-04-10');
+    const r = streakInfo(new Set(d), '2026-04-01', '2026-04-11');
+    expect(r.current).toBe(9); expect(r.freezes).toBe(3);
+  });
+  it('week strip and plan order', () => {
+    const r = streakInfo(days('2026-03-02'), '2026-03-01', '2026-03-03');
+    expect(lastWeek(r, '2026-03-03').map(x => x.status).slice(-3)).toEqual(['missed', 'done', 'today']);
+    expect(nextBlock([])).toBe('review'); expect(nextBlock(['review', 'lesson'])).toBe('sentences'); expect(nextBlock(['review', 'lesson', 'sentences', 'real'])).toBeUndefined();
+  });
+});

@@ -316,3 +316,42 @@ button.card:active, a.card:active { transform: scale(.985); }
 .call .field, .call .card { color: var(--ink); }
 .pick-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
 .pick-grid button { display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: .78rem; font-weight: 700; text-align: center; }
+
+/* ---- streak, week strip, plan ---- */
+.streak { display: flex; align-items: center; gap: 10px; background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 10px 14px; }
+.streak b { font-size: 1.5rem; display: block; line-height: 1; }
+.streak .flame { width: 42px; height: 42px; border-radius: 14px; display: grid; place-items: center; background: #eee6d3; color: #b0a58a; }
+.streak.lit .flame { background: linear-gradient(160deg, #ffb347, #e8590c); color: #fff; animation: hop .6s ease both; box-shadow: 0 4px 14px rgba(232,89,12,.35); }
+.streak.risk .flame { background: var(--amber-soft); color: #c26a12; animation: pulse 1.6s infinite; }
+.streak .freezes { margin-left: auto; display: flex; gap: 3px; }
+.streak .freezes i { font-style: normal; width: 24px; height: 24px; border-radius: 8px; display: grid; place-items: center; font-size: .85rem; background: #eee6d3; color: #c9bfa6; }
+.streak .freezes i.on { background: #dcecf8; color: #2d7fc1; }
+.week { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+.wd { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+.wd i { font-style: normal; width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; font-weight: 800; font-size: .85rem; background: #eee6d3; color: #b0a58a; }
+.wd small { font-size: .66rem; font-weight: 700; color: var(--muted); }
+.wd.done i { background: linear-gradient(160deg, #ffb347, #e8590c); color: #fff; }
+.wd.frozen i { background: #dcecf8; color: #2d7fc1; }
+.wd.missed i { background: #f3dcd8; color: var(--bad); }
+.wd.today i { background: #fff; box-shadow: inset 0 0 0 2.5px var(--forest-2); }
+.blocks .blk { display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 16px; background: var(--card); border: 1px solid var(--line); }
+.blocks .blk.done { opacity: .7; }
+.blocks .blk.cur { border-color: var(--forest-2); box-shadow: 0 0 0 3px rgba(44,106,80,.14); }
+.blocks .blk .n { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; font-weight: 800; background: var(--sage-soft); color: var(--forest); flex: none; }
+.blocks .blk.done .n { background: var(--forest-2); color: #fff; }
+.hello { display: flex; align-items: center; gap: 8px; }
+.lang-tag { display: inline-flex; align-items: center; gap: 7px; padding: 4px 10px 4px 5px; border-radius: 99px; background: var(--card); border: 1px solid var(--line); font-size: .78rem; font-weight: 700; }
+.celebrate { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; background: rgba(15,26,22,.55); animation: fadeIn .3s ease both; padding: 24px; }
+.celebrate .card { max-width: 360px; text-align: center; animation: hop .6s cubic-bezier(.3,1.6,.5,1) both; }
+
+.panel .gloss { display: flex; flex-direction: column; gap: 1px; font-size: .74rem; line-height: 1.35; padding: 5px 7px; background: rgba(255,253,247,.92); border-left: 3px solid var(--forest-2); border-radius: 4px; writing-mode: horizontal-tb; }
+.panel .gloss .jp { font-size: .8rem; color: #3b3b3b; }
+.panel .gloss .romaji { font-size: .7rem; }
+
+.cal { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; }
+.cd { aspect-ratio: 1; border-radius: 9px; display: grid; place-items: center; font-size: .72rem; font-weight: 700; background: #f1ebdc; color: #b5aa8f; }
+.cd.done { background: linear-gradient(160deg, #ffb347, #e8590c); color: #fff; }
+.cd.frozen { background: #dcecf8; color: #2d7fc1; }
+.cd.missed { background: #f3dcd8; color: var(--bad); }
+.cd.today { background: #fff; color: var(--forest); box-shadow: inset 0 0 0 2px var(--forest-2); }
+.cd.sw { width: 14px; height: 14px; aspect-ratio: auto; border-radius: 4px; display: inline-block; vertical-align: middle; }

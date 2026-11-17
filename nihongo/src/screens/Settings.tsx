@@ -65,8 +65,8 @@ export default function Settings() {
 
       <h2>Reminder</h2>
       <section className="card flat list" style={{ padding: '2px 16px' }}>
-        <Row title="Daily reminder" sub="A quiet nudge, never a penalty"><Switch on={s.reminder} onChange={v => reminder(v)} label="Daily reminder" /></Row>
-        {s.reminder && <Row title="Time"><input type="time" className="field" style={{ width: 130 }} value={s.reminderTime} onChange={e => reminder(true, e.target.value)} aria-label="Reminder time" /></Row>}
+        <Row title="Streak reminders" sub="Teachers message you at this time, 22:00 and 23:15 if today's plan isn't done"><Switch on={s.reminder} onChange={v => reminder(v)} label="Streak reminders" /></Row>
+        {s.reminder && <Row title="First reminder"><input type="time" className="field" style={{ width: 130 }} value={s.reminderTime} onChange={e => reminder(true, e.target.value)} aria-label="Reminder time" /></Row>}
       </section>
       {!remindersSupported() && <p className="tiny muted">Reminders are delivered by the installed Android app. In a web browser this setting is saved but no notification is sent.</p>}
 

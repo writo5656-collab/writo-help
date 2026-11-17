@@ -19,6 +19,8 @@ type Card =
 
 export default function Lesson() {
   const { id } = useParams();
+  const qs = new URLSearchParams(location.hash.split('?')[1] ?? '');
+  const plan = qs.get('plan') === '1';
   const l = LESSON_MAP.get(id ?? '');
   const cards = useMemo<Card[]>(() => !l ? [] : [
     { t: 'intro' },
@@ -53,7 +55,7 @@ export default function Lesson() {
         <div className="row">
           <button className="btn ghost" disabled={i === 0} onClick={() => go(i - 1)}><Icon n="back" s={18} />Previous</button>
           {c.t === 'end'
-            ? <Link className="btn" to={`/session?m=lesson&id=${l.id}`} onClick={() => go(0)}>Start practice<Icon n="next" s={18} /></Link>
+            ? <Link className="btn" to={`/session?m=lesson&id=${l.id}&part=1${plan ? '&plan=1&block=lesson' : ''}`} onClick={() => go(0)}>Start Part 1<Icon n="next" s={18} /></Link>
             : <button className="btn" onClick={() => go(i + 1)}>Next<Icon n="next" s={18} /></button>}
         </div>
       </div>
@@ -185,6 +187,7 @@ function EndCard({ l }: { l: L }) {
     <div className="card sage col center" style={{ alignItems: 'center', padding: '26px 16px' }}>
       <span className="tile green"><Icon n="pen" /></span>
       <h2>Ready to practise</h2>
+      <p className="small" style={{ maxWidth: 300 }}><b>Part 1 — Learn:</b> recognise, read the story, copy. <b>Part 2 — Use it:</b> build and write sentences yourself, listen, then a final challenge. Mistakes stay until you fix them.</p>
       <p className="small muted" style={{ maxWidth: 300 }}>{l.kana ? 'Recognise each character, then read and write real words.' : 'Meaning, particles, sentence building, then writing full sentences in your notebook and a little listening.'} Take as many tries as you like.</p>
     </div>
   );
