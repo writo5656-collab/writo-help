@@ -11,6 +11,7 @@ const DRILLS: [string, string, string, string][] = [
   ['particles', 'star', 'Particles', 'Fill in は, を, に, で and friends'],
   ['arrange', 'shuffle', 'Sentence building', 'Put the parts in the right order'],
   ['listening', 'ear', 'Listening', 'Hear a sentence and write it down'],
+  ['chat', 'chat', 'Complete the chat', 'Pick the right reply in real conversations'],
   ['speaking', 'mic', 'Read aloud', 'Say sentences and check they are understood'],
   ['vocab', 'book', 'Vocabulary', 'Words from lessons you have started'],
   ['kanji', 'flag', 'Kanji', 'Meanings and readings'],

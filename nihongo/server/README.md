@@ -1,34 +1,74 @@
-# AI tutor proxy
+# AI tutor server (proxy)
 
-The AI tutor is the only part of Nihongo that needs an outside service. Everything else works offline.
+The AI tutor powers **free-talk calls** and open conversation. Everything else in Nihongo works without it.
 
-**Why a proxy?** The tutor uses Claude through the Anthropic API, which needs a paid API key. Putting that key inside a phone app is unsafe (anyone with the APK could extract it), so the key lives in a tiny server-side function instead. The app only knows the function's web address.
+You have three ways to connect it (Settings → AI tutor):
 
-**Status: written but not yet deployed or tested against a live key.** Treat the first run as a test.
+| Option | Cost | Setup | Safety |
+|---|---|---|---|
+| **Gemini key in the app** | Free (daily limit) | 2 minutes | Key is stored on your phone |
+| **Claude key in the app** | Paid per use | 2 minutes | Key is stored on your phone |
+| **Your own proxy (this folder)** | Free with Gemini, or paid with Claude | About 15 minutes | Key never leaves your server — safest |
 
-## One-time setup (about 15 minutes)
+The keys in the app are fine for a phone only you use. Use the proxy if anyone else might use the app or the phone.
 
-1. **Get an API key** at https://console.anthropic.com → API keys. Add a little credit. A tutor conversation costs a few cents at most.
-2. **Create a free Supabase project** at https://supabase.com (or use an existing one).
-3. **Install the Supabase CLI** on a computer: https://supabase.com/docs/guides/cli
-4. In a terminal, from this `server` folder:
+**Status:** this code compiles but has not been tested against a live key. Treat the first run as a test.
 
-   ```bash
-   supabase login
-   supabase link --project-ref YOUR_PROJECT_REF
-   supabase secrets set ANTHROPIC_API_KEY=sk-ant-...   APP_TOKEN=choose-a-long-passphrase
-   supabase functions deploy tutor --no-verify-jwt
-   ```
+---
 
-5. The last command prints an address like `https://YOUR_PROJECT_REF.supabase.co/functions/v1/tutor`.
-6. In the app: **Settings → AI tutor** → paste that address, type the same passphrase, tap **Test connection**.
+## Fastest: Gemini key in the app (free)
 
-`APP_TOKEN` stops strangers who find the address from spending your credit. Keep it private.
+1. Open **https://aistudio.google.com** and sign in with a Google account.
+2. Click **Get API key** → **Create API key**, and copy it.
+3. In Nihongo: **Settings → AI tutor → Gemini key**, paste it, tap **Test connection**.
 
-## Changing the model or behaviour
+Google's free tier has a daily limit. If you hit it, the tutor says so; try again later.
 
-Open `supabase/functions/tutor/index.ts`. The model name and the tutor's instructions are near the bottom. Redeploy with `supabase functions deploy tutor --no-verify-jwt`.
+---
+
+## Your own free server (proxy) — step by step
+
+You need a computer once, for about 15 minutes. After that, nothing runs on your computer.
+
+### 1. Get a free AI key
+Do the Gemini steps above, but keep the key for the server instead of pasting it into the app. To use Claude instead, create a key at **https://console.anthropic.com** → API keys (paid).
+
+### 2. Create a free Supabase project
+1. Go to **https://supabase.com** and sign up (free plan).
+2. Click **New project**, give it any name and a database password, and wait for it to finish.
+3. Open **Project Settings → General** and copy the **Reference ID** (looks like `abcdefghijklmnop`).
+
+### 3. Install the Supabase tool on your computer
+- Windows: install **Scoop** (scoop.sh), then run `scoop install supabase`
+- Mac: install **Homebrew** (brew.sh), then run `brew install supabase/tap/supabase`
+- Or with Node.js installed: `npx supabase --help` (prefix the commands below with `npx`)
+
+### 4. Deploy
+Open a terminal **in this `server` folder** and run:
+
+```bash
+supabase login
+supabase link --project-ref YOUR_REFERENCE_ID
+supabase secrets set GEMINI_API_KEY=your-gemini-key APP_TOKEN=make-up-a-long-passphrase
+supabase functions deploy tutor --no-verify-jwt
+```
+
+To use Claude instead, replace `GEMINI_API_KEY=…` with `ANTHROPIC_API_KEY=…`.
+
+The last command prints an address like:
+`https://YOUR_REFERENCE_ID.supabase.co/functions/v1/tutor`
+
+### 5. Connect the app
+**Settings → AI tutor → My proxy**: paste the address, type the same passphrase, then tap **Test connection**.
+
+`APP_TOKEN` stops strangers who find the address from using up your key. Keep it private.
+
+---
+
+## Changing things later
+- **Model:** set `GEMINI_MODEL` with `supabase secrets set GEMINI_MODEL=…`, or edit the model name in `supabase/functions/tutor/index.ts`.
+- **Tutor style:** edit the rules in `index.ts`, then redeploy with `supabase functions deploy tutor --no-verify-jwt`.
+- **Free limits:** Supabase's free plan includes far more function calls than one learner needs. Gemini's free tier has a daily request limit set by Google.
 
 ## Swapping providers
-
 The app only expects this JSON back: `{ "jp", "kana", "en", "correction": { "said", "better", "why" } | null }`. Any service that returns that shape can replace this function.

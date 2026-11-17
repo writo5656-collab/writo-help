@@ -7,6 +7,9 @@ import {
 import { parseFuri } from './jp';
 import { LIB, libKanjiAsKanji } from '../content/library';
 import { storyFor } from '../content/stories';
+import { GRAMMAR, type GrammarPoint } from '../content/grammar';
+import { castFor } from '../content/cast';
+import { ROLEPLAYS } from '../content/extras';
 import type { ItemState } from './srs';
 
 export type Skill = 'kana' | 'vocab' | 'kanji' | 'grammar' | 'reading' | 'writing' | 'listening' | 'speaking';
@@ -20,6 +23,7 @@ export type Ex = Base & (
   | { t: 'listen'; sent: Sent }
   | { t: 'speak'; sent: Sent }
   | { t: 'word'; word: Vocab }
+  | { t: 'chat'; who: string; line: Sent; options: string[]; a: number; why: string }
 );
 
 export function shuffle<T>(a: T[]): T[] {
@@ -129,7 +133,7 @@ export function lessonExercises(l: Lesson, part?: 1 | 2): Ex[] {
     const build = l.sentences.map((_s, i) => { const id = sentId(l.id, i); return sentEx(id, 'fill') ?? sentEx(id, 'arrange'); }).filter(ok);
     const write = l.sentences.map((_s, i) => sentEx(sentId(l.id, i), 'type')).filter(ok);
     const listen = shuffle(l.sentences.map((_s, i) => i)).slice(0, 2).map(i => sentEx(sentId(l.id, i), 'listen')).filter(ok);
-    two.push(...(n % 3 === 1 ? [...listen, ...build, ...write] : n % 3 === 2 ? [...build, ...listen, ...write] : [...build, ...write, ...listen]), ...earlierEx(l), ...challengeEx(l));
+    two.push(...chatFromLesson(l).slice(0, 2), ...(n % 3 === 1 ? [...listen, ...build, ...write] : n % 3 === 2 ? [...build, ...listen, ...write] : [...build, ...write, ...listen]), ...earlierEx(l), ...challengeEx(l));
   }
   return part === 1 ? one : part === 2 ? two : [...one, ...two];
 }
@@ -169,6 +173,7 @@ export function reviewEx(it: ItemState): Ex | null {
   if (kind === 'kana') return kanaEx(id, it.reps >= 1 && Math.random() < 0.5);
   if (kind === 'vocab') { const w = VOCAB_MAP.get(id) ?? (LIB?.wordMap.get(id) && { ...LIB.wordMap.get(id)!, lessonId: undefined as unknown as string }); return w ? vocabEx(w, it.reps >= 2 ? 'type' : it.reps === 1 ? 'jp' : 'meaning', w.lessonId || undefined, LIB?.wordMap.has(id) && !VOCAB_MAP.has(id) ? LIB.words.filter(x => x.lvl === LIB!.wordMap.get(id)!.lvl).slice(0, 400) : ALL_VOCAB) : null; }
   if (kind === 'kanji') return kanjiEx(id, it.reps >= 1 ? 'reading' : 'meaning');
+  if (kind === 'gram') { const g = GRAMMAR.find(x => x.p === id); return g ? grammarEx(g, it.reps >= 1 ? (Math.random() < 0.5 ? 'pattern' : 'example') : 'meaning') : null; }
   if (kind === 'sent') {
     const mode = it.reps >= 2 ? (Math.random() < 0.5 ? 'type' : 'listen') : it.reps === 1 ? 'type' : 'arrange';
     return sentEx(it.id, mode) ?? sentEx(it.id, 'type');
@@ -195,6 +200,7 @@ export function drill(type: string, started: Set<string>, count = 10): Ex[] {
     case 'particles': return take('fill');
     case 'listening': return take('listen');
     case 'speaking': return take('speak').slice(0, 6);
+    case 'chat': return chatFromRoleplays(8);
     case 'vocab': return vocab.slice(0, count).map((w, i) => vocabEx(w, i % 2 ? 'jp' : 'meaning', w.lessonId));
     case 'hiragana': return shuffle(Object.keys(HIRA)).slice(0, 15).map((c, i) => kanaEx(c, i % 3 === 0));
     case 'katakana': return shuffle(Object.keys(KATA)).slice(0, 15).map((c, i) => kanaEx(c, i % 3 === 0));
@@ -203,3 +209,49 @@ export function drill(type: string, started: Set<string>, count = 10): Ex[] {
   }
 }
 export { LESSONS };
+
+/** Grammar quiz questions for one N3–N1 point. */
+export function grammarEx(g: GrammarPoint, mode: 'meaning' | 'pattern' | 'example'): Ex {
+  const same = GRAMMAR.filter(x => x.lvl === g.lvl);
+  const base = { key: key(), skill: 'grammar' as const, itemId: `gram:${g.p}`, kind: 'grammar' };
+  const p = parseFuri(g.f);
+  const why = `${g.p} = "${g.m}". Example: ${p.jp} — ${g.en}`;
+  if (mode === 'pattern') return { ...base, t: 'choice', prompt: `Which pattern means "${g.m}"?`, jpOptions: true, ...options(g.p, same.map(x => x.p)), why };
+  if (mode === 'example') return { ...base, t: 'choice', prompt: 'What does this sentence mean?', jp: g.f, say: p.jp, ...options(g.en, same.map(x => x.en)), why };
+  return { ...base, t: 'choice', prompt: `What does ${g.p} mean here?`, jp: g.f, say: p.jp, ...options(g.m, same.map(x => x.m)), why };
+}
+export function grammarSet(lvl: number, known: Set<string>, n = 8): Ex[] {
+  const pool = GRAMMAR.filter(g => g.lvl === lvl);
+  const fresh = pool.filter(g => !known.has(`gram:${g.p}`));
+  const pick = (fresh.length >= n ? fresh : [...fresh, ...shuffle(pool.filter(g => known.has(`gram:${g.p}`)))]).slice(0, n);
+  return [...pick.map(g => grammarEx(g, 'meaning')), ...shuffle(pick).map((g, i) => grammarEx(g, i % 2 ? 'pattern' : 'example'))];
+}
+
+/** All the replies "you" give in dialogues and roleplays — wrong options for chat questions. */
+const ALL_REPLIES = (): string[] => [
+  ...LESSONS.flatMap(l => (l.dialogue ?? []).filter(d => d.who === 'You').map(d => d.f)),
+  ...ROLEPLAYS.flatMap(r => r.turns.map(t => t.expect[0])),
+];
+export function chatOptions(correct: string): { options: string[]; a: number } {
+  const cj = parseFuri(correct).jp;
+  const others = shuffle([...new Set(ALL_REPLIES())].filter(x => parseFuri(x).jp !== cj)).slice(0, 2);
+  const opts = shuffle([correct, ...others]);
+  return { options: opts, a: opts.indexOf(correct) };
+}
+/** "Complete the chat": pick the natural reply to what the teacher says. */
+export function chatFromLesson(l: Lesson): Ex[] {
+  const d = l.dialogue ?? []; const out: Ex[] = [];
+  const who = castFor(l.id).guide;
+  d.forEach((line, i) => {
+    if (line.who !== 'You' && d[i + 1]?.who === 'You') {
+      const reply = d[i + 1];
+      out.push({ key: key(), skill: 'speaking', itemId: `chat:${l.id}:${i}`, kind: 'grammar', lessonId: l.id, t: 'chat', who, line: { f: line.f, en: line.en }, ...chatOptions(reply.f), why: `"${parseFuri(reply.f).jp}" — ${reply.en}` });
+    }
+  });
+  return out;
+}
+export function chatFromRoleplays(n = 8): Ex[] {
+  const out: Ex[] = [];
+  for (const r of shuffle(ROLEPLAYS)) r.turns.forEach((t, i) => out.push({ key: key(), skill: 'speaking', itemId: `chat:${r.id}:${i}`, kind: 'grammar', t: 'chat', who: castFor().guide, line: t.npc, ...chatOptions(t.expect[0]), why: `${t.goal}: "${parseFuri(t.expect[0]).jp}"` }));
+  return shuffle(out).slice(0, n);
+}

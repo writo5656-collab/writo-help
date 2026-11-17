@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { db, recordAnswer, addMistake, setKV, getKV } from '../lib/db';
 import { dueItems, risk, DAY, type Grade } from '../lib/srs';
+import { grammarSet } from '../lib/exercises';
 import { type Ex, lessonExercises, reviewEx, drill, passageExercises, vocabEx, kanjiEx, sentEx, shuffle } from '../lib/exercises';
 import { LESSON_MAP, PASSAGES, PACKS, KANJI, ALL_SENTENCES } from '../content';
 import { sundayKey, lessonAfter } from '../lib/plan';
@@ -14,6 +15,7 @@ import { castFor } from '../content/cast';
 import { parseFuri } from '../lib/jp';
 import { sfx } from '../services/sfx';
 import { Exercise, type Outcome } from '../components/Exercise';
+import { Portrait } from '../components/Portrait';
 import { Screen, Icon, Bar, Mascot, Furi, Empty, Audio } from '../components/ui';
 
 type QEx = Ex & { requeued?: boolean; mistakeId?: number };
@@ -29,6 +31,7 @@ export function promptOf(ex: Ex): string {
     case 'listen': return `Listening: ${ex.sent.en}`;
     case 'speak': return `Say: ${ex.sent.en}`;
     case 'word': return `Write: ${ex.word.en}`;
+    case 'chat': return `Reply to: ${parseFuri(ex.line.f).jp}`;
   }
 }
 const fresh = (e: Ex): QEx => ({ ...e, key: e.key + '-' + Math.random().toString(36).slice(2, 6) });
@@ -37,6 +40,7 @@ async function build(m: string, q: URLSearchParams): Promise<QEx[]> {
   const ok = <T,>(x: T | null | undefined): x is T => !!x;
   // Items from the big library can be due for review, so make sure it is loaded.
   const lib = await loadLibrary();
+  if (m === 'grammar') { const known = new Set((await db.items.toArray()).map(i => i.id)); return grammarSet(Number(q.get('lvl') ?? 3), known); }
   if (m === 'lib') {
     const lvl = Number(q.get('lvl') ?? 5), kind = q.get('kind') ?? 'vocab';
     const states = new Map((await db.items.toArray()).map(i => [i.id, i]));
@@ -79,7 +83,7 @@ async function build(m: string, q: URLSearchParams): Promise<QEx[]> {
   return [];
 }
 
-const TITLES: Record<string, string> = { lib: 'Library practice', lesson: 'Lesson practice', review: 'Spaced review', passage: 'Reading', pack: 'Vocabulary', kanji: 'Kanji', mistakes: 'Mistake review', mistake: 'Mistake review', sunday: 'Sunday review', drill: 'Practice' };
+const TITLES: Record<string, string> = { grammar: 'Grammar practice', lib: 'Library practice', lesson: 'Lesson practice', review: 'Spaced review', passage: 'Reading', pack: 'Vocabulary', kanji: 'Kanji', mistakes: 'Mistake review', mistake: 'Mistake review', sunday: 'Sunday review', drill: 'Practice' };
 
 export default function Session() {
   const [q] = useSearchParams();
@@ -92,6 +96,8 @@ export default function Session() {
   const [score, setScore] = useState(0);
   const [combo, setCombo] = useState(0);
   const [banner, setBanner] = useState<{ n: number; k: number } | null>(null);
+  const [bestCombo, setBestCombo] = useState(0);
+  const [comboScreen, setComboScreen] = useState<number | null>(null);
   const [secs, setSecs] = useState(0);
   useEffect(() => { const t = setInterval(() => setSecs(Math.round((Date.now() - start.current) / 1000)), 1000); return () => clearInterval(t); }, []);
   const start = useRef(Date.now());
@@ -119,7 +125,7 @@ export default function Session() {
     else return; // further wrong tries on the same question are not counted against you
     if (first) setTally(t => [...t, { skill: ex.skill, ok: o.ok, prompt: promptOf(ex) }]);
     setScore(x => x + (grade === 'good' ? 5 : grade === 'hard' ? 3 : grade === 'retry' ? 1 : 0) * (ex.tag === 'challenge' && first ? 2 : 1));
-    if (first) setCombo(c => { const n = o.ok ? c + 1 : 0; if (n > 0 && n % 5 === 0) { setTimeout(sfx.streak, 350); setBanner({ n, k: Date.now() }); } return n; });
+    if (first) setCombo(c => { const n = o.ok ? c + 1 : 0; setBestCombo(b => Math.max(b, n)); if (n > 0 && n % 10 === 0) setTimeout(() => { sfx.complete(); setComboScreen(n); }, 900); else if (n > 0 && n % 5 === 0) { setTimeout(sfx.streak, 350); setBanner({ n, k: Date.now() }); } return n; });
     if (!o.ok) saw.current.add(ex.key);
     await recordAnswer({ itemId: ex.itemId, kind: ex.kind, skill: ex.skill, grade, lessonId: ex.lessonId });
     if (!o.ok) {
@@ -155,17 +161,31 @@ export default function Session() {
     window.scrollTo(0, 0);
   };
 
-  if (done) return <Done m={m} tally={tally} seconds={Math.round((Date.now() - start.current) / 1000)} score={score} lessonId={m === 'lesson' ? q.get('id') ?? undefined : undefined} part={q.get('part') ?? undefined} plan={q.get('plan') === '1'} />;
+  if (done) return <Done m={m} tally={tally} seconds={Math.round((Date.now() - start.current) / 1000)} score={score} best={bestCombo} lessonId={m === 'lesson' ? q.get('id') ?? undefined : undefined} part={q.get('part') ?? undefined} plan={q.get('plan') === '1'} />;
   const passage = m === 'passage' ? PASSAGES.find(p => p.id === q.get('id')) : undefined;
 
   return (
     <main className="screen no-tabs">
       <header className="topbar">
         <button className="iconbtn soft" aria-label="Close session" onClick={() => nav(-1)}><Icon n="close" /></button>
-        <div className="grow"><Bar pct={(idx / queue.length) * 100} /></div>
+        <div className="grow" style={{ position: 'relative' }}>
+          {combo >= 3 && <span key={combo} className="combo-tag">COMBO ×{combo}</span>}
+          <Bar pct={(idx / queue.length) * 100} />
+        </div>
         <span className="small muted num">{idx + 1}/{queue.length}</span>
       </header>
       {banner && <div key={banner.k} className="combo-banner" lang="ja" aria-live="polite">{banner.n}問連続！🔥</div>}
+      {comboScreen !== null && (
+        <div className="celebrate" role="dialog" aria-label="Combo">
+          <div className="card col" style={{ alignItems: 'center', gap: 12 }}>
+            <Portrait id={castFor(ex.lessonId).guide} mood="happy" size={110} />
+            <h1 style={{ color: 'var(--forest-2)' }}>You're on a combo!</h1>
+            <p><b className="num">{comboScreen}</b> right answers in a row. Keep it up!</p>
+            <StatCards xp={score} combo={comboScreen} secs={secs} />
+            <button className="btn" onClick={() => setComboScreen(null)}>Keep going</button>
+          </div>
+        </div>
+      )}
       <div className="hud" aria-label="Session score">
         <span className="pill"><Icon n="star" s={13} />{score}</span>
         <span key={combo} className={`pill ${combo >= 3 ? 'hot' : ''}`}><Icon n="flame" s={13} />{combo} in a row</span>
@@ -207,7 +227,7 @@ async function finishSunday(tally: Tally[]) {
 const SKILL_NAMES: Record<string, string> = { kana: 'Kana', vocab: 'Vocabulary', kanji: 'Kanji', grammar: 'Grammar and particles', reading: 'Reading', writing: 'Sentence writing', listening: 'Listening', speaking: 'Speaking' };
 export { SKILL_NAMES };
 
-function Done({ m, tally, seconds, score, lessonId, part, plan }: { m: string; tally: Tally[]; seconds: number; score: number; lessonId?: string; part?: string; plan?: boolean }) {
+function Done({ m, tally, seconds, score, best, lessonId, part, plan }: { m: string; tally: Tally[]; seconds: number; score: number; best: number; lessonId?: string; part?: string; plan?: boolean }) {
   const next = lessonId && part !== '1' ? lessonAfter(lessonId) : undefined;
   useEffect(() => { sfx.complete(); }, []);
   const right = tally.filter(t => t.ok).length, missed = tally.filter(t => !t.ok);
@@ -215,16 +235,11 @@ function Done({ m, tally, seconds, score, lessonId, part, plan }: { m: string; t
   return (
     <Screen>
       <div className="col center" style={{ alignItems: 'center', paddingTop: 24 }}>
-        <Mascot mood="cheer" size={110} />
-        <h1>{m === 'sunday' ? 'Sunday review complete' : 'Session complete'}</h1>
+        <Portrait id={castFor(lessonId).guide} mood="happy" size={110} />
+        <h1>{m === 'sunday' ? 'Sunday review complete' : part === '1' ? 'Part 1 complete!' : 'Session complete'}</h1>
         <p className="muted" lang="ja">おつかれさまでした！</p>
       </div>
-      <div className="card row" style={{ justifyContent: 'space-around', textAlign: 'center' }}>
-        <div><div className="jp-xl num">{right}</div><div className="tiny muted">right first time</div></div>
-        <div><div className="jp-xl num">{missed.length}</div><div className="tiny muted">to revisit</div></div>
-        <div><div className="jp-xl num">{Math.max(1, Math.round(seconds / 60))}</div><div className="tiny muted">minutes</div></div>
-        <div><div className="jp-xl num">+{score}</div><div className="tiny muted">score</div></div>
-      </div>
+      <StatCards xp={score} combo={best} secs={seconds} acc={tally.length ? Math.round((right / tally.length) * 100) : 100} />
       {missed.length > 0 ? (
         <div className="card flat col gap-s">
           <h3>Saved to your Mistake Notebook</h3>
@@ -240,5 +255,25 @@ function Done({ m, tally, seconds, score, lessonId, part, plan }: { m: string; t
       {lessonId && part !== '1' && !next && <div className="card sage small">That was the last lesson in this track for now. More are coming — meanwhile the library has every N5–N1 word and kanji.</div>}
       <Link className={next || plan || part === '1' ? 'btn ghost' : 'btn'} to="/" replace>Back to home</Link>
     </Screen>
+  );
+}
+
+/** Duolingo-style stat cards: XP, best combo, time, accuracy. */
+function StatCards({ xp, combo, secs, acc }: { xp: number; combo: number; secs: number; acc?: number }) {
+  const cards: [string, string, string, string][] = [
+    ['Total XP', String(xp), 'star', '#e9b82a'],
+    ['Combo', `×${combo}`, 'flame', '#2d9cdb'],
+    ['Time', `${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}`, 'clock', '#27ae8f'],
+    ...(acc !== undefined ? [['Accuracy', `${acc}%`, 'check', '#8e6fd1'] as [string, string, string, string]] : []),
+  ];
+  return (
+    <div className="statcards">
+      {cards.map(([label, v, icon, color], i) => (
+        <div key={label} className="sc" style={{ ['--sc' as string]: color, animationDelay: `${i * 0.12}s` }}>
+          <span className="sc-h">{label}</span>
+          <span className="sc-b"><Icon n={icon} s={20} /><b className="num">{v}</b></span>
+        </div>
+      ))}
+    </div>
   );
 }

@@ -4,7 +4,10 @@ import { saveSettings, type Settings as S } from '../lib/settings';
 import { saveBackup, exportNotes, importData, resetAll } from '../lib/backup';
 import { getKV } from '../lib/db';
 import { speak, ttsAvailable } from '../services/tts';
-import { setReminder, remindersSupported } from '../services/notify';
+import { setReminder, remindersSupported, testNotification, planReminders } from '../services/notify';
+import { useDaily } from '../lib/hooks';
+import { CAST } from '../content/cast';
+import { Portrait } from '../components/Portrait';
 import { tutorReply } from '../services/ai';
 import { Link } from 'react-router-dom';
 import { Screen, Switch, Icon, useS, fmtDate, Wip } from '../components/ui';
@@ -18,6 +21,9 @@ export default function Settings() {
   const set = (p: Partial<S>) => saveSettings(p);
   const [msg, setMsg] = useState('');
   const [aiMsg, setAiMsg] = useState('');
+  const [nMsg, setNMsg] = useState('');
+  const [preview, setPreview] = useState(false);
+  const daily = useDaily();
   const file = useRef<HTMLInputElement>(null);
   const lastBackup = useLiveQuery(() => getKV<number>('lastBackup', 0), []);
   const run = async (fn: () => Promise<string | void>) => { try { setMsg((await fn()) || 'Done.'); } catch (e) { setMsg((e as Error).message); } };
@@ -65,21 +71,51 @@ export default function Settings() {
 
       <h2>Reminder</h2>
       <section className="card flat list" style={{ padding: '2px 16px' }}>
-        <Row title="Streak reminders" sub="Teachers message you at this time, 22:00 and 23:15 if today's plan isn't done"><Switch on={s.reminder} onChange={v => reminder(v)} label="Streak reminders" /></Row>
+        <Row title="Reminders" sub="Morning hello at 8:30; evening nudges at your time, 22:00 and 23:15 if today's plan isn't done"><Switch on={s.reminder} onChange={v => reminder(v)} label="Streak reminders" /></Row>
         {s.reminder && <Row title="First reminder"><input type="time" className="field" style={{ width: 130 }} value={s.reminderTime} onChange={e => reminder(true, e.target.value)} aria-label="Reminder time" /></Row>}
       </section>
+      <div className="row gap-s wrap">
+        <button className="btn sm" onClick={async () => setNMsg(await testNotification())}><Icon n="bell" s={16} />Send a test notification</button>
+        <button className="btn sm ghost" onClick={() => setPreview(!preview)}>{preview ? 'Hide' : 'Preview'} this week's messages</button>
+      </div>
+      {nMsg && <p className="small" role="status" style={{ whiteSpace: 'pre-line' }}>{nMsg}</p>}
+      {preview && daily && (
+        <section className="card flat list" style={{ padding: '2px 14px' }}>
+          {planReminders({ time: s.reminderTime, streak: daily.info.current, todayDone: daily.info.todayDone, freezes: daily.info.freezes }).slice(0, 14).map(p => (
+            <div key={p.id} className="li" style={{ alignItems: 'flex-start' }}>
+              <Portrait id={p.who} size={36} />
+              <div className="grow small"><b>{CAST[p.who]?.name}</b> <span className="tiny muted">· {p.at.toLocaleDateString(undefined, { weekday: 'short' })} {p.at.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })} · {p.kind}</span><div>{p.body}</div></div>
+            </div>
+          ))}
+          <p className="tiny muted" style={{ padding: '8px 0' }}>Evening and late messages are skipped on days you've already finished your 25 minutes.</p>
+        </section>
+      )}
       {!remindersSupported() && <p className="tiny muted">Reminders are delivered by the installed Android app. In a web browser this setting is saved but no notification is sent.</p>}
 
       <h2>AI tutor</h2>
       <section className="card flat col">
-        <p className="small muted">Paste the address of your private proxy (see <code>server/README.md</code> in the project). Your API key stays on the proxy and is never stored in this app.</p>
-        <label className="label" htmlFor="ai">Proxy address</label>
-        <input id="ai" className="field" inputMode="url" defaultValue={s.aiUrl} onBlur={e => set({ aiUrl: e.target.value.trim() })} placeholder="https://…" autoCapitalize="off" autoCorrect="off" />
-        <label className="label" htmlFor="tok">App passphrase (if your proxy uses one)</label>
-        <input id="tok" className="field" type="password" defaultValue={s.aiToken} onBlur={e => set({ aiToken: e.target.value.trim() })} autoComplete="off" />
-        <button className="btn sm ghost" style={{ alignSelf: 'flex-start' }} onClick={testAi} disabled={!s.aiUrl}>Test connection</button>
+        <p className="small muted">Free-talk calls and the AI tutor need an AI service. Lessons, roleplay calls and the mistake quiz work without one. Choose how to connect:</p>
+        <div className="seg" role="group" aria-label="AI connection" style={{ alignSelf: 'flex-start' }}>
+          {([['proxy', 'My proxy'], ['gemini', 'Gemini key'], ['claude', 'Claude key']] as const).map(([v, l]) => <button key={v} className={s.aiMode === v ? 'on' : ''} onClick={() => set({ aiMode: v })}>{l}</button>)}
+        </div>
+        {s.aiMode === 'proxy' && <>
+          <p className="small muted">Safest: the key stays on your own small server (see <code>server/README.md</code>). Paste its address here.</p>
+          <label className="label" htmlFor="ai">Proxy address</label>
+          <input id="ai" className="field" inputMode="url" defaultValue={s.aiUrl} onBlur={e => set({ aiUrl: e.target.value.trim() })} placeholder="https://…" autoCapitalize="off" autoCorrect="off" />
+          <label className="label" htmlFor="tok">App passphrase (if your proxy uses one)</label>
+          <input id="tok" className="field" type="password" defaultValue={s.aiToken} onBlur={e => set({ aiToken: e.target.value.trim() })} autoComplete="off" />
+        </>}
+        {s.aiMode !== 'proxy' && <>
+          <p className="small muted">{s.aiMode === 'gemini'
+            ? 'Google AI Studio gives free API keys with a daily free limit — the free option. Get one at aistudio.google.com → "Get API key".'
+            : 'Paid per use. Create a key at console.anthropic.com → API keys.'} The key is stored only on this phone, is never put in backups, and requests go straight from your phone to the service.</p>
+          <label className="label" htmlFor="key">{s.aiMode === 'gemini' ? 'Gemini' : 'Claude'} API key</label>
+          <input id="key" key={s.aiMode} className="field" type="password" defaultValue={s.aiKey} onBlur={e => set({ aiKey: e.target.value.trim() })} autoComplete="off" autoCapitalize="off" />
+          <label className="label" htmlFor="mdl">Model (optional)</label>
+          <input id="mdl" key={s.aiMode + 'm'} className="field" defaultValue={s.aiModel} onBlur={e => set({ aiModel: e.target.value.trim() })} placeholder={s.aiMode === 'gemini' ? 'gemini-2.5-flash' : 'claude-opus-5-5'} autoCapitalize="off" />
+        </>}
+        <button className="btn sm ghost" style={{ alignSelf: 'flex-start' }} onClick={testAi} disabled={s.aiMode === 'proxy' ? !s.aiUrl : !s.aiKey}>Test connection</button>
         {aiMsg && <p className="small" role="status">{aiMsg}</p>}
-        {!s.aiUrl && <Wip>Not connected. Roleplays, lessons and reviews all work without it; only open AI conversation needs this.</Wip>}
       </section>
 
       <h2>Backup and data</h2>

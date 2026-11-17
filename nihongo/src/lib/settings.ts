@@ -17,6 +17,9 @@ export interface Settings {
   reminderTime: string;    // "19:30"
   aiUrl: string;           // your own proxy URL — the API key never lives in the app
   aiToken: string;         // optional shared passphrase for your proxy
+  aiMode: 'proxy' | 'claude' | 'gemini'; // how the AI tutor connects
+  aiKey: string;           // direct-mode API key (stored only on this device)
+  aiModel: string;         // optional model override for direct modes
   paper: 'lined' | 'grid';
   sfx: boolean;            // sound effects
   keyboard: 'app' | 'phone'; // in-app kana keyboard, or the phone's own keyboard
@@ -28,7 +31,7 @@ export interface Settings {
 export const DEFAULTS: Settings = {
   onboarded: false, name: '', level: 'zero', showFurigana: true, showRomaji: false, autoplay: true,
   rate: 1, textScale: 1, reducedMotion: false, showStreak: false, reminder: false, reminderTime: '19:30',
-  aiUrl: '', aiToken: '', paper: 'lined', sfx: true, keyboard: 'app', romajiInput: false, speakKeys: true, charVoices: true, pictures: true,
+  aiUrl: '', aiToken: '', aiMode: 'proxy', aiKey: '', aiModel: '', paper: 'lined', sfx: true, keyboard: 'app', romajiInput: false, speakKeys: true, charVoices: true, pictures: true,
 };
 
 export function useSettings(): Settings | undefined {

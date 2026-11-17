@@ -99,7 +99,8 @@ export function KanjiList() {
 export function VocabList() {
   const { map } = useItems();
   const lib = useLib();
-  const [tab, setTab] = useState('5');
+  const [sq] = useSearchParams();
+  const [tab, setTab] = useState(sq.get('lvl') ?? '5');
   const [open, setOpen] = useState<string>('');
   const [query, setQuery] = useState('');
   const [limit, setLimit] = useState(100);

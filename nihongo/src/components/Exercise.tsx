@@ -11,10 +11,13 @@ import { readingOf } from '../services/reading';
 import { Furi, Audio, Icon, useS, useAsync } from './ui';
 import { Paper, PaperInput, ReadingLine } from './Paper';
 import { KanaKeyboard } from './Keyboard';
+import { SpellingGuide } from './Spelling';
+import { db } from '../lib/db';
 import { sfx } from '../services/sfx';
 import { saveSettings } from '../lib/settings';
 import { CAST } from '../content/cast';
 import { Portrait } from './Portrait';
+import { WordRomaji } from './WordRomaji';
 
 export interface Outcome { ok: boolean; hint: boolean; userAnswer: string; expected: string; explanation: string }
 interface Props { ex: Ex; onResult: (o: Outcome) => void; onNext: (requeue: boolean, solved: boolean) => void; last: boolean; cast?: { guide: string; goof: string } }
@@ -103,6 +106,7 @@ function Body({ ex, locked, fb, onHint, finish }: { ex: Ex; locked: boolean; fb:
     case 'fill': return <Fill ex={ex} locked={locked} finish={finish} />;
     case 'arrange': return <Arrange ex={ex} locked={locked} finish={finish} />;
     case 'speak': return <Speak ex={ex} locked={locked} finish={finish} />;
+    case 'chat': return <Chat ex={ex} locked={locked} finish={finish} />;
     default: return <Typing ex={ex} locked={locked} fb={fb} onHint={onHint} finish={finish} />;
   }
 }
@@ -182,7 +186,7 @@ function Fill({ ex, locked, finish }: { ex: Extract<Ex, { t: 'fill' }>; locked: 
 function Arrange({ ex, locked, finish }: { ex: Extract<Ex, { t: 'arrange' }>; locked: boolean; finish: Fin }) {
   const s = useS();
   const p = parseFuri(ex.sent.f);
-  const tiles = useMemo(() => shuffle(p.chunks.map((c, i) => ({ i, jp: c.jp.replace(/[。、]$/g, '') }))), [ex.key]); // eslint-disable-line
+  const tiles = useMemo(() => shuffle(p.chunks.map((c, i) => ({ i, jp: c.jp.replace(/[。、]$/g, ''), ro: romajiOf(c.segs.map(x => x.reading ? `${x.text}[${x.reading}]` : x.text).join('')) }))), [ex.key]); // eslint-disable-line
   const [order, setOrder] = useState<number[]>([]);
   const check = () => {
     const built = order.map(i => p.chunks[i].jp).join('');
@@ -199,7 +203,7 @@ function Arrange({ ex, locked, finish }: { ex: Extract<Ex, { t: 'arrange' }>; lo
         {order.map((i, k) => <button key={k} lang="ja" className="tilebtn" disabled={locked} onClick={() => setOrder(order.filter((_x, j) => j !== k))}>{tiles.find(t => t.i === i)!.jp}</button>)}
       </div>
       <div className="tiles">
-        {tiles.map(t => <button key={t.i} lang="ja" className={`tilebtn ${order.includes(t.i) ? 'used' : ''}`} disabled={locked || order.includes(t.i)} onClick={() => { void speak(t.jp, { rate: s.rate }); setOrder([...order, t.i]); }}>{t.jp}</button>)}
+        {tiles.map(t => <button key={t.i} lang="ja" className={`tilebtn ${order.includes(t.i) ? 'used' : ''}`} disabled={locked || order.includes(t.i)} onClick={() => { void speak(t.jp, { rate: s.rate }); setOrder([...order, t.i]); }}><small>{t.ro}</small>{t.jp}</button>)}
       </div>
       {!locked && <div className="dock"><button className="btn" disabled={order.length !== tiles.length} onClick={check}>Check answer</button></div>}
     </div>
@@ -212,6 +216,12 @@ function Typing({ ex, locked, fb, onHint, finish }: { ex: Extract<Ex, { t: 'type
   const [hints, setHints] = useState(0);
   const ref = useRef<HTMLTextAreaElement>(null);
   const appKb = s.keyboard === 'app';
+  // Spelling help: always for copying; for new sentences and after a mistake; on request otherwise.
+  // Never in the final challenge or in listening (that would give the answer away).
+  const seenBefore = useAsync(async () => { const it = await db.items.get(ex.itemId); return !!it && it.seen > 0; }, [ex.itemId]);
+  const [askSpell, setAskSpell] = useState(false);
+  const canSpell = ex.tag !== 'challenge' && ex.t !== 'listen' && ex.t !== 'word';
+  const showSpell = canSpell && (ex.t === 'copy' || askSpell || fb?.ok === false || (seenBefore === false && ex.tag !== 'earlier'));
   const romajiMode = !appKb && s.romajiInput;
   const f = ex.t === 'word' ? (ex.word.kana !== ex.word.jp ? `${ex.word.jp}[${ex.word.kana}]` : ex.word.jp) : ex.sent.f;
   const p = parseFuri(ex.t === 'word' ? ex.word.kana : f);
@@ -262,9 +272,12 @@ function Typing({ ex, locked, fb, onHint, finish }: { ex: Extract<Ex, { t: 'type
         <ReadingLine text={value} known={ex.t === 'word' ? undefined : t => toKanaUsing(t, f)} romaji={s.showRomaji} />
         {fb && <div className="paper-line" style={{ justifyContent: 'flex-end', paddingBottom: 6 }}><span className={`stamp ${fb.ok ? 'ok' : ''}`} lang="ja">{fb.ok ? '正' : '惜'}</span></div>}
       </Paper>
+
       {hints > 0 && !locked && <div className="card amber note-tip"><Icon n="bulb" s={18} /><span lang="ja" className="jp">{hintText}</span></div>}
       {!locked && (
         <div className="dock">
+          {showSpell && <SpellingGuide f={f} typed={value} />}
+          {canSpell && !showSpell && <button className="chip" style={{ alignSelf: 'flex-start' }} onClick={() => { onHint(); setAskSpell(true); }}><Icon n="key" s={15} />How to spell it</button>}
           <div className="row gap-s">
             {ex.t !== 'copy' && ex.tag !== 'challenge' && <button className="btn sm line grow" disabled={hints >= maxHints} onClick={hint}><Icon n="bulb" s={16} />Hint</button>}
             {ex.t !== 'listen' && ex.tag !== 'challenge' && <button className="btn sm line grow" onClick={() => { if (ex.t !== 'copy') onHint(); void speak(parseFuri(f).jp, { rate: s.rate }); }}><Icon n="sound" s={16} />Listen</button>}
@@ -339,6 +352,38 @@ function Reaction({ ok }: { ok: boolean }) {
       <div className="flash" />
       <div className="stamp-big" lang="ja">{ok ? '正解！' : '惜しい！'}</div>
       {ok && petals.map((p, i) => <i key={i} className="petal" style={{ ['--x' as string]: p.x, ['--y' as string]: p.y, ['--r' as string]: p.r, animationDelay: p.d, background: p.c }} />)}
+    </div>
+  );
+}
+
+function Chat({ ex, locked, finish }: { ex: Extract<Ex, { t: 'chat' }>; locked: boolean; finish: Fin }) {
+  const s = useS();
+  const [picked, setPicked] = useState(-1);
+  const line = parseFuri(ex.line.f);
+  useEffect(() => { if (s.autoplay) void speakSeq([{ text: line.jp, who: ex.who, rate: s.rate }]); }, []); // eslint-disable-line
+  const pick = (i: number) => {
+    if (locked) return;
+    setPicked(i);
+    const ok = i === ex.a;
+    finish({ ok, title: ok ? 'Natural reply!' : 'A more natural reply:', notes: [ex.why], model: ex.options[ex.a], say: [parseFuri(ex.options[i]).jp] }, parseFuri(ex.options[i]).jp, parseFuri(ex.options[ex.a]).jp);
+  };
+  return (
+    <div className="col gap-l">
+      <span className="label">Complete the chat</span>
+      <div className="row" style={{ alignItems: 'flex-start' }}>
+        <Portrait id={ex.who} size={52} />
+        <div className="chat-bubble them">
+          <button className="iconbtn" aria-label="Listen" onClick={() => speakSeq([{ text: line.jp, who: ex.who, rate: s.rate }])}><Icon n="sound" /></button>
+          <WordRomaji f={ex.line.f} />
+          <div className="small muted">{ex.line.en}</div>
+        </div>
+      </div>
+      <div className="chat-bubble me">{picked >= 0 ? <WordRomaji f={ex.options[picked]} /> : <span className="blank-line" />}</div>
+      <div className="col gap-s">
+        {ex.options.map((o, i) => (
+          <button key={i} disabled={locked} className={`opt ${locked && i === ex.a ? 'right' : ''} ${locked && i === picked && i !== ex.a ? 'wrong' : ''}`} onClick={() => pick(i)}><WordRomaji f={o} /></button>
+        ))}
+      </div>
     </div>
   );
 }

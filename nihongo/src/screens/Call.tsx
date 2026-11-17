@@ -8,7 +8,9 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { CAST, GUIDES } from '../content/cast';
 import { ROLEPLAYS } from '../content/extras';
 import { LESSONS } from '../content';
-import { checkSentence, checkWord } from '../lib/check';
+import { checkSentence, checkWord, similarity } from '../lib/check';
+import { chatOptions } from '../lib/exercises';
+import { WordRomaji } from '../components/WordRomaji';
 import { parseFuri } from '../lib/jp';
 import { db, getKV, type Mistake } from '../lib/db';
 import { markBlock } from '../lib/hooks';
@@ -89,6 +91,10 @@ function InCall({ id, mode, ai, rpId, plan, quiz }: { id: string; mode: string; 
   const [ended, setEnded] = useState(false);
   const [mood, setMood] = useState<'teach' | 'happy' | 'oops'>('teach');
   const [score, setScore] = useState(0);
+  const [tries, setTries] = useState(0);
+  const [easy, setEasy] = useState(true);
+  const optsFor = useRef(new Map<number, { options: string[]; a: number }>());
+  const replyOpts = (i: number) => { if (!optsFor.current.has(i)) optsFor.current.set(i, chatOptions(turns[i].expect[0])); return optsFor.current.get(i)!; };
   const mic = useAsync(sttAvailable, []);
   const history = useRef<ChatMsg[]>([]);
   const alive = useRef(true);
@@ -136,22 +142,30 @@ function InCall({ id, mode, ai, rpId, plan, quiz }: { id: string; mode: string; 
     const cur = turnRef.current;
     const t = turns[cur];
     let ok = t.word ? checkWord(t.word.jp, t.word.kana, said) : checkSentence({ f: t.expect[0], en: t.goal, alt: t.expect.slice(1) }, said).ok;
+    let close = false;
     if (!ok) { // recognisers often return kanji the learner didn't intend; compare readings too
       const heard = await readingOf(said).catch(() => said);
       ok = t.word ? checkWord(t.word.jp, t.word.kana, heard) : checkSentence({ f: t.expect[0], en: t.goal, alt: t.expect.slice(1) }, heard).ok;
+      // Beginners rarely say it perfectly: accept anything that sounds close to an expected reply.
+      if (!ok) { const best = Math.max(...t.expect.map(e => similarity(parseFuri(e).kana, heard))); if (best >= 0.72) { ok = true; close = true; } }
     }
     if (!ok) {
+      setTries(x => x + 1);
       setMood('oops'); sfx.wrong();
       setMine({ said, fix: `${parseFuri(t.expect[0]).jp}  (${parseFuri(t.expect[0]).kana})` });
       await say('もう一[いっ]回[かい]、 言[い]ってみて。', `Not quite. Try saying: ${parseFuri(t.expect[0]).jp}`);
       setMood('teach'); void listen(); return;
     }
-    setMood('happy'); sfx.correct(); setScore(x => x + 5);
+    setTries(0);
+    setMood('happy'); sfx.correct(); setScore(x => x + (close ? 3 : 5));
+    if (close) setMine({ said, fix: `Close enough! Exactly: ${parseFuri(t.expect[0]).jp}` });
     if (t.mistakeId) { const m = await db.mistakes.get(t.mistakeId); if (m) await db.mistakes.update(t.mistakeId, { status: m.status === 'uncertain' ? 'remembered' : 'uncertain' }); }
     const next = cur + 1; setTurn(next);
     if (next < turns.length) { await say(turns[next].f, turns[next].en); setMood('teach'); void listen(); }
     else { endedRef.current = true; await say(closing.f, closing.en); setEnded(true); sfx.complete(); }
   };
+
+  const choose = async (f: string) => { await stopListening(); setListening(false); await speakSeq([{ text: parseFuri(f).jp, rate: s.rate * 0.9 }]); await answer(parseFuri(f).jp); };
 
   async function listen() {
     if (!alive.current || endedRef.current) return;
@@ -167,10 +181,10 @@ function InCall({ id, mode, ai, rpId, plan, quiz }: { id: string; mode: string; 
     <div className="call" style={{ ['--c' as string]: c.color }}>
       <div className="row between" style={{ width: '100%' }}>
         <span className="small" style={{ opacity: .85 }}>{free ? 'Free talk' : mode === 'mistakes' ? 'Mistake quiz' : rp.title} · <span className="num">{mmss}</span></span>
-        {!free && <span className="small num" style={{ opacity: .85 }}>{Math.min(turn + 1, turns.length)}/{turns.length} · ★ {score}</span>}
+        {!free && <span className="row gap-s"><span className="small num" style={{ opacity: .85 }}>{Math.min(turn + 1, turns.length)}/{turns.length} · ★ {score}</span><button className="chip" onClick={() => setEasy(!easy)} aria-pressed={easy} style={{ background: easy ? '#fff' : 'rgba(255,255,255,.15)', color: easy ? 'var(--forest)' : '#fff', borderColor: 'transparent', minHeight: 32 }}>{easy ? 'Easy' : 'Hard'}</button></span>}
       </div>
       <div className="stage">
-        <Portrait id={id} mood={mood} talking={talking} shape="full" size={200} />
+        <Portrait id={id} mood={mood} talking={talking} shape="full" size={easy && t ? 96 : 200} />
         <div className="col center" style={{ alignItems: 'center', gap: 4 }}>
           <b style={{ fontSize: '1.15rem' }}>{c.name}</b>
           <span className="small" style={{ opacity: .8 }}>{ended ? 'Call ended' : talking ? 'speaking…' : listening ? 'listening to you — speak now' : 'tap the microphone to answer'}</span>
@@ -181,12 +195,24 @@ function InCall({ id, mode, ai, rpId, plan, quiz }: { id: string; mode: string; 
             <Furi f={cap.f} className="jp" romaji={false} furigana />
             <div className="small" style={{ opacity: .75, marginTop: 2 }} lang="ja">{cap.kana ?? parseFuri(cap.f).kana}</div>
             <div className="small" style={{ marginTop: 4 }}>{cap.en}</div>
+            <div className="row gap-s" style={{ marginTop: 6 }}>
+              <button className="chip" style={{ background: 'rgba(255,255,255,.15)', color: '#fff', borderColor: 'transparent', minHeight: 32 }} onClick={() => speakSeq([{ text: parseFuri(cap.f).jp, who: id, rate: s.rate * 0.95 }])}><Icon n="sound" s={14} />Again</button>
+              <button className="chip" style={{ background: 'rgba(255,255,255,.15)', color: '#fff', borderColor: 'transparent', minHeight: 32 }} onClick={() => speakSeq([{ text: parseFuri(cap.f).jp, who: id, rate: s.rate * 0.6 }])}><Icon n="slow" s={14} />Slow</button>
+            </div>
           </> : <span className="small" style={{ opacity: .7 }}>Calling {c.name.split(' ')[0]}…</span>}
           {t && <div className="tiny" style={{ marginTop: 8, opacity: .8 }}>Your goal: {t.goal}</div>}
           {mine && <div className="small" style={{ marginTop: 8 }}>You said: <span lang="ja">{mine.said}</span></div>}
-          {mine?.fix && <div className="small" style={{ marginTop: 4, color: '#ffd27a' }} lang="ja">Say: {mine.fix}</div>}
+          {mine?.fix && !(easy && t) && <div className="small" style={{ marginTop: 4, color: '#ffd27a' }} lang="ja">Say: {mine.fix}</div>}
           {err && <div className="small" style={{ marginTop: 6, color: '#ffb3a8' }}>{err}</div>}
         </div>
+        {t && easy && (
+          <div className="col gap-s" style={{ width: '100%' }}>
+            <span className="tiny" style={{ opacity: .8 }}>{tries >= 2 ? 'Tap the reply you meant — she\'ll say it with you:' : 'Say one of these out loud:'}</span>
+            {replyOpts(Math.min(turn, turns.length - 1)).options.map((o, i) => (
+              <button key={i} className="reply-card" disabled={tries < 2 || talking} onClick={() => void choose(o)}><WordRomaji f={o} /></button>
+            ))}
+          </div>
+        )}
       </div>
       <div className="ctl">
         {!ended && <button className={listening ? 'mic-on' : ''} style={{ width: 78, height: 78 }} aria-label="Speak" onClick={() => void listen()} disabled={talking || listening}><Icon n="mic" s={34} /></button>}

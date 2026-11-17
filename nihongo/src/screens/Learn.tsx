@@ -41,7 +41,14 @@ export default function Learn() {
         {JLPT_LESSONS.filter(l => l.level === 'N5').map((l, i) => <Row key={l.id} l={l} n={i + 1} />)}
         <h2 className="mt">N4 — first steps</h2>
         {JLPT_LESSONS.filter(l => l.level === 'N4').map((l, i) => <Row key={l.id} l={l} n={i + 1} />)}
-        <Wip><b>N4 lessons are only started, and {UPCOMING_LEVELS.join(', ')} lessons are not written yet.</b> You can already learn every N4–N1 word and kanji in the Library tab, with review and stroke order.</Wip>
+        {[3, 2, 1].map(l => (
+          <section key={l} className="col gap-s">
+            <h2 className="mt">N{l} — {l === 3 ? 'intermediate' : l === 2 ? 'upper-intermediate' : 'advanced'}</h2>
+            <Link to={`/vocab?lvl=${l}`} className="card row"><span className="tile jp" lang="ja">語</span><div className="grow"><h3>N{l} words</h3><p className="small muted">Learn 10 at a time, with review</p></div><Icon n="next" /></Link>
+            <Link to={`/kanji?lvl=${l}`} className="card row"><span className="tile sakura jp" lang="ja">漢</span><div className="grow"><h3>N{l} kanji</h3><p className="small muted">Readings, words and stroke order</p></div><Icon n="next" /></Link>
+            <Link to={`/grammar?lvl=${l}`} className="card row"><span className="tile amber jp" lang="ja">文</span><div className="grow"><h3>N{l} grammar</h3><p className="small muted">Patterns with examples and quizzes</p></div><Icon n="next" /></Link>
+          </section>
+        ))}
       </>}
 
       {t === 'practical' && <>
@@ -52,6 +59,7 @@ export default function Learn() {
       {t === 'library' && <>
         <Link to="/kanji" className="card row"><span className="tile sakura jp" lang="ja">漢</span><div className="grow"><h3>Kanji</h3><p className="small muted">All 2,211 JLPT kanji, N5 to N1, with stroke order</p></div><Icon n="next" /></Link>
         <Link to="/vocab" className="card row"><span className="tile jp" lang="ja">語</span><div className="grow"><h3>Vocabulary</h3><p className="small muted">All 8,034 JLPT words, N5 to N1, plus your lesson words</p></div><Icon n="next" /></Link>
+        <Link to="/grammar" className="card row"><span className="tile amber jp" lang="ja">文</span><div className="grow"><h3>Grammar</h3><p className="small muted">N5–N1 patterns with examples and quizzes</p></div><Icon n="next" /></Link>
         <Link to="/reading" className="card row"><span className="tile amber jp" lang="ja">読</span><div className="grow"><h3>Reading</h3><p className="small muted">{PASSAGES.length} short real-world texts with questions</p></div><Icon n="next" /></Link>
         <Link to="/kana" className="card row"><span className="tile green jp" lang="ja">あ</span><div className="grow"><h3>Kana chart</h3><p className="small muted">Hiragana and katakana reference</p></div><Icon n="next" /></Link>
       </>}

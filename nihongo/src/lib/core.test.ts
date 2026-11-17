@@ -87,7 +87,7 @@ describe('content integrity', () => {
     for (const l of LESSONS) {
       const ex = lessonExercises(l);
       expect(ex.length, l.id).toBeGreaterThan(5);
-      for (const e of ex) { if (e.t === 'choice' || e.t === 'fill') { expect(e.a, l.id).toBeGreaterThanOrEqual(0); expect(new Set(e.options).size, `${l.id} ${JSON.stringify(e.options)}`).toBe(e.options.length); } expect(reviewEx(newItem(e.itemId, e.kind)) !== null || /^(choice|story):/.test(e.itemId), e.itemId).toBe(true); }
+      for (const e of ex) { if (e.t === 'choice' || e.t === 'fill') { expect(e.a, l.id).toBeGreaterThanOrEqual(0); expect(new Set(e.options).size, `${l.id} ${JSON.stringify(e.options)}`).toBe(e.options.length); } expect(reviewEx(newItem(e.itemId, e.kind)) !== null || /^(choice|story|chat):/.test(e.itemId), e.itemId).toBe(true); }
     }
   });
 });
@@ -191,5 +191,28 @@ describe('daily plan streak with freezes', () => {
     const r = streakInfo(days('2026-03-02'), '2026-03-01', '2026-03-03');
     expect(lastWeek(r, '2026-03-03').map(x => x.status).slice(-3)).toEqual(['missed', 'done', 'today']);
     expect(nextBlock([])).toBe('review'); expect(nextBlock(['review', 'lesson'])).toBe('sentences'); expect(nextBlock(['review', 'lesson', 'sentences', 'real'])).toBeUndefined();
+  });
+});
+
+import { GRAMMAR } from '../content/grammar';
+describe('grammar reference', () => {
+  it('has N3–N1 points with clean readings and English', () => {
+    for (const lvl of [3, 2, 1]) expect(GRAMMAR.filter(g => g.lvl === lvl).length, `N${lvl}`).toBeGreaterThanOrEqual(30);
+    for (const g of GRAMMAR) { expect(hasKanji(parseFuri(g.f).kana), `${g.p}: ${g.f}`).toBe(false); expect(g.en && g.m, g.p).toBeTruthy(); }
+  });
+});
+
+import { planReminders } from '../services/notify';
+describe('reminder schedule', () => {
+  it('has many kinds, skips evening nudges once today is done, and rarely repeats', () => {
+    const now = new Date('2026-05-12T07:00:00');
+    const open = planReminders({ time: '19:30', streak: 5, todayDone: false, freezes: 2, now });
+    const done = planReminders({ time: '19:30', streak: 5, todayDone: true, freezes: 2, now });
+    expect(open.filter(p => p.at.getDate() === 12).length).toBe(4);
+    expect(done.filter(p => p.at.getDate() === 12).map(p => p.kind)).toEqual(['morning']);
+    expect(new Set(open.map(p => p.kind)).size).toBeGreaterThanOrEqual(4);
+    const bodies = open.map(p => p.body);
+    expect(new Set(bodies).size / bodies.length).toBeGreaterThan(0.75);
+    expect(open.every(p => p.at > now)).toBe(true);
   });
 });

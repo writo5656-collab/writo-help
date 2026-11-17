@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { useEffect, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { usePlan, useDaily } from '../lib/hooks';
 import { BLOCKS } from '../lib/daily';
@@ -42,14 +43,11 @@ export default function Home() {
         <div className="col gap-s">
           <h1><span lang="ja" className="jp">{jp}</span>{s.name ? `, ${s.name}` : ''}</h1>
           <p className="muted">{en}. Learning <b>Japanese</b> 🇯🇵</p>
+          <Clock />
           <p className="small">Today's teacher: <b>{g.name}</b> · <Link to="/call" style={{ color: 'var(--forest-2)', fontWeight: 700 }}>call her</Link></p>
         </div>
         <Link to="/call" aria-label={`Call ${g.name}`} style={{ textAlign: 'center' }}><Portrait id={g.id} size={78} mood={daily.info.todayDone ? 'happy' : 'teach'} /><span className="tiny" style={{ display: 'block', fontWeight: 700, marginTop: 4 }}>{g.name.split(' ')[0]}</span></Link>
       </section>
-
-      <Link to="/progress"><StreakBadge current={daily.info.current} freezes={daily.info.freezes} atRisk={daily.info.atRisk} todayDone={daily.info.todayDone} /></Link>
-      <WeekStrip week={daily.week} />
-      {daily.info.atRisk && <div className="card amber small row"><Icon n="flame" s={18} /><span>Your {daily.info.current}-day streak needs today's 25 minutes before midnight{daily.info.freezes ? ` (or it uses a ❄ freeze — ${daily.info.freezes} left)` : ' — no freezes left!'}.</span></div>}
 
       <section className="card green col">
         <div className="row" style={{ alignItems: 'center' }}>
@@ -73,6 +71,12 @@ export default function Home() {
           <Icon n="next" />
         </Link>
       )}
+
+      <Link to="/progress" className="streak-mini">
+        <span className={`fl ${daily.info.todayDone ? '' : 'off'}`}><Icon n="flame" s={20} w={2.2} /></span>
+        <span><b className="num">{daily.info.current}</b> day streak · {'❄'.repeat(daily.info.freezes)}{daily.info.atRisk ? ' · finish today\'s plan to keep it' : ''}</span>
+        <span className="dots">{daily.week.map(w => <i key={w.key} className={w.status} />)}</span>
+      </Link>
 
       <WordOfDay />
 
@@ -137,5 +141,18 @@ function WordOfDay() {
       </div>
       <SpeakBtn text={w.jp} />
     </section>
+  );
+}
+
+/** Today's date and time from the phone, and when the next Sunday review is. */
+function Clock() {
+  const [now, setNow] = useState(new Date());
+  useEffect(() => { const t = setInterval(() => setNow(new Date()), 30000); return () => clearInterval(t); }, []);
+  const toSun = (7 - now.getDay()) % 7;
+  return (
+    <span className="clockline">
+      <span>{now.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' })} · {now.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}</span>
+      <span>{toSun === 0 ? <b style={{ color: 'var(--sakura)' }}>📅 Sunday review day</b> : `📅 Sunday review in ${toSun} day${toSun > 1 ? 's' : ''}`}</span>
+    </span>
   );
 }

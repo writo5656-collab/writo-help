@@ -147,3 +147,10 @@ export function checkWord(expectedJp: string, expectedKana: string, raw: string)
   const u = normalize(raw);
   return u === normalize(expectedJp) || u === normalize(expectedKana);
 }
+
+/** 0–1 similarity of two strings (1 = identical), on normalised text. */
+export function similarity(a: string, b: string): number {
+  a = normalize(a); b = normalize(b);
+  if (!a || !b) return 0;
+  return 1 - lev(a, b) / Math.max(a.length, b.length);
+}

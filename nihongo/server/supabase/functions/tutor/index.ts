@@ -3,9 +3,11 @@
 // The phone app never holds the API key. It sends the conversation here; this
 // function adds the key (stored as a Supabase secret) and calls Claude.
 //
-// Secrets to set (see ../../README.md):
-//   ANTHROPIC_API_KEY   your Anthropic API key
+// Secrets to set (see ../../README.md) — use ONE of the two AI providers:
+//   GEMINI_API_KEY      a Google AI Studio key (has a free tier)  ← free option
+//   ANTHROPIC_API_KEY   an Anthropic API key (paid per use)
 //   APP_TOKEN           any passphrase you invent; the app must send the same one
+//   GEMINI_MODEL        optional, default gemini-2.5-flash
 import Anthropic from "npm:@anthropic-ai/sdk";
 import { zodOutputFormat } from "npm:@anthropic-ai/sdk/helpers/zod";
 import { z } from "npm:zod";
@@ -42,7 +44,26 @@ const cors = {
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { ...cors, "Content-Type": "application/json" } });
 
-const client = new Anthropic(); // reads ANTHROPIC_API_KEY from the function's secrets
+const GEMINI_KEY = Deno.env.get("GEMINI_API_KEY");
+const client = GEMINI_KEY ? null : new Anthropic(); // reads ANTHROPIC_API_KEY from the function's secrets
+
+async function viaGemini(system: string, history: { role: string; content: string }[]) {
+  const model = Deno.env.get("GEMINI_MODEL") || "gemini-2.5-flash";
+  const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "x-goog-api-key": GEMINI_KEY! },
+    body: JSON.stringify({
+      systemInstruction: { parts: [{ text: system + '\nReply ONLY with JSON: {"jp","kana","en","correction": {"said","better","why"} or null}.' }] },
+      contents: history.map((m) => ({ role: m.role === "assistant" ? "model" : "user", parts: [{ text: m.content }] })),
+      generationConfig: { responseMimeType: "application/json", temperature: 0.7 },
+    }),
+  });
+  if (!r.ok) throw new Error(`gemini ${r.status}`);
+  const j = await r.json();
+  const text = (j.candidates?.[0]?.content?.parts ?? []).map((p: { text?: string }) => p.text ?? "").join("");
+  const data = JSON.parse(text.match(/\{[\s\S]*\}/)?.[0] ?? text);
+  return Reply.parse({ jp: data.jp, kana: data.kana ?? "", en: data.en ?? "", correction: data.correction ?? null });
+}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
@@ -76,7 +97,8 @@ Deno.serve(async (req) => {
   ].filter(Boolean).join("\n");
 
   try {
-    const response = await client.messages.parse({
+    if (GEMINI_KEY) return json(await viaGemini(system, history));
+    const response = await client!.messages.parse({
       model: "claude-opus-5-5",
       max_tokens: 4000,
       output_config: { effort: "low", format: zodOutputFormat(Reply) },
@@ -86,6 +108,7 @@ Deno.serve(async (req) => {
     if (response.stop_reason === "refusal" || !response.parsed_output) return json({ error: "The tutor could not answer that. Try rephrasing." }, 502);
     return json(response.parsed_output);
   } catch (err) {
+    if (GEMINI_KEY) return json({ error: "Gemini request failed — check GEMINI_API_KEY and the free-tier limit." }, 502);
     if (err instanceof Anthropic.AuthenticationError) return json({ error: "The API key on the proxy is missing or invalid." }, 500);
     if (err instanceof Anthropic.RateLimitError) return json({ error: "Rate limited. Wait a moment and try again." }, 429);
     if (err instanceof Anthropic.APIError) return json({ error: `Tutor service error (${err.status ?? "network"}).` }, 502);

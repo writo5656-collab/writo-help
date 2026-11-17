@@ -11,6 +11,7 @@ import { PictureGate } from './components/PictureGate';
 import { Characters } from './screens/Characters';
 import Call from './screens/Call';
 import Plan from './screens/Plan';
+import Grammar from './screens/Grammar';
 import { useDaily } from './lib/hooks';
 import { scheduleStreakReminders } from './services/notify';
 import { updateWidget } from './services/widget';
@@ -98,17 +99,28 @@ function StreakKeeper() {
       void g;
     });
   }, [d?.info.todayDone]); // eslint-disable-line
-  if (party === null) return null;
-  const g = CAST[dailyCast().guide];
+  if (party === null || !d) return null;
+  // Monday-to-Sunday week, like a calendar.
+  const now = new Date(); const dow = (now.getDay() + 6) % 7;
+  const weekDays = Array.from({ length: 7 }, (_, i) => { const x = new Date(now); x.setDate(now.getDate() - dow + i); return x; });
+  const keyOfD = (x: Date) => `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, '0')}-${String(x.getDate()).padStart(2, '0')}`;
+  const left = 6 - dow;
   return (
-    <div className="celebrate" role="dialog" aria-label="Plan complete" onClick={() => setParty(null)}>
-      <div className="card col" style={{ alignItems: 'center' }}>
-        <Portrait id={g.id} mood="happy" size={120} />
-        <h1 lang="ja">やったね！🔥</h1>
-        <p><b>{party}-day streak.</b> Today's 25 minutes are done — your streak is safe.</p>
-        <p className="small muted">{g.name}: "See you tomorrow. Anything more today is a bonus!"</p>
-        <button className="btn" onClick={() => setParty(null)}>Yay!</button>
+    <div className="streak-screen" role="dialog" aria-label="Streak">
+      <div className="flame-big" aria-hidden="true">
+        <svg viewBox="0 0 120 150" width="150" height="180"><defs><linearGradient id="fg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#ffb347" /><stop offset="1" stopColor="#e8361c" /></linearGradient></defs>
+          <path d="M60 6c6 22 44 40 44 84a44 44 0 0 1-88 0c0-20 9-32 18-40 2 12 8 20 16 22C48 50 50 26 60 6z" fill="url(#fg)" stroke="#d9261c" strokeWidth="5" strokeLinejoin="round" />
+          <path d="M60 70c4 12 20 18 20 36a20 20 0 0 1-40 0c0-10 6-16 10-20 2 6 6 8 10 8-2-10-2-16 0-24z" fill="#ffe28a" />
+          <circle cx="60" cy="108" r="10" fill="#fff" opacity=".9" /></svg>
       </div>
+      <div className="big-num num">{party}</div>
+      <div className="big-label">day streak</div>
+      <div className="wk">
+        {weekDays.map((x, i) => { const st = d.info.status.get(keyOfD(x)); return <span key={i} className={`wkd ${st ?? ''} ${i === dow ? 'now' : ''}`}><small>{'MTWTFSS'[i]}</small><i>{st === 'done' ? '✓' : st === 'frozen' ? '❄' : ''}</i></span>; })}
+      </div>
+      <p className="center">{left > 0 ? <>Practise <b style={{ color: '#ff6a3d' }}>{left} more day{left > 1 ? 's' : ''}</b> this week for a Perfect Week!</> : <>Perfect Week complete! 🎉</>}</p>
+      <div className="row gap-s" style={{ alignItems: 'center' }}><Portrait id={dailyCast().guide} mood="happy" size={44} /><span className="small">{CAST[dailyCast().guide].name.split(' ')[0]}: "Today's 25 minutes are done. See you tomorrow!"</span></div>
+      <button className="btn" style={{ maxWidth: 360 }} onClick={() => setParty(null)}>Nice{s?.name ? `, ${s.name}` : ''}!</button>
     </div>
   );
 }
@@ -167,6 +179,7 @@ function Shell() {
                 <Route path="/characters" element={<Characters />} />
                 <Route path="/call" element={<Call />} />
                 <Route path="/plan" element={<Plan />} />
+                <Route path="/grammar" element={<Grammar />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
               <Tabs />
