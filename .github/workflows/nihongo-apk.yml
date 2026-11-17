@@ -1,0 +1,42 @@
+# Builds the Nihongo Android app (APK) on GitHub's servers, so no Android
+# tools are needed on your own computer. Download the result from the
+# "Actions" tab of the repository: open the latest run → Artifacts → nihongo-apk.
+name: Nihongo APK
+
+on:
+  push:
+    paths: ['nihongo/**', '.github/workflows/nihongo-apk.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: nihongo
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: nihongo/package-lock.json
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
+      - run: npx cap sync android
+      - name: Build APK
+        working-directory: nihongo/android
+        run: ./gradlew assembleDebug --no-daemon
+      - run: mv android/app/build/outputs/apk/debug/app-debug.apk nihongo.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nihongo-apk
+          path: nihongo/nihongo.apk

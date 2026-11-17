@@ -1,0 +1,93 @@
+import { describe, it, expect } from 'vitest';
+import { parseFuri, romajiOf, hasKanji } from './jp';
+import { checkSentence, checkWord } from './check';
+import { newItem, review, dueItems, isMastered, DAY } from './srs';
+import { buildPlan } from './plan';
+import { LESSONS, ALL_SENTENCES, ALL_VOCAB, KANJI, PASSAGES, ROLEPLAYS, PACKS } from '../content';
+import { lessonExercises, reviewEx } from './exercises';
+
+const water = { f: '私[わたし]は 水[みず]{を} 飲[の]みます。', en: 'I drink water.' };
+
+describe('furigana notation', () => {
+  it('parses text, reading and chunks', () => {
+    const p = parseFuri(water.f);
+    expect(p.jp).toBe('私は水を飲みます。');
+    expect(p.kana).toBe('わたしはみずをのみます。');
+    expect(p.chunks.length).toBe(3);
+    expect(p.chunks[1].particle).toBe('を');
+  });
+  it('romaji shows particles as pronounced', () => expect(romajiOf(water.f)).toBe('watashi wa mizu o nomimasu'));
+});
+
+describe('answer checking', () => {
+  it('accepts kanji, kana and mixed answers', () => {
+    for (const a of ['私は水を飲みます。', 'わたしはみずをのみます', '私は みずを 飲みます', '水を飲みます。', 'みずをのみます'])
+      expect(checkSentence(water, a).ok, a).toBe(true);
+  });
+  it('explains a wrong particle', () => {
+    const r = checkSentence(water, '私は水が飲みます');
+    expect(r.ok).toBe(false);
+    expect(r.notes.join(' ')).toMatch(/を/);
+  });
+  it('explains plain form and romaji', () => {
+    expect(checkSentence(water, '水を飲む').notes.join(' ')).toMatch(/polite/i);
+    expect(checkSentence(water, 'mizu o nomimasu').notes.join(' ')).toMatch(/romaji/i);
+  });
+  it('accepts listed alternatives', () => {
+    const s = ALL_SENTENCES.find(x => x.id === 'sent:n5-05:0')!;
+    expect(checkSentence(s, '学校へ行きます').ok).toBe(true);
+  });
+  it('checks single words', () => { expect(checkWord('水', 'みず', 'みず')).toBe(true); expect(checkWord('水', 'みず', 'みす')).toBe(false); });
+});
+
+describe('spaced repetition', () => {
+  it('forgotten items return soon, remembered items later', () => {
+    const now = Date.now();
+    const again = review(newItem('a', 'vocab', now), 'again', now);
+    expect(again.status).toBe('forgotten'); expect(again.due - now).toBeLessThan(DAY);
+    let good = review(newItem('b', 'vocab', now), 'good', now);
+    expect(good.status).toBe('learning');
+    good = review(good, 'good', now + DAY);
+    expect(good.status).toBe('remembered'); expect(isMastered(good)).toBe(true);
+    expect(dueItems([again, good], now + 2 * DAY).map(i => i.id)).toEqual(['a']);
+  });
+  it('a correct answer right after seeing the solution is not mastery', () => {
+    const now = Date.now();
+    const a = review(review(newItem('a', 'vocab', now), 'again', now), 'retry', now);
+    expect(a.status).toBe('forgotten'); expect(a.reps).toBe(0);
+  });
+});
+
+describe('plan', () => {
+  it('missing days never changes the cycle, and a missed Sunday carries forward', () => {
+    const p = buildPlan({ items: [], studyDays: ['2026-01-01', '2026-01-02', '2026-01-03'], lastSunday: '', sundaysDone: 0, now: new Date('2026-03-04T10:00:00') });
+    expect(p.cycleDay).toBe(4); expect(p.focus).toBe('practical'); expect(p.sundayPending).toBe(true);
+  });
+});
+
+describe('content integrity', () => {
+  it('every sentence has a clean reading and accepts its own model answer and alternatives', () => {
+    for (const s of ALL_SENTENCES) {
+      const p = parseFuri(s.f);
+      expect(hasKanji(p.kana), `${s.id} reading still has kanji: ${p.kana}`).toBe(false);
+      expect(checkSentence(s, p.jp).ok, s.id).toBe(true);
+      expect(checkSentence(s, p.kana).ok, s.id).toBe(true);
+      for (const a of s.alt ?? []) { expect(hasKanji(parseFuri(a).kana), `${s.id} alt`).toBe(false); expect(checkSentence(s, parseFuri(a).jp).ok, `${s.id} alt ${a}`).toBe(true); }
+    }
+  });
+  it('vocabulary readings are kana', () => { for (const w of ALL_VOCAB) expect(hasKanji(w.kana), w.jp).toBe(false); });
+  it('other content parses', () => {
+    for (const k of KANJI) for (const w of k.words) { expect(hasKanji(parseFuri(w.f).kana), w.f).toBe(false); expect(w.en, w.f).toBeTruthy(); }
+    for (const p of PASSAGES) for (const l of p.lines) expect(hasKanji(parseFuri(l.f).kana), l.f).toBe(false);
+    for (const r of ROLEPLAYS) for (const t of r.turns) { expect(hasKanji(parseFuri(t.npc.f).kana), t.npc.f).toBe(false); for (const e of t.expect) expect(hasKanji(parseFuri(e).kana), e).toBe(false); }
+    for (const l of LESSONS) { for (const d of l.dialogue ?? []) expect(hasKanji(parseFuri(d.f).kana), d.f).toBe(false); for (const x of l.scene?.items ?? []) expect(hasKanji(parseFuri(x.f).kana), x.f).toBe(false); }
+    expect(PACKS.length).toBeGreaterThan(0);
+  });
+  it('every lesson produces exercises and every item can be reviewed', () => {
+    for (const l of LESSONS) {
+      const ex = lessonExercises(l);
+      expect(ex.length, l.id).toBeGreaterThan(5);
+      for (const e of ex) { if (e.t === 'choice' || e.t === 'fill') { expect(e.a, l.id).toBeGreaterThanOrEqual(0); expect(new Set(e.options).size, `${l.id} ${JSON.stringify(e.options)}`).toBe(e.options.length); } expect(reviewEx(newItem(e.itemId, e.kind)) !== null || e.itemId.startsWith('choice'), e.itemId).toBe(true); }
+    }
+  });
+});
