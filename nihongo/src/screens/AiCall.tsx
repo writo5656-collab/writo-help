@@ -14,6 +14,9 @@ import { listenOnce, sttAvailable, stopListening } from '../services/stt';
 import { tutorReply, type ChatMsg, type TutorReply } from '../services/ai';
 import { sfx } from '../services/sfx';
 import { Portrait } from '../components/Portrait';
+import { PhotoAsk } from '../components/PhotoAsk';
+import { nextPhotos, markPhotoSeen } from './ReadJapan';
+import type { RealPhoto } from '../content/realPhotos';
 import { Icon, useS, useAsync } from '../components/ui';
 
 export default function AiCall({ id, mode, plan }: { id: string; mode: 'lesson' | 'talk'; plan: boolean }) {
@@ -35,6 +38,29 @@ export default function AiCall({ id, mode, plan }: { id: string; mode: 'lesson' 
   const [mood, setMood] = useState<'teach' | 'happy' | 'oops'>('teach');
   const history = useRef<ChatMsg[]>([]);
   const alive = useRef(true);
+  const reqId = useRef(0);        // only the newest request may update the screen
+  const [photo, setPhoto] = useState<RealPhoto | null>(null);
+  const photoRef = useRef(false);
+  const turnsRef = useRef(0);
+  const lastPhotoTurn = useRef(-1);
+  const pool = useRef<RealPhoto[]>([]);
+  useEffect(() => { void nextPhotos(6).then(p => { pool.current = p; }); }, []);
+  const openPhoto = () => {
+    const p = pool.current.shift();
+    if (!p) return false;
+    void stopListening(); void stop();
+    lastPhotoTurn.current = turnsRef.current; photoRef.current = true; setPhoto(p);
+    return true;
+  };
+  // A photo moment after your 2nd reply, then every 4 replies.
+  const photoDue = () => turnsRef.current >= 2 && turnsRef.current !== lastPhotoTurn.current && (turnsRef.current - 2) % 4 === 0;
+  const lastAsk = useRef<ChatMsg[]>([]);
+  const [waitSecs, setWaitSecs] = useState(0);
+  useEffect(() => {
+    if (!thinking) { setWaitSecs(0); return; }
+    const t = setInterval(() => setWaitSecs(x => x + 1), 1000);
+    return () => clearInterval(t);
+  }, [thinking]);
 
   useEffect(() => { const t = setInterval(() => setSecs(x => x + 1), 1000); return () => { clearInterval(t); alive.current = false; void stop(); void stopListening(); }; }, []);
   useEffect(() => { if (plan && turns >= 4) void markBlock('real'); }, [turns]); // eslint-disable-line
@@ -42,37 +68,42 @@ export default function AiCall({ id, mode, plan }: { id: string; mode: 'lesson' 
   useEffect(() => { if (lessons) { sfx.streak(); void ask([]); } }, [lessons]); // eslint-disable-line
 
   const ask = async (h: ChatMsg[]) => {
+    const my = ++reqId.current;
+    lastAsk.current = h;
     setThinking(true); setErr('');
     try {
       const done = await getKV<Record<string, number>>('doneLessons', {});
       const known = LESSONS.filter(l => done[l.id]).map(l => l.title).join('; ') || 'beginner';
       const r = await tutorReply({ messages: h, scenario: mode === 'lesson' ? 'lesson' : 'call', persona: `${c.name} from the anime "${c.series}"`, level: s.level, known, lesson: mode === 'lesson' && lessons ? materialText(lessons) : undefined });
-      if (!alive.current) return;
+      if (!alive.current || my !== reqId.current) return;
       history.current = [...h, { role: 'assistant', content: r.jp }];
       setReply(r); setThinking(false);
       setMood(r.correction?.better ? 'oops' : h.length ? 'happy' : 'teach');
       if (r.correction?.better) void db.corrections.add({ ts: Date.now(), said: r.correction.said, better: r.correction.better, why: r.correction.why, source: 'call' });
       setTalking(true);
       await speakSeq([{ text: r.jp, who: id, rate: s.rate * 0.95 }]);
-      if (!alive.current) return;
+      if (!alive.current || my !== reqId.current) return;
       setTalking(false); setMood('teach');
-      if (mic) void listen();
-    } catch (e) { setThinking(false); setErr((e as Error).message); }
+      if (photoDue() && openPhoto()) return;
+      if (mic && !photoRef.current) void listen();
+    } catch (e) { if (my === reqId.current && alive.current) { setThinking(false); setTalking(false); setErr((e as Error).message); } }
   };
+  const retry = () => { void stop(); setTalking(false); void ask(lastAsk.current); };
 
   const send = async (text: string) => {
     if (!text.trim()) return;
-    setMine(text); setLive(''); setTurns(t => t + 1);
+    setMine(text); setLive(''); setTurns(t => t + 1); turnsRef.current += 1;
     await ask([...history.current, { role: 'user', content: text }]);
   };
 
   async function listen() {
     if (listening) { await stopListening(); return; }
-    if (talking || thinking) return;
+    if (talking || thinking || photoRef.current) return;
     setErr(''); setLive(''); setListening(true);
     try {
       const heard = await listenOnce(t => setLive(t), 20000);
       setListening(false);
+      if (photoRef.current || !alive.current) return; // a photo opened mid-sentence: drop the half-heard words
       if (heard[0]) await send(heard[0]);
       // Silence is fine — just wait for the learner to tap the mic or the sample answer.
     } catch (e) { setListening(false); setErr((e as Error).message); }
@@ -89,7 +120,7 @@ export default function AiCall({ id, mode, plan }: { id: string; mode: 'lesson' 
         <Portrait id={id} mood={mood} talking={talking} shape="full" size={150} />
         <div className="col center" style={{ alignItems: 'center', gap: 4 }}>
           <b style={{ fontSize: '1.1rem' }}>{c.name}</b>
-          <span className="small" style={{ opacity: .8 }}>{thinking ? 'thinking…' : talking ? 'speaking…' : listening ? 'listening — tap the mic when you\'re done' : 'your turn — tap the mic'}</span>
+          <span className="small" style={{ opacity: .8 }}>{thinking ? `thinking… ${waitSecs > 3 ? waitSecs + 's' : ''}` : talking ? 'speaking…' : listening ? 'listening — tap the mic when you\'re done' : 'your turn — tap the mic'}</span>
           {(talking || listening) && <span className="wave" aria-hidden="true"><i /><i /><i /><i /></span>}
         </div>
         <div className="cap" aria-live="polite">
@@ -105,7 +136,8 @@ export default function AiCall({ id, mode, plan }: { id: string; mode: 'lesson' 
           </> : <span className="small" style={{ opacity: .7 }}>{err ? '' : `Calling ${c.name.split(' ')[0]}…`}</span>}
           {(listening || live) && <div className="small" style={{ marginTop: 8 }} lang="ja">🎤 {live || '…'}</div>}
           {!listening && !live && mine && <div className="small" style={{ marginTop: 8, opacity: .8 }} lang="ja">You: {mine}</div>}
-          {err && <div className="small" style={{ marginTop: 6, color: '#ffb3a8' }}>{err} <button className="chip" style={{ minHeight: 28, marginLeft: 6 }} onClick={() => void ask(history.current)}>Retry</button></div>}
+          {thinking && waitSecs >= 15 && <div className="small" style={{ marginTop: 6, opacity: .85 }}>Taking longer than usual… <button className="chip" style={{ minHeight: 28, marginLeft: 6 }} onClick={retry}>Retry</button></div>}
+          {err && <div className="small" style={{ marginTop: 6, color: '#ffb3a8' }}>{err} <button className="chip" style={{ minHeight: 28, marginLeft: 6 }} onClick={retry}>Retry</button></div>}
         </div>
         {reply?.hint?.jp && !talking && (
           <button className="say-glow" onClick={() => void send(reply.hint!.jp)} aria-label="Send the sample answer">
@@ -115,8 +147,18 @@ export default function AiCall({ id, mode, plan }: { id: string; mode: 'lesson' 
           </button>
         )}
       </div>
+      {photo && (
+        <div className="call-photo">
+          <PhotoAsk photo={photo} who={id} mic={!!mic} dark onDone={ok => {
+            void markPhotoSeen(photo.id, ok);
+            photoRef.current = false; setPhoto(null);
+            void send(`「${photo.read}」って書いてあったよ！`);
+          }} />
+        </div>
+      )}
       <div className="ctl">
         {mic !== false && <button className={listening ? 'mic-on' : ''} style={{ width: 78, height: 78 }} aria-label={listening ? 'Finish speaking' : 'Speak'} onClick={() => void listen()} disabled={talking || thinking}><Icon n="mic" s={34} /></button>}
+        <button aria-label="Show me a real sign to read" onClick={() => { if (!talking && !thinking) openPhoto(); }} disabled={talking || thinking || !!photo}><Icon n="eye" s={26} /></button>
         {reply?.hint?.jp && <button aria-label="Hear the sample answer" onClick={() => speakSeq([{ text: reply.hint!.jp, rate: s.rate * 0.85 }])}><Icon n="bulb" s={26} /></button>}
         <button className="hang" aria-label="Hang up" onClick={() => (plan ? nav('/plan') : nav(-1))}><Icon n="close" s={28} /></button>
       </div>

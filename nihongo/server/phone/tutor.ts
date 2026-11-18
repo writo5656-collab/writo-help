@@ -12,6 +12,7 @@ const json = (body: unknown, status = 200) =>
 
 const SCENARIOS: Record<string, string> = {
   free: "Have a friendly everyday conversation.",
+  explain: "EXPLAIN MODE — do not chat. The learner's message describes one exercise and the answer they gave. Write the explanation in simple, friendly English in \"en\" (3 to 6 short sentences, no long lectures): first say if their answer is right; if it is wrong, say exactly what differs and why; then explain the key word or grammar point and how the sentence is built. Put ONE new short example sentence that uses the same point in \"jp\" (with its kana in \"kana\"). Set \"correction\" to null. Make \"hint\" another short example.",
   call: "This is a friendly video call. Talk naturally about the learner's day, plans and interests. Ask one question at a time.",
   sunday: "This is the learner's weekly review. Revisit the items under 'Recent mistakes' through conversation.",
   lesson: "This is a relaxed, CASUAL call about what the learner studied TODAY, like chatting with a friend. Use casual plain-form Japanese, one short sentence, mostly words from today's material, and ONE simple question about it at a time. Accept any answer (even one word or English), reply warmly, and show how to say it. Stay within today's material.",
@@ -52,27 +53,36 @@ export async function handler(req: Request): Promise<Response> {
     body.persona ? `Speak in the friendly tone of ${String(body.persona).slice(0, 120)}, with your own original lines only.` : "",
     body.scenario === "sunday" ? `Recent mistakes: ${String(body.review ?? "none").slice(0, 3000)}` : "",
     body.lesson ? `Today's material:\n${String(body.lesson).slice(0, 2500)}` : "",
-    "Reply in simple, polite Japanese (one to three short sentences) that ends with something the learner can answer.",
+    body.scenario === "explain" || body.scenario === "lesson" ? "" : "Reply in simple, polite Japanese (one to three short sentences) that ends with something the learner can answer.",
     "If the learner's last message has a real mistake, add a gentle correction; otherwise correction is null. Never scold.",
     'Always include "hint": a very short easy example answer the learner could give.',
     'Reply ONLY with JSON: {"jp": string, "kana": string (kana only), "en": string, "correction": {"said": string, "better": string, "why": string} or null, "hint": {"jp": string, "kana": string, "romaji": string, "en": string}}',
   ].filter(Boolean).join("\n");
 
   const model = Deno.env.get("GEMINI_MODEL") || (await bestModel(key));
-  const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
+  // Thinking off = fast replies. If a model refuses that setting (400), ask again normally.
+  const ask = (think: boolean) => fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
     method: "POST",
     headers: { "Content-Type": "application/json", "x-goog-api-key": key },
+    signal: AbortSignal.timeout(30000),
     body: JSON.stringify({
       systemInstruction: { parts: [{ text: system }] },
       contents: history.map((m) => ({ role: m.role === "assistant" ? "model" : "user", parts: [{ text: m.content.slice(0, 2000) }] })),
-      generationConfig: { responseMimeType: "application/json", temperature: 0.7 },
+      generationConfig: { responseMimeType: "application/json", temperature: 0.7, ...(think ? {} : { thinkingConfig: { thinkingBudget: 0 } }) },
     }),
   });
+  let r: Response;
+  try {
+    r = await ask(false);
+    if (r.status === 400) r = await ask(true);
+  } catch {
+    return json({ error: "Gemini took too long to answer. Try again." }, 504);
+  }
   if (r.status === 429) return json({ error: "Gemini free limit reached — try again later." }, 429);
   if (!r.ok) return json({ error: `Gemini error ${r.status}` }, 502);
   try {
     const j = await r.json();
-    const text = (j.candidates?.[0]?.content?.parts ?? []).map((p: { text?: string }) => p.text ?? "").join("");
+    const text = (j.candidates?.[0]?.content?.parts ?? []).filter((p: { thought?: boolean }) => !p.thought).map((p: { text?: string }) => p.text ?? "").join("");
     const d = JSON.parse(text.match(/\{[\s\S]*\}/)?.[0] ?? text);
     if (typeof d.jp !== "string") throw new Error("bad");
     return json({ jp: d.jp, kana: d.kana ?? "", en: d.en ?? "", correction: d.correction ?? null, hint: d.hint ?? null });

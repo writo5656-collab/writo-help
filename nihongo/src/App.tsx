@@ -12,6 +12,7 @@ import { Characters } from './screens/Characters';
 import Call from './screens/Call';
 import Plan from './screens/Plan';
 import Grammar from './screens/Grammar';
+import ReadJapan from './screens/ReadJapan';
 import { useDaily } from './lib/hooks';
 import { scheduleStreakReminders, onNotificationTap } from './services/notify';
 import { setHaptics } from './services/haptics';
@@ -65,7 +66,15 @@ function useStudyClock() {
   useEffect(() => {
     const touch = () => { last.current = Date.now(); };
     window.addEventListener('pointerdown', touch); window.addEventListener('keydown', touch);
-    const t = setInterval(() => { if (!document.hidden && Date.now() - last.current < 90000) void addSeconds(15); }, 15000);
+    // Only screens opened from today's plan (their address carries plan=1) count toward the 25 minutes.
+    // Calls are hands-free, so they get a longer idle window.
+    const t = setInterval(() => {
+      if (document.hidden) return;
+      const h = window.location.hash;
+      const inPlan = /[?&]plan=1(&|$)/.test(h);
+      const idle = Date.now() - last.current;
+      if (idle < (inPlan && h.startsWith('#/call') ? 240000 : 90000)) void addSeconds(15, inPlan);
+    }, 15000);
     return () => { clearInterval(t); window.removeEventListener('pointerdown', touch); window.removeEventListener('keydown', touch); };
   }, []);
 }
@@ -182,6 +191,7 @@ function Shell() {
                 <Route path="/call" element={<Call />} />
                 <Route path="/plan" element={<Plan />} />
                 <Route path="/grammar" element={<Grammar />} />
+                <Route path="/read-japan" element={<ReadJapan />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
               <Tabs />

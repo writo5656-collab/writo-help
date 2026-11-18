@@ -67,7 +67,9 @@ export async function geminiModels(key: string): Promise<string[]> {
   const out: string[] = [];
   let page = '';
   for (let i = 0; i < 3; i++) {
-    const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?pageSize=100${page ? `&pageToken=${page}` : ''}`, { headers: { 'x-goog-api-key': key } });
+    let r: Response;
+    try { r = await fetchWithTimeout(`https://generativelanguage.googleapis.com/v1beta/models?pageSize=100${page ? `&pageToken=${page}` : ''}`, { headers: { 'x-goog-api-key': key } }, 15000); }
+    catch { throw new Error('Could not reach Gemini — check your internet.'); }
     if (r.status === 400 || r.status === 403) throw new Error('Gemini rejected the API key — copy it again from AI Studio.');
     if (!r.ok) throw new Error(`Could not list Gemini models (${r.status}).`);
     const j = await r.json();
@@ -77,21 +79,40 @@ export async function geminiModels(key: string): Promise<string[]> {
   return out;
 }
 
+const noThinking = new Set<string>(); // models that refused thinkingConfig
+export const AI_TIMEOUT = 25000;
+
+/** fetch with a hard time limit — a request can never hang the app forever. */
+export async function fetchWithTimeout(url: string, init: RequestInit, ms = AI_TIMEOUT): Promise<Response> {
+  const ctl = new AbortController();
+  const t = setTimeout(() => ctl.abort(), ms);
+  try { return await fetch(url, { ...init, signal: ctl.signal }); }
+  finally { clearTimeout(t); }
+}
+
 /** One request to one model. Returns the HTTP status and, on success, the parsed reply. */
-async function geminiOnce(o: TutorRequest, key: string, m: string): Promise<{ status: number; reply?: TutorReply }> {
-  const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(m)}:generateContent`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
-    body: JSON.stringify({
-      systemInstruction: { parts: [{ text: tutorSystem(o) }] },
-      contents: withOpener(o.messages).map(x => ({ role: x.role === 'assistant' ? 'model' : 'user', parts: [{ text: x.content }] })),
-      generationConfig: { responseMimeType: 'application/json', temperature: 0.7 },
-    }),
+async function geminiOnce(o: TutorRequest, key: string, m: string, ms = AI_TIMEOUT): Promise<{ status: number; reply?: TutorReply }> {
+  const body = (think: boolean) => JSON.stringify({
+    systemInstruction: { parts: [{ text: tutorSystem(o) }] },
+    contents: withOpener(o.messages).map(x => ({ role: x.role === 'assistant' ? 'model' : 'user', parts: [{ text: x.content }] })),
+    // Thinking makes replies slow (sometimes 30s+). A tutor line doesn't need it.
+    generationConfig: { responseMimeType: 'application/json', temperature: 0.7, maxOutputTokens: 2048, ...(think ? {} : { thinkingConfig: { thinkingBudget: 0 } }) },
   });
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(m)}:generateContent`;
+  const go = (think: boolean) => fetchWithTimeout(url, { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key }, body: body(think) }, ms);
+  let res: Response;
+  try {
+    res = await go(noThinking.has(m));
+    // Some models can't switch thinking off (400) — ask again normally before blaming the key.
+    if (res.status === 400 && !noThinking.has(m)) { noThinking.add(m); res = await go(true); }
+  } catch { return { status: 504 }; } // timed out or no internet
   if (!res.ok) return { status: res.status };
-  const j = await res.json();
-  const text = (j.candidates?.[0]?.content?.parts ?? []).map((p: { text?: string }) => p.text ?? '').join('');
-  return { status: 200, reply: parseReply(text) };
+  try {
+    const j = await res.json();
+    const text = (j.candidates?.[0]?.content?.parts ?? []).filter((p: { thought?: boolean }) => !p.thought).map((p: { text?: string }) => p.text ?? '').join('');
+    if (!text.trim()) return { status: 502 };
+    return { status: 200, reply: parseReply(text) };
+  } catch { return { status: 502 }; } // cut-off or broken JSON: try again / another model
 }
 
 /**
@@ -105,24 +126,28 @@ async function viaGemini(o: TutorRequest, key: string, model: string): Promise<T
   try { ranked = await rankedFor(key); } catch (e) { if (!model) throw e; }
   const first = model || ranked[0] || 'gemini-flash-latest';
   if (!model) await saveSettings({ aiModel: first });
-  const order = [first, ...ranked.filter(m => m !== first)].slice(0, 4);
+  const order = [first, ...ranked.filter(m => m !== first)].slice(0, 3);
   let last = 0;
+  const deadline = Date.now() + 50000; // never keep the learner waiting longer than this
   for (let i = 0; i < order.length; i++) {
+    if (Date.now() > deadline - 4000) break;
     const m = order[i];
     for (let attempt = 0; attempt < (i === 0 ? 2 : 1); attempt++) {
-      const r = await geminiOnce(o, key, m);
+      const r = await geminiOnce(o, key, m, Math.min(AI_TIMEOUT, Math.max(4000, deadline - Date.now())));
       if (r.reply) {
         if (i > 0 && last === 404) await saveSettings({ aiModel: m }); // the saved one is gone for good
         return r.reply;
       }
       last = r.status;
       if (r.status === 400 || r.status === 401 || r.status === 403) throw new Error('Gemini rejected the request — check the API key in Settings.');
-      if (r.status === 503 || r.status === 500) { await wait(1200 * (attempt + 1)); continue; }
-      break; // 404 or 429: move straight to the next model
+      if (r.status === 503 || r.status === 500 || r.status === 502) { await wait(1200 * (attempt + 1)); continue; }
+      break; // 404, 429 or timeout (504): move straight to the next model
     }
   }
   if (last === 429) throw new Error('Gemini\'s free limit is used up for now on every model. Try again later (limits reset daily).');
   if (last === 503 || last === 500) throw new Error('Google\'s Gemini servers are busy right now. Wait a minute and try again.');
+  if (last === 504) throw new Error('Gemini took too long to answer. Check your internet and tap Retry.');
+  if (last === 502) throw new Error('Gemini sent a broken reply. Tap Retry.');
   throw new Error(`Gemini error (${last}).`);
 }
 
@@ -131,11 +156,12 @@ export async function tutorReply(o: TutorRequest): Promise<TutorReply> {
   if (s.aiMode === 'claude') { if (!s.aiKey) throw new Error('Add your Claude API key in Settings → AI tutor.'); return viaClaude(o, s.aiKey.trim(), s.aiModel.trim()); }
   if (s.aiMode === 'gemini') { if (!s.aiKey) throw new Error('Add your Gemini API key in Settings → AI tutor.'); return viaGemini(o, s.aiKey.trim(), s.aiModel.trim()); }
   if (!s.aiUrl.trim()) throw new Error('The AI tutor is not set up yet. Choose a connection in Settings → AI tutor.');
-  const res = await fetch(s.aiUrl.trim(), {
+  let res: Response;
+  try { res = await fetchWithTimeout(s.aiUrl.trim(), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...(s.aiToken ? { 'x-app-token': s.aiToken } : {}), ...(s.aiProxyKey ? { Authorization: `Bearer ${s.aiProxyKey}`, apikey: s.aiProxyKey } : {}) },
     body: JSON.stringify(o),
-  });
+  }, 40000); } catch { throw new Error('The tutor server took too long to answer. Check your internet and tap Retry.'); }
   if (res.status === 401) { const t = await res.text(); throw new Error(/passphrase/i.test(t) ? 'Wrong app passphrase — it must match APP_TOKEN on Supabase.' : 'Supabase asked for a login: turn off "Verify JWT" for the function, or paste your anon key in Settings → AI tutor → Supabase key.'); }
   if (!res.ok) throw new Error(`The tutor service answered with an error (${res.status}). Check the proxy address in Settings.`);
   return parseReply(JSON.stringify(await res.json()));

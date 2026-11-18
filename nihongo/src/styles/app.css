@@ -471,3 +471,38 @@ a.card:active, button.card:active { transform: scale(.98); }
 @keyframes shakeA { 20% { transform: translateX(-8px); } 40% { transform: translateX(7px); } 60% { transform: translateX(-5px); } 80% { transform: translateX(3px); } }
 @keyframes shakeB { 20% { transform: translateX(-8px); } 40% { transform: translateX(7px); } 60% { transform: translateX(-5px); } 80% { transform: translateX(3px); } }
 .reduced [style*='shake'] { animation: none !important; }
+
+/* Explain my answer */
+.explain { position: fixed; inset: 0; z-index: 60; background: var(--cream); display: flex; flex-direction: column; gap: 12px; padding: calc(14px + var(--safe-t)) 16px calc(16px + var(--safe-b)); overflow-y: auto; animation: slideUp .3s cubic-bezier(.2,.9,.3,1) both; }
+.explain header { align-items: center; }
+.ex-tabs { display: flex; gap: 8px; overflow-x: auto; padding: 2px 2px 6px; scrollbar-width: none; }
+.ex-tabs::-webkit-scrollbar { display: none; }
+.ex-tabs button { flex: none; min-height: 44px; padding: 8px 14px; border-radius: 14px; border: 2px solid var(--line); background: var(--card); color: var(--ink); font-size: 1.05rem; font-weight: 600; }
+.ex-tabs button.on { border-color: var(--forest-2); background: var(--sage-soft); color: var(--forest); }
+.ex-card { animation: fadeIn .25s ease both; display: flex; flex-direction: column; gap: 6px; }
+.ex-card p { margin: 4px 0; }
+.ex-card .hl { color: var(--forest-2); font-family: var(--jp); }
+.ex-ans { display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-end; justify-content: space-between; padding: 10px 12px; border-radius: var(--r-sm); }
+.ex-ans.ok { background: var(--ok-soft); color: var(--ok); } .ex-ans.bad { background: var(--bad-soft); color: var(--bad); }
+.ex-ans .jp { font-size: 1.1rem; color: var(--ink); }
+.ex-list { margin: 4px 0 0; padding-left: 18px; display: flex; flex-direction: column; gap: 8px; }
+.linkish { background: none; border: 0; padding: 0; color: var(--ink); text-align: left; border-bottom: 2px dashed var(--line); min-height: 32px; }
+.ex-ai .btn { display: flex; align-items: center; gap: 8px; justify-content: center; }
+.explain-btn { min-height: 44px; }
+
+/* Real photo: "can you read this for me?" */
+.photo-ask { display: flex; flex-direction: column; gap: 10px; animation: fadeIn .35s ease both; }
+.photo-ask .pa-who { align-items: center; background: var(--card); border: 1px solid var(--line); border-radius: var(--r); padding: 8px 12px; }
+.photo-ask .pa-who .jp { font-size: 1.05rem; }
+.pa-img { padding: 0; border: 0; background: #000; border-radius: var(--r); overflow: hidden; display: block; width: 100%; max-height: 52vh; }
+.pa-img img { display: block; width: 100%; max-height: 52vh; object-fit: contain; transition: transform .35s ease; }
+.pa-img img.zoom { transform: scale(1.8); }
+.pa-answer { background: var(--amber-soft); border-radius: var(--r-sm); padding: 10px 12px; display: flex; flex-direction: column; gap: 4px; animation: slideUp .3s ease both; }
+.pa-answer.ok { background: var(--ok-soft); }
+.photo-ask.dark { color: #fff; }
+.photo-ask.dark .pa-who { background: rgba(255,255,255,.1); border-color: rgba(255,255,255,.18); }
+.photo-ask.dark .pa-answer { background: rgba(255,255,255,.14); color: #fff; }
+.photo-ask.dark .pa-answer.ok { background: rgba(46,125,91,.45); }
+.photo-ask.dark .btn.line { color: #fff; border-color: rgba(255,255,255,.5); background: transparent; }
+.photo-ask.dark .iconbtn { color: #fff; }
+.call-photo { position: fixed; inset: 0; z-index: 40; overflow-y: auto; padding: calc(16px + var(--safe-t)) 16px calc(20px + var(--safe-b)); background: rgba(14, 18, 24, .94); backdrop-filter: blur(6px); }

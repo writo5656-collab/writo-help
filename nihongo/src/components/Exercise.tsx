@@ -21,6 +21,7 @@ import { saveSettings } from '../lib/settings';
 import { CAST } from '../content/cast';
 import { Portrait } from './Portrait';
 import { WordRomaji } from './WordRomaji';
+import { Explain } from './Explain';
 
 export interface Outcome { ok: boolean; hint: boolean; userAnswer: string; expected: string; explanation: string }
 interface Props { ex: Ex; onResult: (o: Outcome) => void; onNext: (requeue: boolean, solved: boolean) => void; last: boolean; cast?: { guide: string; goof: string } }
@@ -37,8 +38,11 @@ export function Exercise({ ex, onResult, onNext, last, cast }: Props) {
   const pickLine = useMemo(() => Math.floor(Math.random() * 1000), [fb]);
 
   const [burst, setBurst] = useState(0);
+  const [ans, setAns] = useState({ user: '', expected: '' });
+  const [explain, setExplain] = useState(false);
   const finish = (f: Fb, userAnswer: string, expected: string) => {
     setFb(f);
+    setAns({ user: userAnswer, expected });
     setBurst(b => b + 1);
     if (f.ok) { sfx.correct(); buzz.ok(); } else { sfx.wrong(); buzz.bad(); }
     if (!f.ok) setEverWrong(true);
@@ -50,14 +54,14 @@ export function Exercise({ ex, onResult, onNext, last, cast }: Props) {
     if (f.model && s.autoplay && !f.ok) seq.push({ text: parseFuri(f.model).jp, rate: s.rate });
     if (seq.length) void speakSeq(seq);
   };
-  const retry = () => { sfx.tap(); setFb(null); setAttempt(a => a + 1); };
+  const retry = () => { sfx.tap(); setFb(null); setExplain(false); setAttempt(a => a + 1); };
   // Auto-continue: a right answer moves on by itself after a short pause (tap anywhere on the feedback to stay).
   const [hold, setHold] = useState(false);
   useEffect(() => {
-    if (!fb?.ok || !s.autoNext || hold || everWrong) return;
+    if (!fb?.ok || !s.autoNext || hold || everWrong || explain) return;
     const t = setTimeout(() => onNext(false, true), ex.t === 'choice' || ex.t === 'fill' || ex.t === 'chat' ? 1500 : 2300);
     return () => clearTimeout(t);
-  }, [fb, hold]); // eslint-disable-line
+  }, [fb, hold, explain]); // eslint-disable-line
   const reactor = fb && cast ? CAST[fb.ok ? cast.guide : cast.goof] : undefined;
   const reactLine = reactor?.say?.[pickLine % reactor.say.length];
 
@@ -97,6 +101,7 @@ export function Exercise({ ex, onResult, onNext, last, cast }: Props) {
             {fb.notes.length > 0 && <ul>{fb.notes.map((n, i) => <li key={i}>{n}</li>)}</ul>}
             {fb.ok && everWrong && <p className="tiny muted">Nice recovery. Because you saw the answer first, this one will come back later to check it has stuck.</p>}
           </div>
+          <button className="btn line explain-btn" onClick={() => { sfx.tap(); setHold(true); setExplain(true); }}>Explain my answer</button>
           {fb.ok ? (
             <button className="btn" onClick={() => onNext(everWrong, true)}>{last && !everWrong ? 'Finish' : 'Continue'}<Icon n="next" s={18} /></button>
           ) : (
@@ -108,6 +113,7 @@ export function Exercise({ ex, onResult, onNext, last, cast }: Props) {
           {!fb.ok && <p className="tiny muted center">Not solved yet — it stays in this lesson until you get it right.</p>}
         </div>
       )}
+      {fb && explain && <Explain ex={ex} ok={fb.ok} user={ans.user} expected={ans.expected} teacher={cast?.guide} onClose={() => setExplain(false)} />}
     </div>
   );
 }

@@ -3,6 +3,7 @@ export interface TutorRequest { messages: { role: 'user' | 'assistant'; content:
 
 const SCENARIOS: Record<string, string> = {
   free: 'Have a friendly everyday conversation.',
+  explain: 'EXPLAIN MODE — do not chat. The learner\'s message describes one exercise and the answer they gave. Write the explanation in simple, friendly English in "en" (3 to 6 short sentences, no long lectures): first say if their answer is right; if it is wrong, say exactly what differs and why; then explain the key word or grammar point and how the sentence is built. Put ONE new short example sentence that uses the same point in "jp" (with its kana in "kana"). Set "correction" to null. Make "hint" another short example.',
   lesson: 'This is a relaxed, CASUAL call about what the learner studied TODAY, like chatting with a friend. Speak casual, friendly Japanese (plain form, e.g. 〜だよ / 〜する？), very short: one sentence of at most about 12 words. Use mostly words and patterns from today\'s material below, and ask ONE simple question about it at a time (for example, use a new word in a question about the learner\'s life). Accept ANY answer — a single word, broken Japanese, or English — and reply warmly, then show them how to say it. Do not bring in topics or grammar beyond today\'s material.',
   call: 'This is a friendly video call. Talk naturally about the learner\'s day, plans and interests, and ask one question at a time.',
   intro: 'Roleplay: you are a classmate meeting the learner for the first time.',
@@ -23,7 +24,7 @@ export function tutorSystem(o: TutorRequest): string {
     o.persona ? `Speak in the friendly, recognisable tone of ${o.persona.slice(0, 120)}, but write only your own original lines (never quote the show) and keep the Japanese simple.` : '',
     o.scenario === 'sunday' ? `Recent mistakes: ${(o.review ?? 'none').slice(0, 3000)}` : '',
     o.lesson ? `Today's material:\n${o.lesson.slice(0, 2500)}` : '',
-    o.scenario === 'lesson' ? '' : 'Rules: reply in simple Japanese slightly above the learner\'s level, one to three short sentences, ending with something they can answer. Use です/ます unless the scenario needs otherwise.',
+    o.scenario === 'lesson' || o.scenario === 'explain' ? '' : 'Rules: reply in simple Japanese slightly above the learner\'s level, one to three short sentences, ending with something they can answer. Use です/ます unless the scenario needs otherwise.',
     'If the learner\'s last message has a real mistake (particle, verb form, word choice, politeness), fill "correction" with a gentle note; otherwise set it to null. Never scold.',
     'Always include "hint": a very short, easy example of what the learner could answer to your question (Japanese, its kana, its romaji with spaces between words and particles written as pronounced, e.g. "mizu o nomimasu", and English).',
     'Reply ONLY with JSON: {"jp": string, "kana": string (the reply in kana only, no kanji), "en": string, "correction": {"said": string, "better": string, "why": string} | null, "hint": {"jp": string, "kana": string, "romaji": string, "en": string}}.',

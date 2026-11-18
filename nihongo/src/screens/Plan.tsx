@@ -17,7 +17,7 @@ export function blockRoute(id: BlockId, o: { due: number; lessonId?: string; par
     case 'review': return o.due ? `/session?m=review&${tag}` : o.mistakes ? `/session?m=mistakes&${tag}` : `/session?m=drill&type=vocab&${tag}`;
     case 'lesson': return !o.lessonId ? `/session?m=lib&kind=vocab&lvl=4&${tag}` : o.part1Done ? `/session?m=lesson&id=${o.lessonId}&part=2&${tag}` : `/lesson/${o.lessonId}?${tag}`;
     case 'sentences': return `/session?m=drill&type=translate&${tag}`;
-    case 'real': { const rp = ROLEPLAYS[new Date().getDate() % ROLEPLAYS.length].id; return o.mic ? `/call?c=${dailyCast().guide}&rp=${rp}&${tag}` : `/roleplay/${rp}?${tag}`; }
+    case 'real': { const rp = ROLEPLAYS[new Date().getDate() % ROLEPLAYS.length].id; return o.mic ? `/call?c=${dailyCast().guide}&rp=${rp}&${tag}` : `/read-japan?${tag}`; }
   }
 }
 
@@ -45,6 +45,7 @@ export default function Plan() {
         <div className="grow col" style={{ gap: 6 }}>
           <span className="label">25-minute plan · {new Date().toLocaleDateString(undefined, { weekday: 'long' })}</span>
           <div className="row gap-s"><Portrait id={g.id} size={40} mood={finished ? 'happy' : 'teach'} /><span className="small"><b>{g.name.split(' ')[0]}:</b> {msg}</span></div>
+          <span className="tiny muted">The timer only runs while you do the plan's activities below.</span>
         </div>
       </div>
       <StreakBadge current={daily.info.current} freezes={daily.info.freezes} atRisk={daily.info.atRisk} todayDone={daily.info.todayDone} />

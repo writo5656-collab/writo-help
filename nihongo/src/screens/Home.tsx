@@ -101,6 +101,12 @@ export default function Home() {
         <Icon n="next" />
       </Link>
 
+      <Link to="/read-japan" className="card row">
+        <span className="tile sakura"><Icon n="eye" /></span>
+        <div className="grow col" style={{ gap: 2 }}><h3>Read real Japan 🇯🇵</h3><p className="small muted" style={{ margin: 0 }}>Real photos of signs and menus — can you read them?</p></div>
+        <Icon n="next" />
+      </Link>
+
       <div className="row">
         <Link to="/notebook" className="card grow col gap-s"><span className="tile"><Icon n="pen" /></span><h3>Notebook</h3><p className="small muted">Write freely in Japanese</p></Link>
         <Link to="/mistakes" className="card grow col gap-s"><span className="tile amber"><Icon n="bulb" /></span><h3>Mistakes</h3><p className="small muted">{mistakes ? `${mistakes} to revisit` : 'Nothing open'}</p></Link>

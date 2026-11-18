@@ -24,7 +24,7 @@ export function usePlan() {
 }
 
 import { streakInfo, lastWeek, PLAN_SECONDS, type BlockId } from './daily';
-import { dayKey, getKV, setKV } from './db';
+import { dayKey, getKV, setKV, planTime } from './db';
 
 /** Today's plan progress and the streak, live from the database. */
 export function useDaily() {
@@ -33,10 +33,11 @@ export function useDaily() {
   const blocks = useLiveQuery(async () => ((await db.kv.get(`plan:${today}`))?.value as BlockId[]) ?? [], [today]);
   return useMemo(() => {
     if (!days || !blocks) return undefined;
-    const completed = new Set(days.filter(d => d.seconds >= PLAN_SECONDS).map(d => d.day));
+    const completed = new Set(days.filter(d => planTime(d) >= PLAN_SECONDS).map(d => d.day));
     const first = days.filter(d => d.seconds > 0 || d.xp > 0).map(d => d.day).sort()[0];
     const info = streakInfo(completed, first, today);
-    const seconds = days.find(d => d.day === today)?.seconds ?? 0;
+    const td = days.find(d => d.day === today);
+    const seconds = td ? planTime(td) : 0; // only time spent inside today's plan
     return { info, week: lastWeek(info, today), seconds, left: Math.max(0, PLAN_SECONDS - seconds), blocks, today, score: days.reduce((a, d) => a + d.xp, 0), studied: completed.size };
   }, [days, blocks, today]);
 }

@@ -37,6 +37,7 @@ export default function Practice() {
         {DRILLS.map(([type, icon, title, sub]) => (
           <Link key={type} to={`/session?m=drill&type=${type}`} className="li"><span className="tile"><Icon n={icon} /></span><span className="grow"><span style={{ fontWeight: 700, display: 'block' }}>{title}</span><span className="small muted">{sub}</span></span><Icon n="next" s={18} /></Link>
         ))}
+        <Link to="/read-japan" className="li"><span className="tile sakura"><Icon n="eye" /></span><span className="grow"><span style={{ fontWeight: 700, display: 'block' }}>Read real Japan</span><span className="small muted">Real photos of signs and menus — read them out loud</span></span><Icon n="next" /></Link>
         <Link to="/reading" className="li"><span className="tile"><Icon n="note" /></span><span className="grow"><span style={{ fontWeight: 700, display: 'block' }}>Reading comprehension</span><span className="small muted">Short real-world texts with questions</span></span><Icon n="next" s={18} /></Link>
       </div>
     </Screen>

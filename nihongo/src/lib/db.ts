@@ -12,7 +12,8 @@ export interface Mistake {
 }
 export interface Answer { id?: number; ts: number; day: string; skill: string; itemId: string; ok: boolean; lessonId?: string }
 export interface Note { id: string; title: string; folder: string; body: string; paper: 'lined' | 'grid'; created: number; updated: number; drawing?: string }
-export interface DayLog { day: string; seconds: number; xp: number }
+/** seconds = any time in the app; planSeconds = time inside today's plan (counts for the 25 minutes). */
+export interface DayLog { day: string; seconds: number; xp: number; planSeconds?: number }
 export interface KV { key: string; value: unknown }
 export interface PortraitRec { id: string; data?: string; url?: string; fetched?: number; custom?: Partial<Record<'teach' | 'happy' | 'oops', string>> }
 export interface Correction { id?: number; ts: number; said: string; better: string; why: string; source: string }
@@ -83,10 +84,14 @@ export async function labelMistake(id: number, status: Mistake['status']) {
   if (it) await db.items.put(setStatus(it, status));
 }
 
-export async function addSeconds(sec: number) {
-  const d = (await db.days.get(dayKey())) ?? { day: dayKey(), seconds: 0, xp: 0 };
-  await db.days.put({ ...d, seconds: d.seconds + sec });
+export async function addSeconds(sec: number, inPlan = false) {
+  const d: DayLog = (await db.days.get(dayKey())) ?? { day: dayKey(), seconds: 0, xp: 0, planSeconds: 0 };
+  const before = planTime(d);
+  await db.days.put({ ...d, seconds: d.seconds + sec, planSeconds: before + (inPlan ? sec : 0) });
 }
+
+/** Plan time for a day. Days saved before plan-only counting existed keep their old total. */
+export function planTime(d: DayLog): number { return d.planSeconds ?? d.seconds; }
 
 /** Mark items as already known (used by the placement check). */
 export async function seedKnown(ids: { id: string; kind: string }[]) {

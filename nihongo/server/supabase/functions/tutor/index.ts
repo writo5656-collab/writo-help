@@ -34,6 +34,7 @@ const SCENARIOS: Record<string, string> = {
   university: "Roleplay: you are a fellow university student chatting before class.",
   work: "Roleplay: you are a colleague at a Japanese office. Use polite workplace Japanese.",
   lesson: "This is a relaxed, CASUAL call about what the learner studied TODAY, like chatting with a friend. Use casual plain-form Japanese, one short sentence, mostly words from today's material, and ONE simple question about it at a time. Accept any answer (even one word or English), reply warmly, and show how to say it. Stay within today's material.",
+  explain: "EXPLAIN MODE — do not chat. The learner's message describes one exercise and the answer they gave. Write the explanation in simple, friendly English in \"en\" (3 to 6 short sentences, no long lectures): first say if their answer is right; if it is wrong, say exactly what differs and why; then explain the key word or grammar point and how the sentence is built. Put ONE new short example sentence that uses the same point in \"jp\" (with its kana in \"kana\"). Set \"correction\" to null. Make \"hint\" another short example.",
   call: "This is a friendly video call. Talk naturally about the learner's day, plans and interests, and ask one question at a time.",
   sunday: "This is the learner's relaxed weekly review. Through friendly conversation and short questions, revisit the items listed under 'Recent mistakes'. After about eight exchanges, give a brief summary in English inside the 'en' field: strengths, weak points and what to focus on next.",
 };
@@ -51,15 +52,18 @@ const client = GEMINI_KEY ? null : new Anthropic(); // reads ANTHROPIC_API_KEY f
 
 async function viaGemini(system: string, history: { role: string; content: string }[]) {
   const model = Deno.env.get("GEMINI_MODEL") || "gemini-2.5-flash";
-  const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
+  const ask = (think: boolean) => fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
     method: "POST",
+    signal: AbortSignal.timeout(30000),
     headers: { "Content-Type": "application/json", "x-goog-api-key": GEMINI_KEY! },
     body: JSON.stringify({
       systemInstruction: { parts: [{ text: system + '\nReply ONLY with JSON: {"jp","kana","en","correction": {"said","better","why"} or null,"hint": {"jp","kana","romaji","en"}}.' }] },
       contents: history.map((m) => ({ role: m.role === "assistant" ? "model" : "user", parts: [{ text: m.content }] })),
-      generationConfig: { responseMimeType: "application/json", temperature: 0.7 },
+      generationConfig: { responseMimeType: "application/json", temperature: 0.7, ...(think ? {} : { thinkingConfig: { thinkingBudget: 0 } }) },
     }),
   });
+  let r = await ask(false);
+  if (r.status === 400) r = await ask(true); // model does not accept thinkingConfig
   if (!r.ok) throw new Error(`gemini ${r.status}`);
   const j = await r.json();
   const text = (j.candidates?.[0]?.content?.parts ?? []).map((p: { text?: string }) => p.text ?? "").join("");
@@ -93,6 +97,7 @@ Deno.serve(async (req) => {
     body.scenario === "sunday" ? `Recent mistakes: ${String(body.review ?? "none").slice(0, 3000)}` : "",
     "Rules:",
     "- Reply in Japanese pitched just slightly above the learner's level: short sentences, common words, polite です/ます form unless the scenario needs otherwise.",
+    body.scenario === "explain" ? "- In explain mode, ignore the length rule below: explain in English in 'en'." : "",
     "- Keep each reply to one to three short sentences and end with something the learner can answer.",
     "- If the learner's last message has a real mistake (particle, verb form, word choice, politeness), fill in 'correction' with a gentle, specific note. Ignore missing punctuation and do not correct things that are merely one of several natural options. Otherwise set 'correction' to null.",
     "- Never scold. Mistakes are welcome.",

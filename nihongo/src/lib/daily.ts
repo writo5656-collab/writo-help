@@ -14,7 +14,7 @@ export const BLOCKS: { id: BlockId; min: number; title: string; sub: string }[] 
   { id: 'review', min: 5, title: 'Spaced revision', sub: 'What you are about to forget, weakest first' },
   { id: 'lesson', min: 8, title: 'New lesson', sub: 'One part of your next lesson' },
   { id: 'sentences', min: 7, title: 'Sentence practice', sub: 'Write full sentences in your notebook' },
-  { id: 'real', min: 5, title: 'Real-life challenge', sub: 'A spoken call with your teacher' },
+  { id: 'real', min: 5, title: 'Real-life challenge', sub: 'Talk with your teacher and read real Japanese signs' },
 ];
 
 const pad = (n: number) => String(n).padStart(2, '0');
