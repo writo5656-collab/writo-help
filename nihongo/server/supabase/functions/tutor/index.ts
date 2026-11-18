@@ -21,6 +21,7 @@ const Reply = z.object({
     better: z.string().describe("A corrected, natural version"),
     why: z.string().describe("One short, kind explanation in English"),
   }).nullable().describe("null when the learner's last message was fine or there was none"),
+  hint: z.object({ jp: z.string(), kana: z.string(), romaji: z.string(), en: z.string() }).describe("A very short, easy example answer the learner could give"),
 });
 
 const SCENARIOS: Record<string, string> = {
@@ -32,6 +33,7 @@ const SCENARIOS: Record<string, string> = {
   directions: "Roleplay: you are a passer-by. The learner asks you for directions.",
   university: "Roleplay: you are a fellow university student chatting before class.",
   work: "Roleplay: you are a colleague at a Japanese office. Use polite workplace Japanese.",
+  lesson: "This is a relaxed, CASUAL call about what the learner studied TODAY, like chatting with a friend. Use casual plain-form Japanese, one short sentence, mostly words from today's material, and ONE simple question about it at a time. Accept any answer (even one word or English), reply warmly, and show how to say it. Stay within today's material.",
   call: "This is a friendly video call. Talk naturally about the learner's day, plans and interests, and ask one question at a time.",
   sunday: "This is the learner's relaxed weekly review. Through friendly conversation and short questions, revisit the items listed under 'Recent mistakes'. After about eight exchanges, give a brief summary in English inside the 'en' field: strengths, weak points and what to focus on next.",
 };
@@ -53,7 +55,7 @@ async function viaGemini(system: string, history: { role: string; content: strin
     method: "POST",
     headers: { "Content-Type": "application/json", "x-goog-api-key": GEMINI_KEY! },
     body: JSON.stringify({
-      systemInstruction: { parts: [{ text: system + '\nReply ONLY with JSON: {"jp","kana","en","correction": {"said","better","why"} or null}.' }] },
+      systemInstruction: { parts: [{ text: system + '\nReply ONLY with JSON: {"jp","kana","en","correction": {"said","better","why"} or null,"hint": {"jp","kana","romaji","en"}}.' }] },
       contents: history.map((m) => ({ role: m.role === "assistant" ? "model" : "user", parts: [{ text: m.content }] })),
       generationConfig: { responseMimeType: "application/json", temperature: 0.7 },
     }),
@@ -62,7 +64,7 @@ async function viaGemini(system: string, history: { role: string; content: strin
   const j = await r.json();
   const text = (j.candidates?.[0]?.content?.parts ?? []).map((p: { text?: string }) => p.text ?? "").join("");
   const data = JSON.parse(text.match(/\{[\s\S]*\}/)?.[0] ?? text);
-  return Reply.parse({ jp: data.jp, kana: data.kana ?? "", en: data.en ?? "", correction: data.correction ?? null });
+  return Reply.parse({ jp: data.jp, kana: data.kana ?? "", en: data.en ?? "", correction: data.correction ?? null, hint: { jp: data.hint?.jp ?? "", kana: data.hint?.kana ?? "", romaji: data.hint?.romaji ?? "", en: data.hint?.en ?? "" } });
 }
 
 Deno.serve(async (req) => {
@@ -72,7 +74,7 @@ Deno.serve(async (req) => {
   const expected = Deno.env.get("APP_TOKEN");
   if (expected && req.headers.get("x-app-token") !== expected) return json({ error: "Wrong app passphrase" }, 401);
 
-  let body: { messages?: { role: "user" | "assistant"; content: string }[]; scenario?: string; level?: string; known?: string; review?: string; persona?: string };
+  let body: { messages?: { role: "user" | "assistant"; content: string }[]; scenario?: string; level?: string; known?: string; review?: string; persona?: string; lesson?: string };
   try { body = await req.json(); } catch { return json({ error: "Invalid JSON" }, 400); }
 
   const history = (body.messages ?? [])
@@ -86,6 +88,7 @@ Deno.serve(async (req) => {
     "You are a warm, patient Japanese conversation tutor for one adult learner who plans to live, study and work in Japan.",
     `Learner level: ${String(body.level ?? "beginner").slice(0, 200)}. Lessons completed so far: ${String(body.known ?? "unknown").slice(0, 1500)}.`,
     SCENARIOS[body.scenario ?? "free"] ?? SCENARIOS.free,
+    body.lesson ? `Today's material:\n${String(body.lesson).slice(0, 2500)}` : "",
     body.persona ? `Speak in the friendly, recognisable tone of ${String(body.persona).slice(0, 120)}. Keep it light and in character, but write only your own original lines (never quote the show) and keep the Japanese simple.` : "",
     body.scenario === "sunday" ? `Recent mistakes: ${String(body.review ?? "none").slice(0, 3000)}` : "",
     "Rules:",

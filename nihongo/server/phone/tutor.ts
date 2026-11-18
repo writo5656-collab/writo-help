@@ -14,6 +14,7 @@ const SCENARIOS: Record<string, string> = {
   free: "Have a friendly everyday conversation.",
   call: "This is a friendly video call. Talk naturally about the learner's day, plans and interests. Ask one question at a time.",
   sunday: "This is the learner's weekly review. Revisit the items under 'Recent mistakes' through conversation.",
+  lesson: "This is a relaxed, CASUAL call about what the learner studied TODAY, like chatting with a friend. Use casual plain-form Japanese, one short sentence, mostly words from today's material, and ONE simple question about it at a time. Accept any answer (even one word or English), reply warmly, and show how to say it. Stay within today's material.",
 };
 
 // Google renames models over time, so ask which Flash model this key can use (cached per instance).
@@ -38,7 +39,7 @@ export async function handler(req: Request): Promise<Response> {
   const key = Deno.env.get("GEMINI_API_KEY");
   if (!key) return json({ error: "GEMINI_API_KEY secret is missing" }, 500);
 
-  let body: { messages?: { role: string; content: string }[]; scenario?: string; level?: string; known?: string; review?: string; persona?: string };
+  let body: { messages?: { role: string; content: string }[]; scenario?: string; level?: string; known?: string; review?: string; persona?: string; lesson?: string };
   try { body = await req.json(); } catch { return json({ error: "Invalid JSON" }, 400); }
 
   const history = (body.messages ?? []).filter((m) => typeof m.content === "string" && m.content.trim()).slice(-30);
@@ -50,9 +51,11 @@ export async function handler(req: Request): Promise<Response> {
     SCENARIOS[body.scenario ?? "free"] ?? SCENARIOS.free,
     body.persona ? `Speak in the friendly tone of ${String(body.persona).slice(0, 120)}, with your own original lines only.` : "",
     body.scenario === "sunday" ? `Recent mistakes: ${String(body.review ?? "none").slice(0, 3000)}` : "",
+    body.lesson ? `Today's material:\n${String(body.lesson).slice(0, 2500)}` : "",
     "Reply in simple, polite Japanese (one to three short sentences) that ends with something the learner can answer.",
     "If the learner's last message has a real mistake, add a gentle correction; otherwise correction is null. Never scold.",
-    'Reply ONLY with JSON: {"jp": string, "kana": string (kana only), "en": string, "correction": {"said": string, "better": string, "why": string} or null}',
+    'Always include "hint": a very short easy example answer the learner could give.',
+    'Reply ONLY with JSON: {"jp": string, "kana": string (kana only), "en": string, "correction": {"said": string, "better": string, "why": string} or null, "hint": {"jp": string, "kana": string, "romaji": string, "en": string}}',
   ].filter(Boolean).join("\n");
 
   const model = Deno.env.get("GEMINI_MODEL") || (await bestModel(key));
@@ -72,7 +75,7 @@ export async function handler(req: Request): Promise<Response> {
     const text = (j.candidates?.[0]?.content?.parts ?? []).map((p: { text?: string }) => p.text ?? "").join("");
     const d = JSON.parse(text.match(/\{[\s\S]*\}/)?.[0] ?? text);
     if (typeof d.jp !== "string") throw new Error("bad");
-    return json({ jp: d.jp, kana: d.kana ?? "", en: d.en ?? "", correction: d.correction ?? null });
+    return json({ jp: d.jp, kana: d.kana ?? "", en: d.en ?? "", correction: d.correction ?? null, hint: d.hint ?? null });
   } catch {
     return json({ error: "The tutor sent an unexpected reply. Try again." }, 502);
   }

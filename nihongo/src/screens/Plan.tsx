@@ -17,7 +17,7 @@ export function blockRoute(id: BlockId, o: { due: number; lessonId?: string; par
     case 'review': return o.due ? `/session?m=review&${tag}` : o.mistakes ? `/session?m=mistakes&${tag}` : `/session?m=drill&type=vocab&${tag}`;
     case 'lesson': return !o.lessonId ? `/session?m=lib&kind=vocab&lvl=4&${tag}` : o.part1Done ? `/session?m=lesson&id=${o.lessonId}&part=2&${tag}` : `/lesson/${o.lessonId}?${tag}`;
     case 'sentences': return `/session?m=drill&type=translate&${tag}`;
-    case 'real': { const rp = ROLEPLAYS[new Date().getDate() % ROLEPLAYS.length].id; return o.mic ? `/call?c=${dailyCast().guide}&mode=roleplay&rp=${rp}&${tag}` : `/roleplay/${rp}?${tag}`; }
+    case 'real': { const rp = ROLEPLAYS[new Date().getDate() % ROLEPLAYS.length].id; return o.mic ? `/call?c=${dailyCast().guide}&rp=${rp}&${tag}` : `/roleplay/${rp}?${tag}`; }
   }
 }
 

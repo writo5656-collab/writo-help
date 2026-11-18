@@ -22,6 +22,7 @@ import { readingOf } from '../services/reading';
 import { sfx } from '../services/sfx';
 import { Portrait } from '../components/Portrait';
 import { Screen, Icon, Furi, useS, useAsync } from '../components/ui';
+import AiCall from './AiCall';
 
 interface Turn { f: string; en: string; goal: string; expect: string[]; word?: { jp: string; kana: string }; mistakeId?: number }
 
@@ -45,19 +46,21 @@ export default function Call() {
   const mic = useAsync(sttAvailable, []);
   const open = useLiveQuery(() => db.mistakes.where('status').notEqual('remembered').toArray(), []) ?? [];
   const quizable = mistakeTurns(open).length;
-  const [mode, setMode] = useState(q.get('mode') ?? (ai ? 'talk' : 'roleplay'));
+  const [modeSel, setMode] = useState<string | null>(q.get('mode'));
+  const mode = modeSel ?? (ai ? 'lesson' : 'roleplay');
   if (!id || !CAST[id]) return (
     <Screen back title="Call a teacher">
       {mic === false && <div className="card sakura small">Calls are spoken. This device has no speech recognition, so calls can't hear you here. On Android, make sure the <b>Google</b> app is installed and allowed to use the microphone.</div>}
       <div className="seg" style={{ alignSelf: 'flex-start' }} role="group" aria-label="Call type">
+        <button className={mode === 'lesson' ? 'on' : ''} onClick={() => setMode('lesson')}>Today's lesson</button>
         <button className={mode === 'talk' ? 'on' : ''} onClick={() => setMode('talk')}>Free talk</button>
         <button className={mode === 'roleplay' ? 'on' : ''} onClick={() => setMode('roleplay')}>Real-life</button>
         <button className={mode === 'mistakes' ? 'on' : ''} onClick={() => setMode('mistakes')}>My mistakes{quizable ? ` (${quizable})` : ''}</button>
       </div>
-      <p className="small muted">{mode === 'talk' ? (ai ? 'A free conversation in Japanese at your level, with gentle corrections.' : 'Free talk needs the AI tutor (Settings → AI tutor). Until then, choose Real-life or My mistakes.') : mode === 'roleplay' ? 'She plays a real situation (shop, station, hotel…). Reply out loud.' : quizable ? 'She asks you the things you got wrong before. Answer out loud — right answers move them towards "remembered".' : 'Your Mistake Notebook is empty — nothing to quiz yet.'}</p>
+      <p className="small muted">{mode === 'lesson' ? (ai ? 'A casual chat about what you studied today. She keeps it short and easy, and always shows a sample answer you can read out.' : 'This needs the AI tutor (Settings → AI tutor → Gemini key, free).') : mode === 'talk' ? (ai ? 'A free conversation in Japanese at your level, with gentle corrections.' : 'Free talk needs the AI tutor (Settings → AI tutor). Until then, choose Real-life or My mistakes.') : mode === 'roleplay' ? 'She plays a real situation (shop, station, hotel…). Reply out loud.' : quizable ? 'She asks you the things you got wrong before. Answer out loud — right answers move them towards "remembered".' : 'Your Mistake Notebook is empty — nothing to quiz yet.'}</p>
       <div className="pick-grid">
         {GUIDES.map(g => (
-          <button key={g} disabled={(mode === 'talk' && !ai) || (mode === 'mistakes' && !quizable)} onClick={() => setQ({ c: g, mode, rp: q.get('rp') ?? '', plan: q.get('plan') ?? '', block: q.get('block') ?? '' })}>
+          <button key={g} disabled={((mode === 'talk' || mode === 'lesson') && !ai) || (mode === 'mistakes' && !quizable)} onClick={() => setQ({ c: g, mode, rp: q.get('rp') ?? '', plan: q.get('plan') ?? '', block: q.get('block') ?? '' })}>
             <Portrait id={g} size={92} />
             <span>{CAST[g].name}</span>
             <span className="tiny muted" style={{ fontWeight: 500 }}>{CAST[g].series}</span>
@@ -66,7 +69,10 @@ export default function Call() {
       </div>
     </Screen>
   );
-  return <InCall id={id} mode={q.get('mode') ?? (ai ? 'talk' : 'roleplay')} ai={!!ai} rpId={q.get('rp') || ''} plan={q.get('plan') === '1'} quiz={mistakeTurns(open)} />;
+  if (ai === undefined) return null; // wait until we know whether the AI tutor is connected
+  const m = q.get('mode') ?? (ai ? 'lesson' : 'roleplay');
+  if ((m === 'lesson' || m === 'talk') && ai) return <AiCall id={id} mode={m} plan={q.get('plan') === '1'} />;
+  return <InCall id={id} mode={m === 'lesson' || m === 'talk' ? 'roleplay' : m} ai={!!ai} rpId={q.get('rp') || ''} plan={q.get('plan') === '1'} quiz={mistakeTurns(open)} />;
 }
 
 function InCall({ id, mode, ai, rpId, plan, quiz }: { id: string; mode: string; ai: boolean; rpId: string; plan: boolean; quiz: Turn[] }) {
@@ -168,10 +174,11 @@ function InCall({ id, mode, ai, rpId, plan, quiz }: { id: string; mode: string; 
   const choose = async (f: string) => { await stopListening(); setListening(false); await speakSeq([{ text: parseFuri(f).jp, rate: s.rate * 0.9 }]); await answer(parseFuri(f).jp); };
 
   async function listen() {
+    if (listening) { await stopListening(); return; }
     if (!alive.current || endedRef.current) return;
     if (mic === false) { setErr('Speech recognition is not available on this device, so the call can\'t hear you.'); return; }
     setErr(''); setListening(true);
-    try { const h = await listenOnce(); setListening(false); if (h[0]) await answer(h[0]); else setErr('I didn\'t catch that — tap the microphone and speak again.'); }
+    try { const h = await listenOnce(t => setMine({ said: t + ' …' }), 15000); setListening(false); if (h[0]) await answer(h[0]); else setErr('I didn\'t catch that — tap the microphone and speak again.'); }
     catch (e) { setListening(false); setErr((e as Error).message); }
   }
 
@@ -213,7 +220,7 @@ function InCall({ id, mode, ai, rpId, plan, quiz }: { id: string; mode: string; 
         </div>
       </div>
       <div className="ctl">
-        {!ended && <button className={listening ? 'mic-on' : ''} style={{ width: 78, height: 78 }} aria-label="Speak" onClick={() => void listen()} disabled={talking || listening}><Icon n="mic" s={34} /></button>}
+        {!ended && <button className={listening ? 'mic-on' : ''} style={{ width: 78, height: 78 }} aria-label="Speak" onClick={() => void listen()} disabled={talking}><Icon n="mic" s={34} /></button>}
         {t && !ended && <button aria-label="Hear the answer" onClick={() => void speakSeq([{ text: parseFuri(t.expect[0]).jp, who: id, rate: s.rate * 0.85 }])}><Icon n="bulb" s={26} /></button>}
         <button className="hang" aria-label="Hang up" onClick={() => (plan ? nav('/plan') : nav(-1))}><Icon n="close" s={28} /></button>
       </div>

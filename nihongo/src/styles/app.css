@@ -459,3 +459,15 @@ a.card:active, button.card:active { transform: scale(.98); }
 .feedback { position: relative; overflow: hidden; }
 .autobar { position: absolute; left: 0; bottom: 0; height: 4px; background: var(--ok); animation: autobar 1.6s linear both; }
 @keyframes autobar { from { width: 0; } to { width: 100%; } }
+
+.speak-line { display: flex; flex-wrap: wrap; gap: 6px 10px; padding: 14px; border-radius: 18px; background: var(--card); border: 1px solid var(--line); }
+.sw { display: inline-flex; flex-direction: column; align-items: center; padding: 2px 6px 4px; border-radius: 10px; border-bottom: 3px solid var(--line); transition: background .25s, border-color .25s, transform .25s; }
+.sw small { font-size: .66rem; color: var(--muted); font-weight: 600; }
+.sw > span { font-family: var(--jp); font-size: 1.35rem; font-weight: 600; line-height: 1.6; }
+.sw rt { font-size: .45em; color: var(--muted); }
+.sw.hit { background: var(--ok-soft); border-color: var(--ok); transform: translateY(-2px); }
+.sw.hit > span { color: #1c5a40; }
+
+@keyframes shakeA { 20% { transform: translateX(-8px); } 40% { transform: translateX(7px); } 60% { transform: translateX(-5px); } 80% { transform: translateX(3px); } }
+@keyframes shakeB { 20% { transform: translateX(-8px); } 40% { transform: translateX(7px); } 60% { transform: translateX(-5px); } 80% { transform: translateX(3px); } }
+.reduced [style*='shake'] { animation: none !important; }

@@ -5,9 +5,10 @@ import type { Ex } from '../lib/exercises';
 import { shuffle } from '../lib/exercises';
 import { ALL_SENTENCES } from '../content';
 import { checkSentence, checkWord, PARTICLE_INFO, type CheckResult } from '../lib/check';
-import { parseFuri, normalize, toKanaUsing, romajiOf, kanaToRomaji } from '../lib/jp';
+import { parseFuri, normalize, toKanaUsing, romajiOf, kanaToRomaji, toHiragana } from '../lib/jp';
 import { speak, speakSeq } from '../services/tts';
-import { listenOnce, sttAvailable } from '../services/stt';
+import { listenOnce, sttAvailable, stopListening } from '../services/stt';
+import { pauseSpeaking } from '../services/speaking';
 import { readingOf } from '../services/reading';
 import { Furi, Audio, Icon, useS, useAsync } from './ui';
 import { Paper, PaperInput, ReadingLine } from './Paper';
@@ -62,8 +63,9 @@ export function Exercise({ ex, onResult, onNext, last, cast }: Props) {
 
   return (
     <div className="col gap-l grow" style={{ minHeight: 0 }}>
-      <div key={`${attempt}-${burst}`} className={fb && !fb.ok ? 'shake' : ''}>
-        <Body key={attempt} ex={ex} locked={!!fb} fb={fb} onHint={() => { hintRef.current = true; }} finish={finish} />
+      {/* Alternate two identical animations so the shake replays without re-mounting the exercise (which would wipe its state). */}
+      <div style={fb && !fb.ok ? { animation: `${burst % 2 ? 'shakeA' : 'shakeB'} .45s ease both` } : undefined}>
+        <Body key={attempt} ex={ex} locked={!!fb} fb={fb} onHint={() => { hintRef.current = true; }} finish={finish} skip={() => { void pauseSpeaking(); onNext(false, true); }} />
       </div>
       {fb && <Reaction key={burst} ok={fb.ok} />}
       {fb && (
@@ -110,12 +112,12 @@ export function Exercise({ ex, onResult, onNext, last, cast }: Props) {
   );
 }
 
-function Body({ ex, locked, fb, onHint, finish }: { ex: Ex; locked: boolean; fb: Fb | null; onHint: () => void; finish: (f: Fb, user: string, expected: string) => void }) {
+function Body({ ex, locked, fb, onHint, finish, skip }: { ex: Ex; locked: boolean; fb: Fb | null; onHint: () => void; finish: (f: Fb, user: string, expected: string) => void; skip?: () => void }) {
   switch (ex.t) {
     case 'choice': return <Choice ex={ex} locked={locked} finish={finish} />;
     case 'fill': return <Fill ex={ex} locked={locked} finish={finish} />;
     case 'arrange': return <Arrange ex={ex} locked={locked} finish={finish} />;
-    case 'speak': return <Speak ex={ex} locked={locked} finish={finish} />;
+    case 'speak': return <Speak ex={ex} locked={locked} finish={finish} skip={skip} />;
     case 'chat': return <Chat ex={ex} locked={locked} finish={finish} />;
     default: return <Typing ex={ex} locked={locked} fb={fb} onHint={onHint} finish={finish} />;
   }
@@ -324,46 +326,73 @@ function Typing({ ex, locked, fb, onHint, finish }: { ex: Extract<Ex, { t: 'type
   );
 }
 
-function Speak({ ex, locked, finish }: { ex: Extract<Ex, { t: 'speak' }>; locked: boolean; finish: Fin }) {
+function Speak({ ex, locked, finish, skip }: { ex: Extract<Ex, { t: 'speak' }>; locked: boolean; finish: Fin; skip?: () => void }) {
   const s = useS();
   const avail = useAsync(sttAvailable, []);
-  const [live, setLive] = useState(false);
+  const [listening, setListening] = useState(false);
+  const [live, setLive] = useState('');
+  const [heardKana, setHeardKana] = useState('');
   const [err, setErr] = useState('');
   const p = parseFuri(ex.sent.f);
+  // Compare everything as hiragana, so テレビ and てれび count as the same word.
+  const strip = (x: string) => toHiragana(normalize(x), { passRomaji: true });
+  const [heardRaw, setHeardRaw] = useState('');
+  const chunks = p.chunks.map(c => ({ c, kana: strip(c.kana), jp: normalize(c.jp) })).filter(x => x.kana);
+  const matched = (k: { kana: string; jp: string }) => (!!heardKana && (heardKana.includes(k.kana) || similar(k.kana, heardKana) > 0.8)) || (!!heardRaw && normalize(heardRaw).includes(k.jp));
+  // Live: as words come in, convert to kana and light up the tiles that match.
+  useEffect(() => { if (!live) return; setHeardRaw(live); let on = true; void readingOf(live).catch(() => live).then(k => { if (on) setHeardKana(strip(k)); }); return () => { on = false; }; }, [live]); // eslint-disable-line
   const go = async () => {
-    setErr(''); setLive(true);
+    if (listening) { await stopListening(); return; }
+    setErr(''); setLive(''); setHeardKana(''); setHeardRaw(''); setListening(true);
     try {
-      const heard = await listenOnce();
-      setLive(false);
-      if (!heard.length) { setErr('I could not hear anything. Tap the microphone and try again.'); return; }
-      const target = normalize(p.kana);
-      let best = '', ok = false;
+      const heard = await listenOnce(t => setLive(t), 12000);
+      setListening(false);
+      if (!heard.length) { setErr('I couldn\'t hear anything. Tap the mic and read the sentence out loud.'); return; }
+      const target = strip(p.kana);
+      let best = heard[0], bestScore = 0;
       for (const h of heard) {
-        const kana = normalize(await readingOf(h).catch(() => h));
-        if (!best) best = h;
-        if (checkSentence(ex.sent, h).ok || kana === target || similar(kana, target) >= 0.85) { ok = true; best = h; break; }
+        const k = strip(await readingOf(h).catch(() => h));
+        const hit = chunks.filter(x => k.includes(x.kana) || normalize(h).includes(x.jp)).length / Math.max(1, chunks.length);
+        const sc = Math.max(hit, similar(k, target), checkSentence(ex.sent, h).ok ? 1 : 0);
+        if (sc > bestScore) { bestScore = sc; best = h; setHeardKana(k); setHeardRaw(h); }
       }
-      finish({ ok, heard: best, title: ok ? 'That came through clearly' : 'The recogniser heard something different', notes: [ok ? 'The phone recognised your sentence. Recognition is a rough check, not a pronunciation score.' : 'Listen to the model once more and try again. Speech recognition is imperfect, so use your own ear too.'], model: ex.sent.f }, best, p.jp);
-    } catch (e) { setLive(false); setErr((e as Error).message); }
+      // Lenient on purpose: phone recognisers struggle with learners' Japanese.
+      const ok = bestScore >= 0.7;
+      finish({ ok, heard: best, title: ok ? (bestScore >= 0.95 ? 'Perfect — clearly understood!' : 'Good — understood!') : 'Not quite — listen and try again', notes: [ok ? 'Recognition is a rough check, not a pronunciation score — keep listening to the model too.' : 'Tap the speaker, listen once (or slowly), then say it again. Green words were understood.'], model: ex.sent.f, say: ok ? [] : [p.jp] }, best, p.jp);
+    } catch (e) { setListening(false); setErr((e as Error).message); }
   };
-  const self = (ok: boolean) => finish({ ok, title: ok ? 'Noted — said comfortably' : 'Noted — this will come back for more practice', notes: ['This was self-assessed, because speech recognition is not available on this device.'], model: ex.sent.f }, ok ? '(self-assessed: good)' : '(self-assessed: needs practice)', p.jp);
+  const self = (ok: boolean) => finish({ ok, title: ok ? 'Noted — said comfortably' : 'Noted — this will come back for more practice', notes: ['Self-assessed, because speech recognition is not available on this device.'], model: ex.sent.f }, ok ? '(self-assessed: good)' : '(self-assessed: needs practice)', p.jp);
   return (
-    <div className="col gap-l center">
-      <span className="label">Say this aloud</span>
-      <div className="card flat col" style={{ alignItems: 'center' }}>
-        <Furi f={ex.sent.f} className="jp-xl" />
-        <span className="muted small">{ex.sent.en}</span>
-        {s.showRomaji ? null : <span className="romaji">{romajiOf(ex.sent.f)}</span>}
-        <Audio f={ex.sent.f} />
+    <div className="col gap-l">
+      <span className="label">Speak this sentence</span>
+      <div className="row" style={{ alignItems: 'center' }}>
+        <button className="iconbtn soft" style={{ width: 56, height: 56 }} aria-label="Listen" onClick={() => speak(p.jp, { rate: s.rate })}><Icon n="sound" s={26} /></button>
+        <button className="iconbtn soft" style={{ width: 56, height: 56 }} aria-label="Listen slowly" onClick={() => speak(p.jp, { rate: s.rate, slow: true })}><Icon n="slow" s={26} /></button>
+        <span className="small muted grow">{ex.sent.en}</span>
       </div>
-      {!locked && avail && <><button className={`mic ${live ? 'live' : ''}`} aria-label="Tap to speak" onClick={go} disabled={live}><Icon n="mic" s={34} /></button><span className="small muted">{live ? 'Listening…' : 'Tap to speak'}</span></>}
+      <div className="speak-line" lang="ja">
+        {chunks.map((x, i) => (
+          <span key={i} className={`sw ${matched(x) ? 'hit' : ''}`}>
+            <small>{romajiOf(x.c.segs.map(sg => (sg.reading ? `${sg.text}[${sg.reading}]` : sg.text)).join('').replace(/(.)(は|を|へ)([。、]?)$/, x.c.particle ? '$1{$2}$3' : '$1$2$3'))}</small>
+            <span>{x.c.segs.map((sg, j) => sg.reading && s.showFurigana ? <ruby key={j}>{sg.text}<rt>{sg.reading}</rt></ruby> : <span key={j}>{sg.text}</span>)}</span>
+          </span>
+        ))}
+      </div>
+      {(listening || live) && <p className="small center" lang="ja">🎤 {live || 'listening…'}</p>}
+      {!locked && avail && (
+        <div className="col center" style={{ alignItems: 'center' }}>
+          <button className={`mic ${listening ? 'live' : ''}`} aria-label={listening ? 'Finish' : 'Tap to speak'} onClick={go}><Icon n="mic" s={34} /></button>
+          <span className="small muted">{listening ? 'Speak now — tap again when done' : 'Tap the mic and read it out loud'}</span>
+        </div>
+      )}
       {!locked && avail === false && (
         <div className="col">
-          <p className="small muted">Speech recognition is not available here, so say it aloud after the model and rate yourself honestly.</p>
+          <p className="small muted">Speech recognition isn't available here. Say it aloud after the model, then rate yourself honestly.</p>
           <div className="row"><button className="btn ghost" onClick={() => self(false)}>Needs practice</button><button className="btn" onClick={() => self(true)}>Said it well</button></div>
         </div>
       )}
-      {err && <p className="small" style={{ color: 'var(--bad)' }}>{err}</p>}
+      {err && <p className="small center" style={{ color: 'var(--bad)' }}>{err}</p>}
+      {!locked && skip && <button className="btn line" style={{ marginTop: 'auto' }} onClick={skip}>Can't speak now</button>}
     </div>
   );
 }

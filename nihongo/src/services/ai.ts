@@ -7,7 +7,7 @@ import { loadSettings, saveSettings } from '../lib/settings';
 import { tutorSystem, withOpener, REPLY_SCHEMA, type TutorRequest } from './tutorPrompt';
 
 export interface ChatMsg { role: 'user' | 'assistant'; content: string }
-export interface TutorReply { jp: string; kana: string; en: string; correction?: { said: string; better: string; why: string } | null }
+export interface TutorReply { jp: string; kana: string; en: string; correction?: { said: string; better: string; why: string } | null; hint?: { jp: string; kana: string; romaji?: string; en: string } | null }
 
 export async function aiConfigured() {
   const s = await loadSettings();
@@ -18,7 +18,8 @@ function parseReply(text: string): TutorReply {
   const m = text.match(/\{[\s\S]*\}/);
   const data = JSON.parse(m ? m[0] : text);
   if (!data || typeof data.jp !== 'string') throw new Error('The tutor sent an unexpected reply.');
-  return { jp: data.jp, kana: data.kana ?? '', en: data.en ?? '', correction: data.correction ?? null };
+  const h = data.hint && typeof data.hint.jp === 'string' ? { jp: data.hint.jp, kana: data.hint.kana ?? '', romaji: data.hint.romaji ?? '', en: data.hint.en ?? '' } : null;
+  return { jp: data.jp, kana: data.kana ?? '', en: data.en ?? '', correction: data.correction ?? null, hint: h };
 }
 
 async function viaClaude(o: TutorRequest, key: string, model: string): Promise<TutorReply> {

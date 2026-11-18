@@ -15,6 +15,7 @@ import { castFor } from '../content/cast';
 import { parseFuri } from '../lib/jp';
 import { sfx } from '../services/sfx';
 import { loadSettings } from '../lib/settings';
+import { speakingOff } from '../services/speaking';
 import { Exercise, type Outcome } from '../components/Exercise';
 import { Portrait } from '../components/Portrait';
 import { Screen, Icon, Bar, Mascot, Furi, Empty, Audio } from '../components/ui';
@@ -105,7 +106,10 @@ export default function Session() {
   useEffect(() => { const t = setInterval(() => setSecs(Math.round((Date.now() - start.current) / 1000)), 1000); return () => clearInterval(t); }, []);
   const start = useRef(Date.now());
 
-  useEffect(() => { build(m, q).then(async list => { const st = await loadSettings(); setQueue(st.short && m !== 'lesson' && m !== 'mistake' ? list.slice(0, Math.max(5, Math.ceil(list.length * 0.6))) : list); }); }, []); // eslint-disable-line
+  // After "Can't speak now", jump over any remaining speaking questions.
+  useEffect(() => { if (queue && queue[idx]?.t === 'speak' && speakingOff()) setIdx(i => i + 1); }, [idx, queue]);
+  useEffect(() => { build(m, q).then(async list => { const st = await loadSettings(); const usable = speakingOff() ? list.filter(e => e.t !== 'speak') : list;
+    setQueue(st.short && m !== 'lesson' && m !== 'mistake' ? usable.slice(0, Math.max(5, Math.ceil(usable.length * 0.6))) : usable); }); }, []); // eslint-disable-line
 
   if (!queue) return <Screen back title={TITLES[m]}><p className="muted center mt-l">Preparing…</p></Screen>;
   if (queue.length === 0) return (

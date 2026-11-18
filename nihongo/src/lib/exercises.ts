@@ -135,7 +135,9 @@ export function lessonExercises(l: Lesson, part?: 1 | 2): Ex[] {
     const pickW = shuffle(l.sentences.map((_s, i) => i)).slice(0, 2);
     const write = pickW.map(i => sentEx(sentId(l.id, i), 'type')).filter(ok);
     const listen = shuffle(l.sentences.map((_s, i) => i)).slice(0, 2).map(i => sentEx(sentId(l.id, i), 'listen')).filter(ok);
-    two.push(...chatFromLesson(l).slice(0, 2), ...(n % 3 === 1 ? [...listen, ...build, ...write] : n % 3 === 2 ? [...build, ...listen, ...write] : [...build, ...write, ...listen]), ...earlierEx(l), ...challengeEx(l));
+    // One Duolingo-style 'speak this sentence' per lesson.
+    const speakOne = shuffle(l.sentences.map((_s, i) => i)).slice(0, 1).map(i => sentEx(sentId(l.id, i), 'speak')).filter(ok);
+    two.push(...chatFromLesson(l).slice(0, 2), ...speakOne, ...(n % 3 === 1 ? [...listen, ...build, ...write] : n % 3 === 2 ? [...build, ...listen, ...write] : [...build, ...write, ...listen]), ...earlierEx(l), ...challengeEx(l));
   }
   return part === 1 ? one : part === 2 ? two : [...one, ...two];
 }
