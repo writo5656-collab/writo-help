@@ -3,37 +3,47 @@
 <head>
 <meta charset="utf-8">
 <title>NPC Studio promo</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@500;700&family=Manrope:wght@500;600;700;800&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:ital,wght@0,600;0,800;1,800;1,900&family=Inter:wght@500;600;700&family=JetBrains+Mono:wght@500&display=swap">
 <style>
-/* 1920x1080 slides for CurseForge / MCPEDL, rendered with Playwright (tools/make_promo.py) */
-:root { --ink: #eaf6ff; --muted: #9bb4c9; --cyan: #27d3f5; --deep: #071320; --panel: rgba(10, 22, 36, .78); --line: rgba(39, 211, 245, .35); }
+/* Slides for CurseForge (rendered by tools/make_promo.py). Look: royal-blue studio backdrop, heavy italic display type, cyan + violet light squares. */
+:root { --ink: #ffffff; --muted: #c6d2ff; --cyan: #5ad8ff; --violet: #b49cff; --blue-0: #0d1a63; --blue-1: #1d34a8; --blue-2: #3157e0; --panel: rgba(10, 20, 70, .55); --line: rgba(255, 255, 255, .22);
+  --display: "Inter Tight", "Inter", system-ui, sans-serif; --body: "Inter", system-ui, sans-serif; --mono: "JetBrains Mono", ui-monospace, monospace; }
 * { box-sizing: border-box; }
-html, body { margin: 0; width: 1920px; height: 1080px; overflow: hidden; background: var(--deep); color: var(--ink); font-family: "Manrope", system-ui, sans-serif; }
-.slide { position: absolute; inset: 0; background: radial-gradient(1200px 700px at 70% 45%, #0f4a6e 0%, #0a2238 45%, #050d18 100%); }
-.slide::after { content: ""; position: absolute; inset: 0; background-image: linear-gradient(rgba(255,255,255,.035) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.035) 1px, transparent 1px); background-size: 64px 64px; pointer-events: none; }
-canvas.stage { position: absolute; inset: 0; width: 1920px; height: 1080px; }
-.floor { position: absolute; left: 0; right: 0; bottom: 0; height: 260px; background: linear-gradient(transparent, rgba(39, 211, 245, .07)); }
-.copy { position: absolute; left: 110px; top: 140px; width: 760px; z-index: 2; display: grid; gap: 26px; }
-.eyebrow { font: 700 26px "Manrope"; letter-spacing: .16em; text-transform: uppercase; color: var(--cyan); }
-h1 { font: 700 118px/0.95 "Pixelify Sans", monospace; margin: 0; letter-spacing: .01em; text-shadow: 0 6px 0 #04304a, 0 14px 40px rgba(0,0,0,.5); }
-h2 { font: 700 92px/1 "Pixelify Sans", monospace; margin: 0; text-shadow: 0 5px 0 #04304a, 0 12px 30px rgba(0,0,0,.5); }
-.lede { font: 600 34px/1.35 "Manrope"; color: var(--muted); margin: 0; }
+html, body { margin: 0; overflow: hidden; position: relative; background: transparent; color: var(--ink); font-family: var(--body); }
+.slide { position: absolute; inset: 0; overflow: hidden; background: radial-gradient(1100px 620px at 68% 40%, var(--blue-2) 0%, var(--blue-1) 45%, var(--blue-0) 100%); }
+.slide.round { inset: 40px 0 40px 0; border-radius: 48px; }
+.slide::after { content: ""; position: absolute; inset: 0; background-image: linear-gradient(rgba(255,255,255,.07) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.07) 1px, transparent 1px); background-size: 80px 80px; pointer-events: none; }
+.sq { position: absolute; width: 30px; height: 30px; background: var(--violet); box-shadow: 0 0 30px var(--violet); opacity: .85; z-index: 1; }
+.sq.c { background: var(--cyan); box-shadow: 0 0 30px var(--cyan); }
+.sq.s { width: 18px; height: 18px; opacity: .55; }
+canvas.stage { position: absolute; left: 0; top: 0; z-index: 3; }
+.copy { position: absolute; left: 110px; top: 150px; width: 780px; z-index: 4; display: grid; gap: 26px; }
+.eyebrow { font: 700 24px var(--body); letter-spacing: .2em; text-transform: uppercase; color: var(--cyan); }
+h1 { font: italic 900 210px/0.86 var(--display); margin: 0; letter-spacing: -.035em; text-transform: uppercase; }
+h2 { font: italic 900 104px/0.92 var(--display); margin: 0; letter-spacing: -.03em; text-transform: uppercase; }
+.lede { font: 600 34px/1.35 var(--body); color: var(--muted); margin: 0; }
+.tag { font: 600 70px/1 var(--display); color: var(--muted); letter-spacing: -.02em; }
+.pill { display: inline-block; font: italic 800 30px var(--display); padding: 8px 22px; border-radius: 12px; background: var(--cyan); color: var(--blue-0); letter-spacing: .02em; }
 .chips { display: flex; flex-wrap: wrap; gap: 14px; }
-.chip { font: 700 26px "Manrope"; padding: 12px 22px; border-radius: 999px; background: var(--panel); border: 2px solid var(--line); }
-.list { display: grid; gap: 16px; margin: 0; padding: 0; list-style: none; }
-.list li { font: 700 32px/1.25 "Manrope"; display: flex; gap: 16px; align-items: baseline; }
-.list li::before { content: ""; width: 16px; height: 16px; background: var(--cyan); flex: none; transform: translateY(-4px); }
-.list small { display: block; font: 600 24px "Manrope"; color: var(--muted); margin-top: 4px; }
-.logo { width: 150px; height: 150px; border-radius: 28px; box-shadow: 0 14px 40px rgba(0,0,0,.5); }
-.badge { position: absolute; right: 70px; bottom: 56px; font: 700 26px "Manrope"; color: var(--muted); z-index: 2; letter-spacing: .04em; }
+.chip { font: 700 26px var(--body); padding: 12px 22px; border-radius: 999px; background: var(--panel); border: 2px solid var(--line); }
+.list { display: grid; gap: 18px; margin: 0; padding: 0; list-style: none; }
+.list li { font: 700 34px/1.2 var(--body); display: flex; gap: 18px; align-items: baseline; }
+.list li::before { content: ""; width: 16px; height: 16px; background: var(--cyan); flex: none; transform: translateY(-5px) rotate(45deg); }
+.list small { display: block; font: 500 25px var(--body); color: var(--muted); margin-top: 6px; }
+.logo { width: 132px; height: 132px; border-radius: 30px; box-shadow: 0 14px 40px rgba(0,0,0,.4); }
+.badge { position: absolute; right: 70px; bottom: 56px; font: 700 26px var(--body); color: var(--muted); z-index: 4; letter-spacing: .04em; }
 .badge b { color: var(--ink); }
-.capes { position: absolute; right: 90px; top: 170px; width: 900px; display: grid; grid-template-columns: repeat(9, 1fr); gap: 14px; z-index: 2; }
-.capes img { width: 100%; image-rendering: pixelated; filter: drop-shadow(0 6px 10px rgba(0,0,0,.5)); }
-.shot { position: absolute; right: 90px; top: 150px; width: 980px; border-radius: 18px; border: 3px solid var(--line); box-shadow: 0 30px 80px rgba(0,0,0,.6); z-index: 2; }
-.code { font: 600 26px/1.45 "JetBrains Mono", ui-monospace, monospace; background: var(--panel); border: 2px solid var(--line); border-radius: 16px; padding: 24px 28px; word-break: break-all; color: #bdefff; max-width: 760px; }
+.capes { position: absolute; right: 90px; top: 170px; width: 900px; display: grid; grid-template-columns: repeat(9, 1fr); gap: 14px; z-index: 4; }
+.capes img { width: 100%; image-rendering: pixelated; filter: drop-shadow(0 8px 10px rgba(0,0,0,.45)); }
+.shot { position: absolute; right: 90px; top: 150px; width: 980px; border-radius: 18px; border: 3px solid var(--line); box-shadow: 0 30px 80px rgba(0,0,0,.5); z-index: 4; }
+.code { font: 500 26px/1.45 var(--mono); background: var(--panel); border: 2px solid var(--line); border-radius: 16px; padding: 24px 28px; word-break: break-all; color: #d9f4ff; max-width: 780px; }
 .code b { color: var(--cyan); }
 .steps { display: grid; gap: 14px; }
-.steps div { font: 700 30px "Manrope"; background: var(--panel); border-left: 6px solid var(--cyan); padding: 16px 22px; border-radius: 10px; }
+.steps div { font: 700 30px var(--body); background: var(--panel); border-left: 6px solid var(--cyan); padding: 16px 22px; border-radius: 10px; }
+.tilt { position: absolute; z-index: 2; border-radius: 16px; border: 3px solid rgba(255,255,255,.35); box-shadow: 0 40px 80px rgba(5, 10, 40, .6); }
+.hdr h2 { font-size: 118px; }
+.hdr .sub { font: 600 32px var(--body); color: var(--muted); }
+.num { position: absolute; right: 80px; top: 50%; transform: translateY(-50%); font: italic 900 220px/1 var(--display); color: rgba(255,255,255,.12); z-index: 2; }
 </style>
 </head>
 <body>
@@ -42,6 +52,10 @@ h2 { font: 700 92px/1 "Pixelify Sans", monospace; margin: 0; text-shadow: 0 5px 
 <script>
 const A = __ASSETS__; // data URIs: skins, capes, logo, capeIcons, shot
 const slideName = location.hash.slice(1) || "cover";
+const SIZE = { banner: [2000, 660] }; // everything else 1920x1080 unless it is a header (1400x260)
+const [W, H] = SIZE[slideName] || (slideName.startsWith("h_") ? [1400, 260] : [1920, 1080]);
+document.documentElement.style.width = document.body.style.width = W + "px";
+document.documentElement.style.height = document.body.style.height = H + "px";
 const slide = document.getElementById("slide");
 const D = Math.PI / 180;
 
@@ -66,7 +80,7 @@ function box(t, w, h, d, u, v, grow) {
   setUV(g, boxRects(u, v, w, h, d), 64, 64);
   return new THREE.Mesh(g, new THREE.MeshLambertMaterial({ map: t, transparent: true, alphaTest: 0.5, side: grow ? THREE.DoubleSide : THREE.FrontSide }));
 }
-const OUTLINE = new THREE.MeshBasicMaterial({ color: 0x27d3f5, side: THREE.BackSide });
+const OUTLINE = new THREE.MeshBasicMaterial({ color: 0x5ad8ff, side: THREE.BackSide });
 /** A Minecraft player NPC; pose = { head:[x,y,z], body, rarm, larm, rleg, lleg } in degrees. */
 async function npc(skin, { slim = false, cape = null, pose = {}, outline = false } = {}) {
   const t = tex(await load(skin), 64, 64);
@@ -122,13 +136,14 @@ function gizmo(size) {
 }
 function stage(camPos, look, fov = 30) {
   const c = document.createElement("canvas"); c.className = "stage"; slide.appendChild(c);
+  c.style.width = W + "px"; c.style.height = H + "px";
   const r = new THREE.WebGLRenderer({ canvas: c, antialias: true, alpha: true, preserveDrawingBuffer: true });
-  r.setPixelRatio(1); r.setSize(1920, 1080, false);
+  r.setPixelRatio(1); r.setSize(W, H, false);
   const s = new THREE.Scene();
   s.add(new THREE.AmbientLight(0xffffff, 0.72));
   const sun = new THREE.DirectionalLight(0xffffff, 0.62); sun.position.set(-40, 80, 60); s.add(sun);
   const rim = new THREE.DirectionalLight(0x27d3f5, 0.35); rim.position.set(60, 30, -60); s.add(rim);
-  const cam = new THREE.PerspectiveCamera(fov, 1920 / 1080, 1, 4000); cam.position.set(...camPos); cam.lookAt(...look);
+  const cam = new THREE.PerspectiveCamera(fov, W / H, 1, 4000); cam.position.set(...camPos); cam.lookAt(...look);
   return { s, render: () => r.render(s, cam) };
 }
 function shadow(s, x, z, rad = 9) {
@@ -136,11 +151,39 @@ function shadow(s, x, z, rad = 9) {
   m.rotation.x = -Math.PI / 2; m.position.set(x, 0.05, z); s.add(m);
 }
 function html(s) { slide.insertAdjacentHTML("beforeend", s); }
+/** Glowing squares scattered like stage lights (fixed positions per slide, no randomness between renders). */
+function squares(list) { html(list.map(([x, y, k]) => `<i class="sq ${k || ""}" style="left:${x}px;top:${y}px"></i>`).join("")); }
 const place = (o, x, z, ry = 0, sc = 1) => { o.position.set(x, 0, z); o.rotation.y = ry * D; o.scale.setScalar(sc); return o; };
 
+const HEADERS = {
+  h_pose: ["Pose Mode", "Rotate and move every limb with the gizmo", "01"],
+  h_live: ["Live Editor", "One screen that never reloads", "02"],
+  h_cloaks: ["58 Cloaks", "Studio, Minecraft and your own capes", "03"],
+  h_custom: ["Your Skins & Models", "Pack Builder website: skins, capes, 3D models", "04"],
+  h_share: ["Share Presets", "Send an NPC as a code or a pack file", "05"],
+  h_camera: ["Cameras & Photo", "Fly cams, cinematic shots, green screen", "06"],
+  h_install: ["Install", "Three steps, no experiments needed", "07"]
+};
 const SLIDES = {
+  async banner() {
+    slide.classList.add("round");
+    squares([[600, 60, ""], [190, 140, "s"], [670, 130, "c s"], [960, 90, "s"], [1100, 440, ""], [600, 470, "s"], [280, 520, "c s"], [820, 400, "c s"], [1480, 70, "s"]]);
+    html(`<div class="copy" style="left:56px;top:150px;width:1300px;gap:14px">
+      <span><span class="pill">BEDROCK EDITION</span></span>
+      <h1>NPC Studio</h1>
+      <div class="tag">Direct every scene.</div></div>
+      <img class="tilt" src="${A.panelB}" alt="" style="width:330px;right:330px;top:60px;transform:perspective(1400px) rotateY(-24deg) rotateZ(-3deg)">
+      <img class="tilt" src="${A.panelA}" alt="" style="width:370px;right:70px;top:90px;transform:perspective(1400px) rotateY(-24deg) rotateZ(-3deg)">`);
+    const st = stage([0, 20, 160], [0, 20, 0]);
+    const n = await npc(A.soldier, { outline: true, pose: { rarm: [0, 0, -88], larm: [0, 0, 88], head: [0, -15, 0] } });
+    st.s.add(place(n, 44, 30, -22, 1.2));
+    const gz = gizmo(9); gz.position.set(14, 8, 4); n.add(gz);
+    st.render();
+  },
+  async header() {},
   async cover() {
-    html(`<div class="floor"></div><div class="copy" style="top:170px">
+    squares([[1840, 120, "s"], [1060, 80, ""], [980, 960, "c s"], [1780, 900, ""], [130, 980, "s"], [1500, 40, "c s"]]);
+    html(`<div class="copy" style="top:170px">
       <img class="logo" src="${A.logo}" alt="">
       <div class="eyebrow">Minecraft Bedrock add-on</div>
       <h1>NPC Studio</h1>
@@ -155,7 +198,8 @@ const SLIDES = {
     st.render();
   },
   async pose() {
-    html(`<div class="floor"></div><div class="copy">
+    squares([[1840, 120, "s"], [1060, 80, ""], [980, 960, "c s"], [1780, 900, ""], [130, 980, "s"], [1500, 40, "c s"]]);
+    html(`<div class="copy">
       <div class="eyebrow">Pose Mode</div><h2>Pose every limb</h2>
       <ul class="list">
         <li><span>Red, green and blue gizmo<small>Rotate or move the part you look at</small></span></li>
@@ -170,8 +214,9 @@ const SLIDES = {
     st.render();
   },
   async capes() {
+    squares([[1840, 120, "s"], [1060, 80, ""], [980, 960, "c s"], [1780, 900, ""], [130, 980, "s"], [1500, 40, "c s"]]);
     const icons = A.capeIcons.map((s) => `<img src="${s}" alt="">`).join("");
-    html(`<div class="floor"></div><div class="copy" style="width:700px">
+    html(`<div class="copy" style="width:700px">
       <div class="eyebrow">Cloaks</div><h2>58 capes</h2>
       <p class="lede">8 studio capes, 43 Minecraft capes and 7 slots for your own. Pick them from pictures in the Cloak picker.</p>
     </div><div class="capes">${icons}</div>`);
@@ -181,6 +226,7 @@ const SLIDES = {
     st.render();
   },
   async packs() {
+    squares([[1840, 120, "s"], [1060, 80, ""], [980, 960, "c s"], [1780, 900, ""], [130, 980, "s"], [1500, 40, "c s"]]);
     html(`<div class="copy" style="width:640px;top:180px">
       <div class="eyebrow">Pack Builder website</div><h2>Your skins, capes &amp; models</h2>
       <ul class="list">
@@ -191,7 +237,8 @@ const SLIDES = {
       </ul></div><img class="shot" src="${A.shot}" alt="">`);
   },
   async share() {
-    html(`<div class="floor"></div><div class="copy" style="width:800px">
+    squares([[1840, 120, "s"], [1060, 80, ""], [980, 960, "c s"], [1780, 900, ""], [130, 980, "s"], [1500, 40, "c s"]]);
+    html(`<div class="copy" style="width:800px">
       <div class="eyebrow">Share presets</div><h2>Send an NPC as a code</h2>
       <div class="code"><b>NPCS1-</b>${A.code.slice(6, 230)}…</div>
       <div class="steps"><div>Presets → Share Code → copy</div><div>Your friend: Import Code → paste</div><div>Or turn codes into a preset pack file</div></div>
@@ -202,7 +249,8 @@ const SLIDES = {
     st.render();
   },
   async live() {
-    html(`<div class="floor"></div><div class="copy">
+    squares([[1840, 120, "s"], [1060, 80, ""], [980, 960, "c s"], [1780, 900, ""], [130, 980, "s"], [1500, 40, "c s"]]);
+    html(`<div class="copy">
       <div class="eyebrow">Studio panel + Live Editor</div><h2>Edit while you watch</h2>
       <ul class="list">
         <li><span>Live Editor: one tap, one change<small>Toggles, sliders and lists change the NPC at once</small></span></li>
@@ -217,7 +265,12 @@ const SLIDES = {
     st.render();
   }
 };
-document.fonts.ready.then(() => SLIDES[slideName]()).then(() => (document.body.dataset.done = "1"));
+function headerSlide(name) {
+  const [title, sub, num] = HEADERS[name];
+  squares([[1060, 30, "s"], [1180, 190, "c s"], [880, 200, ""], [1320, 40, ""]]);
+  html(`<div class="copy hdr" style="left:70px;top:44px;width:1200px;gap:10px"><h2>${title}</h2><div class="sub">${sub}</div></div><div class="num">${num}</div>`);
+}
+document.fonts.ready.then(() => (HEADERS[slideName] ? headerSlide(slideName) : SLIDES[slideName]())).then(() => (document.body.dataset.done = "1"));
 </script>
 </body>
 </html>
