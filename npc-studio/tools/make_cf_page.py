@@ -15,22 +15,28 @@ ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
 DESC = os.path.join(ROOT, "curseforge", "promo", "desc")
 WEBSITE = "https://noxeelmc-art.github.io/npc-studio-skins/"
 YOUTUBE = "https://youtube.com/@NoxeelMC"
-DISCORD = ""  # add your Discord invite here; empty = no Discord link
+DISCORD = os.environ.get("NPCS_DISCORD", "")  # your Discord invite (https://discord.gg/...); empty = no Discord button or link
 IMG_BASE = "https://noxeelmc-art.github.io/npc-studio-skins/cf/"  # pictures uploaded to the website repo, folder cf/
 
 C = 'style="text-align: center;"'
 
 
-def img(name, alt, width=None):
-    # CurseForge refuses description pictures 850px or wider: the files are 840px, and the tag says so too
+def img(name, alt, width=None, link=None):
+    # CurseForge refuses description pictures 850px or wider: the files are 840px, and the tag says so too.
+    # width: show it smaller (the Discord button is drawn at 2x so it stays sharp on phones)
     from PIL import Image
     iw, ih = Image.open(os.path.join(DESC, name)).size
-    w = f' width="{iw}" height="{ih}"'
-    return f'<p {C}><img src="IMG/{name}" alt="{alt}"{w} /></p>'
+    if width:
+        iw, ih = width, round(ih * width / iw)
+    tag = f'<img src="IMG/{name}" alt="{alt}" width="{iw}" height="{ih}" />'
+    if link:
+        tag = f'<a href="{link}">{tag}</a>'
+    return f'<p {C}>{tag}</p>'
 
 
 BODY = f"""
 {img("npc-studio-banner.png", "NPC Studio Bedrock banner")}
+{img("discord.png", "Chat with us on Discord", width=420, link=DISCORD) if DISCORD else ""}
 <p {C}><strong>Pose, dress and film NPCs like a real studio.</strong><br />Cameras, 58 capes, custom skins and 3D models, a live editor and shareable presets. Made for phones and PC.</p>
 <p {C}><a href="{WEBSITE}"><strong>Pack Builder website</strong></a> &nbsp;|&nbsp; <a href="{YOUTUBE}"><strong>YouTube</strong></a>{f' &nbsp;|&nbsp; <a href="{DISCORD}"><strong>Discord</strong></a>' if DISCORD else ''}</p>
 <p {C}><em>Minecraft Bedrock 26.30+ &middot; no experimental toggles &middot; phone and PC</em></p>
