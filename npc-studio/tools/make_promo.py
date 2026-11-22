@@ -23,7 +23,7 @@ def uri_jpg(path):
 
 
 def main(shot, code_file, out):
-    a = {k: uri(os.path.join(TEX, k + ".png")) for k in ("knight", "assassin", "soldier", "scientist")}
+    a = {k: uri(os.path.join(TEX, k + ".png")) for k in ("knight", "assassin", "soldier", "scientist", "steve")}
     a.update(capeCrimson=uri(os.path.join(TEX, "capes", "cape2.png")), capeStudio=uri(os.path.join(TEX, "capes", "cape1.png")),
              capeMinecon=uri(os.path.join(TEX, "capes", "java", "minecon_2011_minecon.png")),
              capeCherry=uri(os.path.join(TEX, "capes", "java", "pink_cherry_blossom.png")),

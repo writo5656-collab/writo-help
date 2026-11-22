@@ -116,23 +116,57 @@ async function npc(skin, { slim = false, cape = null, pose = {}, outline = false
   root.userData.parts = parts;
   return root;
 }
-function gizmo(size) {
+/** Blender-style gizmos, drawn on top of everything. kind "move": thin axis lines with cone tips,
+ *  small plane handles and a white centre ring. kind "rotate": three thin axis circles and a white view circle. */
+function gizmo(size, kind = "move") {
   const g = new THREE.Group();
-  const arrow = (dir, color) => {
-    const m = new THREE.MeshBasicMaterial({ color, depthTest: false });
-    const shaft = new THREE.Mesh(new THREE.BoxGeometry(...dir.map((d) => (d ? size : 0.7))), m);
-    shaft.position.set(...dir.map((d) => (d * size) / 2));
-    const tip = new THREE.Mesh(new THREE.BoxGeometry(2.4, 2.4, 2.4), m);
-    tip.position.set(...dir.map((d) => d * size)); g.add(shaft, tip);
-  };
-  arrow([1, 0, 0], 0xeb4040); arrow([0, 1, 0], 0x50d25a); arrow([0, 0, 1], 0x4678f5);
-  const ring = (axis, color) => {
-    const t = new THREE.Mesh(new THREE.TorusGeometry(size * 0.75, 0.35, 8, 96), new THREE.MeshBasicMaterial({ color, depthTest: false, transparent: true, opacity: 0.9 }));
-    if (axis === "x") t.rotation.y = Math.PI / 2; if (axis === "y") t.rotation.x = Math.PI / 2; g.add(t);
-  };
-  ring("x", 0xeb4040); ring("y", 0x50d25a); ring("z", 0x4678f5);
-  g.renderOrder = 10; g.traverse((o) => (o.renderOrder = 10));
+  const mat = (color, opacity = 1) => new THREE.MeshBasicMaterial({ color, depthTest: false, transparent: opacity < 1, opacity });
+  // Blender colours: X red, Y green (depth), Z blue (up). In three.js up is y, so the vertical axis is drawn blue.
+  const COL = { x: 0xff3352, y: 0x2890ff, z: 0x8bdc00 };
+  const AX = { x: new THREE.Vector3(1, 0, 0), y: new THREE.Vector3(0, 1, 0), z: new THREE.Vector3(0, 0, 1) };
+  const up = new THREE.Vector3(0, 1, 0);
+  if (kind === "move") {
+    for (const k of ["x", "y", "z"]) {
+      const q = new THREE.Quaternion().setFromUnitVectors(up, AX[k]);
+      const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.28, size, 12), mat(COL[k]));
+      shaft.position.copy(AX[k]).multiplyScalar(size / 2); shaft.quaternion.copy(q);
+      const cone = new THREE.Mesh(new THREE.ConeGeometry(1.1, 3.2, 20), mat(COL[k]));
+      cone.position.copy(AX[k]).multiplyScalar(size + 1.1); cone.quaternion.copy(q);
+      g.add(shaft, cone);
+    }
+    // plane handles: small squares between two axes, coloured like the axis they don't move
+    const plane = (a1, a2, k) => {
+      const m = new THREE.Mesh(new THREE.PlaneGeometry(2.4, 2.4), mat(COL[k], 0.75));
+      m.material.side = THREE.DoubleSide;
+      m.position.copy(AX[a1]).add(AX[a2]).multiplyScalar(size * 0.32);
+      m.lookAt(m.position.clone().add(AX[k])); g.add(m);
+    };
+    plane("y", "z", "x"); plane("x", "z", "y"); plane("x", "y", "z");
+    const c = new THREE.Mesh(new THREE.TorusGeometry(1.5, 0.2, 8, 40), mat(0xffffff));
+    c.userData.face = true; g.add(c);
+  } else {
+    const ring = (k) => {
+      const t = new THREE.Mesh(new THREE.TorusGeometry(size, 0.3, 8, 128), mat(COL[k]));
+      if (k === "x") t.rotation.y = Math.PI / 2; if (k === "y") t.rotation.x = Math.PI / 2; g.add(t);
+    };
+    ring("x"); ring("y"); ring("z");
+    const view = new THREE.Mesh(new THREE.TorusGeometry(size * 1.2, 0.22, 8, 128), mat(0xffffff, 0.85));
+    view.userData.face = true; g.add(view);
+    const dot = new THREE.Mesh(new THREE.SphereGeometry(0.35, 12, 12), mat(0xffffff)); g.add(dot);
+  }
+  g.traverse((o) => (o.renderOrder = 10));
   return g;
+}
+/** Turn the gizmo's white circles to face the camera, like Blender does. */
+function faceCamera(g, camPos) {
+  const p = new THREE.Vector3(...camPos);
+  g.traverse((o) => {
+    if (!o.userData.face) return;
+    const wp = new THREE.Vector3(); o.getWorldPosition(wp);
+    const wq = new THREE.Quaternion(); o.parent.getWorldQuaternion(wq);
+    const m = new THREE.Matrix4().lookAt(p, wp, new THREE.Vector3(0, 1, 0));
+    o.quaternion.setFromRotationMatrix(m).premultiply(wq.invert());
+  });
 }
 function stage(camPos, look, fov = 30) {
   const c = document.createElement("canvas"); c.className = "stage"; slide.appendChild(c);
@@ -175,9 +209,10 @@ const SLIDES = {
       <img class="tilt" src="${A.panelB}" alt="" style="width:330px;right:330px;top:60px;transform:perspective(1400px) rotateY(-24deg) rotateZ(-3deg)">
       <img class="tilt" src="${A.panelA}" alt="" style="width:370px;right:70px;top:90px;transform:perspective(1400px) rotateY(-24deg) rotateZ(-3deg)">`);
     const st = stage([0, 20, 160], [0, 20, 0]);
-    const n = await npc(A.soldier, { outline: true, pose: { rarm: [0, 0, -88], larm: [0, 0, 88], head: [0, -15, 0] } });
+    const n = await npc(A.steve, { outline: true, pose: { rarm: [-20, 0, -12], larm: [-95, 25, 0], head: [-6, -18, 0], rleg: [-10, 0, 0], lleg: [8, 0, 0] } });
     st.s.add(place(n, 44, 30, -22, 1.2));
-    const gz = gizmo(9); gz.position.set(14, 8, 4); n.add(gz);
+    const gz = gizmo(15, "move"); gz.position.set(10, 10, 6); n.add(gz);
+    st.s.updateMatrixWorld(true); faceCamera(gz, [0, 20, 160]);
     st.render();
   },
   async header() {},
@@ -210,7 +245,8 @@ const SLIDES = {
     const st = stage([0, 22, 120], [0, 17, 0]);
     const n = await npc(A.soldier, { pose: { rarm: [-130, 0, -10], larm: [-20, 0, 30], head: [-15, 0, 0], rleg: [-30, 0, 0], lleg: [20, 0, 0] } });
     st.s.add(place(n, 30, 0, -25)); shadow(st.s, 30, 0);
-    const gz = gizmo(8); n.userData.parts.rarm.add(gz); // on the shoulder of the arm being posed
+    const gz = gizmo(8, "rotate"); n.userData.parts.rarm.add(gz); // on the shoulder of the arm being posed
+    st.s.updateMatrixWorld(true); faceCamera(gz, [0, 22, 120]);
     st.render();
   },
   async capes() {
