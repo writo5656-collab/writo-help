@@ -54,7 +54,7 @@ BODY = f"""
 <p {C}>Save an NPC as a preset and send it as a code (<strong>Presets &rarr; Share Code</strong>). Your friend taps <strong>Import Code</strong> and pastes it. Or turn codes into a preset pack file on the website, and PC players can share exact copies as <em>.mcstructure</em> files.</p>
 {img("npc-studio-share.jpg", "Share presets as codes")}
 {img("npc-studio-h_camera.jpg", "Cameras and photo")}
-<p {C}>Place cameras, fly a camera with the joystick, preview any camera in one tap and run 30 cinematic shots. Thirds and cross guides, green screen backdrops, Photo Mode and a depth map pack for editing.</p>
+<p {C}>Place cameras, fly a camera with the joystick, preview any camera in one tap and run 30 cinematic shots. Thirds and cross guides, green screen backdrops and Photo Mode.</p>
 {img("npc-studio-camera.jpg", "Cameras in game")}
 {img("npc-studio-h_install.jpg", "Install")}
 <ol>

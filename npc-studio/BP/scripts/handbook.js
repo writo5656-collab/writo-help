@@ -69,7 +69,7 @@ export const CHAPTERS = [
       P("fog", "Depth Map", [
         "A depth pass like Java depth shaders: near = white, far = black, sky black.",
         "",
-        "1. Turn on the §bNPC Studio Depth Map§f resource pack (above NPC Studio): every texture turns white.",
+        "1. Optional: the §bNPC Studio Depth Map§f resource pack (separate download, above NPC Studio) turns every texture white. Without it you still get the black sky and the fade.",
         "2. Studio panel > Layers > §bDepth map§f (or /npcstudio:depth).",
         "   §bStart§f: white until this distance. §bMax dist.§f: how long the fade to black is (like DMS, in chunks).",
         "   §bGround fog§f: soft white fog lying on the ground (Off, Light, Medium, Strong).",

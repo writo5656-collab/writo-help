@@ -92,7 +92,9 @@ def main():
     shutil.copytree(os.path.join(ROOT, "RP"), rp)
     # 3rd pack: Depth Map (tools/make_depth_pack.py); its version follows the main packs
     dm = os.path.join(BUILD, "NPCStudio_DepthMap")
-    if os.path.isdir(os.path.join(ROOT, "DEPTH_RP")):
+    # The public .mcaddon holds only NPC Studio BP + RP. The Depth Map pack is built only on request:
+    #   NPCS_WITH_DEPTH=1 python3 tools/build.py
+    if os.environ.get("NPCS_WITH_DEPTH") and os.path.isdir(os.path.join(ROOT, "DEPTH_RP")):
         shutil.copytree(os.path.join(ROOT, "DEPTH_RP"), dm)
         mf = os.path.join(dm, "manifest.json")
         m = json.load(open(mf))
@@ -107,7 +109,7 @@ def main():
         sys.exit("validation failed")
     ver = ".".join(map(str, json.load(open(os.path.join(bp, "manifest.json")))["header"]["version"]))
     os.makedirs(DIST, exist_ok=True)
-    out = os.path.abspath(os.path.join(DIST, "NPCStudio-V3.mcaddon"))  # public name; manifest keeps counting ({ver})
+    out = os.path.abspath(os.path.join(DIST, "NPC Studio V3.mcaddon"))  # public name; manifest keeps counting ({ver})
     with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED, compresslevel=9) as z:
         for folder in (bp, rp, dm):
             if not os.path.isdir(folder):
