@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>NPC Studio promo</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@500;700&family=Manrope:wght@500;600;700;800&display=swap">
+<style>
+/* 1920x1080 slides for CurseForge / MCPEDL, rendered with Playwright (tools/make_promo.py) */
+:root { --ink: #eaf6ff; --muted: #9bb4c9; --cyan: #27d3f5; --deep: #071320; --panel: rgba(10, 22, 36, .78); --line: rgba(39, 211, 245, .35); }
+* { box-sizing: border-box; }
+html, body { margin: 0; width: 1920px; height: 1080px; overflow: hidden; background: var(--deep); color: var(--ink); font-family: "Manrope", system-ui, sans-serif; }
+.slide { position: absolute; inset: 0; background: radial-gradient(1200px 700px at 70% 45%, #0f4a6e 0%, #0a2238 45%, #050d18 100%); }
+.slide::after { content: ""; position: absolute; inset: 0; background-image: linear-gradient(rgba(255,255,255,.035) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.035) 1px, transparent 1px); background-size: 64px 64px; pointer-events: none; }
+canvas.stage { position: absolute; inset: 0; width: 1920px; height: 1080px; }
+.floor { position: absolute; left: 0; right: 0; bottom: 0; height: 260px; background: linear-gradient(transparent, rgba(39, 211, 245, .07)); }
+.copy { position: absolute; left: 110px; top: 140px; width: 760px; z-index: 2; display: grid; gap: 26px; }
+.eyebrow { font: 700 26px "Manrope"; letter-spacing: .16em; text-transform: uppercase; color: var(--cyan); }
+h1 { font: 700 118px/0.95 "Pixelify Sans", monospace; margin: 0; letter-spacing: .01em; text-shadow: 0 6px 0 #04304a, 0 14px 40px rgba(0,0,0,.5); }
+h2 { font: 700 92px/1 "Pixelify Sans", monospace; margin: 0; text-shadow: 0 5px 0 #04304a, 0 12px 30px rgba(0,0,0,.5); }
+.lede { font: 600 34px/1.35 "Manrope"; color: var(--muted); margin: 0; }
+.chips { display: flex; flex-wrap: wrap; gap: 14px; }
+.chip { font: 700 26px "Manrope"; padding: 12px 22px; border-radius: 999px; background: var(--panel); border: 2px solid var(--line); }
+.list { display: grid; gap: 16px; margin: 0; padding: 0; list-style: none; }
+.list li { font: 700 32px/1.25 "Manrope"; display: flex; gap: 16px; align-items: baseline; }
+.list li::before { content: ""; width: 16px; height: 16px; background: var(--cyan); flex: none; transform: translateY(-4px); }
+.list small { display: block; font: 600 24px "Manrope"; color: var(--muted); margin-top: 4px; }
+.logo { width: 150px; height: 150px; border-radius: 28px; box-shadow: 0 14px 40px rgba(0,0,0,.5); }
+.badge { position: absolute; right: 70px; bottom: 56px; font: 700 26px "Manrope"; color: var(--muted); z-index: 2; letter-spacing: .04em; }
+.badge b { color: var(--ink); }
+.capes { position: absolute; right: 90px; top: 170px; width: 900px; display: grid; grid-template-columns: repeat(9, 1fr); gap: 14px; z-index: 2; }
+.capes img { width: 100%; image-rendering: pixelated; filter: drop-shadow(0 6px 10px rgba(0,0,0,.5)); }
+.shot { position: absolute; right: 90px; top: 150px; width: 980px; border-radius: 18px; border: 3px solid var(--line); box-shadow: 0 30px 80px rgba(0,0,0,.6); z-index: 2; }
+.code { font: 600 26px/1.45 "JetBrains Mono", ui-monospace, monospace; background: var(--panel); border: 2px solid var(--line); border-radius: 16px; padding: 24px 28px; word-break: break-all; color: #bdefff; max-width: 760px; }
+.code b { color: var(--cyan); }
+.steps { display: grid; gap: 14px; }
+.steps div { font: 700 30px "Manrope"; background: var(--panel); border-left: 6px solid var(--cyan); padding: 16px 22px; border-radius: 10px; }
+</style>
+</head>
+<body>
+<div class="slide" id="slide"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+const A = __ASSETS__; // data URIs: skins, capes, logo, capeIcons, shot
+const slideName = location.hash.slice(1) || "cover";
+const slide = document.getElementById("slide");
+const D = Math.PI / 180;
+
+function load(src) { return new Promise((ok) => { const i = new Image(); i.onload = () => ok(i); i.src = src; }); }
+function tex(img, w, h) {
+  const c = document.createElement("canvas"); c.width = w; c.height = h;
+  const g = c.getContext("2d"); g.imageSmoothingEnabled = false; g.drawImage(img, 0, 0, w, h);
+  const t = new THREE.CanvasTexture(c); t.magFilter = t.minFilter = THREE.NearestFilter; return t;
+}
+function setUV(geo, rects, W, H) {
+  const uv = geo.attributes.uv;
+  rects.forEach(([x, y, w, h], i) => {
+    const x0 = x / W, x1 = (x + w) / W, y0 = 1 - y / H, y1 = 1 - (y + h) / H;
+    const q = i === 3 ? [[x0, y1], [x1, y1], [x0, y0], [x1, y0]] : [[x0, y0], [x1, y0], [x0, y1], [x1, y1]];
+    q.forEach(([a, b], k) => uv.setXY(i * 4 + k, a, b));
+  });
+  uv.needsUpdate = true;
+}
+const boxRects = (u, v, w, h, d) => [[u + d + w, v + d, d, h], [u, v + d, d, h], [u + d, v, w, d], [u + d + w, v, w, d], [u + d, v + d, w, h], [u + 2 * d + w, v + d, w, h]];
+function box(t, w, h, d, u, v, grow) {
+  const g = new THREE.BoxGeometry(w + grow, h + grow, d + grow);
+  setUV(g, boxRects(u, v, w, h, d), 64, 64);
+  return new THREE.Mesh(g, new THREE.MeshLambertMaterial({ map: t, transparent: true, alphaTest: 0.5, side: grow ? THREE.DoubleSide : THREE.FrontSide }));
+}
+const OUTLINE = new THREE.MeshBasicMaterial({ color: 0x27d3f5, side: THREE.BackSide });
+/** A Minecraft player NPC; pose = { head:[x,y,z], body, rarm, larm, rleg, lleg } in degrees. */
+async function npc(skin, { slim = false, cape = null, pose = {}, outline = false } = {}) {
+  const t = tex(await load(skin), 64, 64);
+  const root = new THREE.Group(), parts = {};
+  const aw = slim ? 3 : 4, ax = slim ? 5.5 : 6;
+  const limb = (name, x, y, w, h, d, uv, ov, pivotY, parent = root) => {
+    const p = new THREE.Group(); p.position.set(x, pivotY, 0);
+    const a = box(t, w, h, d, uv[0], uv[1], 0), b = box(t, w, h, d, ov[0], ov[1], 0.5);
+    a.position.y = b.position.y = y - pivotY; p.add(a, b);
+    if (outline) { const o = new THREE.Mesh(new THREE.BoxGeometry(w + 1.1, h + 1.1, d + 1.1), OUTLINE); o.position.y = y - pivotY; p.add(o); }
+    parent.add(p); parts[name] = p; return p;
+  };
+  const body = limb("body", 0, 18, 8, 12, 4, [16, 16], [16, 32], 12);
+  // head and arms hang off the body so a bent body carries them
+  const head = new THREE.Group(); head.position.set(0, 12, 0); body.add(head);
+  limb("head", 0, 16, 8, 8, 8, [0, 0], [32, 0], 12, head);
+  limb("rarm", -ax, 6, aw, 12, 4, [40, 16], [40, 32], 10, body);
+  limb("larm", ax, 6, aw, 12, 4, [32, 48], [48, 48], 10, body);
+  limb("rleg", -2, 6, 4, 12, 4, [0, 16], [0, 32], 12);
+  limb("lleg", 2, 6, 4, 12, 4, [16, 48], [0, 48], 12);
+  parts.head.position.set(0, 0, 0); // head pivot is the neck
+  parts.rarm.position.y = 10; parts.larm.position.y = 10;
+  if (cape) {
+    const ct = tex(await load(cape), 64, 32);
+    const g = new THREE.BoxGeometry(10, 16, 1);
+    setUV(g, [[11, 1, 1, 16], [0, 1, 1, 16], [1, 0, 10, 1], [11, 0, 10, 1], [12, 1, 10, 16], [1, 1, 10, 16]], 64, 32);
+    const m = new THREE.Mesh(g, new THREE.MeshLambertMaterial({ map: ct }));
+    const pv = new THREE.Group(); pv.position.set(0, 12, -2.6); pv.rotation.x = 0.18;
+    m.position.set(0, -8, -0.5); pv.add(m); body.add(pv); parts.cape = pv;
+  }
+  const r = (o, v) => v && o.rotation.set(v[0] * D, (v[1] || 0) * D, (v[2] || 0) * D);
+  r(parts.head, pose.head); r(body, pose.body); r(parts.rarm, pose.rarm); r(parts.larm, pose.larm); r(parts.rleg, pose.rleg); r(parts.lleg, pose.lleg);
+  root.userData.parts = parts;
+  return root;
+}
+function gizmo(size) {
+  const g = new THREE.Group();
+  const arrow = (dir, color) => {
+    const m = new THREE.MeshBasicMaterial({ color, depthTest: false });
+    const shaft = new THREE.Mesh(new THREE.BoxGeometry(...dir.map((d) => (d ? size : 0.7))), m);
+    shaft.position.set(...dir.map((d) => (d * size) / 2));
+    const tip = new THREE.Mesh(new THREE.BoxGeometry(2.4, 2.4, 2.4), m);
+    tip.position.set(...dir.map((d) => d * size)); g.add(shaft, tip);
+  };
+  arrow([1, 0, 0], 0xeb4040); arrow([0, 1, 0], 0x50d25a); arrow([0, 0, 1], 0x4678f5);
+  const ring = (axis, color) => {
+    const t = new THREE.Mesh(new THREE.TorusGeometry(size * 0.75, 0.35, 8, 96), new THREE.MeshBasicMaterial({ color, depthTest: false, transparent: true, opacity: 0.9 }));
+    if (axis === "x") t.rotation.y = Math.PI / 2; if (axis === "y") t.rotation.x = Math.PI / 2; g.add(t);
+  };
+  ring("x", 0xeb4040); ring("y", 0x50d25a); ring("z", 0x4678f5);
+  g.renderOrder = 10; g.traverse((o) => (o.renderOrder = 10));
+  return g;
+}
+function stage(camPos, look, fov = 30) {
+  const c = document.createElement("canvas"); c.className = "stage"; slide.appendChild(c);
+  const r = new THREE.WebGLRenderer({ canvas: c, antialias: true, alpha: true, preserveDrawingBuffer: true });
+  r.setPixelRatio(1); r.setSize(1920, 1080, false);
+  const s = new THREE.Scene();
+  s.add(new THREE.AmbientLight(0xffffff, 0.72));
+  const sun = new THREE.DirectionalLight(0xffffff, 0.62); sun.position.set(-40, 80, 60); s.add(sun);
+  const rim = new THREE.DirectionalLight(0x27d3f5, 0.35); rim.position.set(60, 30, -60); s.add(rim);
+  const cam = new THREE.PerspectiveCamera(fov, 1920 / 1080, 1, 4000); cam.position.set(...camPos); cam.lookAt(...look);
+  return { s, render: () => r.render(s, cam) };
+}
+function shadow(s, x, z, rad = 9) {
+  const m = new THREE.Mesh(new THREE.CircleGeometry(rad, 40), new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.32 }));
+  m.rotation.x = -Math.PI / 2; m.position.set(x, 0.05, z); s.add(m);
+}
+function html(s) { slide.insertAdjacentHTML("beforeend", s); }
+const place = (o, x, z, ry = 0, sc = 1) => { o.position.set(x, 0, z); o.rotation.y = ry * D; o.scale.setScalar(sc); return o; };
+
+const SLIDES = {
+  async cover() {
+    html(`<div class="floor"></div><div class="copy" style="top:170px">
+      <img class="logo" src="${A.logo}" alt="">
+      <div class="eyebrow">Minecraft Bedrock add-on</div>
+      <h1>NPC Studio</h1>
+      <p class="lede">Pose, dress and film NPCs like a studio. Cameras, capes, custom skins and 3D models, made for phones and PC.</p>
+      <div class="chips"><span class="chip">Pose Mode gizmo</span><span class="chip">Live Editor</span><span class="chip">58 capes</span><span class="chip">Cinematic cameras</span></div>
+    </div><div class="badge"><b>V3</b> · Bedrock 26.30+ · no experiments</div>`);
+    const st = stage([0, 24, 150], [0, 17, 0]);
+    st.s.add(place(await npc(A.soldier, { cape: A.capeMinecon, pose: { larm: [-60, 0, 20], rarm: [-30, 0, 0], head: [5, 20, 0] } }), 12, -16, 28));
+    st.s.add(place(await npc(A.knight, { cape: A.capeCrimson, outline: true, pose: { rarm: [-110, 10, 0], head: [-8, -10, 0], larm: [10, 0, -8], rleg: [-14, 0, 0], lleg: [12, 0, 0] } }), 36, 4, -12, 1.05));
+    st.s.add(place(await npc(A.assassin, { pose: { rarm: [-75, -30, 0], larm: [-75, 30, 0], body: [12, 0, 0], rleg: [-20, 0, 0], lleg: [16, 0, 0] } }), 60, -12, -34));
+    shadow(st.s, 12, -16); shadow(st.s, 36, 4); shadow(st.s, 60, -12);
+    st.render();
+  },
+  async pose() {
+    html(`<div class="floor"></div><div class="copy">
+      <div class="eyebrow">Pose Mode</div><h2>Pose every limb</h2>
+      <ul class="list">
+        <li><span>Red, green and blue gizmo<small>Rotate or move the part you look at</small></span></li>
+        <li><span>Walk around while you pose<small>No more standing still to adjust</small></span></li>
+        <li><span>45+ ready poses and 19 loops<small>Sit, fight, wave, dance, lie down</small></span></li>
+        <li><span>Undo, redo, mirror<small>Every change can be taken back</small></span></li>
+      </ul></div>`);
+    const st = stage([0, 22, 120], [0, 17, 0]);
+    const n = await npc(A.soldier, { pose: { rarm: [-130, 0, -10], larm: [-20, 0, 30], head: [-15, 0, 0], rleg: [-30, 0, 0], lleg: [20, 0, 0] } });
+    st.s.add(place(n, 30, 0, -25)); shadow(st.s, 30, 0);
+    const gz = gizmo(8); n.userData.parts.rarm.add(gz); // on the shoulder of the arm being posed
+    st.render();
+  },
+  async capes() {
+    const icons = A.capeIcons.map((s) => `<img src="${s}" alt="">`).join("");
+    html(`<div class="floor"></div><div class="copy" style="width:700px">
+      <div class="eyebrow">Cloaks</div><h2>58 capes</h2>
+      <p class="lede">8 studio capes, 43 Minecraft capes and 7 slots for your own. Pick them from pictures in the Cloak picker.</p>
+    </div><div class="capes">${icons}</div>`);
+    const st = stage([0, 34, 140], [0, 30, 0]);
+    st.s.add(place(await npc(A.scientist, { cape: A.capeCherry, pose: { head: [0, -35, 0], rarm: [20, 0, 0], larm: [-20, 0, 0] } }), -40, 0, 205, 0.85)); shadow(st.s, -40, 0, 8);
+    st.s.add(place(await npc(A.knight, { cape: A.capeMinecon, pose: { head: [0, 30, 0] } }), -18, -10, 160, 0.85)); shadow(st.s, -18, -10, 8);
+    st.render();
+  },
+  async packs() {
+    html(`<div class="copy" style="width:640px;top:180px">
+      <div class="eyebrow">Pack Builder website</div><h2>Your skins, capes &amp; models</h2>
+      <ul class="list">
+        <li><span>Get any Java player's skin by name</span></li>
+        <li><span>Add capes and Blockbench 3D models</span></li>
+        <li><span>Preview in 3D, download one pack</span></li>
+        <li><span>Works on your phone</span></li>
+      </ul></div><img class="shot" src="${A.shot}" alt="">`);
+  },
+  async share() {
+    html(`<div class="floor"></div><div class="copy" style="width:800px">
+      <div class="eyebrow">Share presets</div><h2>Send an NPC as a code</h2>
+      <div class="code"><b>NPCS1-</b>${A.code.slice(6, 230)}…</div>
+      <div class="steps"><div>Presets → Share Code → copy</div><div>Your friend: Import Code → paste</div><div>Or turn codes into a preset pack file</div></div>
+    </div>`);
+    const st = stage([0, 24, 140], [0, 17, 0]);
+    st.s.add(place(await npc(A.knight, { cape: A.capeStudio, pose: { rarm: [-90, 0, 0], head: [0, -10, 0] } }), 24, -4, -8)); shadow(st.s, 24, -4);
+    st.s.add(place(await npc(A.knight, { cape: A.capeStudio, outline: true, pose: { rarm: [-90, 0, 0], head: [0, -10, 0] } }), 56, -4, -8)); shadow(st.s, 56, -4);
+    st.render();
+  },
+  async live() {
+    html(`<div class="floor"></div><div class="copy">
+      <div class="eyebrow">Studio panel + Live Editor</div><h2>Edit while you watch</h2>
+      <ul class="list">
+        <li><span>Live Editor: one tap, one change<small>Toggles, sliders and lists change the NPC at once</small></span></li>
+        <li><span>Java-style Display tab<small>Sneak, Living, On Fire, Look at, Flip, Rotation, Scale</small></span></li>
+        <li><span>Cameras, Preview and Photo Mode<small>Thirds and Cross guides, green screen, depth map</small></span></li>
+      </ul></div>`);
+    const st = stage([0, 24, 150], [0, 17, 0]);
+    const list = [[A.scientist, { pose: { body: [25, 0, 0], head: [-25, 0, 0], rarm: [-30, 0, 0], larm: [-30, 0, 0] } }, 12, -8, 24],
+      [A.soldier, { cape: A.capeMinecon, outline: true, pose: { rarm: [-160, 0, 15], larm: [-160, 0, -15], head: [-15, 0, 0] } }, 36, 4, -8],
+      [A.assassin, { pose: { rarm: [-90, 40, 0], larm: [-30, 0, 0], rleg: [-25, 0, 0], lleg: [20, 0, 0] } }, 60, -8, -30]];
+    for (const [skin, opts, x, z, ry] of list) { st.s.add(place(await npc(skin, opts), x, z, ry)); shadow(st.s, x, z); }
+    st.render();
+  }
+};
+document.fonts.ready.then(() => SLIDES[slideName]()).then(() => (document.body.dataset.done = "1"));
+</script>
+</body>
+</html>
