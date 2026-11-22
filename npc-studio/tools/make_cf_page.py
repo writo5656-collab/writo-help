@@ -15,7 +15,7 @@ ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
 DESC = os.path.join(ROOT, "curseforge", "promo", "desc")
 WEBSITE = "https://noxeelmc-art.github.io/npc-studio-skins/"
 YOUTUBE = "https://youtube.com/@NoxeelMC"
-DISCORD = os.environ.get("NPCS_DISCORD", "")  # your Discord invite (https://discord.gg/...); empty = no Discord button or link
+DISCORD = os.environ.get("NPCS_DISCORD", "https://discord.gg/UGSPAUBUvF")  # Discord invite; NPCS_DISCORD="" = no Discord button or link
 IMG_BASE = "https://noxeelmc-art.github.io/npc-studio-skins/cf/"  # pictures uploaded to the website repo, folder cf/
 
 C = 'style="text-align: center;"'
@@ -37,18 +37,23 @@ def img(name, alt, width=None, link=None):
 BODY = f"""
 {img("npc-studio-banner.png", "NPC Studio Bedrock banner")}
 {img("discord.png", "Chat with us on Discord", width=420, link=DISCORD) if DISCORD else ""}
-<p {C}><strong>Pose, dress and film NPCs like a real studio.</strong><br />Cameras, 58 capes, custom skins and 3D models, a live editor and shareable presets. Made for phones and PC.</p>
-<p {C}><a href="{WEBSITE}"><strong>Pack Builder website</strong></a> &nbsp;|&nbsp; <a href="{YOUTUBE}"><strong>YouTube</strong></a>{f' &nbsp;|&nbsp; <a href="{DISCORD}"><strong>Discord</strong></a>' if DISCORD else ''}</p>
+<p {C}><strong>Pose, dress and film NPCs and mobs like a real studio.</strong><br />Cameras, 29 posable mobs, 58 capes, custom skins and 3D models, a live editor and shareable presets. Made for phones and PC.</p>
+<p {C}><a href="{WEBSITE}"><img src="IMG/packbuilder.png" alt="Pack Builder website" width="300" height="79" /></a> <a href="{YOUTUBE}"><img src="IMG/youtube.png" alt="Watch on YouTube" width="300" height="79" /></a></p>
 <p {C}><em>Minecraft Bedrock 26.30+ &middot; no experimental toggles &middot; phone and PC</em></p>
+{img("npc-studio-stats.jpg", "29 posable mobs, 58 capes, 45+ poses, 30 cinematic shots, no experiments")}
 <hr />
 {img("npc-studio-cover.jpg", "NPC Studio overview")}
 {img("npc-studio-h_pose.jpg", "Pose Mode")}
 <p {C}>Look at a body part and rotate or move it with the red, green and blue gizmo. Walk around while you pose, so you can check it from every side. 45+ ready poses and 19 looping animations, with undo, redo and mirror.</p>
 {img("npc-studio-pose.jpg", "Pose Mode gizmo")}
+{img("npc-studio-h_mobs.jpg", "Posable Mobs")}
+<p {C}><strong>New:</strong> spawn a zombie, warden, horse, creeper, wolf, spider and 23 more Minecraft mobs, with their real models and textures, and pose them part by part like an NPC. Legs, wings, head and body all move with the same gizmo, and presets and animations work on them too. Turn any NPC into a mob in <strong>Display &rarr; Mob</strong>.</p>
+{img("npc-studio-mobs.jpg", "Posable mobs")}
 {img("npc-studio-h_live.jpg", "Live Editor")}
-<p {C}>The <strong>Studio panel</strong> sits on the left with six tabs: Display, Pose, Presets, World, Camera, Layers. The <strong>Live Editor</strong> is one screen that never reloads: every toggle, slider and list changes the NPC the moment you touch it.</p>
+<p {C}>The <strong>Studio panel</strong> sits on the left with six tabs: Display, Pose, Presets, World, Camera, Layers. The <strong>Live Editor</strong> is one screen that never reloads: every toggle, slider and list changes the NPC the moment you touch it. <strong>Come To Me</strong> and <strong>Look Where I Look</strong> sit right at the top.</p>
 <ul>
-<li><strong>Display:</strong> model (classic, slim, mobs), skin, cloak, nametag, sneak, living, animation, rotation X/Y/Z, scale, look at me, flip, on fire, bright</li>
+<li><strong>Display:</strong> skin, mob, 3D model, cloak, nametag, sneak, living, animation, rotation X/Y/Z, scale, look at me, flip, on fire, bright</li>
+<li><strong>Inventory:</strong> six slots, trims and enchants, Item State for bows and crossbows, and <strong>Hold</strong> poses for any item, even guns from other add-ons</li>
 <li><strong>World:</strong> time, weather, gamerules, world bright, depth fog</li>
 <li><strong>Layers:</strong> hide NPCs, cameras, outlines or name tags for clean shots</li>
 </ul>
@@ -58,7 +63,7 @@ BODY = f"""
 <p {C}>8 studio capes, 43 Minecraft capes and 7 slots for your own. Pick them from pictures in <strong>Display &rarr; Cloak</strong>.</p>
 {img("npc-studio-capes.jpg", "Cape picker")}
 {img("npc-studio-h_custom.jpg", "Your skins and models")}
-<p {C}>Open the free <a href="{WEBSITE}"><strong>Pack Builder</strong></a> on your phone or PC. Get any Java player's skin by name, add capes and Blockbench 3D models, preview them in 3D and download one small pack. Nothing is uploaded: the pack is built in your browser.</p>
+<p {C}>Open the free <a href="{WEBSITE}"><strong>Pack Builder</strong></a> on your phone or PC. Get a player's skin by name, add capes and Blockbench 3D models, preview them in 3D and download one small pack. Nothing is uploaded: the pack is built in your browser.</p>
 {img("npc-studio-packs.jpg", "Pack Builder website")}
 {img("npc-studio-h_share.jpg", "Share presets")}
 <p {C}>Save an NPC as a preset and send it as a code (<strong>Presets &rarr; Share Code</strong>). Your friend taps <strong>Import Code</strong> and pastes it. Or turn codes into a preset pack file on the website, and PC players can share exact copies as <em>.mcstructure</em> files.</p>
@@ -66,6 +71,12 @@ BODY = f"""
 {img("npc-studio-h_camera.jpg", "Cameras and photo")}
 <p {C}>Place cameras, fly a camera with the joystick, preview any camera in one tap and run 30 cinematic shots. Thirds and cross guides, green screen backdrops and Photo Mode.</p>
 {img("npc-studio-camera.jpg", "Cameras in game")}
+<hr />
+<h3 {C}>Made in NPC Studio</h3>
+<p {C}><em>Real screenshots from the game, no editing.</em></p>
+{img("npc-studio-shot-trims.jpg", "Three armored NPCs with trims")}
+{img("npc-studio-shot-crowd.jpg", "A crowd of NPCs made with Make A Crowd")}
+<hr />
 {img("npc-studio-h_install.jpg", "Install")}
 <ol>
 <li>Download the <strong>.mcaddon</strong> file and open it. Minecraft imports all packs.</li>
@@ -77,8 +88,11 @@ BODY = f"""
 <h3>Questions</h3>
 <p><strong>Do I need experiments?</strong> No. NPC Studio uses only the stable script API.</p>
 <p><strong>Does it work on phone?</strong> Yes. Everything is built for touch first, and tested on Android.</p>
+<p><strong>Can I pose mobs?</strong> Yes: 29 Minecraft mobs, part by part. Other mobs can still be spawned as frozen props and ridden.</p>
+<p><strong>Can NPCs hold items from other add-ons?</strong> Yes. Give the item, then pick a <strong>Hold</strong> pose so it is held up or aimed instead of hanging at the side.</p>
 <p><strong>Can I use my own skins?</strong> Yes: 20 custom skin slots, 7 cape slots and 10 3D model slots, filled with the Pack Builder website.</p>
 <p><strong>Found a bug or have an idea?</strong> Tell us in the comments{f' or on <a href="{DISCORD}">Discord</a>' if DISCORD else ''}. Your feedback decides what comes next.</p>
+{img("discord.png", "Chat with us on Discord", width=420, link=DISCORD) if DISCORD else ""}
 <hr />
 <p {C}><em>Inspired by the NPC Studio mod for Minecraft Java Edition. Made for Bedrock by NoxeelMC. Not affiliated with Mojang or Microsoft.</em></p>
 """.strip()
@@ -132,13 +146,13 @@ body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.6 "Inte
 <div class="wrap">
   <div class="note">Preview only: this is how the NPC Studio page should look after the update. Fonts and spacing on the real site differ a little.</div>
   <div class="head">
-    <img src="LOGO" alt="">
+    <img src="@@LOGO@@" alt="">
     <div class="grow"><h1>NPC Studio Bedrock</h1><div class="meta"><span>By NoxeelMC</span><span>Add-ons</span><span>Updated today</span><span>Game version 26.30+</span></div></div>
     <button class="dl" type="button">Download</button>
   </div>
   <div class="tabs"><span class="on">Description</span><span>Files</span><span>Images</span><span>Relations</span><span>Comments</span></div>
   <div class="cols">
-    <article class="desc">BODY</article>
+    <article class="desc">@@BODY@@</article>
     <aside class="side">
       <div class="card"><h4>About Project</h4>
         <div class="row"><span>Created</span><span>2026</span></div>
@@ -147,7 +161,7 @@ body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.6 "Inte
         <div class="row"><span>License</span><span>All Rights Reserved</span></div>
       </div>
       <div class="card"><h4>Categories</h4><div class="tags"><span>Add-ons</span><span>Utility</span><span>Cosmetics</span><span>Roleplay</span></div></div>
-      <div class="card"><h4>Links</h4><div class="row"><span>Website</span><span>Pack Builder</span></div><div class="row"><span>YouTube</span><span>@NoxeelMC</span></div><div class="row"><span>Discord</span><span>add link</span></div></div>
+      <div class="card"><h4>Links</h4><div class="row"><span>Website</span><span>Pack Builder</span></div><div class="row"><span>YouTube</span><span>@NoxeelMC</span></div><div class="row"><span>Discord</span><span>NPC Studio server</span></div></div>
     </aside>
   </div>
 </div>
@@ -161,7 +175,7 @@ def main():
     for name in sorted(os.listdir(DESC)):
         body = body.replace(f"IMG/{name}", uri(name))
     logo = "data:image/png;base64," + base64.b64encode(open(os.path.join(ROOT, "curseforge", "logo-512.png"), "rb").read()).decode()
-    page = PAGE.replace("BODY", body).replace("LOGO", logo)
+    page = PAGE.replace("@@LOGO@@", logo).replace("@@BODY@@", body)  # base64 has no "@", so pictures never hit a placeholder
     out = os.path.join(ROOT, "curseforge", "promo", "curseforge-preview.html")
     with open(out, "w", encoding="utf-8") as f:
         f.write(page)

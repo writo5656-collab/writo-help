@@ -45,6 +45,12 @@ h2 { font: italic 900 104px/0.92 var(--display); margin: 0; letter-spacing: -.03
 .tilt { position: absolute; z-index: 2; border-radius: 16px; border: 3px solid rgba(255,255,255,.35); box-shadow: 0 40px 80px rgba(5, 10, 40, .6); }
 .hdr h2 { font-size: 118px; }
 .hdr .sub { font: 600 32px var(--body); color: var(--muted); }
+.stats { position: absolute; inset: 0; display: grid; grid-template-columns: repeat(5, 1fr); align-items: center; padding: 0 60px; z-index: 4; }
+.stat { text-align: center; display: grid; gap: 8px; }
+.stat b { font: italic 900 150px/0.9 var(--display); letter-spacing: -.04em; }
+.stat b.c { color: var(--cyan); }
+.stat span { font: 700 30px var(--body); color: var(--muted); }
+.new { display: inline-block; font: italic 900 30px var(--display); padding: 6px 18px; border-radius: 10px; background: #ffd23f; color: var(--blue-0); letter-spacing: .04em; }
 .num { position: absolute; right: 80px; top: 50%; transform: translateY(-50%); font: italic 900 220px/1 var(--display); color: rgba(255,255,255,.12); z-index: 2; }
 </style>
 </head>
@@ -54,7 +60,7 @@ h2 { font: italic 900 104px/0.92 var(--display); margin: 0; letter-spacing: -.03
 <script>
 const A = __ASSETS__; // data URIs: skins, capes, logo, capeIcons, shot
 const slideName = location.hash.slice(1) || "cover";
-const SIZE = { banner: [2000, 660] }; // everything else 1920x1080 unless it is a header (1400x260)
+const SIZE = { banner: [2000, 660], stats: [1920, 420] }; // everything else 1920x1080 unless it is a header (1400x260)
 const [W, H] = SIZE[slideName] || (slideName.startsWith("h_") ? [1400, 260] : [1920, 1080]);
 document.documentElement.style.width = document.body.style.width = W + "px";
 document.documentElement.style.height = document.body.style.height = H + "px";
@@ -81,6 +87,47 @@ function box(t, w, h, d, u, v, grow) {
   const g = new THREE.BoxGeometry(w + grow, h + grow, d + grow);
   setUV(g, boxRects(u, v, w, h, d), 64, 64);
   return new THREE.Mesh(g, new THREE.MeshLambertMaterial({ map: t, transparent: true, alphaTest: 0.5, side: grow ? THREE.DoubleSide : THREE.FrontSide }));
+}
+/** A posable mob from the add-on's own geometry (Bedrock model space, converted the way Blockbench does:
+ *  x mirrored, rotations [-x, -y, z]). pose = { boneName: [x, y, z] } in the game's degrees.
+ *  Turned to face +z like the player NPCs. root.userData.bones = the bone groups. */
+async function mob(key, pose = {}) {
+  const { geo, tex: src } = A.mobs[key];
+  const TW = geo.description.texture_width, TH = geo.description.texture_height;
+  const t = tex(await load(src), TW, TH);
+  const mat = new THREE.MeshLambertMaterial({ map: t, transparent: true, alphaTest: 0.5, side: THREE.DoubleSide });
+  const P = (p) => new THREE.Vector3(-p[0], p[1], p[2]);
+  const E = (r) => new THREE.Euler(-(r?.[0] || 0) * D, -(r?.[1] || 0) * D, (r?.[2] || 0) * D, "ZYX");
+  const uvRects = (c) => {
+    const [w, h, d] = c.size;
+    if (Array.isArray(c.uv) || !c.uv) { const [u, v] = c.uv || [0, 0]; const r = boxRects(u, v, w, h, d); if (c.mirror) [r[0], r[1]] = [r[1], r[0]]; return r; }
+    const f = (n) => (c.uv[n] ? [c.uv[n].uv[0], c.uv[n].uv[1], c.uv[n].uv_size[0], c.uv[n].uv_size[1]] : [0, 0, 0, 0]);
+    return [f("east"), f("west"), f("up"), f("down"), f("north"), f("south")];
+  };
+  const groups = {}, root = new THREE.Group(), inner = new THREE.Group();
+  inner.rotation.y = Math.PI; root.add(inner);
+  for (const b of geo.bones) groups[b.name.toLowerCase()] = Object.assign(new THREE.Group(), { userData: b });
+  for (const b of geo.bones) {
+    const g = groups[b.name.toLowerCase()], piv = b.pivot || [0, 0, 0];
+    const par = b.parent ? groups[b.parent.toLowerCase()] : null;
+    g.position.copy(P(piv).sub(P(par ? par.userData.pivot || [0, 0, 0] : [0, 0, 0])));
+    const r = [...(b.rotation || [0, 0, 0])], extra = pose[b.name];
+    if (extra) for (let i = 0; i < 3; i++) r[i] += extra[i];
+    g.rotation.copy(E(r));
+    (par || inner).add(g);
+    for (const c of b.cubes || []) {
+      const inf = c.inflate || 0, [w, h, d] = c.size;
+      const bg = new THREE.BoxGeometry(Math.max(w + 2 * inf, 0.01), Math.max(h + 2 * inf, 0.01), Math.max(d + 2 * inf, 0.01));
+      setUV(bg, uvRects(c), TW, TH);
+      if (c.mirror) { const uv = bg.attributes.uv; for (let i = 0; i < uv.count; i += 4) { for (const [a, z] of [[0, 1], [2, 3]]) { const x0 = uv.getX(i + a); uv.setX(i + a, uv.getX(i + z)); uv.setX(i + z, x0); } } }
+      const m = new THREE.Mesh(bg, mat); m.rotation.y = Math.PI;
+      const ctr = [c.origin[0] + w / 2, c.origin[1] + h / 2, c.origin[2] + d / 2];
+      if (c.rotation) { const cp = c.pivot || ctr, pg = new THREE.Group(); pg.position.copy(P(cp).sub(P(piv))); pg.rotation.copy(E(c.rotation)); m.position.copy(P(ctr).sub(P(cp))); pg.add(m); g.add(pg); }
+      else { m.position.copy(P(ctr).sub(P(piv))); g.add(m); }
+    }
+  }
+  root.userData.bones = groups;
+  return root;
 }
 const OUTLINE = new THREE.MeshBasicMaterial({ color: 0x5ad8ff, side: THREE.BackSide });
 /** A Minecraft player NPC; pose = { head:[x,y,z], body, rarm, larm, rleg, lleg } in degrees. */
@@ -193,12 +240,13 @@ const place = (o, x, z, ry = 0, sc = 1) => { o.position.set(x, 0, z); o.rotation
 
 const HEADERS = {
   h_pose: ["Pose Mode", "Rotate and move every limb with the gizmo", "01"],
-  h_live: ["Live Editor", "One screen that never reloads", "02"],
-  h_cloaks: ["58 Cloaks", "Studio, Minecraft and your own capes", "03"],
-  h_custom: ["Your Skins & Models", "Pack Builder website: skins, capes, 3D models", "04"],
-  h_share: ["Share Presets", "Send an NPC as a code or a pack file", "05"],
-  h_camera: ["Cameras & Photo", "Fly cams, cinematic shots, green screen", "06"],
-  h_install: ["Install", "Three steps, no experiments needed", "07"]
+  h_mobs: ["Posable Mobs", "29 Minecraft mobs, posed part by part", "02"],
+  h_live: ["Live Editor", "One screen that never reloads", "03"],
+  h_cloaks: ["58 Cloaks", "Studio, Minecraft and your own capes", "04"],
+  h_custom: ["Your Skins & Models", "Pack Builder website: skins, capes, 3D models", "05"],
+  h_share: ["Share Presets", "Send an NPC as a code or a pack file", "06"],
+  h_camera: ["Cameras & Photo", "Fly cams, cinematic shots, green screen", "07"],
+  h_install: ["Install", "Three steps, no experiments needed", "08"]
 };
 const SLIDES = {
   async banner() {
@@ -221,7 +269,7 @@ const SLIDES = {
   async studio() {
     squares([[1840, 120, "s"], [1060, 60, ""], [960, 990, "c s"], [130, 980, "s"]]);
     html(`<div class="copy" style="width:620px;top:190px">
-      <div class="eyebrow">Real in-game panel · v4.26</div><h2>The studio panel</h2>
+      <div class="eyebrow">Real in-game panel</div><h2>The studio panel</h2>
       <ul class="list">
         <li><span>Six tabs, one tap each<small>Display, Pose, Presets, World, Camera, Layers</small></span></li>
         <li><span>Sliders, steppers and slots<small>Your NPC changes while the panel stays open</small></span></li>
@@ -292,7 +340,7 @@ const SLIDES = {
     html(`<div class="copy" style="width:640px;top:180px">
       <div class="eyebrow">Pack Builder website</div><h2>Your skins, capes &amp; models</h2>
       <ul class="list">
-        <li><span>Get any Java player's skin by name</span></li>
+        <li><span>Get a player's skin by name</span></li>
         <li><span>Add capes and Blockbench 3D models</span></li>
         <li><span>Preview in 3D, download one pack</span></li>
         <li><span>Works on your phone</span></li>
@@ -309,6 +357,39 @@ const SLIDES = {
     st.s.add(place(await npc(A.knight, { cape: A.capeStudio, pose: { rarm: [-90, 0, 0], head: [0, -10, 0] } }), 24, -4, -8)); shadow(st.s, 24, -4);
     st.s.add(place(await npc(A.knight, { cape: A.capeStudio, outline: true, pose: { rarm: [-90, 0, 0], head: [0, -10, 0] } }), 56, -4, -8)); shadow(st.s, 56, -4);
     st.render();
+  },
+  async mobs() {
+    squares([[1840, 120, "s"], [1060, 60, ""], [980, 990, "c s"], [1780, 940, ""], [130, 980, "s"], [1500, 30, "c s"]]);
+    html(`<div class="copy" style="width:640px;top:170px">
+      <span><span class="new">NEW</span></span>
+      <h2>Pose any mob</h2>
+      <ul class="list">
+        <li><span>29 Minecraft mobs<small>Zombie, warden, horse, creeper, wolf, spider, piglin...</small></span></li>
+        <li><span>Their real look<small>Minecraft's own models and textures</small></span></li>
+        <li><span>Every part moves<small>Head, body, legs, wings, with the same gizmo</small></span></li>
+        <li><span>Turn any NPC into a mob<small>Display &rarr; Mob, one tap back</small></span></li>
+      </ul></div>`);
+    const cam = [-8, 38, 248];
+    const st = stage(cam, [-8, 22, 0], 30);
+    const add = async (key, pose, x, z, ry, sc = 1) => { const m = await mob(key, pose); st.s.add(place(m, x, z, ry, sc)); shadow(st.s, x, z, 10 * sc); return m; };
+    // back row
+    await add("warden", { head: [-20, 0, 0], rightArm: [-55, 0, 25], leftArm: [-55, 0, -25] }, 34, -46, -10, 0.95);
+    await add("horse", { body: [-28, 0, 0], head: [10, 0, 0], rightArm: [-70, 0, 0], leftArm: [-40, 0, 0], rightLeg: [26, 0, 0], leftLeg: [26, 0, 0] }, 82, -40, -50);
+    await add("piglin", { rightArm: [-150, 0, 10], leftArm: [-20, 0, 0], head: [-10, 15, 0] }, -6, -34, 25);
+    // front row
+    const z = await add("zombie", { rightArm: [-90, 0, 0], leftArm: [-90, 0, 0], head: [0, -10, 0], rightLeg: [-25, 0, 0], leftLeg: [20, 0, 0] }, 54, 0, -20);
+    await add("creeper", { head: [0, 30, 0] }, 16, 2, 20);
+    await add("wolf", { head: [0, 0, 18] }, 84, 18, -70);
+    await add("fox", { head: [0, 20, 0] }, 66, 34, -30);
+    await add("spider", { head: [0, -15, 0] }, -4, 34, 25, 0.85);
+    const gz = gizmo(6, "rotate"); z.userData.bones.rightarm.add(gz);
+    st.s.updateMatrixWorld(true); faceCamera(gz, cam);
+    st.render();
+  },
+  async stats() {
+    squares([[300, 40, "s"], [1180, 360, "c s"], [880, 30, ""], [1620, 330, "s"], [60, 340, "c s"]]);
+    const s = [["29", "posable mobs", "c"], ["58", "capes"], ["45+", "poses"], ["30", "cinematic shots"], ["0", "experiments needed", "c"]];
+    html(`<div class="stats">${s.map(([n, l, c]) => `<div class="stat"><b class="${c || ""}">${n}</b><span>${l}</span></div>`).join("")}</div>`);
   },
   async live() {
     squares([[1840, 120, "s"], [1060, 80, ""], [980, 960, "c s"], [1780, 900, ""], [130, 980, "s"], [1500, 40, "c s"]]);

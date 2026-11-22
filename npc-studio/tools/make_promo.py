@@ -10,8 +10,18 @@ import base64, json, os, subprocess, sys
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
 TEX = os.path.join(ROOT, "RP", "textures", "entity", "npcstudio")
 ICONS = os.path.join(ROOT, "RP", "textures", "ui", "npcstudio", "capes")
-SLIDES = ["banner", "studio", "camera", "cover", "pose", "live", "capes", "share", "packs",
-          "h_pose", "h_live", "h_cloaks", "h_custom", "h_share", "h_camera", "h_install"]
+SLIDES = ["banner", "studio", "camera", "cover", "pose", "mobs", "stats", "live", "capes", "share", "packs",
+          "h_pose", "h_mobs", "h_live", "h_cloaks", "h_custom", "h_share", "h_camera", "h_install"]
+if os.environ.get("NPCS_SLIDES"):  # render only some slides: NPCS_SLIDES=mobs,stats
+    SLIDES = os.environ["NPCS_SLIDES"].split(",")
+SHOW_MOBS = ("zombie", "warden", "horse", "creeper", "wolf", "spider", "fox", "piglin")
+
+
+def mob_assets():
+    """Posable mob models (the add-on's own geometry) + Minecraft's textures, for the Posable Mobs slide."""
+    geos = {g["description"]["identifier"].split(".")[-1]: g
+            for g in json.load(open(os.path.join(ROOT, "RP", "models", "entity", "npcstudio_mobs.geo.json")))["minecraft:geometry"]}
+    return {k: {"geo": geos[k], "tex": uri(os.path.join(ROOT, "art", "vanilla_mobs", "tex", k + ".png"))} for k in SHOW_MOBS}
 
 
 def uri(path):
@@ -46,7 +56,7 @@ def main(shot, code_file, out):
              capeCherry=uri(os.path.join(TEX, "capes", "java", "pink_cherry_blossom.png")),
              logo=uri(os.path.join(ROOT, "curseforge", "logo-512.png")), shot=uri(shot),
              capeIcons=[uri(os.path.join(ICONS, f"cape{c}.png")) for c in list(range(1, 9)) + list(range(16, 59))][:45],
-             code=open(code_file).read().split()[0],
+             code=open(code_file).read().split()[0], mobs=mob_assets(),
              **real_assets(os.path.join(os.path.dirname(shot), "real")))
     tpl = open(os.path.join(ROOT, "curseforge", "promo", "promo.template.html"), encoding="utf-8").read()
     page = os.path.join(out, "promo.html")
