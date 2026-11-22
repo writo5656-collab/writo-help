@@ -22,7 +22,10 @@ C = 'style="text-align: center;"'
 
 
 def img(name, alt, width=None):
-    w = f' width="{width}"' if width else ""
+    # CurseForge refuses description pictures 850px or wider: the files are 840px, and the tag says so too
+    from PIL import Image
+    iw, ih = Image.open(os.path.join(DESC, name)).size
+    w = f' width="{iw}" height="{ih}"'
     return f'<p {C}><img src="IMG/{name}" alt="{alt}"{w} /></p>'
 
 
