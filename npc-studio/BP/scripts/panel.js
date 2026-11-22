@@ -16,7 +16,7 @@ import {
 import { menu, modal, msg, confirm, ICON, npcLabel, npcsNear, isLocked, setEditorHooks, NPC_FAMILY } from "./core.js";
 import { getAnim, readPose, applyPose, mirrorPose, pushUndo, undo, redo, historySize } from "./rig.js";
 import { LOOP_ANIMS } from "./poses.js";
-import { pickSkin, setSkin, skinLabel, npcHead, headIcon, pickModel, setModel, isCustomModel } from "./skins.js";
+import { pickSkin, setSkin, skinLabel, npcHead, headIcon, pickModel, setModel, isCustomModel, isPlayerShaped, mobOf, pickMob, setMob } from "./skins.js";
 import { openWardrobe, openSlotMenu, getEquip, equipIcon, SLOTS } from "./wardrobe.js";
 import { openPoseEditor, openPoseLibrary, openLoopAnims, startGizmo, poseWalkOn, setPoseWalk } from "./poseEditor.js";
 import { openAnimator, playAllTimelines, stopAllTimelines } from "./animator.js";
@@ -222,21 +222,28 @@ function displayTab(player, m, npc, self) {
   const cape = getCape(npc);
   const setSlim = (v) => () => npc.setProperty("npcstudio:slim", v);
   m.section("model", "Model settings", ICON("skin"));
-  m.trio("Model", [
-    { text: "Classic", on: !slim, fn: setSlim(false), stay: true },
-    { text: "Slim", on: slim, fn: setSlim(true), stay: true },
-    { text: "Mobs", fn: () => openMobToolMenu(player, self) }
-  ]);
   const skinIdx = Number(npc.getProperty("npcstudio:skin_index") ?? 0);
-  const model = isCustomModel(npc);
+  const model = !isPlayerShaped(npc); // custom 3D model or a mob: no cape, no slim arms
+  const mob = mobOf(npc);
+  if (!model)
+    m.trio("Model", [
+      { text: "Classic", on: !slim, fn: setSlim(false), stay: true },
+      { text: "Slim", on: slim, fn: setSlim(true), stay: true },
+      { text: "Mob Props", fn: () => openMobToolMenu(player, self) }
+    ]);
   m.field("Skin", model ? "-" : skinLabel(skinIdx), npcHead(npc), () =>
     pickSkin(player, "Choose Skin", (i) => (setSkin(npc, i), self()), self),
     model ? undefined : () => setSkin(npc, 0)
   );
+  // Minecraft's own mobs as the NPC's body (tools/make_mobs.py), posed part by part
+  m.field("Mob", mob ? mob.name : "None", mob ? headIcon(skinIdx) : ICON("crowd"), () =>
+    pickMob(player, "Turn Into A Mob", (n) => (setMob(npc, n), self()), self),
+    mob ? () => setMob(npc, -1) : undefined
+  );
   // custom 3D models from the player's own pack (Pack Builder website > Models)
-  m.field("3D model", model ? skinLabel(skinIdx) : "None", model ? headIcon(skinIdx) : ICON("prop"), () =>
+  m.field("3D model", isCustomModel(npc) ? skinLabel(skinIdx) : "None", isCustomModel(npc) ? headIcon(skinIdx) : ICON("prop"), () =>
     pickModel(player, (n) => (setModel(npc, n), self()), self),
-    model ? () => setModel(npc, 0) : undefined
+    isCustomModel(npc) ? () => setModel(npc, 0) : undefined
   );
   if (!model) m.field("Cloak", capeLabel(cape), cape ? capeIcon(cape) : ICON("cape"), () => pickCape(player, npc, self), cape ? () => setCape(npc, 0) : undefined);
   m.field("Nametag", npc.getDynamicProperty("npcstudio:real_name") !== undefined ? "Hidden" : npcLabel(npc), ICON("nametag"), () => openNameTag(player, npc, self));

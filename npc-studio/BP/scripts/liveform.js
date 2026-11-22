@@ -14,7 +14,7 @@ import { world, system, msg } from "./core.js";
 import { BONES, getRot, setRot, getPos, setPos, getScale, setScale, getAnim, setAnim, readPose, applyPose, mirrorPose, undo, redo, POS_LIMIT } from "./rig.js";
 import { undoOnce } from "./live.js";
 import { LOOP_ANIMS } from "./poses.js";
-import { SKIN_COUNT, MODEL_FIRST, MODEL_COUNT, skinPlainName, setSkin, setModel } from "./skins.js";
+import { SKIN_COUNT, MODEL_FIRST, MODEL_COUNT, MOB_FIRST, MOBS, skinPlainName, setSkin, setModel, setMob, partLabel } from "./skins.js";
 import { getCape, setCape, isBright, setBright, areOutlinesHidden, setOutlinesHidden } from "./selection.js";
 import { CAPE_COUNT, CAPE_LIST } from "./capes.js";
 import { isSneaking, setSneak, isOnFire, setOnFire, lookAtPlayer, flip, worldBright, setWorldBright, GAMERULES, ruleOn, setRule } from "./extras.js";
@@ -59,11 +59,13 @@ export function openLiveEditor(player, npc, onClose, startTab = 0, tries = 0) {
 
   // ---------- Display ----------
   const D = sec(0);
-  const skinNames = [...Array(SKIN_COUNT).keys()].map(skinPlainName).concat([...Array(MODEL_COUNT).keys()].map((n) => `3D: ${skinPlainName(MODEL_FIRST + n)}`));
+  const skinNames = [...Array(SKIN_COUNT).keys()].map(skinPlainName)
+    .concat([...Array(MODEL_COUNT).keys()].map((n) => `3D: ${skinPlainName(MODEL_FIRST + n)}`))
+    .concat(MOBS.map((m) => `Mob: ${m.name}`)); // dropdown value = skin_index (0-31 skins, 32-41 models, 42+ mobs)
   const skin = N(npc.getProperty("npcstudio:skin_index") ?? 0);
   form.header("Model", D);
   form.dropdown("Skin", skin, items(skinNames), D);
-  watch(skin, (i) => (i >= MODEL_FIRST ? setModel(npc, i - MODEL_FIRST + 1) : setSkin(npc, i)));
+  watch(skin, (i) => (i >= MOB_FIRST ? setMob(npc, i - MOB_FIRST) : i >= MODEL_FIRST ? setModel(npc, i - MODEL_FIRST + 1) : setSkin(npc, i)));
   const slim = B(npc.getProperty("npcstudio:slim"));
   form.toggle("Slim arms", slim, D);
   watch(slim, (v) => npc.setProperty("npcstudio:slim", v));
@@ -112,7 +114,7 @@ export function openLiveEditor(player, npc, onClose, startTab = 0, tries = 0) {
     pp.forEach((o, i) => o.setData(p[i]));
     syncing = false;
   };
-  form.dropdown("Body part", part, items(BONES.map((b) => b.label)), P);
+  form.dropdown("Body part", part, items(BONES.map((b) => partLabel(npc, b.key, b.label))), P);
   part.subscribe(() => ok() && loadPart());
   ["Tilt (X)", "Turn (Y)", "Roll (Z)"].forEach((label, i) => {
     form.slider(label, pr[i], -180, 180, { step: 1, ...P });

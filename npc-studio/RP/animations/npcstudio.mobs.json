@@ -1,0 +1,38 @@
+{
+ "format_version": "1.10.0",
+ "animations": {
+  "animation.npcstudio.mobx.spider": {
+   "loop": true,
+   "bones": {
+    "leg4": {
+     "rotation": [
+      "query.property('npcstudio:right_arm_x')",
+      "query.property('npcstudio:right_arm_y')",
+      "query.property('npcstudio:right_arm_z')"
+     ]
+    },
+    "leg5": {
+     "rotation": [
+      "query.property('npcstudio:left_arm_x')",
+      "query.property('npcstudio:left_arm_y')",
+      "query.property('npcstudio:left_arm_z')"
+     ]
+    },
+    "leg2": {
+     "rotation": [
+      "query.property('npcstudio:right_leg_x')",
+      "query.property('npcstudio:right_leg_y')",
+      "query.property('npcstudio:right_leg_z')"
+     ]
+    },
+    "leg3": {
+     "rotation": [
+      "query.property('npcstudio:left_leg_x')",
+      "query.property('npcstudio:left_leg_y')",
+      "query.property('npcstudio:left_leg_z')"
+     ]
+    }
+   }
+  }
+ }
+}

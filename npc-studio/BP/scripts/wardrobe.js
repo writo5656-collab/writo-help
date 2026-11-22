@@ -260,7 +260,10 @@ function startPickup(player, npc, entries, report, onDone) {
         }
         drops.push({ e, item });
       } catch (err) {
+        // some add-on items can't be dropped as an item entity: put them in the slot directly
         console.warn(`[NPC Studio] spawnItem failed: ${err}`);
+        const info = infoFromStack(e.stack, e.fromHand);
+        if (equipBasic(npc, e.slotKey, info.id)) report.push(`${e.slotKey}: ${niceId(info.id)}`);
       }
     }
   }, 2);
@@ -276,7 +279,7 @@ function startPickup(player, npc, entries, report, onDone) {
         /* ignore */
       }
     }
-    if ((drops.length > 0 && alive.length === 0) || ticks >= 120 || !npc.isValid) {
+    if (alive.length === 0 || ticks >= 120 || !npc.isValid) { // the drops spawn at tick 2, this first runs at 4
       system.clearRun(id);
       finishPickup(player, npc, drops, anchor, report, onDone);
     }

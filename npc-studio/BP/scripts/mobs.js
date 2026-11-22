@@ -4,6 +4,14 @@
  */
 import { menu, modal, msg, ICON, MOB_TAG } from "./core.js";
 import { openPutNpcOn, openMobPoses, freezeMob, refreeze } from "./mount.js";
+import { pickMob, MOB_FIRST, headIcon } from "./skins.js";
+import { spawnNpcs } from "./npc.js";
+
+// Minecraft's own item pictures for the buttons (spawn eggs; boats and minecarts use their item)
+const ITEM_ICON = { villager_v2: "spawn_eggs/spawn_egg_villager", boat: "boat_oak", chest_boat: "boat_oak", minecart: "minecart_normal", chest_minecart: "minecart_chest", armor_stand: "armor_stand" };
+function eggIcon(id) {
+  return `textures/items/${ITEM_ICON[id] ?? `spawn_eggs/spawn_egg_${id}`}`;
+}
 
 const MOB_TYPES = [
   ["horse", "Horse", true], ["donkey", "Donkey", true], ["mule", "Mule", true], ["camel", "Camel", true],
@@ -16,7 +24,7 @@ const MOB_TYPES = [
   // V3: vehicle / decoration props (from the Java NPC Studio's prop list)
   ["boat", "Boat", true], ["chest_boat", "Chest Boat", true], ["minecart", "Minecart", true], ["chest_minecart", "Chest Minecart"],
   ["armor_stand", "Armor Stand"]
-].map(([id, label, rideable]) => ({ id: `minecraft:${id}`, label, rideable: !!rideable }));
+].map(([id, label, rideable]) => ({ id: `minecraft:${id}`, label, rideable: !!rideable, icon: eggIcon(id) }));
 
 const freeze = (mob, on) => freezeMob(mob, on);
 
@@ -37,9 +45,12 @@ export function tryDismount(player) {
 }
 
 export function openMobToolMenu(player, back) {
-  const m = menu("Spawn a Mob Prop", "§7Spawned mobs are named (so they never despawn) and frozen in place. Right-click one to manage it.");
+  const self = () => openMobToolMenu(player, back);
+  const m = menu("Spawn a Mob Prop", "§7Spawned mobs are named (so they never despawn) and frozen in place. Right-click one to manage it.\n§bPosable Mobs§7 are NPCs with a mob's body: pose every part like an NPC.");
+  m.btn("Posable Mobs §8(pose part by part)", headIcon(MOB_FIRST), () =>
+    pickMob(player, "Spawn A Posable Mob", (n) => spawnNpcs(player, MOB_FIRST + n, 1), self));
   for (const def of MOB_TYPES) {
-    m.btn(def.label + (def.rideable ? " §8(rideable)" : ""), def.rideable ? ICON("ride") : "textures/items/npcstudio_mob_tool", () => {
+    m.btn(def.label + (def.rideable ? " §8(rideable)" : ""), def.icon, () => {
       const loc = player.getHeadLocation();
       const mob = player.dimension.spawnEntity(def.id, { x: loc.x, y: player.location.y, z: loc.z });
       mob.nameTag = def.label;

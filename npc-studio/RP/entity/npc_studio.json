@@ -6,7 +6,8 @@
       "materials": {
         "default": "entity_alphatest",
         "outline": "entity_alphatest",
-        "outline_sil": "npcstudio_outline"
+        "outline_sil": "npcstudio_outline",
+        "mob_glow": "entity_emissive_alpha"
       },
       "textures": {
         "skin0": "textures/entity/npcstudio/steve",
@@ -111,7 +112,36 @@
         "jcape40": "textures/entity/npcstudio/capes/java/mojang_studios_new_mojang",
         "jcape41": "textures/entity/npcstudio/capes/java/mojang_mojang_staff",
         "jcape42": "textures/entity/npcstudio/capes/java/mojang_unique",
-        "jcape43": "textures/entity/npcstudio/capes/java/mojang_minecraft_experience"
+        "jcape43": "textures/entity/npcstudio/capes/java/mojang_minecraft_experience",
+        "mob_zombie": "textures/entity/zombie/zombie",
+        "mob_husk": "textures/entity/zombie/husk",
+        "mob_drowned": "textures/entity/zombie/drowned",
+        "mob_skeleton": "textures/entity/skeleton/skeleton",
+        "mob_wither_skeleton": "textures/entity/skeleton/wither_skeleton",
+        "mob_enderman": "textures/entity/enderman/enderman",
+        "mob_creeper": "textures/entity/creeper/creeper",
+        "mob_wandering_trader": "textures/entity/wandering_trader",
+        "mob_witch": "textures/entity/witch",
+        "mob_pillager": "textures/entity/pillager",
+        "mob_vindicator": "textures/entity/vindicator",
+        "mob_evoker": "textures/entity/illager/evoker",
+        "mob_piglin": "textures/entity/piglin/piglin",
+        "mob_piglin_brute": "textures/entity/piglin/piglin_brute",
+        "mob_zombified_piglin": "textures/entity/piglin/zombie_piglin",
+        "mob_vex": "textures/entity/vex/vex",
+        "mob_iron_golem": "textures/entity/iron_golem",
+        "mob_warden": "textures/entity/warden/warden",
+        "mob_allay": "textures/entity/allay/allay",
+        "mob_cow": "textures/entity/cow/cow_v2",
+        "mob_mooshroom": "textures/entity/cow/mooshroom_v2",
+        "mob_pig": "textures/entity/pig/pig_v3",
+        "mob_wolf": "textures/entity/wolf/wolf",
+        "mob_fox": "textures/entity/fox/fox",
+        "mob_horse": "textures/entity/horse2/horse_brown",
+        "mob_camel": "textures/entity/camel/camel",
+        "mob_spider": "textures/entity/spider/spider",
+        "mob_axolotl": "textures/entity/axolotl/axolotl_lucy",
+        "mob_frog": "textures/entity/frog/temperate_frog"
       },
       "geometry": {
         "default": "geometry.npcstudio.player",
@@ -159,7 +189,36 @@
         "sil_2_slim_t1": "geometry.npcstudio.sil_2_slim_t1",
         "sil_2_slim_t2": "geometry.npcstudio.sil_2_slim_t2",
         "sil_2_slim_t3": "geometry.npcstudio.sil_2_slim_t3",
-        "sil_2_slim_armor": "geometry.npcstudio.sil_2_slim_armor"
+        "sil_2_slim_armor": "geometry.npcstudio.sil_2_slim_armor",
+        "mob_zombie": "geometry.npcstudio.mob.zombie",
+        "mob_husk": "geometry.npcstudio.mob.husk",
+        "mob_drowned": "geometry.npcstudio.mob.drowned",
+        "mob_skeleton": "geometry.npcstudio.mob.skeleton",
+        "mob_wither_skeleton": "geometry.npcstudio.mob.wither_skeleton",
+        "mob_enderman": "geometry.npcstudio.mob.enderman",
+        "mob_creeper": "geometry.npcstudio.mob.creeper",
+        "mob_wandering_trader": "geometry.npcstudio.mob.wandering_trader",
+        "mob_witch": "geometry.npcstudio.mob.witch",
+        "mob_pillager": "geometry.npcstudio.mob.pillager",
+        "mob_vindicator": "geometry.npcstudio.mob.vindicator",
+        "mob_evoker": "geometry.npcstudio.mob.evoker",
+        "mob_piglin": "geometry.npcstudio.mob.piglin",
+        "mob_piglin_brute": "geometry.npcstudio.mob.piglin_brute",
+        "mob_zombified_piglin": "geometry.npcstudio.mob.zombified_piglin",
+        "mob_vex": "geometry.npcstudio.mob.vex",
+        "mob_iron_golem": "geometry.npcstudio.mob.iron_golem",
+        "mob_warden": "geometry.npcstudio.mob.warden",
+        "mob_allay": "geometry.npcstudio.mob.allay",
+        "mob_cow": "geometry.npcstudio.mob.cow",
+        "mob_mooshroom": "geometry.npcstudio.mob.mooshroom",
+        "mob_pig": "geometry.npcstudio.mob.pig",
+        "mob_wolf": "geometry.npcstudio.mob.wolf",
+        "mob_fox": "geometry.npcstudio.mob.fox",
+        "mob_horse": "geometry.npcstudio.mob.horse",
+        "mob_camel": "geometry.npcstudio.mob.camel",
+        "mob_spider": "geometry.npcstudio.mob.spider",
+        "mob_axolotl": "geometry.npcstudio.mob.axolotl",
+        "mob_frog": "geometry.npcstudio.mob.frog"
       },
       "animations": {
         "freepose": "animation.npcstudio.freepose",
@@ -181,7 +240,8 @@
         "shake_head": "animation.npcstudio.anim.shake_head",
         "salute": "animation.npcstudio.anim.salute",
         "push_ups": "animation.npcstudio.anim.push_ups",
-        "guard": "animation.npcstudio.anim.guard"
+        "guard": "animation.npcstudio.anim.guard",
+        "mobx_spider": "animation.npcstudio.mobx.spider"
       },
       "scripts": {
         "scale": "query.property('npcstudio:scale')",
@@ -243,6 +303,9 @@
           },
           {
             "guard": "query.property('npcstudio:anim') == 19"
+          },
+          {
+            "mobx_spider": "query.property('npcstudio:skin_index') == 68"
           }
         ]
       },
@@ -254,10 +317,16 @@
           "controller.render.npcstudio.bright": "(query.property('npcstudio:skin_index') < 32) && math.mod(math.floor(query.property('npcstudio:flags') / 2), 2) == 1"
         },
         {
-          "controller.render.npcstudio.custom_model": "(query.property('npcstudio:skin_index') >= 32) && math.mod(math.floor(query.property('npcstudio:flags') / 64), 2) == 0 && math.mod(math.floor(query.property('npcstudio:flags') / 2), 2) == 0"
+          "controller.render.npcstudio.custom_model": "(query.property('npcstudio:skin_index') >= 32 && query.property('npcstudio:skin_index') < 42) && math.mod(math.floor(query.property('npcstudio:flags') / 64), 2) == 0 && math.mod(math.floor(query.property('npcstudio:flags') / 2), 2) == 0"
         },
         {
-          "controller.render.npcstudio.custom_model_bright": "(query.property('npcstudio:skin_index') >= 32) && math.mod(math.floor(query.property('npcstudio:flags') / 64), 2) == 0 && math.mod(math.floor(query.property('npcstudio:flags') / 2), 2) == 1"
+          "controller.render.npcstudio.custom_model_bright": "(query.property('npcstudio:skin_index') >= 32 && query.property('npcstudio:skin_index') < 42) && math.mod(math.floor(query.property('npcstudio:flags') / 64), 2) == 0 && math.mod(math.floor(query.property('npcstudio:flags') / 2), 2) == 1"
+        },
+        {
+          "controller.render.npcstudio.mob": "(query.property('npcstudio:skin_index') >= 42) && math.mod(math.floor(query.property('npcstudio:flags') / 64), 2) == 0 && math.mod(math.floor(query.property('npcstudio:flags') / 2), 2) == 0"
+        },
+        {
+          "controller.render.npcstudio.mob_bright": "(query.property('npcstudio:skin_index') >= 42) && math.mod(math.floor(query.property('npcstudio:flags') / 64), 2) == 0 && math.mod(math.floor(query.property('npcstudio:flags') / 2), 2) == 1"
         },
         {
           "controller.render.npcstudio.outline": "(query.property('npcstudio:skin_index') < 32) && math.mod(query.property('npcstudio:flags'), 2) == 1 && math.mod(math.floor(query.property('npcstudio:flags') / 64), 2) == 0 && math.mod(math.floor(query.property('npcstudio:flags') / 512), 2) == 1"

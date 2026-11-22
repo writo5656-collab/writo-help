@@ -6,6 +6,7 @@
  */
 import { EasingType } from "@minecraft/server";
 import { system, world, menu, keep, sfx, clamp, orbitPoint, CAM_PRESET, ICON, npcLabel } from "./core.js";
+import { partLabel } from "./skins.js";
 import { getRot, setRot, getPos, setPos, getScale, setScale, pushUndo, BONES, POS_LIMIT } from "./rig.js";
 import { TRIM_DATA, MATERIAL_LABELS, isTrimmable } from "./trimdata.js";
 import { getEquip, equipTrim } from "./wardrobe.js";
@@ -47,7 +48,7 @@ export function poseRows(m, player, npc) {
   const step = STEPS[s.step];
   const rot = getRot(npc, bone.key);
   const pos = getPos(npc, bone.key);
-  m.cycle("Part", bone.label, (d) => (s.bone = wrap(s.bone + d, BONES.length)));
+  m.cycle("Part", partLabel(npc, bone.key, bone.label), (d) => (s.bone = wrap(s.bone + d, BONES.length)));
   m.choices("Step", STEPS.map((x) => x.name), s.step, (i) => (s.step = i));
   ["Tilt", "Turn", "Roll"].forEach((name, i) =>
     m.slider(name, Math.round(rot[i] * 10) / 10, { min: -180, max: 180, step: bone.key === "root" ? Math.max(1.5, step.rot) : step.rot, unit: "°" }, (v) => {

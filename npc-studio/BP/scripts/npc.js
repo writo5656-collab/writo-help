@@ -11,7 +11,7 @@ import { readPose, applyPose, pushUndo, getScale, setScale, getAnim, setAnim, ge
 import { ALL_POSES, LOOP_ANIMS } from "./poses.js";
 import { openPoseEditor, openPoseLibrary, openScaleMenu, openLoopAnims } from "./poseEditor.js";
 import { openWardrobe, openBulkWardrobe, readAllEquip, applyEquipInfo, SLOTS } from "./wardrobe.js";
-import { pickSkin, setSkin, skinPlainName, npcHead } from "./skins.js";
+import { pickSkin, setSkin, skinPlainName, npcHead, pickMob, headIcon, MOB_FIRST } from "./skins.js";
 import { openAnimator, playAllTimelines, stopAllTimelines, getTimeline } from "./animator.js";
 import { openShotsMenu } from "./shots.js";
 import { openRideMenu, isMounted } from "./mount.js";
@@ -414,6 +414,9 @@ export function openSpawnMenu(player, back) {
     .cycle("How many", String(count), (d) => spawnCount.set(player.id, Math.max(0, Math.min(SPAWN_COUNTS.length - 1, ci + d))))
     .btn("Choose Skin And Spawn", ICON("skin"), () =>
       pickSkin(player, count > 1 ? `Choose Skin (x${count})` : "Choose Skin", (i) => spawnNpcs(player, i, count), back)
+    )
+    .btn("Choose Mob And Spawn §8(posable)", headIcon(MOB_FIRST), () =>
+      pickMob(player, count > 1 ? `Choose Mob (x${count})` : "Choose Mob", (n) => spawnNpcs(player, MOB_FIRST + n, count), back)
     )
     .back(back)
     .show(player);

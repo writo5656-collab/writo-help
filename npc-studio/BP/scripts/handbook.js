@@ -61,8 +61,15 @@ export const CHAPTERS = [
         "§7Hotbar: 1 select (walk and look), 2 rotate, 3 move, 4 axis, 5 undo, 6 reset part, 7 cancel, 9 done.",
         "§7Walking off: the old frozen mode, sneak = done, jump = cancel."
       ]),
-      P("equip", "Item State", [
+      P("crowd", "Posable Mobs", [
+        "Spawn NPC > §bChoose Mob And Spawn§f (or Mob Props > Posable Mobs): a zombie, creeper, warden, horse, wolf, spider and 23 more, with Minecraft's own look.",
+        "They pose part by part like an NPC: Pose tab, Pose Mode, the Live Editor, presets and animations all work. Part names follow the mob (a cow has front and back legs).",
+        "§7Turn any NPC into a mob: Display > §bMob§f. Tap the x to go back to its skin.",
+        "§7Mobs we couldn't make look exactly right stay normal Mob Props."
+      ]),
+      P("equip", "Item State & Hold", [
         "Give the NPC a bow, crossbow, trident, shield, spyglass or goat horn, then Display > Inventory > §bItem State§f.",
+        "Any other item, also from other add-ons (guns, staffs): Display > Inventory > §bHold§f: At side, Hold up, Aim (one hand), Aim (two hands), Ready, On shoulder.",
         "§fBow§7: Idle, Pull 1-3 · §fCrossbow§7: Empty, Loading 1-3, Charged, Firework · §fTrident§7: Hold, Raise · §fShield§7: Hold, Block · §fSpyglass§7: Hold, Look · §fGoat Horn§7: Hold, Play",
         "§7The arms move into place; bows and crossbows also show their real pulling / charged picture."
       ]),

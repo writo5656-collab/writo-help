@@ -8,6 +8,7 @@
  * Copyright (c) 2026 NoxeelMC. All rights reserved. See LICENSE.md.
  */
 import { world, menu, modal, msg, ICON } from "./core.js";
+import { MOB_FIRST, MOBS } from "./mobdata.js";
 
 export const PREMADE = ["Steve", "Alex", "Dream", "Technoblade", "Warden", "Soldier", "Knight", "Mage", "Assassin", "NoxeelMC", "Mercenary", "Scientist"];
 export const CUSTOM_COUNT = 20;
@@ -19,6 +20,20 @@ export const SKIN_COUNT = PREMADE.length + CUSTOM_COUNT; // must match RP textur
 export const MODEL_FIRST = 32, MODEL_COUNT = 10;
 export const isModelIndex = (i) => i >= MODEL_FIRST && i < MODEL_FIRST + MODEL_COUNT;
 export const isCustomModel = (npc) => isModelIndex(Number(npc.getProperty("npcstudio:skin_index") ?? 0));
+// skin_index 42+ = posable mobs (tools/make_mobs.py): Minecraft's own mob models and textures
+export { MOB_FIRST, MOBS };
+export const isMobIndex = (i) => i >= MOB_FIRST && i < MOB_FIRST + MOBS.length;
+const skinOf = (npc) => Number(npc.getProperty("npcstudio:skin_index") ?? 0);
+/** The mob this NPC is ({ key, name, parts }), or undefined for a player-shaped NPC. */
+export const mobOf = (npc) => (isMobIndex(skinOf(npc)) ? MOBS[skinOf(npc) - MOB_FIRST] : undefined);
+/** True for skins (player model with cape / slim arms / outline); false for 3D models and mobs. */
+export const isPlayerShaped = (npc) => skinOf(npc) < MODEL_FIRST;
+/** Name of a pose part on this NPC: "Front right leg" on a cow, "Right Arm" on a player. */
+export function partLabel(npc, key, fallback) {
+  const mob = npc?.isValid ? mobOf(npc) : undefined;
+  if (!mob || key === "root") return fallback;
+  return mob.parts[key] ?? `${fallback} (none)`;
+}
 const BEFORE_MODEL = "npcstudio:skin_before_model";
 const SLIM_BY_DEFAULT = new Set([1]); // Alex
 
@@ -29,12 +44,14 @@ export function skinLabel(i) {
   const custom = world.getDynamicProperty(nameKey(i));
   if (custom) return String(custom);
   if (i < PREMADE.length) return PREMADE[i];
+  if (isMobIndex(i)) return MOBS[i - MOB_FIRST].name;
   return { rawtext: [{ translate: `npcstudio.skin.${i}` }] };
 }
 export function skinPlainName(i) {
   const custom = world.getDynamicProperty(nameKey(i));
   if (custom) return String(custom);
   if (isModelIndex(i)) return `Custom model ${i - MODEL_FIRST + 1}`;
+  if (isMobIndex(i)) return MOBS[i - MOB_FIRST].name;
   return i < PREMADE.length ? PREMADE[i] : `Custom ${i - PREMADE.length + 1}`;
 }
 
@@ -42,13 +59,32 @@ export function skinPlainName(i) {
 export function setModel(npc, n) {
   const now = Number(npc.getProperty("npcstudio:skin_index") ?? 0);
   if (n > 0) {
-    if (!isModelIndex(now)) npc.setDynamicProperty(BEFORE_MODEL, now);
+    if (now < MODEL_FIRST) npc.setDynamicProperty(BEFORE_MODEL, now);
     npc.setProperty("npcstudio:skin_index", MODEL_FIRST + Math.min(n, MODEL_COUNT) - 1);
     return;
   }
   const before = Number(npc.getDynamicProperty(BEFORE_MODEL) ?? 0);
-  npc.setProperty("npcstudio:skin_index", isModelIndex(before) ? 0 : before);
+  npc.setProperty("npcstudio:skin_index", before < MODEL_FIRST ? before : 0);
   npc.setDynamicProperty(BEFORE_MODEL, undefined);
+}
+
+/** Turn the NPC into mob n (0-based in MOBS); -1 goes back to the skin it had before. Poses stay. */
+export function setMob(npc, n) {
+  const now = skinOf(npc);
+  if (n >= 0) {
+    if (now < MODEL_FIRST) npc.setDynamicProperty(BEFORE_MODEL, now);
+    npc.setProperty("npcstudio:skin_index", MOB_FIRST + Math.min(n, MOBS.length - 1));
+    return;
+  }
+  setModel(npc, 0);
+}
+
+/** Pick a posable mob (face buttons); calls onPick(n). */
+export function pickMob(player, title, onPick, back) {
+  const m = menu(title, "§7Minecraft's own mobs, posed part by part like an NPC (Pose tab, Pose Mode, Live Editor).").grid();
+  MOBS.forEach((mob, n) => m.btn(mob.name, headIcon(MOB_FIRST + n), () => onPick(n)));
+  if (back) m.back(back);
+  m.show(player);
 }
 
 /** Pick a custom model; calls onPick(n) with n = 1-10. */
@@ -81,7 +117,7 @@ function showModelHelp(player, back) {
 
 export function setSkin(npc, i, autoSlim = true) {
   npc.setProperty("npcstudio:skin_index", i);
-  if (!isModelIndex(i)) npc.setDynamicProperty(BEFORE_MODEL, undefined);
+  if (i < MODEL_FIRST) npc.setDynamicProperty(BEFORE_MODEL, undefined);
   if (autoSlim) {
     const slimPref = world.getDynamicProperty(`npcstudio:skinslim:${i}`);
     npc.setProperty("npcstudio:slim", slimPref !== undefined ? !!slimPref : SLIM_BY_DEFAULT.has(i));

@@ -50,6 +50,24 @@ const SHIELD = {
   }
 };
 
+// Any other item, from Minecraft or from another add-on (guns, staffs, tools): how the NPC holds it.
+// Add-on items have no pose of their own on an NPC (their hold animations are made for players), so
+// without this a gun just hangs at the NPC's side.
+const HOLD = {
+  label: "Hold",
+  states: ["At side", "Hold up", "Aim (one hand)", "Aim (two hands)", "Ready (two hands)", "On shoulder"],
+  frame: () => 0,
+  pose: (s) =>
+    [
+      { right_arm: [-14, 0, 0], left_arm: [0, 0, 0] },
+      { right_arm: [-45, 0, 0], left_arm: [0, 0, 0] },
+      { right_arm: [-90, -5, 0], left_arm: [0, 0, 0] },
+      { right_arm: [-90, -10, 0], left_arm: [-85, 40, 0] },
+      { right_arm: [-45, -10, 0], left_arm: [-50, 40, 0] },
+      { right_arm: [-160, -10, 0], left_arm: [0, 0, 0] }
+    ][s]
+};
+
 /** What the NPC holds that has states: { item, hand, def } or undefined. */
 export function itemStateFor(npc) {
   const main = getEquip(npc, "Mainhand")?.id;
@@ -57,6 +75,7 @@ export function itemStateFor(npc) {
   if (main === "minecraft:shield") return { item: main, hand: "Mainhand", def: SHIELD };
   const off = getEquip(npc, "Offhand")?.id;
   if (off === "minecraft:shield") return { item: off, hand: "Offhand", def: SHIELD };
+  if (main) return { item: main, hand: "Mainhand", def: HOLD };
   return undefined;
 }
 
@@ -78,10 +97,11 @@ export function setItemState(npc, s) {
   setItemFrame(npc, info.def.frame(s));
 }
 
-/** Panel row: "Item State  < Pull 2 >" (only when the NPC holds a bow, crossbow, trident, shield, spyglass or goat horn). */
+/** Panel row: "Item State  < Pull 2 >" for bows, crossbows, tridents, shields, spyglasses, goat horns;
+ *  "Hold  < Aim (two hands) >" for anything else in the main hand (add-on guns too). */
 export function itemStateRow(m, npc) {
   const info = itemStateFor(npc);
   if (!info) return;
   const s = getItemState(npc);
-  m.cycle("Item State", info.def.states[s], (d) => setItemState(npc, s + d));
+  m.cycle(info.def.label ?? "Item State", info.def.states[s], (d) => setItemState(npc, s + d));
 }

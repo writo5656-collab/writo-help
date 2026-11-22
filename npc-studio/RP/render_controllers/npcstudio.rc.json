@@ -339,6 +339,177 @@
         "Array.tex[query.property('npcstudio:skin_index') - 32]"
       ],
       "ignore_lighting": true
+    },
+    "controller.render.npcstudio.mob": {
+      "arrays": {
+        "textures": {
+          "Array.tex": [
+            "Texture.mob_zombie",
+            "Texture.mob_husk",
+            "Texture.mob_drowned",
+            "Texture.mob_skeleton",
+            "Texture.mob_wither_skeleton",
+            "Texture.mob_enderman",
+            "Texture.mob_creeper",
+            "Texture.mob_wandering_trader",
+            "Texture.mob_witch",
+            "Texture.mob_pillager",
+            "Texture.mob_vindicator",
+            "Texture.mob_evoker",
+            "Texture.mob_piglin",
+            "Texture.mob_piglin_brute",
+            "Texture.mob_zombified_piglin",
+            "Texture.mob_vex",
+            "Texture.mob_iron_golem",
+            "Texture.mob_warden",
+            "Texture.mob_allay",
+            "Texture.mob_cow",
+            "Texture.mob_mooshroom",
+            "Texture.mob_pig",
+            "Texture.mob_wolf",
+            "Texture.mob_fox",
+            "Texture.mob_horse",
+            "Texture.mob_camel",
+            "Texture.mob_spider",
+            "Texture.mob_axolotl",
+            "Texture.mob_frog"
+          ]
+        },
+        "geometries": {
+          "Array.geo": [
+            "Geometry.mob_zombie",
+            "Geometry.mob_husk",
+            "Geometry.mob_drowned",
+            "Geometry.mob_skeleton",
+            "Geometry.mob_wither_skeleton",
+            "Geometry.mob_enderman",
+            "Geometry.mob_creeper",
+            "Geometry.mob_wandering_trader",
+            "Geometry.mob_witch",
+            "Geometry.mob_pillager",
+            "Geometry.mob_vindicator",
+            "Geometry.mob_evoker",
+            "Geometry.mob_piglin",
+            "Geometry.mob_piglin_brute",
+            "Geometry.mob_zombified_piglin",
+            "Geometry.mob_vex",
+            "Geometry.mob_iron_golem",
+            "Geometry.mob_warden",
+            "Geometry.mob_allay",
+            "Geometry.mob_cow",
+            "Geometry.mob_mooshroom",
+            "Geometry.mob_pig",
+            "Geometry.mob_wolf",
+            "Geometry.mob_fox",
+            "Geometry.mob_horse",
+            "Geometry.mob_camel",
+            "Geometry.mob_spider",
+            "Geometry.mob_axolotl",
+            "Geometry.mob_frog"
+          ]
+        },
+        "materials": {
+          "Array.mat": [
+            "Material.default",
+            "Material.mob_glow"
+          ]
+        }
+      },
+      "geometry": "Array.geo[query.property('npcstudio:skin_index') - 42]",
+      "materials": [
+        {
+          "*": "Array.mat[(query.property('npcstudio:skin_index') == 47 || query.property('npcstudio:skin_index') == 68)]"
+        }
+      ],
+      "textures": [
+        "Array.tex[query.property('npcstudio:skin_index') - 42]"
+      ]
+    },
+    "controller.render.npcstudio.mob_bright": {
+      "arrays": {
+        "textures": {
+          "Array.tex": [
+            "Texture.mob_zombie",
+            "Texture.mob_husk",
+            "Texture.mob_drowned",
+            "Texture.mob_skeleton",
+            "Texture.mob_wither_skeleton",
+            "Texture.mob_enderman",
+            "Texture.mob_creeper",
+            "Texture.mob_wandering_trader",
+            "Texture.mob_witch",
+            "Texture.mob_pillager",
+            "Texture.mob_vindicator",
+            "Texture.mob_evoker",
+            "Texture.mob_piglin",
+            "Texture.mob_piglin_brute",
+            "Texture.mob_zombified_piglin",
+            "Texture.mob_vex",
+            "Texture.mob_iron_golem",
+            "Texture.mob_warden",
+            "Texture.mob_allay",
+            "Texture.mob_cow",
+            "Texture.mob_mooshroom",
+            "Texture.mob_pig",
+            "Texture.mob_wolf",
+            "Texture.mob_fox",
+            "Texture.mob_horse",
+            "Texture.mob_camel",
+            "Texture.mob_spider",
+            "Texture.mob_axolotl",
+            "Texture.mob_frog"
+          ]
+        },
+        "geometries": {
+          "Array.geo": [
+            "Geometry.mob_zombie",
+            "Geometry.mob_husk",
+            "Geometry.mob_drowned",
+            "Geometry.mob_skeleton",
+            "Geometry.mob_wither_skeleton",
+            "Geometry.mob_enderman",
+            "Geometry.mob_creeper",
+            "Geometry.mob_wandering_trader",
+            "Geometry.mob_witch",
+            "Geometry.mob_pillager",
+            "Geometry.mob_vindicator",
+            "Geometry.mob_evoker",
+            "Geometry.mob_piglin",
+            "Geometry.mob_piglin_brute",
+            "Geometry.mob_zombified_piglin",
+            "Geometry.mob_vex",
+            "Geometry.mob_iron_golem",
+            "Geometry.mob_warden",
+            "Geometry.mob_allay",
+            "Geometry.mob_cow",
+            "Geometry.mob_mooshroom",
+            "Geometry.mob_pig",
+            "Geometry.mob_wolf",
+            "Geometry.mob_fox",
+            "Geometry.mob_horse",
+            "Geometry.mob_camel",
+            "Geometry.mob_spider",
+            "Geometry.mob_axolotl",
+            "Geometry.mob_frog"
+          ]
+        },
+        "materials": {
+          "Array.mat": [
+            "Material.default",
+            "Material.mob_glow"
+          ]
+        }
+      },
+      "geometry": "Array.geo[query.property('npcstudio:skin_index') - 42]",
+      "materials": [
+        {
+          "*": "Array.mat[(query.property('npcstudio:skin_index') == 47 || query.property('npcstudio:skin_index') == 68)]"
+        }
+      ],
+      "textures": [
+        "Array.tex[query.property('npcstudio:skin_index') - 42]"
+      ],
+      "ignore_lighting": true
     }
   }
 }

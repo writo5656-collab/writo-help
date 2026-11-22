@@ -11,6 +11,7 @@
  */
 import { InputPermissionCategory } from "@minecraft/server";
 import { world, system, menu, modal, msg, sfx, editorHudReset, actionbar, corner, clearCorner, ICON, clamp, wrapDeg, round, getJson, setJson, forward, right } from "./core.js";
+import { partLabel } from "./skins.js";
 import { BONES, getRot, setRot, getPos, setPos, getScale, setScale, readPose, applyPose, mirrorPose, expandPreset, pushUndo, undo, redo, historySize, snapPos, POS_LIMIT, getAnim, setAnim } from "./rig.js";
 import { POSE_CATEGORIES, LOOP_ANIMS } from "./poses.js";
 import { swapHotbar, restoreHotbar } from "./hotbar.js";
@@ -82,11 +83,11 @@ function openAdvanced(player, npc, back) {
   const self = () => openAdvanced(player, npc, back);
   const st = stateFor(player);
   const bone = BONES[st.bone];
-  menu("Advanced Posing", `§fBody part: §b${bone.label}\n§7Rotation: §f${fmt(getRot(npc, bone.key))}\n§7Position: §f${fmt(getPos(npc, bone.key))} px`)
-    .btn(`Body part: ${bone.label} §8(change)`, ICON("pose_manual"), () => pickBone(player, self))
+  menu("Advanced Posing", `§fBody part: §b${partLabel(npc, bone.key, bone.label)}\n§7Rotation: §f${fmt(getRot(npc, bone.key))}\n§7Position: §f${fmt(getPos(npc, bone.key))} px`)
+    .btn(`Body part: ${partLabel(npc, bone.key, bone.label)} §8(change)`, ICON("pose_manual"), () => pickBone(player, npc, self))
     .btn("Exact Sliders", ICON("sliders"), () => openSliders(player, npc, self))
     .btn("Nudge Pad (buttons)", ICON("move"), () => openNudge(player, npc, self))
-    .btn(`Reset ${bone.label}`, ICON("clear"), () => {
+    .btn(`Reset ${partLabel(npc, bone.key, bone.label)}`, ICON("clear"), () => {
       pushUndo(npc);
       setRot(npc, bone.key, [0, 0, 0]);
       setPos(npc, bone.key, [0, 0, 0]);
@@ -106,10 +107,10 @@ function openAdvanced(player, npc, back) {
     .show(player);
 }
 
-function pickBone(player, back) {
+function pickBone(player, npc, back) {
   const st = stateFor(player);
   const m = menu("Select Bone");
-  BONES.forEach((b, i) => m.btn(`${i === st.bone ? "§a> " : ""}${b.label}`, ICON("pose_manual"), () => {
+  BONES.forEach((b, i) => m.btn(`${i === st.bone ? "§a> " : ""}${partLabel(npc, b.key, b.label)}`, ICON("pose_manual"), () => {
     st.bone = i;
     back();
   }));
@@ -121,7 +122,7 @@ function openSliders(player, npc, back) {
   const bone = BONES[st.bone];
   const r = getRot(npc, bone.key);
   const p = getPos(npc, bone.key);
-  modal(`${bone.label}: exact values`)
+  modal(`${partLabel(npc, bone.key, bone.label)}: exact values`)
     .slider("rx", "Rotate X (tilt forward/back)", -180, 180, 1, Math.round(r[0]))
     .slider("ry", "Rotate Y (turn left/right)", -180, 180, 1, Math.round(r[1]))
     .slider("rz", "Rotate Z (roll sideways)", -180, 180, 1, Math.round(r[2]))
@@ -160,7 +161,7 @@ function openNudge(player, npc, back, stepIdx = 1) {
     setPos(npc, bone.key, p);
     self();
   };
-  menu(`Nudge: ${bone.label}`, `§7Rot: §f${fmt(getRot(npc, bone.key))}\n§7Pos: §f${fmt(getPos(npc, bone.key))} px`)
+  menu(`Nudge: ${partLabel(npc, bone.key, bone.label)}`, `§7Rot: §f${fmt(getRot(npc, bone.key))}\n§7Pos: §f${fmt(getPos(npc, bone.key))} px`)
     .btn(`Step: ${step} deg / ${pstep} px §8(tap to change)`, ICON("fov"), () => openNudge(player, npc, back, (stepIdx + 1) % NUDGE_STEPS.length))
     .btn(`Rotate X +${step}`, ICON("turn"), rot(0, step))
     .btn(`Rotate X -${step}`, ICON("turn"), rot(0, -step))
@@ -493,7 +494,7 @@ function refreshValues(s) {
 
 function gizmoReadout(s) {
   const mode = s.mode === "select" ? "§eSELECT" : s.mode === "rot" ? "§bROTATE" : "§6MOVE";
-  const head = `§f§l${s.bone.label.toUpperCase()}§r ${mode}${s.mode === "select" ? "" : ` §7${AXES[s.axis]}`}`;
+  const head = `§f§l${partLabel(s.npc, s.bone.key, s.bone.label).toUpperCase()}§r ${mode}${s.mode === "select" ? "" : ` §7${AXES[s.axis]}`}`;
   let vals;
   if (s.mode === "select") vals = "§7look at a body part";
   else {

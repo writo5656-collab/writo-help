@@ -200,7 +200,7 @@ def main():
         d["textures"][f"custom_model{n}"] = f"textures/entity/npcstudio/models/model{n}"
         d["geometry"][f"custom_model{n}"] = f"geometry.npcstudio.custom_model{n}"
     skin = "query.property('npcstudio:skin_index')"
-    player, model = f"{skin} < {FIRST_MODEL}", f"{skin} >= {FIRST_MODEL}"
+    player, model = f"{skin} < {FIRST_MODEL}", f"{skin} >= {FIRST_MODEL} && {skin} < {FIRST_MODEL + MODELS}"  # 42+ = posable mobs (make_mobs.py)
     bright = "math.mod(math.floor(query.property('npcstudio:flags') / 2), 2)"
     prop = "math.mod(math.floor(query.property('npcstudio:flags') / 64), 2) == 0"
     out = []
