@@ -25,7 +25,7 @@ import { openRideMenu, isMounted } from "./mount.js";
 import { openMobToolMenu } from "./mobs.js";
 import { openHandbook } from "./handbook.js";
 import {
-  cloneNpc, savePreset, openSpawnMenu, openPresetsMenu, openBulkMenu, openMoveMenu, pickNpc, getLookedAtNPC, setLookAtPlayers, isLooking
+  cloneNpc, savePreset, openSpawnMenu, openPresetsMenu, openBulkMenu, openMoveMenu, pickNpc, getLookedAtNPC, setLookAtPlayers, isLooking, bringToMe, lookAtMyView
 } from "./npc.js";
 import { placeCameraAtView, openCameraPanel, flyCam, allCameras, getSelectedCamera, openLiveCamera, exitView, isViewing } from "./camera.js";
 import {
@@ -130,6 +130,11 @@ export function openStudio(player, tab) {
     // one form that stays open: every tap changes the NPC at once, no reload (liveform.js)
     m.btn("Live Editor §8(no reload)", ICON("sliders"), () => openLive(player, npc, LIVE_TAB[tab]));
     if (tab === 0) m.toggle("Baton opens Live Editor", liveFirst(player), () => (player.setDynamicProperty("npcstudio:live_first", !liveFirst(player)), self()));
+  }
+  if (npc && (tab === 0 || tab === 1) && !isProp(npc)) {
+    // the two quick ones from V2, always at the top (Display and Pose)
+    m.btn("Come To Me", ICON("spawn"), () => (bringToMe(npc, player), self()));
+    m.btn("Look Where I Look", ICON("eye"), () => (pushUndo(npc), lookAtMyView(npc, player), self()));
   }
   [displayTab, poseTab, presetsTab, worldTab, cameraTab, layersTab][tab](player, m, npc, self);
   m.show(player);

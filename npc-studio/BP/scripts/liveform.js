@@ -13,6 +13,7 @@ import * as ui from "@minecraft/server-ui";
 import { world, system, msg } from "./core.js";
 import { BONES, getRot, setRot, getPos, setPos, getScale, setScale, getAnim, setAnim, readPose, applyPose, mirrorPose, undo, redo, POS_LIMIT } from "./rig.js";
 import { undoOnce } from "./live.js";
+import { bringToMe, lookAtMyView } from "./npc.js";
 import { LOOP_ANIMS } from "./poses.js";
 import { SKIN_COUNT, MODEL_FIRST, MODEL_COUNT, MOB_FIRST, MOBS, skinPlainName, setSkin, setModel, setMob, partLabel } from "./skins.js";
 import { getCape, setCape, isBright, setBright, areOutlinesHidden, setOutlinesHidden } from "./selection.js";
@@ -100,6 +101,8 @@ export function openLiveEditor(player, npc, onClose, startTab = 0, tries = 0) {
   const scale = N(Math.round(getScale(npc) * 100));
   form.slider("Scale (%)", scale, 10, 500, { step: 5, ...D });
   watch(scale, (v) => (undoOnce(npc), setScale(npc, v / 100)));
+  form.button("Come to me", () => ok() && bringToMe(npc, player), D);
+  form.button("Look where I look", () => ok() && (undoOnce(npc), lookAtMyView(npc, player)), D);
   form.button("Look at me", () => ok() && lookAtPlayer(npc, player), D);
   form.button("Flip (turn around)", () => ok() && flip(npc), D);
 

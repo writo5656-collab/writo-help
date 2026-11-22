@@ -316,10 +316,16 @@ export function startLookLoop() {
   }, 2);
 }
 
-function lookAtMyView(npc, player) {
+/** Head turns to look the same way you look. */
+export function lookAtMyView(npc, player) {
   const r = player.getRotation();
   const bodyY = npc.getProperty("npcstudio:body_y") ?? 0;
   setRot(npc, "head", [clamp(r.x, -80, 80), clamp(wrapDeg(r.y - npc.getRotation().y - bodyY), -85, 85), 0]);
+}
+
+/** The NPC jumps to where you stand and faces the way you face. */
+export function bringToMe(npc, player) {
+  npc.teleport(player.location, { rotation: { x: 0, y: player.getRotation().y } });
 }
 
 // ---------- targeting ----------
@@ -362,10 +368,7 @@ export function openMoveMenu(player, npc, back, stepIdx = 1) {
   };
   menu(`Move: ${npcLabel(npc)}`)
     .btn(`Step: ${step} blocks §8(change)`, ICON("fov"), () => openMoveMenu(player, npc, back, (stepIdx + 1) % STEPS.length))
-    .btn("Bring To Me", ICON("spawn"), () => {
-      npc.teleport(player.location, { rotation: { x: 0, y: player.getRotation().y } });
-      self();
-    })
+    .btn("Bring To Me", ICON("spawn"), () => (bringToMe(npc, player), self()))
     .btn("Face Me", ICON("eye"), () => {
       const dx = player.location.x - npc.location.x, dz = player.location.z - npc.location.z;
       npc.setRotation({ x: 0, y: toDeg(Math.atan2(-dx, dz)) });
