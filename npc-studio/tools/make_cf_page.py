@@ -42,6 +42,7 @@ BODY = f"""
 <li><strong>World:</strong> time, weather, gamerules, world bright, depth fog</li>
 <li><strong>Layers:</strong> hide NPCs, cameras, outlines or name tags for clean shots</li>
 </ul>
+{img("npc-studio-studio.jpg", "The Studio panel in game")}
 {img("npc-studio-live.jpg", "Studio panel and Live Editor")}
 {img("npc-studio-h_cloaks.jpg", "58 Cloaks")}
 <p {C}>8 studio capes, 43 Minecraft capes and 7 slots for your own. Pick them from pictures in <strong>Display &rarr; Cloak</strong>.</p>
@@ -54,7 +55,7 @@ BODY = f"""
 {img("npc-studio-share.jpg", "Share presets as codes")}
 {img("npc-studio-h_camera.jpg", "Cameras and photo")}
 <p {C}>Place cameras, fly a camera with the joystick, preview any camera in one tap and run 30 cinematic shots. Thirds and cross guides, green screen backdrops, Photo Mode and a depth map pack for editing.</p>
-{img("npc-studio-ingame.jpg", "In game: the Studio panel and the thirds guide")}
+{img("npc-studio-camera.jpg", "Cameras in game")}
 {img("npc-studio-h_install.jpg", "Install")}
 <ol>
 <li>Download the <strong>.mcaddon</strong> file and open it. Minecraft imports all packs.</li>
