@@ -590,7 +590,7 @@ def nine(name, fill, border, size=8, slice_=2, top_line=None):
 
 def textures():
     os.makedirs(TEX, exist_ok=True)
-    nine("panel_bg", (20, 20, 21, 240), (40, 40, 42, 255))
+    nine("panel_bg", (20, 20, 21, 255), (40, 40, 42, 255))  # solid: the closing menu underneath must not show through
     nine("row", (35, 35, 37, 255), (48, 48, 51, 255))
     nine("row_hover", (44, 44, 47, 255), (70, 70, 75, 255))
     nine("row_pressed", (30, 70, 82, 255), (39, 211, 245, 255))
