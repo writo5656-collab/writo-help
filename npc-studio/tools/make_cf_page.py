@@ -15,7 +15,8 @@ ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
 DESC = os.path.join(ROOT, "curseforge", "promo", "desc")
 WEBSITE = "https://noxeelmc-art.github.io/npc-studio-skins/"
 YOUTUBE = "https://youtube.com/@NoxeelMC"
-DISCORD = "DISCORD_LINK_HERE"
+DISCORD = ""  # add your Discord invite here; empty = no Discord link
+IMG_BASE = "https://noxeelmc-art.github.io/npc-studio-skins/cf/"  # pictures uploaded to the website repo, folder cf/
 
 C = 'style="text-align: center;"'
 
@@ -28,7 +29,7 @@ def img(name, alt, width=None):
 BODY = f"""
 {img("npc-studio-banner.png", "NPC Studio Bedrock banner")}
 <p {C}><strong>Pose, dress and film NPCs like a real studio.</strong><br />Cameras, 58 capes, custom skins and 3D models, a live editor and shareable presets. Made for phones and PC.</p>
-<p {C}><a href="{WEBSITE}"><strong>Pack Builder website</strong></a> &nbsp;|&nbsp; <a href="{YOUTUBE}"><strong>YouTube</strong></a> &nbsp;|&nbsp; <a href="{DISCORD}"><strong>Discord</strong></a></p>
+<p {C}><a href="{WEBSITE}"><strong>Pack Builder website</strong></a> &nbsp;|&nbsp; <a href="{YOUTUBE}"><strong>YouTube</strong></a>{f' &nbsp;|&nbsp; <a href="{DISCORD}"><strong>Discord</strong></a>' if DISCORD else ''}</p>
 <p {C}><em>Minecraft Bedrock 26.30+ &middot; no experimental toggles &middot; phone and PC</em></p>
 <hr />
 {img("npc-studio-cover.jpg", "NPC Studio overview")}
@@ -68,7 +69,7 @@ BODY = f"""
 <p><strong>Do I need experiments?</strong> No. NPC Studio uses only the stable script API.</p>
 <p><strong>Does it work on phone?</strong> Yes. Everything is built for touch first, and tested on Android.</p>
 <p><strong>Can I use my own skins?</strong> Yes: 20 custom skin slots, 7 cape slots and 10 3D model slots, filled with the Pack Builder website.</p>
-<p><strong>Found a bug or have an idea?</strong> Tell us on <a href="{DISCORD}">Discord</a> or in the comments. This is a beta: your feedback decides what comes next.</p>
+<p><strong>Found a bug or have an idea?</strong> Tell us in the comments{f' or on <a href="{DISCORD}">Discord</a>' if DISCORD else ''}. Your feedback decides what comes next.</p>
 <hr />
 <p {C}><em>Inspired by the NPC Studio mod for Minecraft Java Edition. Made for Bedrock by NoxeelMC. Not affiliated with Mojang or Microsoft.</em></p>
 """.strip()
@@ -146,7 +147,7 @@ body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.6 "Inte
 
 def main():
     with open(os.path.join(ROOT, "curseforge", "DESCRIPTION.html"), "w", encoding="utf-8") as f:
-        f.write(BODY + "\n")
+        f.write(BODY.replace("IMG/", IMG_BASE) + "\n")
     body = BODY
     for name in sorted(os.listdir(DESC)):
         body = body.replace(f"IMG/{name}", uri(name))

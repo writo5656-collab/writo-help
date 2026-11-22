@@ -38,3 +38,10 @@ for skin in ("knight", "soldier", "assassin", "scientist", "mercenary", "alex", 
 for cape in ("cape1", "cape2", "cape3", "java/minecon_2011_minecon", "java/pink_cherry_blossom"):
     Image.open(os.path.join(TEX, "capes", cape + ".png")).save(os.path.join(IMG, "capes", cape + ".png"))
 print("pictures in site/img")
+
+# CurseForge description pictures: the description loads them from <website>/cf/ (tools/make_cf_page.py IMG_BASE)
+import shutil
+CF = os.path.join(HERE, "site", "cf")
+shutil.rmtree(CF, ignore_errors=True)
+shutil.copytree(DESC, CF)
+print("CurseForge pictures in site/cf:", len(os.listdir(CF)))
