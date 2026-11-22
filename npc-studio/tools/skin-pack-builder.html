@@ -1,43 +1,32 @@
-<title>NPC Studio Pack Builder</title>
+<title>NPC Studio Bedrock</title>
+<meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@500;700&family=Manrope:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:ital,wght@0,700;0,800;1,800;1,900&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
 <style>
-/* Layout: a film-set "stage" (live 3D preview of the selected skin) beside a contact sheet of 20 numbered slots; a sticky slate bar builds the pack. */
+/* Layout: NPC Studio home page. Hero banner, feature showcase, then the Pack Builder studio (live 3D stage beside a contact sheet of slots), preset gallery, install guide. One royal-blue look, like the CurseForge art. */
 :root {
-  --bg: #eef2f6;
-  --panel: #ffffff;
-  --panel-2: #f5f8fb;
-  --ink: #111a26;
-  --muted: #5a6778;
-  --line: #d6dde6;
-  --accent: #0b8ea8;
-  --accent-ink: #ffffff;
-  --rec: #d9480f;
-  --good: #1e7a46;
-  --bad: #b3261e;
-  --stage-top: #dfe8f1;
-  --stage-bottom: #c5d3e1;
-  --display: "Pixelify Sans", "Courier New", monospace;
-  --body: "Manrope", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --bg: #0a1446;
+  --panel: #111d5e;
+  --panel-2: #0c1752;
+  --ink: #ffffff;
+  --muted: #b8c5ff;
+  --line: #27388a;
+  --accent: #5ad8ff;
+  --accent-ink: #061040;
+  --rec: #b49cff;
+  --good: #6ee7a8;
+  --bad: #ff98a4;
+  --stage-top: #3157e0;
+  --stage-bottom: #14247a;
+  --display: "Inter Tight", "Inter", system-ui, sans-serif;
+  --body: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
   --mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
-}
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --bg: #0c121c; --panel: #131c29; --panel-2: #0f1722; --ink: #e8eef5; --muted: #8e9bab; --line: #243244;
-    --accent: #3fd0e8; --accent-ink: #06222a; --rec: #ff8a4c; --good: #5fd08c; --bad: #ff8a80;
-    --stage-top: #1b2a3d; --stage-bottom: #0e1623;
-    color-scheme: dark;
-  }
-}
-:root[data-theme="dark"] {
-  --bg: #0c121c; --panel: #131c29; --panel-2: #0f1722; --ink: #e8eef5; --muted: #8e9bab; --line: #243244;
-  --accent: #3fd0e8; --accent-ink: #06222a; --rec: #ff8a4c; --good: #5fd08c; --bad: #ff8a80;
-  --stage-top: #1b2a3d; --stage-bottom: #0e1623;
   color-scheme: dark;
 }
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
-body { background: var(--bg); color: var(--ink); font: 15px/1.55 var(--body); margin: 0; padding: 20px 16px 130px; }
+body { background: var(--bg) radial-gradient(1200px 700px at 75% -10%, #2a4bd0 0%, transparent 60%) no-repeat; color: var(--ink); font: 15px/1.55 var(--body); margin: 0; padding-block: 20px 130px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+body::after { content: ""; position: fixed; inset: 0; pointer-events: none; background-image: linear-gradient(rgba(255,255,255,.035) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.035) 1px, transparent 1px); background-size: 64px 64px; z-index: -1; }
 .wrap { max-width: 1120px; margin: 0 auto; display: grid; gap: 20px; }
 
 header { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 12px 24px; }
@@ -45,7 +34,7 @@ header { display: flex; flex-wrap: wrap; align-items: end; justify-content: spac
 .eyebrow { font: 600 12px var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--accent); display: flex; align-items: center; gap: 8px; }
 .rec-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--rec); box-shadow: 0 0 0 3px color-mix(in srgb, var(--rec) 25%, transparent); }
 @media (prefers-reduced-motion: no-preference) { .rec-dot { animation: blink 1.6s steps(2, jump-none) infinite; } @keyframes blink { 50% { opacity: .25; } } }
-h1 { font: 700 clamp(30px, 6vw, 52px)/1 var(--display); margin: 0; letter-spacing: .01em; text-wrap: balance; }
+h1 { font: italic 900 clamp(30px, 6vw, 52px)/1 var(--display); margin: 0; letter-spacing: -.02em; text-transform: uppercase; text-wrap: balance; }
 .lede { color: var(--muted); max-width: 60ch; margin: 0; }
 .steps { display: flex; flex-wrap: wrap; gap: 8px; list-style: none; margin: 0; padding: 0; }
 .steps li { font: 600 12px var(--mono); padding: 6px 10px; border: 1px solid var(--line); border-radius: 999px; color: var(--muted); background: var(--panel); }
@@ -117,6 +106,8 @@ code { font: 13px var(--mono); background: var(--panel-2); border: 1px solid var
 .links { display: flex; flex-wrap: wrap; gap: 8px; }
 .pill { display: inline-flex; align-items: center; gap: 8px; font: 700 13px var(--body); text-decoration: none; padding: 8px 14px; border-radius: 999px; color: #fff; border: 0; }
 .pill svg { width: 16px; height: 16px; fill: currentColor; flex: none; }
+.pill.nav { background: transparent; color: var(--muted); padding: 8px 10px; }
+.pill.nav:hover { color: var(--ink); }
 .pill.discord { background: #5865f2; }
 .pill.curse { background: #f16436; }
 .pill.yt { background: #e62117; }
@@ -124,7 +115,7 @@ code { font: 13px var(--mono); background: var(--panel-2); border: 1px solid var
 .pill:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 /* changelog */
-.section-title { font: 700 clamp(22px, 3.4vw, 30px) var(--display); margin: 0; text-wrap: balance; }
+.section-title { font: italic 900 clamp(30px, 5vw, 56px)/1 var(--display); margin: 0; letter-spacing: -.025em; text-transform: uppercase; text-wrap: balance; }
 .log { display: grid; gap: 14px; }
 .release { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 18px; display: grid; gap: 12px; }
 .release header { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: flex-start; gap: 8px 12px; }
@@ -163,30 +154,90 @@ footer.site a { color: var(--accent); }
 .plist li span { overflow-wrap: anywhere; min-width: 0; }
 .plist li small { font: 600 11px var(--mono); color: var(--muted); flex: none; }
 .plist li.bad small { color: var(--bad); }
+
+/* ---------- home page ---------- */
+.hero { display: grid; gap: 18px; }
+.hero img.banner { width: 100%; height: auto; display: block; filter: drop-shadow(0 30px 60px rgba(0, 0, 0, .45)); }
+.hero .cta { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: center; }
+.btn.big { font: italic 900 20px var(--display); letter-spacing: .01em; padding: 16px 28px; border-radius: 12px; text-transform: uppercase; text-decoration: none; display: inline-flex; align-items: center; gap: 10px; }
+.btn.alt { background: transparent; color: var(--ink); border: 2px solid var(--line); }
+.btn[aria-disabled="true"] { opacity: .55; }
+.hero .facts { display: flex; flex-wrap: wrap; gap: 8px 18px; justify-content: center; color: var(--muted); font: 600 14px var(--body); }
+.hero .facts b { color: var(--ink); }
+.sec-head { display: grid; gap: 8px; }
+.sec-head .kicker { font: 700 13px var(--mono); letter-spacing: .16em; text-transform: uppercase; color: var(--accent); }
+.sec-head p { color: var(--muted); margin: 0; max-width: 62ch; }
+.show { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+@media (max-width: 760px) { .show { grid-template-columns: 1fr; } }
+.show figure { margin: 0; border-radius: 14px; overflow: hidden; border: 1px solid var(--line); background: var(--panel); }
+.show img { width: 100%; height: auto; display: block; }
+.show figcaption { padding: 10px 14px; color: var(--muted); font-size: 14px; }
+.gallery { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+@media (max-width: 860px) { .gallery { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.bar { transition: transform .25s ease; }
+.bar.away { transform: translateY(110%); }
+@media (prefers-reduced-motion: reduce) { .bar { transition: none; } }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; display: grid; }
+.card .pic { aspect-ratio: 1; max-width: 100%; background: linear-gradient(var(--stage-top), var(--stage-bottom)); display: grid; place-items: center; }
+.card .pic img { width: 100%; height: 100%; object-fit: contain; }
+.card .body { padding: 12px 14px 14px; display: grid; gap: 8px; }
+.card h3 { margin: 0; font: italic 900 20px/1.1 var(--display); text-transform: uppercase; letter-spacing: -.01em; }
+.card .sub { color: var(--muted); font-size: 13px; margin: 0; }
+.card .acts { display: flex; gap: 8px; flex-wrap: wrap; }
+.card .acts .btn { font: 700 13px var(--body); padding: 8px 12px; text-transform: none; font-style: normal; }
+.install { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; counter-reset: st; }
+@media (max-width: 760px) { .install { grid-template-columns: 1fr; } }
+.install li { list-style: none; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 18px; display: grid; gap: 6px; }
+.install li::before { counter-increment: st; content: "0" counter(st); font: italic 900 44px/1 var(--display); color: var(--accent); }
+.install b { font: 700 17px var(--body); }
+.install span { color: var(--muted); font-size: 14px; }
+.install-wrap { margin: 0; padding: 0; }
 </style>
 
 <div class="wrap" id="top">
   <nav class="topbar" aria-label="NoxeelMC links">
-    <a class="logo" href="#top"><img src="data:image/png;base64,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" alt="" width="28" height="28">NoxeelMC</a>
+    <a class="logo" href="#top"><img src="data:image/png;base64,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" alt="" width="28" height="28">NPC Studio</a>
     <div class="links">
+      <a class="pill nav" href="#showcase">Features</a><a class="pill nav" href="#builder">Pack Builder</a><a class="pill nav" href="#gallery">Presets</a><a class="pill nav" href="#install">Install</a>
       <a class="pill discord" id="lnkDiscord" href="#" target="_blank" rel="noopener" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.3 4.4A19.8 19.8 0 0 0 15.4 3l-.6 1.2a18.3 18.3 0 0 0-5.6 0L8.6 3a19.7 19.7 0 0 0-4.9 1.4C.6 9 .0 13.5.3 18a19.9 19.9 0 0 0 6 3l1.3-2.1a12.9 12.9 0 0 1-2-1l.5-.4a14.2 14.2 0 0 0 12 0l.5.4c-.6.4-1.3.7-2 1L18 21a19.8 19.8 0 0 0 6-3c.4-5.2-.8-9.7-3.7-13.6ZM8.5 15.3c-1.2 0-2.1-1.1-2.1-2.4s.9-2.4 2.1-2.4 2.2 1.1 2.1 2.4c0 1.3-.9 2.4-2.1 2.4Zm7 0c-1.2 0-2.1-1.1-2.1-2.4s.9-2.4 2.1-2.4 2.2 1.1 2.1 2.4c0 1.3-.9 2.4-2.1 2.4Z"/></svg>Discord</a>
       <a class="pill curse" id="lnkCurse" href="#" target="_blank" rel="noopener" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7h6.5L8 5h9l-1 2h5l-1.6 3.4c-1 2-2.9 3.3-5.1 3.5l-1.1 2.1H15l1 3H8l1-3h1.8L9.6 14C6 13.7 3.5 10.8 3 7Z"/></svg>CurseForge</a>
       <a class="pill yt" id="lnkYt" href="#" target="_blank" rel="noopener" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M23.5 6.2a3 3 0 0 0-2.1-2.1C19.5 3.6 12 3.6 12 3.6s-7.5 0-9.4.5A3 3 0 0 0 .5 6.2 31 31 0 0 0 0 12a31 31 0 0 0 .5 5.8 3 3 0 0 0 2.1 2.1c1.9.5 9.4.5 9.4.5s7.5 0 9.4-.5a3 3 0 0 0 2.1-2.1A31 31 0 0 0 24 12a31 31 0 0 0-.5-5.8ZM9.6 15.6V8.4l6.2 3.6-6.2 3.6Z"/></svg>YouTube</a>
     </div>
   </nav>
-  <header>
-    <div class="brand">
-      <span class="eyebrow"><span class="rec-dot" aria-hidden="true"></span>NPC Studio V3 · resource pack tool</span>
-      <h1>Pack Builder</h1>
-      <p class="lede">Put your own skins, capes and 3D models on NPC Studio NPCs, and turn shared presets into a pack. Grab a skin by player name or drop in PNGs, check them on the live model, name them, and download one small pack. Your files stay in your browser.</p>
+  <section class="hero" aria-label="NPC Studio Bedrock">
+    <img class="banner" src="img/banner.png" alt="NPC Studio, Bedrock Edition: direct every scene" width="2000" height="660">
+    <div class="cta">
+      <a class="btn big" id="dlBtn" href="#install">Download on CurseForge</a>
+      <a class="btn big alt" href="#builder">Open the Pack Builder</a>
     </div>
+    <div class="facts"><span><b>Minecraft Bedrock</b> 26.30+</span><span><b>No</b> experiments</span><span><b>Phone</b> and PC</span><span><b>58</b> capes</span><span><b>45+</b> poses</span></div>
+  </section>
+
+  <section class="sec-head" id="showcase" aria-labelledby="showTitle">
+    <span class="kicker">What it does</span>
+    <h2 class="section-title" id="showTitle">Pose, dress and film NPCs</h2>
+    <p>A studio panel on the left, your NPC on the right. Every tap changes the scene while you watch.</p>
+  </section>
+  <div class="show">
+    <figure><img src="img/studio.jpg" alt="The Studio panel in game" loading="lazy"><figcaption>The Studio panel, in game on v4.26</figcaption></figure>
+    <figure><img src="img/pose.jpg" alt="Pose Mode gizmo" loading="lazy"><figcaption>Pose Mode with a Blender-style gizmo</figcaption></figure>
+    <figure><img src="img/camera.jpg" alt="Cameras in game" loading="lazy"><figcaption>Pyramid cameras that show the real shot</figcaption></figure>
+    <figure><img src="img/capes.jpg" alt="58 capes" loading="lazy"><figcaption>58 capes, picked from pictures</figcaption></figure>
+    <figure><img src="img/live.jpg" alt="Live Editor" loading="lazy"><figcaption>Live Editor: one tap, one change</figcaption></figure>
+    <figure><img src="img/share.jpg" alt="Share presets as codes" loading="lazy"><figcaption>Send an NPC to a friend as a code</figcaption></figure>
+  </div>
+
+  <section class="sec-head" id="builder" aria-labelledby="builderTitle">
+    <span class="kicker">Pack Builder · free · in your browser</span>
+    <h2 class="section-title" id="builderTitle">Your skins, capes &amp; models</h2>
+    <p>Grab a skin by player name or drop in PNGs, add capes and Blockbench models, check them on the live model and download one small pack. Your files stay on your device.</p>
     <ol class="steps" aria-label="How it works">
       <li><b>1</b> Add skins, capes, models or presets</li>
       <li><b>2</b> Name them</li>
       <li><b>3</b> Download pack</li>
       <li><b>4</b> Activate above NPC Studio</li>
     </ol>
-  </header>
+  </section>
 
   <div class="studio">
     <section class="stage" aria-label="Live preview">
@@ -280,10 +331,36 @@ footer.site a { color: var(--accent); }
     <div class="row"><button class="btn" id="presetBuild" type="button" disabled>Download preset pack</button><span class="status" id="presetStatus"></span></div>
     <p class="note">Activate the preset pack in your world's <b>Behavior Packs</b> (any order). In game: <b>Presets → From Preset Packs</b>.</p>
   </section>
+
+  <section class="sec-head" id="gallery" aria-labelledby="galTitle">
+    <span class="kicker">Preset gallery</span>
+    <h2 class="section-title" id="galTitle">Ready-made NPCs</h2>
+    <p>Copy a code, then in game open <b>Presets → Import Code</b> and paste it. Or add any of them to the preset pack above.</p>
+  </section>
+  <div class="gallery" id="galleryGrid"></div>
+
+  <section class="sec-head" id="install" aria-labelledby="instTitle">
+    <span class="kicker">Install</span>
+    <h2 class="section-title" id="instTitle">Three steps</h2>
+  </section>
+  <ol class="install install-wrap">
+    <li><b>Download and open</b><span>Download the .mcaddon from CurseForge and open it. Minecraft imports every pack.</span></li>
+    <li><b>Turn it on in a world</b><span>Create a world and activate NPC Studio in Behavior Packs. The resource pack comes with it.</span></li>
+    <li><b>Grab the Baton</b><span>Use the Director's Baton from your hotbar: tap an NPC to edit it, or open the panel to spawn one.</span></li>
+  </ol>
   <section class="log" aria-labelledby="whatsnew">
     <h2 class="section-title" id="whatsnew">What's new in NPC Studio V3</h2>
     <article class="release">
-      <header><span class="ver">V3.4</span><h3>Your own capes and models</h3><span class="when">latest</span></header>
+      <header><span class="ver">V3.6</span><h3>Live Editor and shared presets</h3><span class="when">latest</span></header>
+      <ul class="features">
+        <li><b><span class="tag new">new</span>Live Editor</b><span>One screen that stays open: every toggle, slider and list changes the NPC at once.</span></li>
+        <li><b><span class="tag new">new</span>Share presets</b><span>Share Code and Import Code on any device, preset packs, .mcstructure files for PC.</span></li>
+        <li><b><span class="tag new">new</span>43 Minecraft capes</b><span>Display → Cloak is a picker with cape pictures.</span></li>
+        <li><b><span class="tag fix">fixed</span>Vanishing NPCs</b><span>Posed, lying or scaled NPCs no longer lose parts at some camera angles.</span></li>
+      </ul>
+    </article>
+    <article class="release">
+      <header><span class="ver old">V3.4</span><h3>Your own capes and models</h3><span class="when">earlier</span></header>
       <ul class="features">
         <li><b><span class="tag new">new</span>Skins by player name</b><span>Type a Java name (or a Bedrock gamertag seen through Geyser) and the skin lands in a slot.</span></li>
         <li><b><span class="tag new">new</span>7 custom capes</b><span>Java and OptiFine cape PNGs, or a Java player's cape by name. Display → Cloak.</span></li>
@@ -360,6 +437,9 @@ const LINKS = {
   curseforge: "",                               // e.g. "https://www.curseforge.com/minecraft-bedrock/addons/npc-studio"
   youtube: "https://youtube.com/@NoxeelMC"
 };
+{ const dl = document.getElementById("dlBtn");
+  if (LINKS.curseforge) { dl.href = LINKS.curseforge; dl.target = "_blank"; dl.rel = "noopener"; }
+  else { dl.textContent = "Coming soon to CurseForge"; dl.setAttribute("aria-disabled", "true"); } }
 [["lnkDiscord", LINKS.discord], ["lnkCurse", LINKS.curseforge], ["lnkYt", LINKS.youtube]].forEach(([id, url]) => {
   const a = document.getElementById(id);
   if (url) { a.href = url; a.hidden = false; }
@@ -1113,7 +1193,79 @@ $("presetBuild").addEventListener("click", async () => {
   btn.disabled = false;
 });
 
+// ---------- preset gallery: 3D pictures drawn from each preset's own pose, skin and cape ----------
+const GALLERY = [{"title": "Knight Captain", "pose": "Sword Strike", "skin": "knight", "cape": "capes/cape2", "slim": false, "code": "NPCS1-PYiOwiHQzFgiOZrNJuJJuMhlPEDG0GOZsNJtgZmMJsOZlgxwN8cgcANBlMJkkQiOUDLYwFgyGosGBdPsGMRvMh5lEqHRbGMtFsvmMzgxyNJnNB0L5hOUXHUAnZbFoxGs_n0umU0ERsMpmpNLptPlYtGctqo1ocpo1IL9bM86sVBstorddthlt1OlMrGVloVZORvN50kR9rJzMcaMsDGAuHIzG8wERhN0WxcGNxhNplKhhvAiJeUo50EBDMJwOhhhQigxlOJ1NJwlBIksnvJp2oiPxuMp0klFOhlL8kNmawdZJupNxoye1gG3ge53e9Mu_4JzO5vOUn1huMZolZbg_LORw3ZzOers8zrOIOGKHQymtF0UYjUcg2DHWf0NI0mmahqh9"}, {"title": "Victory Soldier", "pose": "Victory", "skin": "soldier", "cape": "capes/java/minecon_2011_minecon", "slim": false, "code": "NPCS1-PYiOwiHQzFgiOZrNJuJJuMhlPEDGsGOZsNJtgZmMJsOZlgxwN8cgcANBlMJkkQiOUDLYtGIwFkvGBdPsGMRvMh5kU0lJpM5oOhfMJyi46gEqHUsGI1mIsGUynZsMpmoFColGlctpcwFgtp0zgxyns_L9RM86g1RqdkMtmos7ORvN50nU7OZjjRlgYwFw5GY3iQiMJui16gxuMJtMpUMNtERWNJjOhvOR5EBTN5sMhpMsqgxlOJ1NJws4iu5wvI6GI2mthn1zHUZjcdEWvx2QyWUy2YzWcER9"}, {"title": "The Archer", "pose": "Bow Aim", "skin": "assassin", "cape": null, "slim": false, "code": "NPCS1-PYiOwiHQzFgiOZrNJuJJuMhlPEDHEGOZsNJtgZmMJsOZlgxwN8cgcANBlMJkkQiOUDLYwFgtGUtGBdPsGMRvMh5lEqHUsFkwFkymkpNJnNB0L5hOUXHUAnZbFo5lotGI1oEzgxsMpmo9JpdNldQlozqtBgxyolGL9ZM8ioVZrdqMtsplCORvN50ttCOZjjRlgYwFw5GY3qoiMJui2AgxuMJtMpUMNzERUkggIJyMcklUGMpxOppOEoJphhRoxEnpgiNOpER-mx3ER9oV9OF_HUtERis9FvI6jMbjoi32Uy2YzRllR9"}, {"title": "Lab Genius", "pose": "Thinking", "skin": "scientist", "cape": null, "slim": false, "code": "NPCS1-PYiOwiHQzFgiOZrNJuJJuMhlPEDGIxgxzNhpNsDMxhNhzMsGOBvjsDgBoMphMkjERygZbGIwFkvGpdPsGMRvMh5kc0lRpM5oOhfMJyjA6gErHRbFoxGUvGY1mEzgxsMpmoFColGlgtGlPFozl4wqM8n1AqZnnVSqllMtnos7ORvN50nU7OZjjZlgYwFw5GY3p4iMJui96gxuMJtMpUMNtERMMJiEBHMuDOpzEUGMpxOppOFoEV3OF5HUvERiOU9n8Zjcdg1zHWOyGSyhpywiPo"}, {"title": "Mercenary Boss", "pose": "Hands on Hips", "skin": "mercenary", "cape": "capes/cape3", "slim": false, "code": "NPCS1-PYiOwiHQzFgiOZrNJuJJuMhlPEDGIwgxzNhpNsDMxhNhzMsGOBvjsDgBoMphMkjPsGMRvMh5lMGORpM5oOhfMJyjA6gBygZbFoyiYtGcTohdlQiNhlM02nE6nk-oFFoVGpEymk2pRnmFJpdZMtbndWN5vOkppBzMcbMsDGAuHIzG41gxhN0XtsGNxhNplKhhsIiJplORjMt6OR5EBCkJzEUGMpxOppOFctRwtkEldXmsZjcdg1mHWBweFw-JxZzxp9"}, {"title": "Cherry Wave", "pose": "Wave", "skin": "alex", "cape": "capes/java/pink_cherry_blossom", "slim": true, "code": "NPCS1-PYiOwiHQzFgiOZrNJuJJuMhlPEDGMGOZsNJtgZ0OR1MsGOBvOZlgcANBlMJkkQiOUDLYwFgtGMtGBdPsGMRvMh5kU0lJpM5oOhfMJyi46gEqHRbl42mIsGQ1mcGNhlM1AoVEPc7OU9n5fqRnnVRqdAr1glJvN50nU7OZjMNSgYwFw5GY3GsGMJui1wgxuMJtMpUMNfHQiIckORyPIgK5hO0hgxlOJ1NJwsttOEhHQyG01rU-tI6M1ukEG0GFw-JxeNkJ9"}, {"title": "Warden Walker", "pose": "Zombie", "skin": "warden", "cape": null, "slim": false, "code": "NPCS1-PYiOwiHQzFgiOZrNJuJJuMhlPEDGkGOZsNJtgZmMJsOZlgxwN8cgcANBlMJkkR9gxiN5kPMogxyNJnNB0L5hOUXHUAOUDLYtHIwFlBGBdlIiNhlM01m85nc9n9DoVFmEymhfpBnl9HpM1rFaORvN50lFGOZjjRlgYwFw5GY3GsGMJui1qgxuMJtMpUMNZHQiK83hxuEGANhrMs8gxlOJ1NJwrVnOFpHVBERimMzsY6jMbjoizV_wJlweFw88Po"}, {"title": "Dab Steve", "pose": "Dab", "skin": "steve", "cape": "capes/cape1", "slim": false, "code": "NPCS1-PYiOwiHQzFgiOZrNJuJJuMhlPEDGEGOZsNJtgZmMJsOZlgxwN8cgcANBlMJkkQiOUDLYziQ0iQwLp9gxiN5kPMimcpNJnNB0L5hOUXHUAlQ6LYtGIzGosiQ3mM6NhlM0_oNDosrpIxiQtGswmUGOU8nxfqRnnMGqVUspls9EnRyN5vOk5nRzMcaMsRFw5GY3pgiMJui0RgxuMJtMpUMNuEREMJiEBTOhlO16gxlOJ1NJwtAivBwvQ6GM0sU9ug6jMbjoi1GOyGSymWER9"}];
+function posedPlayer(skinImg, capeImg, pose, slimArms) {
+  const g = new THREE.Group(), body = new THREE.Group(); g.add(body);
+  const t = canvasTexture(skinImg, 64, 64);
+  const R = (v) => [((v && v[0]) || 0) * D, -((v && v[1]) || 0) * D, -((v && v[2]) || 0) * D]; // Bedrock -> this rig
+  const part = (w, h, d, uv, ov, x, y, pivotY, rot) => {
+    const pv = new THREE.Group(); pv.position.set(x, pivotY, 0);
+    const a = boxMesh(t, w, h, d, uv[0], uv[1]), b = boxMesh(t, w, h, d, ov[0], ov[1], true);
+    a.position.y = b.position.y = y - pivotY; pv.add(a, b); pv.rotation.set(...R(rot), "ZYX"); body.add(pv); return pv;
+  };
+  const aw = slimArms ? 3 : 4, ax = slimArms ? 5.5 : 6, P = (k) => pose?.[k]?.r;
+  const torso = part(8, 12, 4, [16, 16], [16, 32], 0, 18, 12, P("body"));
+  const attach = (pv) => { body.remove(pv); torso.add(pv); pv.position.y -= 12; };
+  attach(part(8, 8, 8, [0, 0], [32, 0], 0, 28, 24, P("head")));
+  attach(part(aw, 12, 4, [40, 16], [40, 32], -ax, 18, 22, P("right_arm")));
+  attach(part(aw, 12, 4, [32, 48], [48, 48], ax, 18, 22, P("left_arm")));
+  part(4, 12, 4, [0, 16], [0, 32], -2, 6, 12, P("right_leg"));
+  part(4, 12, 4, [16, 48], [0, 48], 2, 6, 12, P("left_leg"));
+  if (capeImg) {
+    const ct = canvasTexture(capeImg, 64, 32);
+    const geo = new THREE.BoxGeometry(10, 16, 1);
+    setFaceUVs(geo, [[11, 1, 1, 16], [0, 1, 1, 16], [1, 0, 10, 1], [11, 0, 10, 1], [12, 1, 10, 16], [1, 1, 10, 16]], 64, 32);
+    const m = new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ map: ct }));
+    const pv = new THREE.Group(); pv.position.set(0, 12, -2.2); pv.rotation.x = 0.16; m.position.set(0, -8, -0.5); pv.add(m); torso.add(pv);
+  }
+  const root = pose?.root?.r; if (root) g.rotation.set(...R(root), "ZYX");
+  return g;
+}
+const loadImg = (src) => new Promise((ok, no) => { const i = new Image(); i.onload = () => ok(i); i.onerror = no; i.src = src; });
+let galRenderer = null;
+async function galleryPicture(item) {
+  if (!galRenderer) galRenderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
+  galRenderer.setSize(360, 360, false);
+  const sc = new THREE.Scene(); sc.add(lights());
+  const saved = textures; textures = [];
+  const skinImg = await loadImg(`img/skins/${item.skin}.png`);
+  const capeImg = item.cape ? await loadImg(`img/${item.cape}.png`) : null;
+  const decoded = codeToPreset(item.code).data;
+  const npc = posedPlayer(skinImg, capeImg, decoded.pose, item.slim);
+  npc.rotation.y += -0.45; sc.add(npc);
+  const cam = new THREE.PerspectiveCamera(30, 1, 1, 1000); cam.position.set(0, 20, 84); cam.lookAt(0, 16, 0);
+  galRenderer.render(sc, cam);
+  const url = galRenderer.domElement.toDataURL("image/png");
+  sc.traverse((o) => { if (o.geometry) o.geometry.dispose(); });
+  textures.forEach((x) => x.dispose()); textures = saved;
+  return url;
+}
+async function renderGallery() {
+  const grid = $("galleryGrid");
+  for (const item of GALLERY) {
+    const card = document.createElement("article"); card.className = "card";
+    card.innerHTML = `<div class="pic"></div><div class="body"><h3></h3><p class="sub"></p><div class="acts"><button class="btn" type="button">Copy code</button><button class="btn alt" type="button">Add to preset pack</button></div></div>`;
+    card.querySelector("h3").textContent = item.title;
+    card.querySelector(".sub").textContent = `${item.pose} · ${item.code.length} characters`;
+    const [copy, add] = card.querySelectorAll("button");
+    copy.onclick = async () => {
+      try { await navigator.clipboard.writeText(item.code); copy.textContent = "Copied!"; }
+      catch { const ta = $("codes"); ta.value = item.code; ta.focus(); ta.select(); copy.textContent = "Selected below"; }
+      setTimeout(() => (copy.textContent = "Copy code"), 2000);
+    };
+    add.onclick = () => { const ta = $("codes"); if (!ta.value.includes(item.code)) ta.value = (ta.value.trim() + "\n" + item.code).trim(); renderPresets(); add.textContent = "Added"; };
+    grid.append(card);
+    galleryPicture(item).then((url) => { const im = new Image(); im.alt = item.title; im.src = url; card.querySelector(".pic").append(im); }).catch(() => {});
+  }
+}
+
 // start
-const startWhenReady = () => { refresh(); resize(); requestAnimationFrame(frame); };
+const startWhenReady = () => { refresh(); resize(); requestAnimationFrame(frame); renderGallery(); };
+// the "Download pack" bar only shows while the Pack Builder is on screen
+{ const bar = document.querySelector(".bar"); bar.classList.add("away");
+  const seen = new Set();
+  const io = new IntersectionObserver((es) => { es.forEach((e) => (e.isIntersecting ? seen.add(e.target) : seen.delete(e.target))); bar.classList.toggle("away", seen.size === 0); });
+  ["builder", "grid"].forEach((id) => io.observe($(id))); io.observe(document.querySelector(".studio")); }
 if (STEVE.complete) startWhenReady(); else STEVE.onload = startWhenReady;
 </script>
