@@ -1,3 +1,11 @@
+## NPC Studio V3.6: share presets, Live Editor, 43 capes
+
+- Live Editor: one screen that stays open; every toggle, slider and list changes the NPC at once (no reload)
+- Panel screens build about a third faster (24 rows instead of 36; long lists page)
+- Share presets: Share Code / Import Code on any device, preset packs from the Pack Builder website, .mcstructure files for exact PC copies
+- 43 Minecraft capes; Display > Cloak is now a picker with cape pictures
+- Fixed: NPCs, outlines and capes vanishing at some camera angles when posed, lying down or scaled (bigger view box on every NPC model)
+
 ## NPC Studio V3.5: your own capes and 3D models
 
 - Empty custom skin slots now show Steve (with the slot number on the head) instead of the coloured placeholder skins

@@ -18,6 +18,8 @@ import { openRideMenu, isMounted } from "./mount.js";
 import { openHandbook } from "./handbook.js";
 import { openCameraToolMenu, flyCam } from "./camera.js";
 import { openStudio, openStudioFor } from "./panel.js";
+import { presetToCode, codeToPreset, packPresets, callPresetPacks, packStructures } from "./share.js";
+import { getCape, setCape, isBright, setBright } from "./selection.js";
 
 // ---------- spawning ----------
 function initNpc(npc, skin, rot, name) {
@@ -110,7 +112,9 @@ export function savePreset(player, npc, name) {
     scale: getScale(npc),
     anim: getAnim(npc),
     nameTag: npc.nameTag,
-    equip: readAllEquip(npc)
+    equip: readAllEquip(npc),
+    cape: getCape(npc),
+    bright: isBright(npc)
   };
   let exact = false;
   try {
@@ -126,7 +130,11 @@ export function savePreset(player, npc, name) {
 
 export function applyPreset(npc, name) {
   const d = getJson(world, PRESET_PREFIX + name, undefined);
-  if (!d) return false;
+  return d ? applyPresetData(npc, d) : false;
+}
+
+/** Apply preset data (saved here, from a share code or from a preset pack). */
+export function applyPresetData(npc, d) {
   npc.setProperty("npcstudio:skin_index", d.skinIndex ?? 0);
   if (d.slim !== undefined) npc.setProperty("npcstudio:slim", !!d.slim);
   applyPose(npc, d.pose ?? {});
@@ -135,7 +143,96 @@ export function applyPreset(npc, name) {
   if (d.nameTag) npc.nameTag = d.nameTag;
   const eq = d.equip ?? Object.fromEntries(Object.entries(d.equipment ?? {}).map(([k, v]) => [k, v ? { id: v } : null]));
   for (const { key } of SLOTS) applyEquipInfo(npc, key, eq[key]);
+  if (d.cape !== undefined) setCape(npc, d.cape);
+  if (d.bright !== undefined) setBright(npc, !!d.bright);
   return true;
+}
+
+// ---------- sharing ----------
+function spawnFromData(player, d) {
+  const rot = player.getRotation();
+  const f = forward(rot.y);
+  const npc = player.dimension.spawnEntity(NPC_ID, { x: player.location.x + f.x * 2, y: player.location.y, z: player.location.z + f.z * 2 });
+  npc.setRotation({ x: 0, y: rot.y + 180 });
+  applyPresetData(npc, d);
+  return npc;
+}
+function shareCode(player, name, back) {
+  const d = getJson(world, PRESET_PREFIX + name, undefined);
+  if (!d) return back();
+  const code = presetToCode(name, d);
+  modal(`Share "${name}"`)
+    .text("code", `§7Select all the text in the box and copy it (${code.length} characters). Others paste it in §bPresets > Import Code§7.`, code, code)
+    .submit("Done")
+    .show(player, () => back(), back);
+}
+function importCode(player, back) {
+  modal("Import Code")
+    .text("code", "Paste an NPC Studio code (starts with NPCS1-)", "NPCS1-...")
+    .text("name", "Save as (empty = the code's own name)", "")
+    .submit("Import")
+    .show(player, (v) => {
+      try {
+        const p = codeToPreset(v.code);
+        let name = String(v.name ?? "").trim() || p.title;
+        name = name.replace(/[^\w \-]/g, "").trim().slice(0, 32) || "Shared preset";
+        setJson(world, PRESET_PREFIX + name, p.data);
+        msg(player, `§aImported preset "${name}". It's in your Presets now.`);
+      } catch (e) {
+        msg(player, `§c${e.message}`);
+      }
+      back();
+    }, back);
+}
+function packPresetsMenu(player, back) {
+  const self = () => packPresetsMenu(player, back);
+  const list = packPresets();
+  const files = packStructures();
+  const m = menu("From Preset Packs", list.length || files.length ? "§7Presets from the preset packs active in this world." : "§7No preset packs found. Make one on the Pack Builder website (Presets), activate it in this world, then tap Look again.");
+  for (const p of list)
+    m.btn(p.title, ICON("preset"), () =>
+      menu(p.title)
+        .btn("Spawn Here", ICON("spawn"), () => (spawnFromData(player, p.data), msg(player, `§aSpawned "${p.title}".`)))
+        .btn("Apply To NPC I'm Looking At", ICON("manage"), () => {
+          const npc = getLookedAtNPC(player);
+          if (!npc) return msg(player, "§cLook at an NPC first.");
+          applyPresetData(npc, p.data);
+        })
+        .btn("Save To My Presets", ICON("save"), () => (setJson(world, PRESET_PREFIX + p.title, p.data), msg(player, `§aSaved "${p.title}".`), self()))
+        .back(self)
+        .show(player)
+    );
+  for (const id of files)
+    m.btn(`${id.split(":")[1]} §b(file)`, ICON("spawn"), () => {
+      const rot = player.getRotation();
+      const f = forward(rot.y);
+      try {
+        const made = placeCopy(id, player.dimension, blockOf({ x: player.location.x + f.x * 2, y: player.location.y, z: player.location.z + f.z * 2 }));
+        made.forEach((n) => n.setRotation({ x: 0, y: rot.y + 180 }));
+        msg(player, made.length ? `§aSpawned ${made.length} NPC(s) from ${id}.` : "§eThat file has no NPC in it.");
+      } catch (e) {
+        msg(player, `§cCouldn't place ${id}: ${e}`);
+      }
+    });
+  m.btn("Look Again", ICON("refresh"), () => (callPresetPacks(), system.runTimeout(self, 8)));
+  m.btn("How To Share Presets", ICON("debug"), () => shareHelp(player, self));
+  m.back(back).show(player);
+}
+function shareHelp(player, back) {
+  menu(
+    "Share Presets",
+    [
+      "§bAny device:§f Presets > a preset > §bShare code§f. Copy the code from the box and send it. The other player taps §bImport code§f and pastes it.",
+      "",
+      "§bAs a file:§f paste codes on the Pack Builder website (Presets tab) and download a preset pack. Anyone who adds that pack to a world gets the presets in §bFrom preset packs§f.",
+      "",
+      "§bPC exact copy:§f place a Structure Block, set it to §bExport§f, frame the NPC and export the .mcstructure. Put it in a behavior pack in §bstructures/npcstudio_presets/§f (the website does it). It keeps every detail.",
+      "",
+      "§7Custom skins, capes and models travel as slot numbers: the other player needs the same skin pack for them to look the same."
+    ].join("\n")
+  )
+    .back(back)
+    .show(player);
 }
 
 function spawnPresetExact(player, name) {
@@ -326,6 +423,8 @@ export function openPresetsMenu(player, back) {
   const self = () => openPresetsMenu(player, back);
   const names = listPresets();
   const m = menu("Presets", names.length ? "§7Save presets from an NPC's menu. Tap one to use it." : "§7No presets yet. Open an NPC > Save as Preset.");
+  m.btn("Import Code", ICON("paste"), () => importCode(player, self));
+  m.btn(`From Preset Packs (${packPresets().length + packStructures().length})`, ICON("bulkequip"), () => packPresetsMenu(player, self));
   for (const n of names) {
     const d = getJson(world, PRESET_PREFIX + n, {});
     m.btn(`${n}${d.struct ? " §b(exact)" : ""}`, ICON("preset"), () =>
@@ -337,6 +436,7 @@ export function openPresetsMenu(player, back) {
           }
           msg(player, `§aSpawned "${n}".`);
         })
+        .btn("Share Code", ICON("copy_outfit"), () => shareCode(player, n, self))
         .btn("Apply To NPC I'm Looking At", ICON("manage"), () => {
           const npc = getLookedAtNPC(player);
           if (!npc) return msg(player, "§cLook at an NPC first.");

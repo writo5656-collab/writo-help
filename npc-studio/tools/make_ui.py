@@ -96,7 +96,7 @@ def label_from_button(size, offset, anchor, align, scale=1.0, strip_tab=False):
 # A row is [main, a, b, c]; the tag at the start of each label picks its look (see core.js):
 #   main: (none) button · §h§r/§i§r section · §w§r checkbox · §f§r field · §s§r slider · §t§r stepper
 #   a: §k§r small (minus / previous)   b: §p§r small (plus) · §y§r wide value   c: §v§r value · §m§r small · §z§r Choose
-TAB0, RAIL0, RAILN, BAR0, BARN, MINI_BTN, ROW0, ROWN = 0, 6, 24, 30, 8, 38, 39, 36
+TAB0, RAIL0, RAILN, BAR0, BARN, MINI_BTN, ROW0, ROWN = 0, 6, 24, 30, 8, 38, 39, 24  # 24 rows: each row costs ~100 UI controls per screen
 # Features that are off until each one is proven in game (the panel crashed the game in 4.3-4.8):
 FREELOOK = bool(os.environ.get("NPCS_FREELOOK"))       # look around in the free space
 DARK_INPUTS = bool(os.environ.get("NPCS_DARK_INPUTS"))  # input forms inside the dark panel

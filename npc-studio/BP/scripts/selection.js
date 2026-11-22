@@ -18,6 +18,7 @@
  */
 import { world, system, NPC_FAMILY } from "./core.js";
 import { SKIN_LAYERS } from "./skinmeta.js";
+import { CAPE_COUNT, CAPE_LIST } from "./capes.js";
 
 const selections = new Map(); // player.id -> Map(npc.id -> npc)
 const filming = new Set(); // player ids currently looking through a camera / taking a photo
@@ -45,11 +46,14 @@ export function setBright(npc, on) {
   const f = getFlags(npc);
   setFlags(npc, on ? f | 2 : f & ~2);
 }
+// cloak value 0-63: low 4 bits in flags bits 2-5, high 2 bits in bits 16-17 (Java capes are 16+)
 export function getCape(npc) {
-  return (getFlags(npc) >> 2) & 15;
+  const f = getFlags(npc);
+  return ((f >> 2) & 15) | (((f >> 16) & 3) << 4);
 }
 export function setCape(npc, n) {
-  setFlags(npc, (getFlags(npc) & ~60) | ((n & 15) << 2));
+  const c = Math.max(0, Math.min(CAPE_COUNT - 1, n | 0));
+  setFlags(npc, (getFlags(npc) & ~(60 | (3 << 16))) | ((c & 15) << 2) | ((c >> 4) << 16));
 }
 // ---------- outline look (shared by everyone, stored per NPC; set from the editor) ----------
 export const THICKNESS = ["Thin", "Medium", "Thick"];
@@ -98,13 +102,11 @@ export function getItemFrame(npc) {
 export function setItemFrame(npc, n) {
   setFlags(npc, (getFlags(npc) & ~(7 << 11)) | ((n & 7) << 11));
 }
-export const CAPE_NAMES = ["Studio Cyan", "Crimson", "Shadow", "Snow", "Royal", "Gold", "Forest", "Ocean"];
-// capes 9-15 are custom slots a player's pack fills (tools/make_custom.py); names come from the pack
-export const CAPE_COUNT = 16; // 0 = none
+export { CAPE_COUNT };
+export const capeIcon = (c) => `textures/ui/npcstudio/capes/cape${c}`;
+// capes 9-15 are custom slots a player's pack fills (tools/make_custom.py); their names come from the pack
 export function capeLabel(c) {
-  if (!c) return "None";
-  if (c <= CAPE_NAMES.length) return CAPE_NAMES[c - 1];
-  return { rawtext: [{ translate: `npcstudio.cape.${c}` }] };
+  return CAPE_LIST[c] ?? { rawtext: [{ translate: `npcstudio.cape.${c}` }] };
 }
 
 // ---------- selection ----------

@@ -41,6 +41,20 @@ export const CHAPTERS = [
         "§bEffects§f: NPC Bright and §bOn Fire§f (flames, no damage).",
         "§7World tab: Gamerules and Lighting (World Bright = you see everything fully lit). Camera tab: Guide Off / Thirds / Cross. Cameras also sit in the strip on the right."
       ]),
+      P("sliders", "Live Editor (no reload)", [
+        "Panel > §bLive Editor§f: one screen that stays open. Toggles, sliders and lists change the NPC the moment you touch them.",
+        "Pick a tab at the top (Display, Pose, World, Camera, Layers). §bOpen the Studio panel§f at the bottom goes back.",
+        "§7Display tab > §bBaton opens Live Editor§7 makes it the first thing you see when you tap an NPC."
+      ]),
+      P("paste", "Share presets", [
+        "§bAny device:§f Presets > a preset > §bShare Code§f. Copy the code (starts with NPCS1-) and send it. Others tap §bImport Code§f and paste it.",
+        "§bAs a file:§f the Pack Builder website (Presets) turns codes into a preset pack. In a world with that pack: Presets > §bFrom Preset Packs§f.",
+        "§bPC exact copy:§f export the NPC with a Structure Block (Export mode, include entities). The website puts the .mcstructure in a preset pack.",
+        "§7Custom skins, capes and models travel as slot numbers."
+      ]),
+      P("cape", "Cloaks", [
+        "Display > §bCloak§f opens the cape picker: 8 studio capes, 43 Minecraft capes and 7 slots for your own (Pack Builder website > Capes)."
+      ]),
       P("gizmo", "Pose Mode: walk around", [
         "Pose tab > §bWalk in Pose Mode§f (on by default): walk, jump and look around while you pose.",
         "Red / green / blue arrows at the NPC's feet show X, Y and Z. Rings (rotate) or arrows (move) sit on the part you edit.",

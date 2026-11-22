@@ -1,0 +1,4 @@
+// written by tools/make_custom.py: cloak names by value (0 none, 1-8 studio, 9-15 your pack, 16+ Java capes)
+export const CAPE_COUNT = 59;
+export const FIRST_CUSTOM_CAPE = 9, FIRST_JAVA_CAPE = 16;
+export const CAPE_LIST = ["None", "Studio Cyan", "Crimson", "Shadow", "Snow", "Royal", "Gold", "Forest", "Ocean", null, null, null, null, null, null, null, "MineCon 2011", "MineCon 2013", "MineCon Pickaxe", "MineCon Enderman", "MineCon Golem", "Creeper Bday", "15th Anniversary", "Creeper", "TikTok Creeper", "Birthday Cake", "Cherry Blossom", "Oxeye Daisy", "Oxeye Black", "Common", "Green 2025", "Home 2025", "Copper", "Menace", "Prismarine", "Turtle", "Crown", "Movie", "Vanilla", "Java Free", "Migrator", "Millionth", "Realms Maker", "Snowman", "dB Composer", "Spade", "Blue Scroll", "Scrolls Champ", "Cobalt", "Translator", "Translator JP", "Translator CN", "Mojira Mod", "Mojang", "Mojang Classic", "Mojang Studios", "Mojang Staff", "Mojang Unique", "Experience"];

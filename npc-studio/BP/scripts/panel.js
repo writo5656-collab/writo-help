@@ -6,6 +6,8 @@
  * Copyright (c) 2026 NoxeelMC. All rights reserved. See LICENSE.md.
  */
 import { VERSION } from "./version.js";
+import { openLiveEditor, hasLiveEditor } from "./liveform.js";
+import { CAPE_COUNT, FIRST_CUSTOM_CAPE, FIRST_JAVA_CAPE } from "./capes.js";
 import { inCinema } from "./cinema.js";
 import { itemStateRow } from "./itemstate.js";
 import {
@@ -27,7 +29,7 @@ import {
 } from "./npc.js";
 import { placeCameraAtView, openCameraPanel, flyCam, allCameras, getSelectedCamera, openLiveCamera, exitView, isViewing } from "./camera.js";
 import {
-  select, selectMany, clearSelection, getSelection, isBright, setBright, getCape, setCape, CAPE_COUNT, capeLabel, isProp, areOutlinesHidden, setOutlinesHidden,
+  select, selectMany, clearSelection, getSelection, isBright, setBright, getCape, setCape, capeLabel, capeIcon, isProp, areOutlinesHidden, setOutlinesHidden,
   getOutlineLook, setOutlineLook, THICKNESS, OUTLINE_STYLES, refreshOutline
 } from "./selection.js";
 import { poseRows, resetPart, transformRows, trimPage, timeRows, fogRows, setPoseBone } from "./live.js";
@@ -124,14 +126,36 @@ export function openStudio(player, tab) {
     });
     return m.show(player);
   }
+  if (npc && hasLiveEditor() && tab !== 2) {
+    // one form that stays open: every tap changes the NPC at once, no reload (liveform.js)
+    m.btn("Live Editor §8(no reload)", ICON("sliders"), () => openLive(player, npc, LIVE_TAB[tab]));
+    if (tab === 0) m.toggle("Baton opens Live Editor", liveFirst(player), () => (player.setDynamicProperty("npcstudio:live_first", !liveFirst(player)), self()));
+  }
   [displayTab, poseTab, presetsTab, worldTab, cameraTab, layersTab][tab](player, m, npc, self);
   m.show(player);
+}
+
+const LIVE_TAB = [0, 1, 0, 2, 3, 4]; // Studio tab -> Live Editor tab
+const liveFirst = (player) => !!player.getDynamicProperty("npcstudio:live_first");
+/** Live Editor; when it closes, go where the player asked (panel, Pose Mode, camera, preview) or stop. */
+export function openLive(player, npc, tab = 0) {
+  const ok = openLiveEditor(player, npc, (after) => {
+    if (after === "panel") openStudio(player, 0);
+    else if (after === "gizmo" && npc.isValid) startGizmo(player, npc, () => openLive(player, npc, 1));
+    else if (after === "camera") placeCameraAtView(player);
+    else if (after === "peek") peek(player);
+  }, tab);
+  if (!ok) {
+    msg(player, "§eThis game version has no live forms. Opening the panel.");
+    openStudio(player, 0);
+  }
 }
 
 /** Opening on an NPC (Baton tap): select it and show Display (or Pose if you were posing). */
 export function openStudioFor(player, npc) {
   select(player, npc);
   const t = lastTab.get(player.id);
+  if (liveFirst(player) && hasLiveEditor()) return openLive(player, npc, t === 1 ? 1 : 0);
   openStudio(player, t === 1 ? 1 : 0);
 }
 
@@ -168,6 +192,20 @@ function deleteNpc(player, npc, back) {
 // =====================================================================================
 // Display
 // =====================================================================================
+/** Cloak picker: cape pictures, 3 per row (studio, your pack, Minecraft capes). */
+function pickCape(player, npc, back) {
+  const now = getCape(npc);
+  const tile = (c) => ({ label: String(c), icon: capeIcon(c), on: c === now, fn: () => (setCape(npc, c), back()) });
+  const range = (a, b) => Array.from({ length: b - a + 1 }, (_, i) => a + i);
+  const m = menu("Choose Cloak", "§7Your capes come from your own pack (Pack Builder website > Capes).");
+  m.section("studio", "Studio capes", ICON("cape")).tiles(range(1, 8).map(tile));
+  m.section("java", "Minecraft capes", ICON("cape")).tiles(range(FIRST_JAVA_CAPE, CAPE_COUNT - 1).map(tile));
+  m.section("mine", "Your capes", ICON("cape")).tiles(range(FIRST_CUSTOM_CAPE, FIRST_JAVA_CAPE - 1).map(tile));
+  m.btn("No cloak", ICON("clear"), () => (setCape(npc, 0), back()));
+  m.back(back);
+  m.show(player);
+}
+
 function displayTab(player, m, npc, self) {
   if (!npc) return noNpc(m, player, self);
   if (isProp(npc)) {
@@ -200,7 +238,7 @@ function displayTab(player, m, npc, self) {
     pickModel(player, (n) => (setModel(npc, n), self()), self),
     model ? () => setModel(npc, 0) : undefined
   );
-  if (!model) m.cycle("Cloak", capeLabel(cape), (d) => setCape(npc, (cape + d + CAPE_COUNT) % CAPE_COUNT));
+  if (!model) m.field("Cloak", capeLabel(cape), cape ? capeIcon(cape) : ICON("cape"), () => pickCape(player, npc, self), cape ? () => setCape(npc, 0) : undefined);
   m.field("Nametag", npc.getDynamicProperty("npcstudio:real_name") !== undefined ? "Hidden" : npcLabel(npc), ICON("nametag"), () => openNameTag(player, npc, self));
   m.toggle("Sneak", isSneaking(npc), () => (setSneak(npc, !isSneaking(npc)), self()));
   m.toggle("Living", isLiving(npc), () => (setLiving(npc, !isLiving(npc)), self()));

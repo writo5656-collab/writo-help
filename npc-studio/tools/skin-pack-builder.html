@@ -155,6 +155,14 @@ footer.site a { color: var(--accent); }
 .tile canvas.capecv { width: 38%; height: 61%; }
 .tile.half { border-style: dashed; border-color: var(--rec); }
 #ignForm .btn { align-self: end; }
+
+.presets textarea { width: 100%; font: 13px var(--mono); padding: 10px 12px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel-2); color: var(--ink); resize: vertical; min-height: 90px; }
+.presets textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.plist { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.plist li { display: flex; gap: 10px; align-items: baseline; justify-content: space-between; border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px; background: var(--panel-2); min-width: 0; }
+.plist li span { overflow-wrap: anywhere; min-width: 0; }
+.plist li small { font: 600 11px var(--mono); color: var(--muted); flex: none; }
+.plist li.bad small { color: var(--bad); }
 </style>
 
 <div class="wrap" id="top">
@@ -170,10 +178,10 @@ footer.site a { color: var(--accent); }
     <div class="brand">
       <span class="eyebrow"><span class="rec-dot" aria-hidden="true"></span>NPC Studio V3 · resource pack tool</span>
       <h1>Pack Builder</h1>
-      <p class="lede">Put your own skins, capes and 3D models on NPC Studio NPCs. Grab a skin by player name or drop in PNGs, check them on the live model, name them, and download one small pack. Your files stay in your browser.</p>
+      <p class="lede">Put your own skins, capes and 3D models on NPC Studio NPCs, and turn shared presets into a pack. Grab a skin by player name or drop in PNGs, check them on the live model, name them, and download one small pack. Your files stay in your browser.</p>
     </div>
     <ol class="steps" aria-label="How it works">
-      <li><b>1</b> Add skins, capes or models</li>
+      <li><b>1</b> Add skins, capes, models or presets</li>
       <li><b>2</b> Name them</li>
       <li><b>3</b> Download pack</li>
       <li><b>4</b> Activate above NPC Studio</li>
@@ -253,12 +261,25 @@ footer.site a { color: var(--accent); }
             <li>If the file saved as <code>.zip</code>, rename it to <code>.mcpack</code>.</li>
             <li>Open it: Minecraft imports the pack.</li>
             <li>World <b>Settings → Resource Packs</b>: activate it and move it <b>above</b> NPC Studio.</li>
-            <li>Skins: <b>Display → Skin</b>, the Custom slots. Capes: <b>Display → Cloak</b>, after the 8 built-in ones. Models: <b>Display → 3D model</b>.</li>
+            <li>Skins: <b>Display → Skin</b>, the Custom slots. Capes: <b>Display → Cloak → Your capes</b>. Models: <b>Display → 3D model</b>.</li>
           </ol>
         </details>
       </div>
     </section>
   </div>
+  <section class="panel presets" id="presets" aria-labelledby="presetsTitle">
+    <h2 id="presetsTitle">Preset pack</h2>
+    <p class="note">Turn shared NPC presets into a pack file. In game: <b>Presets → a preset → Share Code</b> gives a code that starts with <code>NPCS1-</code>. Paste one or more codes here (one per line). PC players can also add <code>.mcstructure</code> files exported with a Structure Block.</p>
+    <div class="field"><label for="codes">Share codes</label><textarea id="codes" rows="4" spellcheck="false" placeholder="NPCS1-..."></textarea></div>
+    <div class="row">
+      <button class="btn ghost" id="structBtn" type="button">Add .mcstructure files (PC)</button>
+      <input type="file" id="structFile" accept=".mcstructure" multiple hidden>
+      <div class="field"><label for="presetPackName">Preset pack name</label><input type="text" id="presetPackName" value="My NPC Presets" maxlength="40"></div>
+    </div>
+    <ul class="plist" id="plist"></ul>
+    <div class="row"><button class="btn" id="presetBuild" type="button" disabled>Download preset pack</button><span class="status" id="presetStatus"></span></div>
+    <p class="note">Activate the preset pack in your world's <b>Behavior Packs</b> (any order). In game: <b>Presets → From Preset Packs</b>.</p>
+  </section>
   <section class="log" aria-labelledby="whatsnew">
     <h2 class="section-title" id="whatsnew">What's new in NPC Studio V3</h2>
     <article class="release">
@@ -599,7 +620,7 @@ const COPY = {
     note: "For Alex-style skins, turn on <b>Display → Model → Slim</b> on the NPC in game.", ign: "Get a player's skin by name", ignBtn: "Get skin" },
   cape: { drop: "Drop capes here", dropNote: "or tap to choose · Java cape PNGs (64×32), OptiFine capes work too", accept: "image/png", multiple: true,
     nameLbl: "Name shown in the cloak list", placeholder: "e.g. Founder's cape", choose: "Choose PNG for this slot", replace: "Replace PNG",
-    note: "In game: <b>Display → Cloak</b>. Your capes come after the 8 built-in ones.", ign: "Get a Java player's cape by name", ignBtn: "Get cape" },
+    note: "In game: <b>Display → Cloak</b>, section Your capes.", ign: "Get a Java player's cape by name", ignBtn: "Get cape" },
   model: { drop: "Drop a model here", dropNote: "or tap to choose · a .geo.json and its .png texture (Blockbench → Export Bedrock Geometry)", accept: ".json,application/json,image/png", multiple: true,
     nameLbl: "Name shown in the model picker", placeholder: "e.g. Robot", choose: "Choose model (.geo.json)", replace: "Replace model",
     note: "Name bones <code>head</code>, <code>body</code>, <code>rightArm</code>, <code>leftArm</code>, <code>rightLeg</code>, <code>leftLeg</code> and the Pose tab can move them. In game: <b>Display → 3D model</b>." }
@@ -809,9 +830,10 @@ function packGeo(g, n, img) {
     w = Math.max(w, Math.abs(o[0]), Math.abs(o[0] + s[0]), Math.abs(o[2]), Math.abs(o[2] + s[2]));
     h = Math.max(h, o[1] + s[1]);
   }
-  d.visible_bounds_width = Math.max(d.visible_bounds_width || 0, Math.ceil((w * 2) / 16) + 1);
-  d.visible_bounds_height = Math.max(d.visible_bounds_height || 0, Math.ceil(h / 16) + 1);
-  d.visible_bounds_offset = d.visible_bounds_offset || [0, d.visible_bounds_height / 2, 0];
+  // a roomy view box, so a posed or scaled model isn't skipped at the edge of the screen
+  d.visible_bounds_width = Math.max(d.visible_bounds_width || 0, Math.ceil((w * 2) / 16) + 3, 6);
+  d.visible_bounds_height = Math.max(d.visible_bounds_height || 0, Math.ceil(h / 16) + 3, 6);
+  d.visible_bounds_offset = [0, Math.max(1.5, h / 32), 0];
   // the pose animations turn, move and scale the whole NPC through a bone called "root"
   if (!out.bones.some((b) => String(b.name).toLowerCase() === "root")) {
     out.bones.forEach((b) => { if (!b.parent) b.parent = "root"; });
@@ -838,6 +860,8 @@ async function buildPack() {
   }
   for (const s of slots.cape.filter((x) => filled(x, "cape"))) {
     zip.file(`textures/entity/npcstudio/capes/custom_cape${s.n}.png`, s.blob);
+    const ci = framed((g) => { g.fillStyle = "#1c222c"; g.fillRect(8, 8, 48, 48); const k = s.img.width / 64; g.drawImage(s.img, 1 * k, 1 * k, 10 * k, 16 * k, 17, 8, 30, 48); });
+    zip.file(`textures/ui/npcstudio/capes/cape${KINDS.cape.first + s.n - 1}.png`, await toBlob(ci));
     lang.push(`npcstudio.cape.${KINDS.cape.first + s.n - 1}=${langSafe(s.name || `Custom cape ${s.n}`)}`);
   }
   for (const s of slots.model.filter((x) => filled(x, "model"))) {
@@ -889,6 +913,205 @@ const PLAIN_CAPE = (() => {
   g.fillStyle = "#4a4e58"; g.fillRect(0, 0, 64, 32); g.fillStyle = "#60646e"; g.fillRect(1, 1, 10, 16); g.fillRect(12, 1, 10, 16);
   return c;
 })();
+
+// ---------- preset pack (behavior pack) ----------
+// ---------- UTF-8 <-> bytes (names can have any letters) ----------
+function utf8(s) {
+  const out = [];
+  for (const ch of s) {
+    let c = ch.codePointAt(0);
+    if (c < 0x80) out.push(c);
+    else if (c < 0x800) out.push(0xc0 | (c >> 6), 0x80 | (c & 63));
+    else if (c < 0x10000) out.push(0xe0 | (c >> 12), 0x80 | ((c >> 6) & 63), 0x80 | (c & 63));
+    else out.push(0xf0 | (c >> 18), 0x80 | ((c >> 12) & 63), 0x80 | ((c >> 6) & 63), 0x80 | (c & 63));
+  }
+  return out;
+}
+function fromUtf8(b) {
+  let s = "";
+  for (let i = 0; i < b.length; ) {
+    const c = b[i++];
+    if (c < 0x80) s += String.fromCodePoint(c);
+    else if (c < 0xe0) s += String.fromCodePoint(((c & 31) << 6) | (b[i++] & 63));
+    else if (c < 0xf0) s += String.fromCodePoint(((c & 15) << 12) | ((b[i++] & 63) << 6) | (b[i++] & 63));
+    else s += String.fromCodePoint(((c & 7) << 18) | ((b[i++] & 63) << 12) | ((b[i++] & 63) << 6) | (b[i++] & 63));
+  }
+  return s;
+}
+
+// ---------- LZW with growing code width, packed into 6-bit URL-safe characters ----------
+const ABC = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
+const bitsFor = (n) => Math.max(9, Math.ceil(Math.log2(n + 1)));
+function pack(text) {
+  const bytes = utf8(text);
+  const dict = new Map();
+  for (let i = 0; i < 256; i++) dict.set(String.fromCharCode(i), i);
+  let next = 256, w = "";
+  const codes = [];
+  for (const b of bytes) {
+    const c = String.fromCharCode(b), wc = w + c;
+    if (dict.has(wc)) w = wc;
+    else {
+      codes.push([dict.get(w), bitsFor(next)]);
+      dict.set(wc, next++);
+      w = c;
+    }
+  }
+  if (w) codes.push([dict.get(w), bitsFor(next)]);
+  let acc = 0, n = 0, out = "";
+  for (const [code, width] of codes) {
+    for (let k = width - 1; k >= 0; k--) {
+      acc = (acc << 1) | ((code >> k) & 1);
+      if (++n === 6) { out += ABC[acc]; acc = 0; n = 0; }
+    }
+  }
+  if (n) out += ABC[acc << (6 - n)];
+  return out;
+}
+function unpack(s) {
+  const bits = [];
+  for (const ch of s) {
+    const v = ABC.indexOf(ch);
+    if (v < 0) throw new Error("bad character");
+    for (let k = 5; k >= 0; k--) bits.push((v >> k) & 1);
+  }
+  const dict = [];
+  for (let i = 0; i < 256; i++) dict.push([i]);
+  let pos = 0, next = 256;
+  const read = (width) => {
+    if (pos + width > bits.length) return -1;
+    let v = 0;
+    for (let k = 0; k < width; k++) v = (v << 1) | bits[pos++];
+    return v;
+  };
+  let code = read(bitsFor(next));
+  if (code < 0 || code > 255) throw new Error("empty");
+  let w = dict[code];
+  const out = [...w];
+  for (;;) {
+    code = read(bitsFor(next + 1));
+    if (code < 0) break;
+    let entry;
+    if (code < dict.length) entry = dict[code];
+    else if (code === dict.length) entry = [...w, w[0]];
+    else throw new Error("broken code");
+    out.push(...entry);
+    dict.push([...w, entry[0]]);
+    next++;
+    w = entry;
+  }
+  return fromUtf8(out);
+}
+
+// ---------- preset <-> code ----------
+const PREFIX = "NPCS1-";
+const MC = "minecraft:";
+function strip(v) { // shorter: no "minecraft:" in item ids, no all-zero pose parts
+  if (typeof v === "string") return v.startsWith(MC) ? "~" + v.slice(MC.length) : v;
+  if (Array.isArray(v)) return v.map(strip);
+  if (v && typeof v === "object") {
+    const o = {};
+    for (const [k, x] of Object.entries(v)) {
+      if (Array.isArray(x) && x.length && x.every((n) => n === 0)) continue;
+      o[k] = strip(x);
+    }
+    return o;
+  }
+  return v;
+}
+function unstrip(v) {
+  if (typeof v === "string") return v.startsWith("~") ? MC + v.slice(1) : v;
+  if (Array.isArray(v)) return v.map(unstrip);
+  if (v && typeof v === "object") return Object.fromEntries(Object.entries(v).map(([k, x]) => [k, unstrip(x)]));
+  return v;
+}
+/** Text code for a preset (its data plus a title). */
+function presetToCode(title, data) {
+  const { struct: _s, ...rest } = data;
+  return PREFIX + pack(JSON.stringify(strip({ ...rest, t: title })));
+}
+/** { title, data } from a code, or throws with a message a player can read. */
+function codeToPreset(code) {
+  const c = String(code ?? "").replace(/\s+/g, "");
+  if (!c.startsWith(PREFIX)) throw new Error("That isn't an NPC Studio code. Codes start with NPCS1-");
+  let data;
+  try {
+    data = unstrip(JSON.parse(unpack(c.slice(PREFIX.length))));
+  } catch {
+    throw new Error("That code is broken or cut off. Copy the whole code again.");
+  }
+  if (!data || typeof data !== "object" || !data.pose) throw new Error("That code has no NPC in it.");
+  const title = String(data.t || "Shared preset").slice(0, 32);
+  delete data.t;
+  return { title, data };
+}
+
+
+let structs = []; // { name, blob }
+function readCodes() {
+  return $("codes").value.split(/\s+/).filter((c) => c.startsWith("NPCS1-")).map((c) => {
+    try { const p = codeToPreset(c); return { code: c, title: p.title, ok: c.length < 2000 }; } catch (e) { return { code: c, title: e.message, ok: false, bad: true }; }
+  });
+}
+function renderPresets() {
+  const list = readCodes(), ul = $("plist"); ul.textContent = "";
+  for (const p of list) {
+    const li = document.createElement("li"); li.className = p.ok ? "" : "bad";
+    const a = document.createElement("span"); a.textContent = p.title;
+    const b = document.createElement("small"); b.textContent = p.bad ? "broken code" : p.ok ? `code · ${p.code.length} chars` : "too long";
+    li.append(a, b); ul.append(li);
+  }
+  for (const f of structs) {
+    const li = document.createElement("li");
+    const a = document.createElement("span"); a.textContent = f.name;
+    const b = document.createElement("small"); b.textContent = "PC file · exact copy";
+    li.append(a, b); ul.append(li);
+  }
+  const n = list.filter((p) => p.ok).length + structs.length;
+  $("presetBuild").disabled = n === 0;
+  $("presetStatus").textContent = n ? `${n} preset${n === 1 ? "" : "s"} ready.` : "";
+  $("presetStatus").className = "status";
+}
+$("codes").addEventListener("input", renderPresets);
+$("structBtn").onclick = () => $("structFile").click();
+$("structFile").addEventListener("change", (e) => {
+  for (const f of e.target.files) {
+    const name = f.name.replace(/\.mcstructure$/i, "").toLowerCase().replace(/[^a-z0-9_]+/g, "_").slice(0, 40) || "npc";
+    structs = structs.filter((s) => s.name !== name).concat({ name, blob: f });
+  }
+  e.target.value = ""; renderPresets();
+});
+$("presetBuild").addEventListener("click", async () => {
+  const st = $("presetStatus"), btn = $("presetBuild");
+  btn.disabled = true; st.className = "status"; st.textContent = "Building…";
+  try {
+    const name = $("presetPackName").value.trim() || "My NPC Presets";
+    const id = uuid().replace(/-/g, "").slice(0, 12);
+    const zip = new JSZip();
+    zip.file("manifest.json", JSON.stringify({ format_version: 2,
+      header: { name, description: "NPC Studio presets (Presets > From Preset Packs)", uuid: uuid(), version: [1, 0, 0], min_engine_version: [1, 21, 0] },
+      modules: [{ type: "data", uuid: uuid(), version: [1, 0, 0] }] }, null, 2));
+    const codes = readCodes().filter((p) => p.ok);
+    if (codes.length) {
+      // NPC Studio opens the npcs_load gate for a few ticks when a world loads; then every preset pack sends its codes
+      zip.file(`functions/npcstudio_presets/p_${id}.mcfunction`, codes.map((p) => `execute if score #npcs npcs_load matches 1 run scriptevent npcstudio:preset ${p.code}`).join("\n") + "\n");
+      zip.file("functions/tick.json", JSON.stringify({ values: [`npcstudio_presets/p_${id}`] }));
+    }
+    for (const f of structs) zip.file(`structures/npcstudio_presets/${f.name}.mcstructure`, f.blob);
+    const pc = document.createElement("canvas"); pc.width = pc.height = 256;
+    const pg = pc.getContext("2d"); pg.imageSmoothingEnabled = false; pg.drawImage(headIcon(STEVE), 0, 0, 256, 256);
+    zip.file("pack_icon.png", await toBlob(pc));
+    const blob = await zip.generateAsync({ type: "blob", compression: "DEFLATE" });
+    const base = name.replace(/[^\w\- ]+/g, "").trim().replace(/\s+/g, "_") || "NPC_Presets";
+    const dl = window.claude ? await window.claude.use("downloads") : null;
+    if (dl) await dl.save({ filename: `${base}.mcpack`, data: blob });
+    else { const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = `${base}.mcpack`; document.body.append(a); a.click(); a.remove(); }
+    st.className = "status ok"; st.textContent = `Saved ${base}.mcpack. Open it with Minecraft.`;
+  } catch (e) {
+    st.className = "status no"; st.textContent = e && e.code === "declined" ? "Download cancelled." : "Building failed: " + (e && e.message ? e.message : e);
+  }
+  btn.disabled = false;
+});
 
 // start
 const startWhenReady = () => { refresh(); resize(); requestAnimationFrame(frame); };

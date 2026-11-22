@@ -152,7 +152,50 @@
             "Texture.custom_cape4",
             "Texture.custom_cape5",
             "Texture.custom_cape6",
-            "Texture.custom_cape7"
+            "Texture.custom_cape7",
+            "Texture.jcape1",
+            "Texture.jcape2",
+            "Texture.jcape3",
+            "Texture.jcape4",
+            "Texture.jcape5",
+            "Texture.jcape6",
+            "Texture.jcape7",
+            "Texture.jcape8",
+            "Texture.jcape9",
+            "Texture.jcape10",
+            "Texture.jcape11",
+            "Texture.jcape12",
+            "Texture.jcape13",
+            "Texture.jcape14",
+            "Texture.jcape15",
+            "Texture.jcape16",
+            "Texture.jcape17",
+            "Texture.jcape18",
+            "Texture.jcape19",
+            "Texture.jcape20",
+            "Texture.jcape21",
+            "Texture.jcape22",
+            "Texture.jcape23",
+            "Texture.jcape24",
+            "Texture.jcape25",
+            "Texture.jcape26",
+            "Texture.jcape27",
+            "Texture.jcape28",
+            "Texture.jcape29",
+            "Texture.jcape30",
+            "Texture.jcape31",
+            "Texture.jcape32",
+            "Texture.jcape33",
+            "Texture.jcape34",
+            "Texture.jcape35",
+            "Texture.jcape36",
+            "Texture.jcape37",
+            "Texture.jcape38",
+            "Texture.jcape39",
+            "Texture.jcape40",
+            "Texture.jcape41",
+            "Texture.jcape42",
+            "Texture.jcape43"
           ]
         }
       },
@@ -163,7 +206,7 @@
         }
       ],
       "textures": [
-        "Array.capes[math.mod(math.floor(query.property('npcstudio:flags') / 4), 16) - 1]"
+        "Array.capes[math.mod(math.floor(query.property('npcstudio:flags') / 4), 16) + math.mod(math.floor(query.property('npcstudio:flags') / 65536), 4) * 16 - 1]"
       ]
     },
     "controller.render.npcstudio.outline_sil": {

@@ -224,7 +224,7 @@ const HALF_MAX = 13; // longest label that fits half a row
 // Values start with §f: text that starts with a digit after the tag ("100%", "1.0") showed nothing
 // in game (the UI formula seems to treat it as a number)
 const V = "§f";
-const RAIL_N = 24, BAR_N = 8, ROW_N = 36; // + button 38 = hide / show the panel; rows start at 39
+const RAIL_N = 24, BAR_N = 8, ROW_N = 24; // ROW_N must match tools/make_ui.py ROWN; + button 38 = hide / show the panel; rows start at 39
 // Body tags (the body is a global binding, so the UI can read them anywhere):
 //   §g§r  thirds grid over the free space      §x§r  panel hidden (only the › handle, grid, hint)
 const GRID_TAG = "§g§r", MINI_TAG = "§x§r", CROSS_TAG = "§t§r"; // hooks.grid: 0 off, 1 thirds, 2 cross
