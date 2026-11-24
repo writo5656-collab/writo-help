@@ -82,10 +82,15 @@ export function dictForms(stem: string): string[] {
 }
 
 /** Split one chunk into word + particle and find an ending. */
-export function splitChunk(jp: string, particle?: string): { stem: string; particle?: string; ending?: string } {
+export function splitChunk(jp: string, particle?: string, look?: (w: string) => unknown): { stem: string; particle?: string; ending?: string } {
   let s = strip(jp);
   let p = particle && s.endsWith(particle) && s.length > particle.length ? particle : undefined;
-  if (!p) for (const q of PARTICLES) if (s.length > q.length && s.endsWith(q) && !/(です|ます)か$/.test(s)) { p = q; break; }
+  if (!p) for (const q of PARTICLES) if (s.length > q.length && s.endsWith(q) && !/(です|ます)か$/.test(s)) {
+    // After hiragana it may just be the end of a word (えいが, ながら): only split when the rest is a known word.
+    const before = s[s.length - q.length - 1];
+    if (/[\u3040-\u309f]/.test(before) && look && (look(s) || !look(s.slice(0, -q.length)))) break;
+    p = q; break;
+  }
   // A trailing か after です/ます is the question marker — kept inside the ending.
   if (p) s = s.slice(0, -p.length);
   let ending: string | undefined;
@@ -115,9 +120,26 @@ export function explainPieces(f: string, look: Lookup, examplesFor: (word: strin
   const whole = parseFuri(f).jp;
   return f.trim().split(/\s+/).filter(raw => strip(parseFuri(raw).jp)).map(raw => {
     const c = parseFuri(raw).chunks[0];
-    const sp = splitChunk(c.jp, c.particle);
+    const sp = splitChunk(c.jp, c.particle, look);
     const w = findWord(sp.stem, sp.ending, look);
-    const piece: Piece = { jp: c.jp, kana: c.kana, romaji: romajiOf(raw) || kanaToRomaji(c.kana), examples: [] };
+    let romaji = romajiOf(raw) || kanaToRomaji(c.kana);
+    // Show です-type endings as their own words: "gakusei desu ka" (verbs stay joined: "tabemasu").
+    if (sp.ending && /^(で|だ|じゃ)/.test(sp.ending) && sp.stem) {
+      let k = c.kana.replace(/[。、！？!?「」\s]/g, '');
+      const tail = sp.particle && k.endsWith(sp.particle) ? sp.particle : '';
+      if (tail) k = k.slice(0, -tail.length);
+      if (k.endsWith(sp.ending) && k.length > sp.ending.length) {
+        const endR = kanaToRomaji(sp.ending).replace(/^(desu|deshita|da|dewaarimasen|jaarimasen)(ka|yo|ne)$/, '$1 $2').replace('dewaarimasen', 'dewa arimasen').replace('jaarimasen', 'ja arimasen');
+        romaji = [kanaToRomaji(k.slice(0, -sp.ending.length)), endR, tail ? kanaToRomaji(tail) : ''].filter(Boolean).join(' ');
+      }
+    }
+    // Particles as their own word in the romaji: "shitsumon no", "watashi wa".
+    else if (sp.particle && !sp.ending) {
+      const k = c.kana.replace(/[。、！？!?「」\s]/g, '');
+      const pr: Record<string, string> = { は: 'wa', へ: 'e', を: 'o' };
+      if (k.endsWith(sp.particle) && k.length > sp.particle.length) romaji = `${kanaToRomaji(k.slice(0, -sp.particle.length))} ${pr[sp.particle] ?? kanaToRomaji(sp.particle)}`;
+    }
+    const piece: Piece = { jp: c.jp, kana: c.kana, romaji, examples: [] };
     if (w) piece.word = { jp: w.jp, kana: w.kana, en: w.en, base: w.base };
     if (sp.particle && PARTICLE_INFO[sp.particle]) piece.particle = { p: sp.particle, info: PARTICLE_INFO[sp.particle] };
     else if (!sp.particle && PARTICLE_INFO[strip(c.jp)]) piece.particle = { p: strip(c.jp), info: PARTICLE_INFO[strip(c.jp)] };

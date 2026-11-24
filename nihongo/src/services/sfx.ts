@@ -56,5 +56,7 @@ export const sfx = {
   /** Small pentatonic flourish: session complete. */
   complete: () => [523, 659, 784, 1047, 1319].forEach((f, i) => note(f, i * 0.09, 0.32, 0.1)),
   /** Koto-like pluck for streak milestones. */
+  /** The app's own message tune (the same notes as the notification sound). */
+  chime: () => [1047, 1319, 1568, 1760, 2093].forEach((f, i) => note(f, [0, 0.13, 0.26, 0.45, 0.58][i], 0.7, 0.08)),
   streak: () => [587, 880].forEach((f, i) => note(f, i * 0.07, 0.4, 0.09, 'triangle')),
 };

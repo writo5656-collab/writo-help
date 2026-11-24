@@ -62,3 +62,36 @@ describe('real photo reading check', () => {
     }
   });
 });
+
+import { autoSpace } from './jp';
+describe('autoSpace', () => {
+  it('splits unspaced lines into words', () => {
+    expect(autoSpace('私[わたし]は女優[じょゆう]です。今日[きょう]は「AはBです」を教[おし]えます。')).toBe('私[わたし]は 女優[じょゆう]です。 今日[きょう]は 「AはBです」を 教[おし]えます。');
+    expect(autoSpace('コンビニ行[い]こう！')).toBe('コンビニ 行[い]こう！');
+    expect(autoSpace('今日[きょう]はひらがなだよ！')).toBe('今日[きょう]は ひらがなだよ！');
+    expect(autoSpace('水[みず]を 飲[の]みます。')).toBe('水[みず]を 飲[の]みます。');
+    expect(autoSpace('私[わたし]たちの学校[がっこう]')).toBe('私[わたし]たちの 学校[がっこう]');
+  });
+});
+describe('word romaji', () => {
+  it('spaces です-endings and particles', () => {
+    const ps = explainPieces('あなたは 学生[がくせい]ですか。', () => undefined, () => []);
+    expect(ps.map(p => p.romaji)).toEqual(['anata wa', 'gakusei desu ka']);
+    expect(explainPieces('水[みず]を 飲[の]みます。', () => undefined, () => [])[1].romaji).toBe('nomimasu');
+    expect(autoSpace('私[わたし]は女優[じょゆう]です。 今日[きょう]は「AはBです」を教[おし]えます。').split(' ').length).toBeGreaterThanOrEqual(5);
+  });
+});
+describe('word romaji with particle marks', () => {
+  it('handles {か}', () => {
+    expect(explainPieces('あなたは 学生[がくせい]です{か}。', () => undefined, () => [])[1].romaji).toBe('gakusei desu ka');
+    expect(explainPieces('ひらがなだよ！', () => undefined, () => [])[0].romaji).toBe('hiragana da yo');
+  });
+});
+describe('particle detection', () => {
+  it('does not cut words that end like a particle', () => {
+    const look = (w: string) => (({ えいが: { jp: 'えいが', kana: 'えいが', en: 'movie' }, あなた: { jp: 'あなた', kana: 'あなた', en: 'you' } }) as Record<string, { jp: string; kana: string; en: string }>)[w];
+    expect(explainPieces('えいが', look, () => [])[0].romaji).toBe('eiga');
+    expect(explainPieces('あなたは', look, () => [])[0].romaji).toBe('anata wa');
+    expect(explainPieces('質問[しつもん]の', look, () => [])[0].romaji).toBe('shitsumon no');
+  });
+});

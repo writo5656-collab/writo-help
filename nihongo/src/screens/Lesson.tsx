@@ -1,14 +1,15 @@
 // A lesson is a short stack of teaching cards followed by practice.
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { LESSON_MAP, KANJI_MAP, kanaRomaji, type Lesson as L, type Sent } from '../content';
-import { parseFuri } from '../lib/jp';
+import { parseFuri, kanaToRomaji } from '../lib/jp';
+import { TapSentence } from '../components/TapSentence';
 import { getKV, setKV } from '../lib/db';
-import { speak } from '../services/tts';
+import { speak, speakSeq, stop } from '../services/tts';
 import { sfx } from '../services/sfx';
 import { StrokeOrder } from '../components/Strokes';
 import { storyFor } from '../content/stories';
-import { LESSON_CAST, CAST } from '../content/cast';
+import { LESSON_CAST, CAST, castFor } from '../content/cast';
 import { MangaPage } from '../components/Manga';
 import { Portrait } from '../components/Portrait';
 import { Screen, Icon, Furi, Audio, SpeakBtn, Bar, useS, Empty } from '../components/ui';
@@ -64,34 +65,71 @@ export default function Lesson() {
 }
 
 function Intro({ l }: { l: L }) {
-  const lc = LESSON_CAST[l.id]; const g = lc && CAST[lc.guide];
+  const s = useS();
+  const lc = LESSON_CAST[l.id] ?? { ...castFor(l.id), intro: ['今日[きょう]も いっしょに がんばろう！', 'Let\'s do our best together today!'] as [string, string] };
+  const g = CAST[lc.guide];
+  const [playing, setPlaying] = useState(-1);
+  const alive = useRef(true);
+  useEffect(() => {
+    alive.current = true;
+    // She greets you out loud when the lesson opens.
+    if (s.autoplay && g) void speakSeq([{ text: parseFuri(lc.intro[0]).jp, who: g.id }]);
+    return () => { alive.current = false; void stop(); };
+  }, [l.id]); // eslint-disable-line
+  const playWords = async () => {
+    for (let k = 0; k < l.vocab.length && alive.current; k++) {
+      setPlaying(k);
+      await speakSeq([{ text: l.vocab[k].jp, who: g?.id, rate: s.rate * 0.9 }]);
+      await new Promise(r => setTimeout(r, 250));
+    }
+    if (alive.current) setPlaying(-1);
+  };
   return (
     <>
       {g && (
-        <div className="card row" style={{ alignItems: 'flex-start' }}>
-          <Portrait id={g.id} size={92} shape="card" />
-          <div className="grow col" style={{ gap: 4 }}>
-            <span className="label">Your guide · {g.series}</span>
-            <b>{g.name}</b>
-            <Furi f={lc.intro[0]} className="jp-m" romaji={false} />
-            <span className="small muted">{lc.intro[1]}</span>
+        <div className="today-hero">
+          <Portrait id={g.id} size={96} shape="card" mood="happy" />
+          <div className="grow col" style={{ gap: 4, minWidth: 0 }}>
+            <span className="label" style={{ color: 'var(--sage-2)' }}>Today with {g.name.split(' ')[0]} · {g.series}</span>
+            <div className="bubble-say">
+              <TapSentence f={lc.intro[0]} size="m" />
+              <span className="small" style={{ opacity: .85 }}>{lc.intro[1]}</span>
+            </div>
           </div>
-          <SpeakBtn text={parseFuri(lc.intro[0]).jp} />
         </div>
       )}
-      <div className="card sage col gap-s"><span className="label">In this lesson</span><p style={{ fontWeight: 650 }}>{l.goal}</p><span className="jp-l jp" lang="ja" style={{ color: 'var(--forest)' }}>{l.jp}</span></div>
-      {l.kanji && <div className="card flat col gap-s"><h3>Kanji you will meet</h3><div className="row wrap gap-s">{[...l.kanji].filter(k => KANJI_MAP.has(k)).map(k => <Link key={k} to={`/kanji?k=${k}`} className="tile jp" lang="ja">{k}</Link>)}</div></div>}
+      <div className="card sage col gap-s">
+        <span className="label">Today you'll learn</span>
+        <p style={{ fontWeight: 650, margin: 0 }}>{l.goal}</p>
+        <span className="jp-l jp" lang="ja" style={{ color: 'var(--forest)' }}>{l.jp}</span>
+        <span className="tiny muted">Tap any Japanese word to hear it and see what it means. Pronunciation is written under every word.</span>
+      </div>
       <div className="card flat">
-        <h3>{l.kana ? 'Words you will be able to read' : 'Vocabulary'}</h3>
-        <div className="list mt">
-          {l.vocab.map(w => (
-            <div key={w.jp} className="li">
-              <div className="grow"><span className="jp jp-m" lang="ja" style={{ fontWeight: 600 }}>{w.jp}</span>{w.kana !== w.jp && <span className="small muted jp" lang="ja"> （{w.kana}）</span>}<div className="small muted">{w.en}</div></div>
-              <SpeakBtn text={w.jp} />
-            </div>
+        <div className="row between"><h3>{l.kana ? 'Words you will be able to read' : `New words (${l.vocab.length})`}</h3>
+          <button className="btn sm ghost" onClick={() => void playWords()}><Icon n="play" s={16} />Hear all</button></div>
+        <div className="word-grid mt">
+          {l.vocab.map((w, k) => (
+            <button key={w.jp} className={`word-card ${playing === k ? 'on' : ''}`} onClick={() => { sfx.tap(); void speakSeq([{ text: w.jp, rate: s.rate * 0.9 }]); }}>
+              {w.kana !== w.jp && <span className="wc-kana" lang="ja">{w.kana}</span>}
+              <span className="wc-jp" lang="ja">{w.jp}</span>
+              <span className="wc-ro">{kanaToRomaji(w.kana)}</span>
+              <span className="wc-en">{w.en}</span>
+            </button>
           ))}
         </div>
       </div>
+      {l.kanji && <div className="card flat col gap-s"><h3>Kanji you will meet</h3><div className="row wrap gap-s">{[...l.kanji].filter(k => KANJI_MAP.has(k)).map(k => <Link key={k} to={`/kanji?k=${k}`} className="tile jp" lang="ja">{k}</Link>)}</div></div>}
+      {l.sentences.length > 0 && (
+        <div className="card flat col gap-s">
+          <h3>Sentences you will read today</h3>
+          {l.sentences.map((x, k) => (
+            <div key={k} className="col" style={{ gap: 2, paddingBottom: 8, borderBottom: k < l.sentences.length - 1 ? '1px solid var(--line)' : 0 }}>
+              <TapSentence f={x.f} size="m" />
+              <div className="row between"><span className="small muted">{x.en}</span><SpeakBtn text={parseFuri(x.f).jp} /></div>
+            </div>
+          ))}
+        </div>
+      )}
     </>
   );
 }
@@ -124,16 +162,15 @@ function GrammarCard({ l }: { l: L }) {
 }
 
 function SentCard({ s, l, n }: { s: Sent; l: L; n: number }) {
-  const [hot, setHot] = useState(-1);
   const p = parseFuri(s.f);
   const words = l.vocab.filter(w => p.jp.includes(w.jp.replace(/ます$/, '')) && w.jp.length > 0).slice(0, 5);
   return (
     <>
       <div className="card col">
         <span className="label">Sentence {n} of {l.sentences.length}</span>
-        <Furi f={s.f} className="jp-xl" hot={hot} />
+        <TapSentence f={s.f} size="xl" />
         <div className="card sage" style={{ padding: '10px 14px', fontWeight: 650 }}>{s.en}</div>
-        <div className="row between"><span className="small muted">Listen · slower · word by word</span><Audio f={s.f} autoplay onChunk={setHot} /></div>
+        <div className="row between"><span className="small muted">Tap a word for its meaning · or listen</span><Audio f={s.f} autoplay /></div>
       </div>
       {words.length > 0 && <div className="card flat"><div className="row gap-s"><Icon n="book" s={18} /><h3>Vocabulary</h3></div><div className="col gap-s mt">{words.map(w => <div key={w.jp} className="small"><span className="jp" lang="ja" style={{ fontWeight: 600 }}>{w.jp}</span>{w.kana !== w.jp && <span className="muted jp" lang="ja">（{w.kana}）</span>} — {w.en}</div>)}</div></div>}
       {(s.note || l.grammar[0]) && <div className="card amber note-tip"><Icon n="bulb" s={18} /><div><b>Grammar note</b><br />{s.note ?? <><span className="jp" lang="ja">{l.grammar[0].p}</span> — {l.grammar[0].e}</>}</div></div>}
@@ -170,14 +207,14 @@ function DialogueCard({ l }: { l: L }) {
       <div className="row between"><h2>Dialogue</h2><div className="row gap-s"><button className="btn sm ghost" onClick={playAll}><Icon n="play" s={16} />Play all</button><button className="btn sm line" onClick={() => setShow(!show)}>{show ? 'Hide' : 'Show'} English</button></div></div>
       <div className="col">
         {l.dialogue!.map((d, i) => (
-          <button key={i} className={`bubble ${d.who === 'You' ? 'me' : 'them'}`} style={{ textAlign: 'left' }} onClick={() => speak(parseFuri(d.f).jp, { rate: s.rate })}>
-            <span className="tiny" style={{ opacity: .7, fontWeight: 700 }}>{d.who}</span><br />
-            <Furi f={d.f} className="jp-m" />
+          <div key={i} className={`bubble light ${d.who === 'You' ? 'me' : 'them'}`}>
+            <div className="row between"><span className="tiny" style={{ opacity: .7, fontWeight: 700 }}>{d.who}</span><SpeakBtn text={parseFuri(d.f).jp} /></div>
+            <TapSentence f={d.f} size="m" />
             {show && <div className="small" style={{ opacity: .8 }}>{d.en}</div>}
-          </button>
+          </div>
         ))}
       </div>
-      <p className="tiny muted center">Tap a line to hear it.</p>
+      <p className="tiny muted center">Tap a word to see what it means.</p>
     </>
   );
 }

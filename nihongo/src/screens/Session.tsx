@@ -14,6 +14,9 @@ import { loadLibrary } from '../content/library';
 import { castFor } from '../content/cast';
 import { parseFuri } from '../lib/jp';
 import { sfx } from '../services/sfx';
+import { celebrate } from '../services/fun';
+import { speakSeq } from '../services/tts';
+import { CAST } from '../content/cast';
 import { loadSettings } from '../lib/settings';
 import { speakingOff } from '../services/speaking';
 import { Exercise, type Outcome } from '../components/Exercise';
@@ -102,6 +105,11 @@ export default function Session() {
   // The banner is shown for 1.7 s, then removed (so it can never get stuck on screen).
   useEffect(() => { if (!banner) return; const t = setTimeout(() => setBanner(null), 1700); return () => clearTimeout(t); }, [banner]);
   const [comboScreen, setComboScreen] = useState<number | null>(null);
+  // Little fun moments: "+5" flying up from the score, and the teacher popping in halfway.
+  const [xpPop, setXpPop] = useState<{ n: number; k: number } | null>(null);
+  const [toast, setToast] = useState<{ who: string; jp: string; en: string; k: number } | null>(null);
+  useEffect(() => { if (!toast) return; const t = setTimeout(() => setToast(null), 3200); return () => clearTimeout(t); }, [toast]);
+  const halfShown = useRef(false);
   const [secs, setSecs] = useState(0);
   useEffect(() => { const t = setInterval(() => setSecs(Math.round((Date.now() - start.current) / 1000)), 1000); return () => clearInterval(t); }, []);
   const start = useRef(Date.now());
@@ -131,8 +139,10 @@ export default function Session() {
     else if (first) grade = 'again';
     else return; // further wrong tries on the same question are not counted against you
     if (first) setTally(t => [...t, { skill: ex.skill, ok: o.ok, prompt: promptOf(ex) }]);
-    setScore(x => x + (grade === 'good' ? 5 : grade === 'hard' ? 3 : grade === 'retry' ? 1 : 0) * (ex.tag === 'challenge' && first ? 2 : 1));
-    if (first) setCombo(c => { const n = o.ok ? c + 1 : 0; setBestCombo(b => Math.max(b, n)); if (n > 0 && n % 10 === 0) setTimeout(() => { sfx.complete(); setComboScreen(n); }, 900); else if (n > 0 && n % 5 === 0) { setTimeout(sfx.streak, 350); setBanner({ n, k: Date.now() }); } return n; });
+    const pts = (grade === 'good' ? 5 : grade === 'hard' ? 3 : grade === 'retry' ? 1 : 0) * (ex.tag === 'challenge' && first ? 2 : 1);
+    setScore(x => x + pts);
+    if (pts > 0) setXpPop({ n: pts, k: Date.now() });
+    if (first) setCombo(c => { const n = o.ok ? c + 1 : 0; setBestCombo(b => Math.max(b, n)); if (n > 0 && n % 10 === 0) setTimeout(() => { sfx.complete(); celebrate.combo(n); setComboScreen(n); }, 900); else if (n > 0 && n % 5 === 0) { setTimeout(sfx.streak, 350); celebrate.combo(n); setBanner({ n, k: Date.now() }); } return n; });
     if (!o.ok) saw.current.add(ex.key);
     await recordAnswer({ itemId: ex.itemId, kind: ex.kind, skill: ex.skill, grade, lessonId: ex.lessonId });
     if (!o.ok) {
@@ -164,6 +174,16 @@ export default function Session() {
       }
       if (m === 'sunday') await finishSunday(tally);
     }
+    // Halfway through: today's teacher pops in to cheer you on.
+    if (!halfShown.current && len >= 8 && idx + 1 === Math.floor(len / 2)) {
+      halfShown.current = true;
+      const lines = [['半分まで来たよ！その調子！', 'Halfway there! Keep it up!'], ['いい感じ！あと半分だよ。', 'Looking good! Half to go.'], ['すごい、もう半分！', 'Wow, already halfway!']];
+      const [jp, en] = lines[Math.floor(Math.random() * lines.length)];
+      const who = castFor(q.get('id') ?? undefined).guide;
+      setToast({ who, jp, en, k: Date.now() });
+      sfx.chime();
+      const st = await loadSettings(); if (st.charVoices) void speakSeq([{ text: jp, who }]);
+    }
     setIdx(idx + 1);
     window.scrollTo(0, 0);
   };
@@ -181,6 +201,12 @@ export default function Session() {
         </div>
         <span className="small muted num">{idx + 1}/{queue.length}</span>
       </header>
+      {toast && (
+        <div key={toast.k} className="teacher-toast" role="status" onClick={() => setToast(null)}>
+          <Portrait id={toast.who} mood="happy" size={46} />
+          <div><b className="small">{CAST[toast.who]?.name.split(' ')[0]}</b><div lang="ja" className="jp">{toast.jp}</div><div className="tiny muted">{toast.en}</div></div>
+        </div>
+      )}
       {banner && <div key={banner.k} className="combo-banner" lang="ja" aria-live="polite">{banner.n}問連続！🔥</div>}
       {comboScreen !== null && (
         <div className="celebrate" role="dialog" aria-label="Combo">
@@ -194,7 +220,7 @@ export default function Session() {
         </div>
       )}
       <div className="hud" aria-label="Session score">
-        <span className="pill"><Icon n="star" s={13} />{score}</span>
+        <span className="pill" style={{ position: 'relative' }}><Icon n="star" s={13} />{score}{xpPop && <b key={xpPop.k} className="xp-pop">+{xpPop.n}</b>}</span>
         <span key={combo} className={`pill ${combo >= 3 ? 'hot' : ''}`}><Icon n="flame" s={13} />{combo} in a row</span>
         {queue.slice(idx).filter(x => x.requeued).length > 0 && <span className="pill" style={{ color: 'var(--bad)' }}><Icon n="retry" s={13} />{queue.slice(idx).filter(x => x.requeued).length} to fix</span>}
         <span className="grow" />
@@ -236,7 +262,7 @@ export { SKILL_NAMES };
 
 function Done({ m, tally, seconds, score, best, lessonId, part, plan }: { m: string; tally: Tally[]; seconds: number; score: number; best: number; lessonId?: string; part?: string; plan?: boolean }) {
   const next = lessonId && part !== '1' ? lessonAfter(lessonId) : undefined;
-  useEffect(() => { sfx.complete(); }, []);
+  useEffect(() => { sfx.complete(); celebrate.done(); }, []);
   const right = tally.filter(t => t.ok).length, missed = tally.filter(t => !t.ok);
   const weak = [...new Set(missed.map(t => SKILL_NAMES[t.skill]))];
   return (

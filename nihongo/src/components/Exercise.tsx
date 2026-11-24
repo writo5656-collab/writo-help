@@ -22,6 +22,7 @@ import { CAST } from '../content/cast';
 import { Portrait } from './Portrait';
 import { WordRomaji } from './WordRomaji';
 import { Explain } from './Explain';
+import { TapSentence } from './TapSentence';
 
 export interface Outcome { ok: boolean; hint: boolean; userAnswer: string; expected: string; explanation: string }
 interface Props { ex: Ex; onResult: (o: Outcome) => void; onNext: (requeue: boolean, solved: boolean) => void; last: boolean; cast?: { guide: string; goof: string } }
@@ -150,7 +151,9 @@ function Choice({ ex, locked, finish }: { ex: Extract<Ex, { t: 'choice' }>; lock
         {ex.context && <p style={{ fontWeight: 650 }} lang={ex.jp ? 'ja' : undefined} className={ex.jp ? 'muted jp' : ''}>{ex.context}</p>}
         {ex.jp && (
           <div className="card flat row between">
-            <Furi f={ex.jp} className={ex.jp.length <= 3 ? 'kana-big' : 'jp-xl'} furigana={ex.skill === 'kanji' || ex.skill === 'vocab' ? false : undefined} romaji={ex.skill === 'kana' || ex.skill === 'vocab' || ex.skill === 'kanji' ? false : undefined} />
+            {(ex.skill === 'reading' || ex.skill === 'grammar') && ex.tag !== 'challenge' && /\s/.test(ex.jp.trim())
+              ? <TapSentence f={ex.jp} size="l" />
+              : <Furi f={ex.jp} className={ex.jp.length <= 3 ? 'kana-big' : 'jp-xl'} furigana={ex.skill === 'kanji' || ex.skill === 'vocab' ? false : undefined} romaji={ex.skill === 'kana' || ex.skill === 'vocab' || ex.skill === 'kanji' ? false : undefined} />}
             {ex.say && <button className="iconbtn soft" aria-label="Listen" onClick={() => speak(ex.say!, { rate: s.rate })}><Icon n="sound" /></button>}
           </div>
         )}
@@ -443,7 +446,7 @@ function Chat({ ex, locked, finish }: { ex: Extract<Ex, { t: 'chat' }>; locked: 
         <Portrait id={ex.who} size={52} />
         <div className="chat-bubble them">
           <button className="iconbtn" aria-label="Listen" onClick={() => speakSeq([{ text: line.jp, who: ex.who, rate: s.rate }])}><Icon n="sound" /></button>
-          <WordRomaji f={ex.line.f} />
+          <TapSentence f={ex.line.f} size="m" />
           <div className="small muted">{ex.line.en}</div>
         </div>
       </div>

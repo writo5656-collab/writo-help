@@ -9,6 +9,8 @@ import { useDaily } from '../lib/hooks';
 import { CAST } from '../content/cast';
 import { Portrait } from '../components/Portrait';
 import { tutorReply, geminiModels } from '../services/ai';
+import { MicTest } from '../components/MicTest';
+import { sfx } from '../services/sfx';
 import { Link } from 'react-router-dom';
 import { Screen, Switch, Icon, useS, fmtDate, Wip } from '../components/ui';
 
@@ -71,6 +73,7 @@ export default function Settings() {
           <button className="btn sm ghost" style={{ alignSelf: 'flex-start' }} onClick={() => speak('こんにちは。日本語を勉強しましょう。', { rate: s.rate })}><Icon n="sound" s={16} />Test the voice</button>
         </div>
       </section>
+      <MicTest />
       <p className="tiny muted">{ttsAvailable() ? 'Audio uses your phone\'s built-in Japanese voice, so it works offline. If you hear nothing, install Japanese in Android Settings → System → Languages → Text-to-speech output.' : 'This device has no speech engine available, so audio buttons will be silent.'}</p>
 
       <h2>Reminder</h2>
@@ -80,6 +83,7 @@ export default function Settings() {
       </section>
       <div className="row gap-s wrap">
         <button className="btn sm" onClick={async () => setNMsg(await testNotification())}><Icon n="bell" s={16} />Send a test notification</button>
+        <button className="btn sm ghost" onClick={() => sfx.chime()}><Icon n="sound" s={16} />Hear the message tune</button>
         <button className="btn sm ghost" onClick={() => setPreview(!preview)}>{preview ? 'Hide' : 'Preview'} this week's messages</button>
       </div>
       {nMsg && <p className="small" role="status" style={{ whiteSpace: 'pre-line' }}>{nMsg}</p>}

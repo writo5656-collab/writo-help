@@ -6,81 +6,101 @@
     android:background="@drawable/widget_bg"
     android:gravity="center_vertical"
     android:orientation="horizontal"
-    android:padding="12dp">
+    android:padding="10dp">
 
-    <LinearLayout
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:gravity="center"
-        android:orientation="vertical"
-        android:paddingEnd="12dp">
+    <FrameLayout
+        android:layout_width="64dp"
+        android:layout_height="64dp"
+        android:layout_marginEnd="10dp">
         <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="🔥"
-            android:textSize="22sp" />
-        <TextView
-            android:id="@+id/w_streak"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="0"
-            android:textColor="#FFFFFF"
-            android:textSize="28sp"
-            android:textStyle="bold" />
-    </LinearLayout>
+            android:id="@+id/w_flag"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:text="🇯🇵"
+            android:textSize="34sp" />
+        <ImageView
+            android:id="@+id/w_face"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:contentDescription="Today's teacher"
+            android:scaleType="fitCenter"
+            android:visibility="gone" />
+    </FrameLayout>
 
     <LinearLayout
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_weight="1"
         android:orientation="vertical">
-        <LinearLayout
+        <TextView
+            android:id="@+id/w_name"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:maxLines="1"
+            android:text="Today's teacher"
+            android:textColor="#E9C46A"
+            android:textSize="11sp"
+            android:textStyle="bold" />
+        <TextView
+            android:id="@+id/w_say"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal">
-            <TextView
-                android:id="@+id/w_label"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="day streak"
-                android:textColor="#F6F1E4"
-                android:textSize="14sp"
-                android:textStyle="bold" />
-            <TextView
-                android:id="@+id/w_freezes"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="❄❄❄"
-                android:textColor="#BFE0F7"
-                android:textSize="14sp" />
-        </LinearLayout>
+            android:background="@drawable/widget_bubble"
+            android:ellipsize="end"
+            android:maxLines="2"
+            android:paddingStart="8dp"
+            android:paddingTop="3dp"
+            android:paddingEnd="8dp"
+            android:paddingBottom="3dp"
+            android:text="今日もいっしょにがんばろう！"
+            android:textColor="#143427"
+            android:textSize="13sp" />
         <ProgressBar
             android:id="@+id/w_bar"
             style="@android:style/Widget.ProgressBar.Horizontal"
             android:layout_width="match_parent"
-            android:layout_height="8dp"
-            android:layout_marginTop="6dp"
+            android:layout_height="7dp"
+            android:layout_marginTop="5dp"
             android:max="25"
             android:progress="0"
-            android:progressTint="#E9C46A"
-            android:progressBackgroundTint="#3F6E58" />
+            android:progressBackgroundTint="#3F6E58"
+            android:progressTint="#E9C46A" />
         <TextView
             android:id="@+id/w_plan"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
+            android:layout_marginTop="2dp"
             android:text="0 / 25 min today"
             android:textColor="#F6F1E4"
-            android:textSize="12sp" />
+            android:textSize="11sp" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:gravity="center"
+        android:orientation="vertical">
         <TextView
-            android:id="@+id/w_note"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:maxLines="1"
-            android:ellipsize="end"
-            android:text="日本語 · tap to study"
-            android:textColor="#CFDCC8"
-            android:textSize="11sp" />
+            android:text="🔥"
+            android:textSize="18sp" />
+        <TextView
+            android:id="@+id/w_streak"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="0"
+            android:textColor="#FFFFFF"
+            android:textSize="24sp"
+            android:textStyle="bold" />
+        <TextView
+            android:id="@+id/w_freezes"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="❄❄❄"
+            android:textColor="#BFE0F7"
+            android:textSize="10sp" />
     </LinearLayout>
 </LinearLayout>

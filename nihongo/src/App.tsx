@@ -91,7 +91,7 @@ function StreakKeeper() {
   useEffect(() => {
     if (!d || !s) return;
     const g = CAST[dailyCast().guide];
-    void updateWidget({ day: d.today, streak: d.info.current, freezes: d.info.freezes, minutes: Math.floor(d.seconds / 60), done: d.info.todayDone, teacher: g.name.split(' ')[0] });
+    void updateWidget({ day: d.today, streak: d.info.current, freezes: d.info.freezes, minutes: Math.floor(d.seconds / 60), done: d.info.todayDone, teacher: g.name.split(' ')[0], teacherId: g.id });
   }, [sig]); // eslint-disable-line
   useEffect(() => {
     if (!d || !s) return;

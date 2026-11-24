@@ -10,6 +10,7 @@ import { listenOnce, stopListening } from '../services/stt';
 import { readingOf } from '../services/reading';
 import { sfx } from '../services/sfx';
 import { buzz } from '../services/haptics';
+import { celebrate } from '../services/fun';
 import { Icon, useS } from './ui';
 import { Portrait } from './Portrait';
 
@@ -66,7 +67,7 @@ export function PhotoAsk({ photo, who, mic, dark = false, onDone }: { photo: Rea
   }
 
   function right() {
-    sfx.correct(); buzz.ok();
+    sfx.correct(); buzz.ok(); celebrate.pop(0.5, 0.45);
     const t = pick(READ_THANKS); setLine(t); setPhase('right');
     void speakSeq([{ text: t.jp, who }]);
   }

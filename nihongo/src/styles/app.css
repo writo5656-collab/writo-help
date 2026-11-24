@@ -506,3 +506,35 @@ a.card:active, button.card:active { transform: scale(.98); }
 .photo-ask.dark .btn.line { color: #fff; border-color: rgba(255,255,255,.5); background: transparent; }
 .photo-ask.dark .iconbtn { color: #fff; }
 .call-photo { position: fixed; inset: 0; z-index: 40; overflow-y: auto; padding: calc(16px + var(--safe-t)) 16px calc(20px + var(--safe-b)); background: rgba(14, 18, 24, .94); backdrop-filter: blur(6px); }
+
+/* Tap-a-word sentences: furigana above, pronunciation under each word */
+.tapsent { display: flex; flex-direction: column; gap: 8px; }
+.ts-line { display: flex; flex-wrap: wrap; gap: 6px 4px; align-items: flex-end; }
+.ts-w { display: inline-flex; flex-direction: column; align-items: center; gap: 1px; padding: 4px 6px 3px; border: 0; border-bottom: 2px dashed var(--sage); border-radius: 8px 8px 2px 2px; background: transparent; color: var(--ink); min-height: 44px; font-family: var(--jp); transition: background .15s, transform .15s; }
+.ts-w:active { transform: scale(.95); }
+.ts-w.on { background: var(--sage-soft); border-bottom-color: var(--forest-2); }
+.ts-jp { line-height: 1.5; }
+.ts-jp rt { font-size: .5em; color: var(--muted); }
+.ts-ro { font-family: var(--ui); font-size: .72rem; color: var(--forest-2); letter-spacing: .01em; white-space: nowrap; }
+.ts-m .ts-jp { font-size: 1.15rem; } .ts-l .ts-jp { font-size: 1.5rem; } .ts-xl .ts-jp { font-size: 1.9rem; }
+.ts-pop { background: var(--card); border: 1.5px solid var(--sage); border-radius: var(--r-sm); padding: 8px 12px; display: flex; flex-direction: column; gap: 3px; animation: slideUp .2s ease both; box-shadow: var(--shadow); }
+
+/* Lesson start: "Today you'll learn" */
+.today-hero { display: flex; gap: 12px; align-items: flex-start; padding: 14px; border-radius: var(--r-lg); background: linear-gradient(135deg, var(--forest), var(--forest-2)); color: var(--cream); box-shadow: var(--shadow); animation: rise .4s ease both; }
+.bubble-say { position: relative; background: var(--card); color: var(--ink); border-radius: 16px; border-top-left-radius: 4px; padding: 8px 10px; display: flex; flex-direction: column; gap: 4px; }
+.word-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; }
+.word-card { display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 10px 6px; border-radius: var(--r); border: 1.5px solid var(--line); background: var(--card); color: var(--ink); text-align: center; transition: transform .15s, border-color .2s, background .2s; min-height: 96px; }
+.word-card:active { transform: scale(.96); }
+.word-card.on { border-color: var(--forest-2); background: var(--sage-soft); transform: scale(1.03); }
+.wc-kana { font-size: .78rem; color: var(--muted); }
+.wc-jp { font-family: var(--jp); font-size: 1.35rem; font-weight: 700; line-height: 1.3; }
+.wc-ro { font-size: .8rem; color: var(--forest-2); font-weight: 600; }
+.wc-en { font-size: .78rem; color: var(--muted); line-height: 1.25; }
+.bubble.light.me { background: var(--sage-soft); color: var(--ink); border-color: var(--sage); }
+
+/* Fun: score pop and the teacher dropping in */
+.xp-pop { position: absolute; right: -6px; top: -4px; color: var(--amber); font-weight: 800; font-size: .85rem; pointer-events: none; animation: xpUp 1s ease-out both; }
+@keyframes xpUp { 0% { opacity: 0; transform: translateY(6px) scale(.7); } 20% { opacity: 1; transform: translateY(0) scale(1.15); } 100% { opacity: 0; transform: translateY(-22px) scale(1); } }
+.teacher-toast { position: fixed; left: 12px; right: 12px; top: calc(64px + var(--safe-t)); z-index: 45; display: flex; gap: 10px; align-items: center; padding: 10px 14px; border-radius: var(--r); background: var(--card); border: 2px solid var(--amber); box-shadow: 0 8px 24px rgba(31,77,58,.2); animation: toastIn .45s cubic-bezier(.3,1.5,.5,1) both; }
+@keyframes toastIn { from { opacity: 0; transform: translateY(-30px) scale(.9); } }
+.screen > .teacher-toast { animation: toastIn .45s cubic-bezier(.3,1.5,.5,1) both !important; }

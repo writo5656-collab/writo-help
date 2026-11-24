@@ -1,13 +1,12 @@
 // "Explain my answer" sheet (right or wrong): your answer vs the correct one,
 // then one tab per piece of the sentence with meaning, particle, verb ending
 // and examples from the course. The AI teacher can explain more on request.
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import type { Ex } from '../lib/exercises';
-import type { Vocab } from '../content/types';
-import { ALL_VOCAB, ALL_SENTENCES, LESSONS } from '../content';
+import { ALL_SENTENCES, LESSONS } from '../content';
 import { CAST } from '../content/cast';
-import { LIB, loadLibrary } from '../content/library';
+import { useLookup } from '../lib/lookup';
 import { targetOf, explainPieces, explainPrompt } from '../lib/explain';
 import { parseFuri, romajiOf } from '../lib/jp';
 import { getKV } from '../lib/db';
@@ -22,14 +21,7 @@ interface Props { ex: Ex; ok: boolean; user: string; expected: string; teacher?:
 export function Explain({ ex, ok, user, expected, teacher, onClose }: Props) {
   const s = useS();
   const t = useMemo(() => targetOf(ex), [ex]);
-  const [libReady, setLibReady] = useState(!!LIB);
-  useEffect(() => { if (!LIB) void loadLibrary().then(() => setLibReady(true)).catch(() => undefined); }, []);
-  const look = useMemo(() => {
-    const m = new Map<string, Vocab>();
-    if (LIB) for (const w of LIB.words) if (!m.has(w.jp)) m.set(w.jp, w);
-    for (const w of ALL_VOCAB) m.set(w.jp, w); // course words win (they match the lessons' meanings)
-    return (jp: string) => m.get(jp);
-  }, [libReady]);
+  const look = useLookup();
   const pieces = useMemo(() => t ? explainPieces(t.f, look, (word, not) =>
     ALL_SENTENCES.map(x => ({ x, jp: parseFuri(x.f).jp })).filter(o => o.jp.includes(word) && o.jp !== not)
       .sort((a, b) => a.jp.length - b.jp.length).slice(0, 2).map(o => ({ f: o.x.f, en: o.x.en }))) : [], [t, look]);

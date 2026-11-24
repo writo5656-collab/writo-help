@@ -45,13 +45,26 @@ export function planReminders(o: { time: string; streak: number; todayDone: bool
   return out;
 }
 
+// Teacher messages ring with the app's own little tune (res/raw/nihongo_chime.wav).
+// Android fixes a channel's sound once it is created, so the tune lives on its own channel id.
+const CHANNEL = 'teacher-chime-1';
+let channelReady: Promise<void> | null = null;
+function ensureChannel(): Promise<void> {
+  if (!channelReady) channelReady = LocalNotifications.createChannel({
+    id: CHANNEL, name: 'Messages from your teacher', description: 'Reminders and messages, with the Nihongo chime',
+    importance: 4, visibility: 1, sound: 'nihongo_chime.wav', vibration: true, lights: true, lightColor: '#E9C46A',
+  }).catch(() => undefined);
+  return channelReady;
+}
+
 export async function scheduleStreakReminders(o: { on: boolean; time: string; streak: number; todayDone: boolean; freezes: number }) {
   if (!Capacitor.isNativePlatform()) return;
   try {
     await LocalNotifications.cancel({ notifications: IDS.map(id => ({ id })) });
     if (!o.on) return;
     if ((await LocalNotifications.checkPermissions()).display !== 'granted') return;
-    const list = planReminders(o).map(p => ({ id: p.id, title: p.title, body: p.body, schedule: { at: p.at }, group: 'nihongo', smallIcon: 'ic_stat_nihongo', largeIcon: 'ic_large_nihongo', iconColor: '#1F4D3A', extra: { go: '/plan' } }));
+    await ensureChannel();
+    const list = planReminders(o).map(p => ({ id: p.id, title: p.title, body: p.body, schedule: { at: p.at }, group: 'nihongo', channelId: CHANNEL, smallIcon: 'ic_stat_nihongo', largeIcon: 'ic_large_nihongo', iconColor: '#1F4D3A', extra: { go: '/plan' } }));
     if (list.length) await LocalNotifications.schedule({ notifications: list });
   } catch { /* reminders are best-effort */ }
 }
@@ -63,7 +76,8 @@ export async function testNotification(): Promise<string> {
   if (!Capacitor.isNativePlatform()) return `Notifications only work in the Android app. This is what one looks like:\n${who?.name}: ${nd.text(7)}`;
   const perm = await LocalNotifications.requestPermissions();
   if (perm.display !== 'granted') return 'Notifications are blocked. Allow them in Android Settings → Apps → Nihongo → Notifications.';
-  await LocalNotifications.schedule({ notifications: [{ id: 399, title: `${who?.name ?? 'Nihongo'} 🌸`, body: nd.text(7), schedule: { at: new Date(Date.now() + 5000) }, smallIcon: 'ic_stat_nihongo', largeIcon: 'ic_large_nihongo', iconColor: '#1F4D3A', extra: { go: '/plan' } }] });
+  await ensureChannel();
+  await LocalNotifications.schedule({ notifications: [{ id: 399, channelId: CHANNEL, title: `${who?.name ?? 'Nihongo'} 🌸`, body: nd.text(7), schedule: { at: new Date(Date.now() + 5000) }, smallIcon: 'ic_stat_nihongo', largeIcon: 'ic_large_nihongo', iconColor: '#1F4D3A', extra: { go: '/plan' } }] });
   return 'A test notification will arrive in about 5 seconds. You can lock your phone to see it.';
 }
 

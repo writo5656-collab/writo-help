@@ -85,3 +85,50 @@ export function toKanaUsing(input: string, f: string): string {
 export function hasKanji(s: string) { return new RegExp(`[${KANJI}]`).test(s); }
 export function looksLatin(s: string) { return /[a-zA-Z]{2,}/.test(s) && !isJapanese(s.replace(/\s/g, '')); }
 export { toHiragana };
+
+/**
+ * Split furigana notation written without spaces into word chunks, so every
+ * word can be tapped and gets its own pronunciation. A light rule set:
+ * break after a particle that follows kanji/katakana/a closing bracket,
+ * after punctuation, and between katakana and kanji.
+ * Text that already has spaces is returned unchanged.
+ */
+const AUTO_PARTICLES = ['から', 'まで', 'より', 'は', 'が', 'を', 'に', 'で', 'と', 'も', 'の', 'へ', 'や'];
+export function autoSpace(f: string): string {
+  const t = f.trim();
+  // Already spaced: only split pieces that are clearly several words long.
+  if (/\s/.test(t)) return t.split(/\s+/).map(c => (parseFuri(c).jp.length >= 7 ? autoSpace(c) : c)).join(' ');
+  // Tokens: "漢字[かな]" groups or single characters.
+  const toks = t.match(/[\u3400-\u9fff々〆ヶ]+\[[^\]]+\]|\{[^}]+\}|./gu) ?? [];
+  const kind = (x: string) => /^[\u3400-\u9fff々〆ヶ]/.test(x) ? 'k' : /^[\u30a0-\u30ffー]/.test(x) ? 'K' : /^[\u3040-\u309f]/.test(x) ? 'h' : /^[。、！？!?]/.test(x) ? 'p' : /^[」』]/.test(x) ? 'c' : /^[「『]/.test(x) ? 'o' : 'x';
+  const out: string[][] = [[]];
+  for (let i = 0; i < toks.length; i++) {
+    const cur = out[out.length - 1];
+    const tk = toks[i], k = kind(tk);
+    const prev = cur[cur.length - 1], pk = prev ? kind(prev) : '';
+    // katakana word followed by kanji → new word
+    if (cur.length && pk === 'K' && k === 'k') out.push([]);
+    // opening bracket starts a new chunk
+    if (cur.length && k === 'o') out.push([]);
+    out[out.length - 1].push(tk);
+    if (k === 'p') { out.push([]); continue; }
+    // a one-kana particle right before kanji ends the word (私たちの|学校, 食べに|行く)
+    if (k === 'h' && 'のをにでがはともへ'.includes(tk) && toks[i + 1] && kind(toks[i + 1]) === 'k' && cur.some(x => kind(x) === 'k' || kind(x) === 'K')) { out.push([]); continue; }
+    // particle after a kanji / katakana / closing bracket → end the word here
+    if (k === 'h' && (pk === 'k' || pk === 'K' || prev === '」' || prev === '』')) {
+      for (const pa of AUTO_PARTICLES) {
+        const ahead = toks.slice(i, i + pa.length).join('');
+        if (ahead !== pa) continue;
+        const after = toks[i + pa.length];
+        // don't split inside words like 私たち / 行きます: the particle must be followed by a new word or the end
+        if (after === undefined || kind(after) !== 'h' || pa === 'は' || pa === 'を' || pa === 'が') {
+          for (let j = 1; j < pa.length; j++) out[out.length - 1].push(toks[i + j]);
+          i += pa.length - 1;
+          out.push([]);
+        }
+        break;
+      }
+    }
+  }
+  return out.map(x => x.join('')).filter(Boolean).join(' ');
+}
