@@ -146,7 +146,7 @@ export function VocabList() {
 }
 
 function WordRow({ jp, kana, en, known }: { jp: string; kana: string; en: string; known?: boolean }) {
-  return <div className="li"><div className="grow"><span className="jp jp-m" lang="ja" style={{ fontWeight: 600 }}>{jp}</span>{kana !== jp && <span className="small muted jp" lang="ja">（{kana}）</span>}{known && <span className="badge" style={{ marginLeft: 6 }}>known</span>}<div className="small muted">{en}</div></div><SpeakBtn text={jp} /></div>;
+  return <div className="li"><div className="grow"><span className="jp jp-m" lang="ja" style={{ fontWeight: 600 }}>{jp}</span>{kana !== jp && <span className="small muted jp" lang="ja">（{kana}）</span>}{known && <span className="badge" style={{ marginLeft: 8 }}>known</span>}<div className="small muted">{en}</div></div><SpeakBtn text={jp} /></div>;
 }
 
 export function ReadingList() {

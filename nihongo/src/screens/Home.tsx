@@ -15,7 +15,7 @@ import { dailyCast, CAST } from '../content/cast';
 import { useAsync, SpeakBtn } from '../components/ui';
 import { loadLibrary } from '../content/library';
 
-function greeting() { const h = new Date().getHours(); return h < 11 ? ['おはよう', 'Good morning'] : h < 18 ? ['こんにちは', 'Hello'] : ['こんばんは', 'Good evening']; }
+const WD = ['日', '月', '火', '水', '木', '金', '土'];
 
 export default function Home() {
   const s = useS();
@@ -24,7 +24,8 @@ export default function Home() {
   const mistakes = useLiveQuery(() => db.mistakes.where('status').notEqual('remembered').count(), []) ?? 0;
   const pct = (ids: string[]) => Math.round((ids.filter(id => isKnown(map.get(id))).length / ids.length) * 100);
   const hira = pct(Object.keys(HIRA).map(kanaId)), kata = pct(Object.keys(KATA).map(kanaId)), kanji = pct(KANJI.map(k => kanjiId(k.k)));
-  const [jp, en] = greeting();
+  const now = new Date();
+  const jpDate = `${now.getMonth() + 1}月${now.getDate()}日（${WD[now.getDay()]}）`;
   const rp = ROLEPLAYS[(new Date().getDate()) % ROLEPLAYS.length];
   const daily = useDaily();
   if (!plan || !daily) return null;
@@ -34,22 +35,22 @@ export default function Home() {
   return (
     <main className="screen">
       <header className="topbar">
-        <div className="brand grow"><span className="brand-mark"><Icon n="torii" s={20} w={2.2} /></span>Nihongo</div>
+        <div className="brand grow"><span className="brand-mark"><Icon n="torii" s={20} /></span>Nihongo</div>
         <span className="lang-tag" title="You are learning Japanese"><JapanFlag w={24} /><span lang="ja">日本語</span></span>
         <Link className="iconbtn soft" to="/settings" aria-label="Settings"><Icon n="gear" /></Link>
       </header>
 
       <section className="row between" style={{ alignItems: 'flex-end' }}>
         <div className="col gap-s">
-          <h1><span lang="ja" className="jp">{jp}</span>{s.name ? `, ${s.name}` : ''}</h1>
-          <p className="muted">{en}. Learning <b>Japanese</b> 🇯🇵</p>
+          <h1>{now.toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' })}</h1>
+          <span className="jp muted" lang="ja">{jpDate}</span>
           <Clock />
-          <p className="small">Today's teacher: <b>{g.name}</b> · <Link to="/call" style={{ color: 'var(--forest-2)', fontWeight: 700 }}>call her</Link></p>
+          <p className="small">Today's teacher <b>{g.name}</b> · <Link to="/call" style={{ color: 'var(--forest-2)', fontWeight: 600 }}>Call her</Link></p>
         </div>
-        <Link to="/call" aria-label={`Call ${g.name}`} style={{ textAlign: 'center' }}><Portrait id={g.id} size={78} mood={daily.info.todayDone ? 'happy' : 'teach'} /><span className="tiny" style={{ display: 'block', fontWeight: 700, marginTop: 4 }}>{g.name.split(' ')[0]}</span></Link>
+        <Link to="/call" aria-label={`Call ${g.name}`} style={{ textAlign: 'center' }}><Portrait id={g.id} size={80} mood={daily.info.todayDone ? 'happy' : 'teach'} /><span className="tiny" style={{ display: 'block', fontWeight: 500, marginTop: 4 }}>{g.name.split(' ')[0]}</span></Link>
       </section>
 
-      <section className="card green col">
+      <section className="card col">
         <div className="row" style={{ alignItems: 'center' }}>
           <PlanRing seconds={daily.seconds} size={92} />
           <div className="grow">
@@ -58,34 +59,34 @@ export default function Home() {
             <p className="small muted"><span className="num">{daily.score.toLocaleString()}</span> score · {daily.studied} full days</p>
           </div>
         </div>
-        <div className="list" style={{ ['--line' as string]: 'rgba(255,255,255,.14)' }}>
-          {BLOCKS.map(b => <div key={b.id} className="li" style={{ minHeight: 40, padding: '8px 2px' }}><span className="num tiny" style={{ width: 40, opacity: .75, fontWeight: 700 }}>{b.min} min</span><span className="grow" style={{ fontWeight: 650, textDecoration: daily.blocks.includes(b.id) ? 'line-through' : 'none', opacity: daily.blocks.includes(b.id) ? .6 : 1 }}>{b.title}{b.id === 'lesson' && plan.lesson ? `: ${plan.lesson.title}` : ''}</span>{daily.blocks.includes(b.id) && <Icon n="check" s={18} />}</div>)}
+        <div className="list">
+          {BLOCKS.map(b => <div key={b.id} className="li" style={{ minHeight: 44, padding: '8px 0' }}><span className="num tiny muted" style={{ width: 44 }}>{b.min} min</span><span className="grow" style={{ fontWeight: 500, color: daily.blocks.includes(b.id) ? 'var(--muted)' : undefined }}>{b.title}{b.id === 'lesson' && plan.lesson ? `: ${plan.lesson.title}` : ''}</span>{daily.blocks.includes(b.id) && <span className="hanko sm" lang="ja" aria-label="Done">済</span>}</div>)}
         </div>
-        <Link to="/plan" className="btn cream">{daily.info.todayDone ? 'Keep learning' : daily.blocks.length || daily.seconds > 60 ? 'Continue learning' : 'Start today\'s plan'}<Icon n="next" s={18} /></Link>
+        <Link to="/plan" className="btn">{daily.info.todayDone ? 'Keep learning' : daily.blocks.length || daily.seconds > 60 ? 'Continue learning' : 'Start today\'s plan'}<Icon n="next" s={18} /></Link>
       </section>
 
       {plan.sundayPending && (
-        <Link to="/sunday" className="card sakura row">
-          <span className="tile sakura"><Icon n="calendar" /></span>
+        <Link to="/sunday" className="card row">
+          <span className="tile"><Icon n="calendar" /></span>
           <div className="grow"><h3>Sunday review is ready</h3><p className="small muted">A relaxed look back over the last {plan.sundayWeeks} week{plan.sundayWeeks > 1 ? 's' : ''}. It waits for you — no penalty if today does not suit.</p></div>
           <Icon n="next" />
         </Link>
       )}
 
       <Link to="/progress" className="streak-mini">
-        <span className={`fl ${daily.info.todayDone ? '' : 'off'}`}><Icon n="flame" s={20} w={2.2} /></span>
-        <span><b className="num">{daily.info.current}</b> day streak · {'❄'.repeat(daily.info.freezes)}{daily.info.atRisk ? ' · finish today\'s plan to keep it' : ''}</span>
+        <span className={`fl ${daily.info.todayDone ? '' : 'off'}`}><Icon n="flame" s={20} /></span>
+        <span><b className="num" style={{ fontWeight: 600 }}>{daily.info.current}</b> day streak · <span style={{ color: 'var(--ice-ink)' }}>{daily.info.freezes} freeze{daily.info.freezes === 1 ? '' : 's'}</span>{daily.info.atRisk ? ' · finish today\'s plan to keep it' : ''}</span>
         <span className="dots">{daily.week.map(w => <i key={w.key} className={w.status} />)}</span>
       </Link>
 
       <WordOfDay />
 
-      <div className="section-h"><h2>Your progress</h2><Link to="/progress" className="small" style={{ color: 'var(--forest-2)', fontWeight: 700 }}>Details</Link></div>
+      <div className="section-h"><h2>Your progress</h2><Link to="/progress" className="small" style={{ color: 'var(--forest-2)', fontWeight: 500 }}>Details</Link></div>
       <section className="card row" style={{ justifyContent: 'space-around' }}>
-        {([['あ', hira, 'Hiragana', 'var(--forest-2)'], ['ア', kata, 'Katakana', 'var(--amber)'], ['漢', kanji, 'Kanji', 'var(--sakura)']] as const).map(([ch, p, label, color]) => (
+        {([['あ', hira, 'Hiragana'], ['ア', kata, 'Katakana'], ['漢', kanji, 'Kanji']] as const).map(([ch, p, label]) => (
           <Link key={label} to={label === 'Kanji' ? '/kanji' : '/kana'} className="col center gap-s" style={{ alignItems: 'center' }}>
-            <Ring pct={p} color={color}><span><span className="jp" lang="ja" style={{ fontWeight: 700, fontSize: '1.15rem' }}>{ch}</span><br /><span className="tiny muted num">{p}%</span></span></Ring>
-            <span className="small" style={{ fontWeight: 600 }}>{label}</span>
+            <Ring pct={p}><span><span className="jp" lang="ja" style={{ fontWeight: 500, fontSize: '1.15rem' }}>{ch}</span><br /><span className="tiny muted num">{p}%</span></span></Ring>
+            <span className="small" style={{ fontWeight: 500 }}>{label}</span>
           </Link>
         ))}
       </section>
@@ -103,7 +104,7 @@ export default function Home() {
 
       <Link to="/read-japan" className="card row">
         <span className="tile sakura"><Icon n="eye" /></span>
-        <div className="grow col" style={{ gap: 2 }}><h3>Read real Japan 🇯🇵</h3><p className="small muted" style={{ margin: 0 }}>Real photos of signs and menus — can you read them?</p></div>
+        <div className="grow col" style={{ gap: 2 }}><h3>Read real Japan</h3><p className="small muted" style={{ margin: 0 }}>Real photos of signs and menus to read out loud</p></div>
         <Icon n="next" />
       </Link>
 
@@ -112,7 +113,6 @@ export default function Home() {
         <Link to="/mistakes" className="card grow col gap-s"><span className="tile amber"><Icon n="bulb" /></span><h3>Mistakes</h3><p className="small muted">{mistakes ? `${mistakes} to revisit` : 'Nothing open'}</p></Link>
       </div>
 
-      <Link to="/plan" className="btn">Continue learning<Icon n="next" s={18} /></Link>
     </main>
   );
 }
@@ -120,8 +120,8 @@ export default function Home() {
 function Step({ to, min, title, sub }: { to: string; min: string; title: string; sub: string }) {
   return (
     <Link to={to} className="li">
-      <span className="num tiny" style={{ width: 40, opacity: .75, fontWeight: 700 }}>{min} min</span>
-      <span className="grow"><span style={{ fontWeight: 700, display: 'block' }}>{title}</span><span className="small muted" style={{ display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{sub}</span></span>
+      <span className="num tiny muted" style={{ width: 44 }}>{min} min</span>
+      <span className="grow"><span style={{ fontWeight: 600, display: 'block' }}>{title}</span><span className="small muted" style={{ display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{sub}</span></span>
       <Icon n="next" s={18} />
     </Link>
   );
@@ -143,7 +143,7 @@ function WordOfDay() {
         <span className="label">Word of the day · from {CAST[g].name.split(' ')[0]}</span>
         <span className="row gap-s"><span className="jp-l jp" lang="ja">{w.jp}</span><span className="small muted jp" lang="ja">{w.kana}</span></span>
         <span className="small">{w.en} <span className="badge plain">N{w.lvl}</span></span>
-        <Link to={`/kanji?k=${kj.k}`} className="small" style={{ color: 'var(--forest-2)', fontWeight: 700 }}>Kanji of the day: <span lang="ja" className="jp">{kj.k}</span> — {kj.en.split(',')[0]}</Link>
+        <Link to={`/kanji?k=${kj.k}`} className="small" style={{ color: 'var(--forest-2)', fontWeight: 500 }}>Kanji of the day: <span lang="ja" className="jp">{kj.k}</span> — {kj.en.split(',')[0]}</Link>
       </div>
       <SpeakBtn text={w.jp} />
     </section>
@@ -157,8 +157,8 @@ function Clock() {
   const toSun = (7 - now.getDay()) % 7;
   return (
     <span className="clockline">
-      <span>{now.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' })} · {now.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}</span>
-      <span>{toSun === 0 ? <b style={{ color: 'var(--sakura)' }}>📅 Sunday review day</b> : `📅 Sunday review in ${toSun} day${toSun > 1 ? 's' : ''}`}</span>
+      <span className="row" style={{ gap: 8 }}><Icon n="clock" s={14} /><span className="num">{now.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}</span></span>
+      <span className="row" style={{ gap: 8 }}><Icon n="calendar" s={14} />{toSun === 0 ? <span style={{ color: 'var(--forest-2)' }}>Sunday review today</span> : `Sunday review in ${toSun} day${toSun > 1 ? 's' : ''}`}</span>
     </span>
   );
 }

@@ -58,7 +58,7 @@ export default function Progress() {
       <StreakBadge current={daily.info.current} freezes={daily.info.freezes} atRisk={daily.info.atRisk} todayDone={daily.info.todayDone} />
       <section className="card row">
         <PlanRing seconds={daily.seconds} size={84} />
-        <div className="grow"><h3>Today: {Math.floor(daily.seconds / 60)} of 25 minutes</h3><p className="small muted">Best streak: <b className="num">{daily.info.best}</b> days · {daily.studied} full days · {daily.info.freezes} ❄ freeze{daily.info.freezes === 1 ? '' : 's'} left</p></div>
+        <div className="grow"><h3>Today: {Math.floor(daily.seconds / 60)} of 25 minutes</h3><p className="small muted">Best streak: <b className="num">{daily.info.best}</b> days · {daily.studied} full days · {daily.info.freezes} freeze{daily.info.freezes === 1 ? '' : 's'} left</p></div>
       </section>
       <h2>Streak calendar</h2>
       <section className="card col gap-s">
@@ -77,10 +77,10 @@ export default function Progress() {
       <p className="tiny muted">Retention = how often you were right on items first learned on an earlier day (last 30 days). It is the number that matters most.</p>
 
       <h2>What you know</h2>
-      <section className="card" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 18 }}>
+      <section className="card" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
         {sets.map(([label, c, color]) => (
           <div key={label} className="row">
-            <Ring pct={(c.known / c.total) * 100} size={58} stroke={6} color={color}><span className="tiny num" style={{ fontWeight: 700 }}>{Math.round((c.known / c.total) * 100)}%</span></Ring>
+            <Ring pct={(c.known / c.total) * 100} size={58} stroke={6} color={color}><span className="tiny num" style={{ fontWeight: 600 }}>{Math.round((c.known / c.total) * 100)}%</span></Ring>
             <div><h3>{label}</h3><div className="tiny muted num">{c.known}/{c.total} known</div><div className="tiny muted num">{c.mastered} long-term</div></div>
           </div>
         ))}
@@ -94,18 +94,18 @@ export default function Progress() {
       <h2>Skills (last 30 days)</h2>
       <section className="card col">
         {skills.map(x => (
-          <div key={x.k} className="col" style={{ gap: 5 }}>
-            <div className="row between small"><span style={{ fontWeight: 650 }}>{SKILL_NAMES[x.k]}</span><span className="muted num">{x.n ? `${x.pct}% · ${x.n} answers` : 'not practised yet'}</span></div>
+          <div key={x.k} className="col" style={{ gap: 4 }}>
+            <div className="row between small"><span style={{ fontWeight: 500 }}>{SKILL_NAMES[x.k]}</span><span className="muted num">{x.n ? `${x.pct}% · ${x.n} answers` : 'not practised yet'}</span></div>
             <Bar pct={x.pct} />
           </div>
         ))}
-        {weakest && weakest.pct < 80 && <div className="card amber small" style={{ padding: '10px 12px' }}><b>Suggested focus:</b> {SKILL_NAMES[weakest.k]} — your lowest accuracy at {weakest.pct}%.</div>}
+        {weakest && weakest.pct < 80 && <div className="card amber small" style={{ padding: '12px 12px' }}><b>Suggested focus:</b> {SKILL_NAMES[weakest.k]} — your lowest accuracy at {weakest.pct}%.</div>}
       </section>
 
       <h2>Tracks</h2>
       <section className="card col">
-        <div className="col" style={{ gap: 5 }}><div className="row between small"><span style={{ fontWeight: 650 }}>JLPT track (N5 → N4)</span><span className="muted num">{trackProgress(JLPT_LESSONS, map, finished)}%</span></div><Bar pct={trackProgress(JLPT_LESSONS, map, finished)} /></div>
-        <div className="col" style={{ gap: 5 }}><div className="row between small"><span style={{ fontWeight: 650 }}>Practical situations</span><span className="muted num">{trackProgress(PRACTICAL_LESSONS, map, finished)}%</span></div><Bar pct={trackProgress(PRACTICAL_LESSONS, map, finished)} /></div>
+        <div className="col" style={{ gap: 4 }}><div className="row between small"><span style={{ fontWeight: 500 }}>JLPT track (N5 → N4)</span><span className="muted num">{trackProgress(JLPT_LESSONS, map, finished)}%</span></div><Bar pct={trackProgress(JLPT_LESSONS, map, finished)} /></div>
+        <div className="col" style={{ gap: 4 }}><div className="row between small"><span style={{ fontWeight: 500 }}>Practical situations</span><span className="muted num">{trackProgress(PRACTICAL_LESSONS, map, finished)}%</span></div><Bar pct={trackProgress(PRACTICAL_LESSONS, map, finished)} /></div>
       </section>
 
       <h2>Time studied — last 14 days</h2>
@@ -125,7 +125,7 @@ export default function Progress() {
       <section className="card flat list" style={{ padding: '2px 16px' }}>
         {[...days].sort((a, b) => b.day.localeCompare(a.day)).slice(0, 10).map(d => {
           const a = answers.filter(x => x.day === d.day);
-          return <div key={d.day} className="li"><span className="grow" style={{ fontWeight: 650 }}>{new Date(d.day).toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' })}</span><span className="small muted num">{fmtMin(d.seconds)} · {a.length} answers · {d.xp} XP</span></div>;
+          return <div key={d.day} className="li"><span className="grow" style={{ fontWeight: 500 }}>{new Date(d.day).toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' })}</span><span className="small muted num">{fmtMin(d.seconds)} · {a.length} answers · {d.xp} XP</span></div>;
         })}
         {days.length === 0 && <div className="li muted small">No study sessions yet.</div>}
       </section>

@@ -85,7 +85,7 @@ export function NotePage() {
         <button className={`chip ${reading ? 'on' : ''}`} onClick={() => setReading(!reading)}>Reading</button>
       </div>
       <Paper title={n.folder} date={fmtDate(n.created)} grid={n.paper === 'grid'}>
-        <input className="paper-input note" style={{ height: 'var(--rule)', fontWeight: 700 }} lang="ja" placeholder="Title" value={n.title} onChange={e => up({ title: e.target.value })} aria-label="Title" />
+        <input className="paper-input note" style={{ height: 'var(--rule)', fontWeight: 600 }} lang="ja" placeholder="Title" value={n.title} onChange={e => up({ title: e.target.value })} aria-label="Title" />
         <PaperInput inputRef={ref} value={n.body} onChange={v => up({ body: v })} romajiMode={romajiMode} minRows={appKb ? 6 : 9} note noSystemKeyboard={appKb} placeholder="Write here… 日本語で書きましょう" />
       </Paper>
       {reading && (
@@ -144,7 +144,7 @@ export function Handwriting() {
       </div>
       {total > 0 && (
         <div className={`card ${drawn === total ? 'sage' : 'flat'} row between`}>
-          <span style={{ fontWeight: 650 }}>Strokes: <span className="num">{drawn}</span> of <span className="num">{total}</span></span>
+          <span style={{ fontWeight: 500 }}>Strokes: <span className="num">{drawn}</span> of <span className="num">{total}</span></span>
           <span className="small muted">{drawn === 0 ? 'Follow the numbers, in order' : drawn < total ? 'Keep going' : drawn === total ? 'Right number of strokes' : 'Too many strokes — clear and retry'}</span>
         </div>
       )}

@@ -178,7 +178,7 @@ function InCall({ id, mode, ai, rpId, plan, quiz }: { id: string; mode: string; 
     }
     setTries(0);
     setMood('happy'); sfx.correct(); setScore(x => x + (close ? 3 : 5));
-    if (close) setMine({ said, fix: `Close enough! Exactly: ${parseFuri(t.expect[0]).jp}` });
+    if (close) setMine({ said, fix: `Close enough. Exactly: ${parseFuri(t.expect[0]).jp}` });
     if (t.mistakeId) { const m = await db.mistakes.get(t.mistakeId); if (m) await db.mistakes.update(t.mistakeId, { status: m.status === 'uncertain' ? 'remembered' : 'uncertain' }); }
     const next = cur + 1; setTurn(next);
     if (next === 2 && turns.length > 2 && mode !== 'mistakes') { await new Promise(r => setTimeout(r, 600)); await showPhoto(); }
@@ -204,7 +204,7 @@ function InCall({ id, mode, ai, rpId, plan, quiz }: { id: string; mode: string; 
     <div className="call" style={{ ['--c' as string]: c.color }}>
       <div className="row between" style={{ width: '100%' }}>
         <span className="small" style={{ opacity: .85 }}>{free ? 'Free talk' : mode === 'mistakes' ? 'Mistake quiz' : rp.title} · <span className="num">{mmss}</span></span>
-        {!free && <span className="row gap-s"><span className="small num" style={{ opacity: .85 }}>{Math.min(turn + 1, turns.length)}/{turns.length} · ★ {score}</span><button className="chip" onClick={() => setEasy(!easy)} aria-pressed={easy} style={{ background: easy ? '#fff' : 'rgba(255,255,255,.15)', color: easy ? 'var(--forest)' : '#fff', borderColor: 'transparent', minHeight: 32 }}>{easy ? 'Hints on' : 'Hints off'}</button></span>}
+        {!free && <span className="row gap-s"><span className="small num" style={{ opacity: .85 }}>{Math.min(turn + 1, turns.length)}/{turns.length} · {score} pts</span><button className="chip" onClick={() => setEasy(!easy)} aria-pressed={easy} style={{ background: easy ? '#fff' : 'rgba(255,255,255,.15)', color: easy ? 'var(--forest)' : '#fff', borderColor: 'transparent', minHeight: 32 }}>{easy ? 'Hints on' : 'Hints off'}</button></span>}
       </div>
       <div className="stage">
         <Portrait id={id} mood={mood} talking={talking} shape="full" size={170} />
@@ -218,7 +218,7 @@ function InCall({ id, mode, ai, rpId, plan, quiz }: { id: string; mode: string; 
             <Furi f={cap.f} className="jp" romaji={false} furigana />
             <div className="small" style={{ opacity: .75, marginTop: 2 }} lang="ja">{cap.kana ?? parseFuri(cap.f).kana}</div>
             <div className="small" style={{ marginTop: 4 }}>{cap.en}</div>
-            <div className="row gap-s" style={{ marginTop: 6 }}>
+            <div className="row gap-s" style={{ marginTop: 8 }}>
               <button className="chip" style={{ background: 'rgba(255,255,255,.15)', color: '#fff', borderColor: 'transparent', minHeight: 32 }} onClick={() => speakSeq([{ text: parseFuri(cap.f).jp, who: id, rate: s.rate * 0.95 }])}><Icon n="sound" s={14} />Again</button>
               <button className="chip" style={{ background: 'rgba(255,255,255,.15)', color: '#fff', borderColor: 'transparent', minHeight: 32 }} onClick={() => speakSeq([{ text: parseFuri(cap.f).jp, who: id, rate: s.rate * 0.6 }])}><Icon n="slow" s={14} />Slow</button>
             </div>
@@ -231,8 +231,8 @@ function InCall({ id, mode, ai, rpId, plan, quiz }: { id: string; mode: string; 
             </button>
           )}
           {mine && <div className="small" style={{ marginTop: 8 }}>You said: <span lang="ja">{mine.said}</span></div>}
-          {mine?.fix && !t && <div className="small" style={{ marginTop: 4, color: '#ffd27a' }} lang="ja">Say: {mine.fix}</div>}
-          {err && <div className="small" style={{ marginTop: 6, color: '#ffb3a8' }}>{err}</div>}
+          {mine?.fix && !t && <div className="small" style={{ marginTop: 4, color: '#f2d49b' }} lang="ja">Say: {mine.fix}</div>}
+          {err && <div className="small" style={{ marginTop: 8, color: '#ffb3a8' }}>{err}</div>}
         </div>
       </div>
       {photo && (

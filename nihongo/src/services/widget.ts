@@ -22,7 +22,7 @@ async function roundFace(src: string, size = 192): Promise<string> {
   const w = img.width * s, h = img.height * s;
   g.drawImage(img, (size - w) / 2, 0, w, h);
   g.restore();
-  g.lineWidth = 6; g.strokeStyle = '#E9C46A'; g.beginPath(); g.arc(size / 2, size / 2, size / 2 - 4, 0, Math.PI * 2); g.stroke();
+  g.lineWidth = 4; g.strokeStyle = 'rgba(246, 241, 228, .9)'; g.beginPath(); g.arc(size / 2, size / 2, size / 2 - 4, 0, Math.PI * 2); g.stroke();
   return c.toDataURL('image/png').split(',')[1];
 }
 

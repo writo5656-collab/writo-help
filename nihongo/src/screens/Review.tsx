@@ -26,10 +26,10 @@ export function Mistakes() {
       {list.map(m => (
         <article key={m.id} className="card col gap-s">
           <div className="row between"><span className="badge plain">{SKILL_NAMES[m.skill] ?? m.skill}</span><span className="tiny muted">{fmtDate(m.date)}</span></div>
-          <p style={{ fontWeight: 650 }}>{m.prompt}</p>
+          <p style={{ fontWeight: 500 }}>{m.prompt}</p>
           <div className="small"><span className="label">You wrote</span><div lang="ja" className="jp" style={{ color: 'var(--bad)' }}>{m.userAnswer || '—'}</div></div>
           <div className="small"><span className="label">Expected</span><div lang="ja" className="jp jp-m" style={{ color: 'var(--ok)', fontWeight: 600 }}>{m.expected}</div></div>
-          {m.explanation && <div className="card amber small" style={{ padding: '10px 12px' }}>{m.explanation}</div>}
+          {m.explanation && <div className="card amber small" style={{ padding: '12px 12px' }}>{m.explanation}</div>}
           <div className="row gap-s wrap">
             {LABELS.map(([id, label, icon]) => <button key={id} className={`chip ${m.status === id ? 'on' : ''}`} aria-pressed={m.status === id} onClick={() => labelMistake(m.id!, id)}><Icon n={icon} s={15} />{label}</button>)}
           </div>
@@ -67,9 +67,9 @@ export function Sunday() {
           <p><b className="num">{r.correct}</b> of <b className="num">{r.total}</b> right first time.</p>
           {r.strengths.length > 0 && <p className="small"><b>Strengths:</b> {r.strengths.map(s => SKILL_NAMES[s]).join(', ')}</p>}
           {r.weak.length > 0 && <p className="small"><b>Weak points:</b> {r.weak.map(s => SKILL_NAMES[s]).join(', ')}</p>}
-          {r.missed.length > 0 && <div className="small"><b>Missed this time</b><ul style={{ margin: '4px 0 0', paddingLeft: 18 }}>{r.missed.slice(0, 5).map((m, i) => <li key={i}>{m}</li>)}</ul></div>}
+          {r.missed.length > 0 && <div className="small"><b>Missed this time</b><ul style={{ margin: '4px 0 0', paddingLeft: 20 }}>{r.missed.slice(0, 5).map((m, i) => <li key={i}>{m}</li>)}</ul></div>}
           {r.recurring.length > 0 && <p className="small"><b>Recurring mistakes:</b> <span lang="ja" className="jp">{r.recurring.map(id => id.startsWith('sent') ? 'a sentence' : id.split(':').slice(1).join(':')).join('、 ')}</span></p>}
-          <div className="card sage small" style={{ padding: '10px 12px' }}><b>Next focus:</b> {focus}</div>
+          <div className="card sage small" style={{ padding: '12px 12px' }}><b>Next focus:</b> {focus}</div>
         </div>
       )}
       {reports.length > 1 && <p className="tiny muted center">{reports.length} reviews completed so far.</p>}

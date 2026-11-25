@@ -24,8 +24,6 @@ export function Portrait({ id, mood = 'teach', size = 64, shape = 'round', talki
     <span className={`portrait ${shape} mood-${mood} ${talking ? 'talking' : ''} ${className}`} style={style}>
       {src ? <img src={src} alt={c.name} loading="lazy" draggable={false} onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
         : <span className="pf" lang="ja">{c.mark}</span>}
-      {fx && mood === 'happy' && <span className="mfx spark" aria-hidden="true">✦</span>}
-      {fx && mood === 'happy' && <span className="mfx spark s2" aria-hidden="true">✧</span>}
       {fx && mood === 'oops' && <span className="mfx sweat" aria-hidden="true" />}
       {fx && mood === 'oops' && <span className="mfx lines" aria-hidden="true" />}
     </span>

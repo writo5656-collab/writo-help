@@ -38,7 +38,7 @@ export function MangaPage({ story }: { story: Story }) {
             <button key={i} className={`panel ${p.size ?? 'normal'} tone-${i % 3} ${p.mood ?? ''}`} onClick={() => (CAST[p.who] ? sayAs(p.who, parseFuri(p.f).jp, s.rate) : speak(parseFuri(p.f).jp, { rate: s.rate }))} aria-label={`${nameOf(p.who)} says: ${parseFuri(p.f).jp}`}>
               {p.mood === 'oops' && <span className="fx" lang="ja">！？</span>}
               {p.mood === 'fix' && <span className="fx fix" lang="ja">ビシッ</span>}
-              <span className="who">{c ? <Portrait id={p.who} mood={p.mood === 'oops' ? 'oops' : p.mood === 'ok' && c.role === 'guide' ? 'happy' : 'teach'} size={i === 0 ? 72 : 56} shape="card" fx={false} /> : <Badge id={p.who} size={40} />}<span className="tiny" style={{ fontWeight: 700 }}>{c ? c.name.split(' ')[0] : nameOf(p.who)}</span></span>
+              <span className="who">{c ? <Portrait id={p.who} mood={p.mood === 'oops' ? 'oops' : p.mood === 'ok' && c.role === 'guide' ? 'happy' : 'teach'} size={i === 0 ? 72 : 56} shape="card" fx={false} /> : <Badge id={p.who} size={40} />}<span className="tiny" style={{ fontWeight: 600 }}>{c ? c.name.split(' ')[0] : nameOf(p.who)}</span></span>
               <span className="bubble-m"><Furi f={p.f} className="jp-m" romaji={false} /></span>
               {en && <span className="gloss"><span lang="ja" className="jp">{parseFuri(p.f).kana}</span><span className="romaji">{romajiOf(p.f)}</span><span>{p.en}</span></span>}
             </button>

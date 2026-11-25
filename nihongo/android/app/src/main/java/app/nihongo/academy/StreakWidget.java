@@ -68,7 +68,7 @@ public class StreakWidget extends AppWidgetProvider {
         } catch (Exception ignored) { }
         int hour = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY);
         String say;
-        if (done) say = "おつかれさま！また明日ね 🌸";
+        if (done) say = "おつかれさま！また明日ね";
         else if (atRisk && hour >= 20) say = "まだ間に合うよ！いっしょにやろう？";
         else if (minutes > 0) say = "いい調子！あと" + Math.max(1, 25 - minutes) + "分だよ";
         else if (hour < 11) say = "おはよう！今日もがんばろうね";
@@ -76,11 +76,9 @@ public class StreakWidget extends AppWidgetProvider {
         v.setTextViewText(R.id.w_name, teacher.isEmpty() ? "Today's teacher" : teacher + " · today's teacher");
         v.setTextViewText(R.id.w_say, say);
 
-        StringBuilder snow = new StringBuilder();
-        for (int i = 0; i < 3; i++) snow.append(i < freezes ? "❄" : "·");
         v.setTextViewText(R.id.w_streak, String.valueOf(streak));
-        v.setTextViewText(R.id.w_freezes, snow.toString());
-        v.setTextViewText(R.id.w_plan, done ? "✓ Today's 25 min done" : (minutes + " / 25 min today" + (atRisk ? " · finish before midnight!" : "")));
+        v.setTextViewText(R.id.w_freezes, freezes + (freezes == 1 ? " freeze" : " freezes"));
+        v.setTextViewText(R.id.w_plan, done ? "済 Today's 25 min done" : (minutes + " / 25 min today" + (atRisk ? " · finish before midnight!" : "")));
         v.setProgressBar(R.id.w_bar, 25, Math.min(25, minutes), false);
 
         Intent open = new Intent(context, MainActivity.class);

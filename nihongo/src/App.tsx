@@ -126,11 +126,11 @@ function StreakKeeper() {
       <div className="big-num num">{party}</div>
       <div className="big-label">day streak</div>
       <div className="wk">
-        {weekDays.map((x, i) => { const st = d.info.status.get(keyOfD(x)); return <span key={i} className={`wkd ${st ?? ''} ${i === dow ? 'now' : ''}`}><small>{'MTWTFSS'[i]}</small><i>{st === 'done' ? '✓' : st === 'frozen' ? '❄' : ''}</i></span>; })}
+        {weekDays.map((x, i) => { const st = d.info.status.get(keyOfD(x)); return <span key={i} className={`wkd ${st ?? ''} ${i === dow ? 'now' : ''}`}><small>{'MTWTFSS'[i]}</small><i>{st === 'done' ? '済' : st === 'frozen' ? <Icon n="snow" s={16} /> : ''}</i></span>; })}
       </div>
-      <p className="center">{left > 0 ? <>Practise <b style={{ color: '#ff6a3d' }}>{left} more day{left > 1 ? 's' : ''}</b> this week for a Perfect Week!</> : <>Perfect Week complete! 🎉</>}</p>
-      <div className="row gap-s" style={{ alignItems: 'center' }}><Portrait id={dailyCast().guide} mood="happy" size={44} /><span className="small">{CAST[dailyCast().guide].name.split(' ')[0]}: "Today's 25 minutes are done. See you tomorrow!"</span></div>
-      <button className="btn" style={{ maxWidth: 360 }} onClick={() => setParty(null)}>Nice{s?.name ? `, ${s.name}` : ''}!</button>
+      <p className="center" style={{ color: '#aaa398' }}>{left > 0 ? <><b style={{ color: '#efe9de', fontWeight: 500 }}>{left} more day{left > 1 ? 's' : ''}</b> this week for a perfect week</> : <>Perfect week complete</>}</p>
+      <div className="row gap-s" style={{ alignItems: 'center' }}><Portrait id={dailyCast().guide} mood="happy" size={44} /><span className="small">{CAST[dailyCast().guide].name.split(' ')[0]}: "Today's 25 minutes are done. See you tomorrow."</span></div>
+      <button className="btn" style={{ maxWidth: 360 }} onClick={() => setParty(null)}>Continue</button>
     </div>
   );
 }

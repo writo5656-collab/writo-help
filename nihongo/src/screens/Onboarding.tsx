@@ -80,9 +80,9 @@ export default function Onboarding() {
         <>
           <div className="col center" style={{ alignItems: 'center', marginTop: 20 }}>
             <Mascot size={120} mood="cheer" />
-            <h1>Welcome to Nihongo</h1>
+            <h1>Japanese for living in Japan</h1>
             <p className="muted" lang="ja">日本語を学びましょう</p>
-            <p className="muted" style={{ maxWidth: 320 }}>Your personal Japanese academy. Learn at your own pace, make mistakes safely, and build Japanese you can really use.</p>
+            <p className="muted" style={{ maxWidth: 320 }}>A personal course at your own pace: kana to JLPT N1, everyday situations, and a notebook to write in.</p>
           </div>
           <div className="col">
             <label className="label" htmlFor="nm">What should I call you? (optional)</label>

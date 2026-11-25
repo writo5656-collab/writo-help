@@ -43,7 +43,7 @@ export default function ReadJapan() {
         <PhotoAsk key={list[i].id} photo={list[i]} who={guide} mic={!!mic} onDone={ok => { void markPhotoSeen(list[i].id, ok); if (ok) setRight(r => r + 1); setI(i + 1); }} />
       ) : (
         <div className="card col gap-s center" style={{ alignItems: 'center', textAlign: 'center' }}>
-          <h2 style={{ margin: 0 }}>🇯🇵 {right} of {i} read on the first try</h2>
+          <h2 style={{ margin: 0 }}>{right} of {i} read on the first try</h2>
           <p className="muted small">These are real photos taken in Japan — the same signs you will see on the street.</p>
           {i < list.length && <button className="btn" onClick={() => setBatch(i)}>Read {Math.min(GOAL, list.length - i)} more<Icon n="next" s={18} /></button>}
           <button className="btn line" onClick={() => (plan ? nav('/plan') : nav(-1))}>{plan ? 'Back to today\'s plan' : 'Done'}</button>

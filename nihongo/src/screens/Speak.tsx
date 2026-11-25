@@ -23,14 +23,14 @@ export function Speak() {
   const corrections = useLiveQuery(() => db.corrections.orderBy('ts').reverse().limit(6).toArray(), []) ?? [];
   return (
     <Screen title="Speak" tabs>
-      <Link to="/call" className="card row" style={{ background: 'linear-gradient(135deg, #1f4d3a, #2c6a50)', color: 'var(--cream)', borderColor: 'transparent' }}>
+      <Link to="/call" className="card row">
         <Portrait id={dailyCast().guide} size={66} />
-        <div className="grow"><h3>Video call a teacher</h3><p className="small" style={{ opacity: .8 }}>Talk out loud with {CAST[dailyCast().guide].name} or any other teacher. She answers in Japanese.</p></div>
+        <div className="grow"><h3>Video call a teacher</h3><p className="small muted">Talk out loud with {CAST[dailyCast().guide].name} or any other teacher. She answers in Japanese.</p></div>
         <Icon n="mic" />
       </Link>
-      <Link to="/tutor" className="card green row">
+      <Link to="/tutor" className="card row">
         <Mascot size={58} mood="cheer" />
-        <div className="grow"><h3>AI conversation tutor</h3><p className="small muted">{ai ? 'Free conversation with gentle corrections' : 'Not set up yet — tap to see how'}</p></div><Icon n="next" />
+        <div className="grow"><h3>AI conversation tutor</h3><p className="small muted">{ai ? 'Free conversation with gentle corrections' : 'Not set up yet · tap to see how'}</p></div><Icon n="next" />
       </Link>
       <h2 className="mt">Roleplay situations</h2>
       <p className="small muted">Guided conversations that work offline. Answer by typing or speaking.</p>
@@ -142,7 +142,7 @@ export function Roleplay() {
           </div>
         ) : (
           <button key={i} className="bubble them" style={{ textAlign: 'left' }} onClick={() => speak(parseFuri(m.f!).jp, { rate: s.rate })}>
-            <span className="tiny muted" style={{ fontWeight: 700 }}>{rp.partner}</span><br /><Furi f={m.f!} className="jp-m" />{en && <div className="small muted">{m.en}</div>}
+            <span className="tiny muted" style={{ fontWeight: 600 }}>{rp.partner}</span><br /><Furi f={m.f!} className="jp-m" />{en && <div className="small muted">{m.en}</div>}
           </button>
         ))}
         <div ref={end} />
@@ -154,7 +154,7 @@ export function Roleplay() {
         </div>
       ) : (
         <>
-          <div className="card flat small"><span className="label">Your goal</span><div style={{ fontWeight: 650 }}>{t.goal}</div></div>
+          <div className="card flat small"><span className="label">Your goal</span><div style={{ fontWeight: 500 }}>{t.goal}</div></div>
           <Reply onSend={send} hint={t.hint} />
         </>
       )}

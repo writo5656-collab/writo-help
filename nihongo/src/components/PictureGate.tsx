@@ -25,7 +25,7 @@ export function PictureDownload({ onDone, compact = false }: { onDone: () => voi
       </div>
       <div className="col gap-s">
         <Bar pct={(p.have / Math.max(1, p.total)) * 100} />
-        <p className="small center num">{state === 'done' ? 'All set!' : `${p.have} of ${p.total} pictures`}</p>
+        <p className="small center num">{state === 'done' ? 'All set' : `${p.have} of ${p.total} pictures`}</p>
       </div>
       {state === 'failed' && <>
         <div className="card sakura small">Some pictures couldn't be downloaded. Check that you're connected to the internet, then try again.</div>

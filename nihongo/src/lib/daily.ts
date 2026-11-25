@@ -70,9 +70,9 @@ export const NUDGES: { who: string; at: NudgeAt; text: (n: number) => string }[]
   // Morning hellos
   { who: 'mahiru', at: 'morning', text: () => 'おはようございます。 Breakfast first, then 25 minutes of Japanese with me?' },
   { who: 'chinatsu', at: 'morning', text: () => 'おはよう！ Morning practice is the best practice. Quick review before school or work?' },
-  { who: 'marin', at: 'morning', text: () => 'Goood morning!! New day, new words. Let\'s go! 💪' },
+  { who: 'marin', at: 'morning', text: () => 'Good morning. New day, new words. Let\'s go.' },
   { who: 'mai', at: 'morning', text: n => `おはよう。 ${n ? `Day ${n + 1} of your streak starts now.` : 'Today is a good day to start.'} Don\'t keep me waiting.` },
-  { who: 'kaoruko', at: 'morning', text: () => 'おはようございます！ I brought cake. Let\'s study a little first, okay? 🍰' },
+  { who: 'kaoruko', at: 'morning', text: () => 'おはようございます！ I brought cake. Let\'s study a little first, okay?' },
   { who: 'yuki', at: 'morning', text: () => 'Good morning. A little every day beats a lot once a week. 今日もよろしくお願いします。' },
   { who: 'tomoe', at: 'morning', text: () => 'おはよ〜！ Five minutes on the train counts too, you know!' },
   { who: 'hori', at: 'morning', text: () => 'Morning! Sota\'s still asleep, so it\'s quiet. Perfect time to study.' },
@@ -110,6 +110,6 @@ export const NUDGES: { who: string; at: NudgeAt; text: (n: number) => string }[]
   // Milestones and freezes
   { who: 'marin', at: 'milestone', text: n => `One more day and you hit a ${n + 1}-day streak!! Don't miss it!` },
   { who: 'tsunade', at: 'milestone', text: n => `${n} days in a row. Not bad. Tomorrow makes it ${n + 1}.` },
-  { who: 'hinata', at: 'freeze', text: () => 'If today slips by, a ❄ freeze will cover it… but I\'d rather see you here.' },
+  { who: 'hinata', at: 'freeze', text: () => 'If today slips by, a freeze will cover it… but I\'d rather see you here.' },
   { who: 'alya', at: 'freeze', text: n => `You have no freezes left. Miss today and the ${n}-day streak is gone. Just saying.` },
 ];

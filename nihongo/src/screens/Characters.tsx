@@ -70,7 +70,7 @@ function Editor({ id, name }: { id: string; name: string }) {
         {MOODS.map(([m, label]) => (
           <button key={m} className="col center" style={{ alignItems: 'center', gap: 4 }} onClick={() => setMood(m)} aria-pressed={mood === m}>
             <Portrait id={id} mood={m} size={60} fx={false} />
-            <span className={`tiny ${mood === m ? '' : 'muted'}`} style={{ fontWeight: 700 }}>{label}{rec?.custom?.[m] ? ' ✓' : ''}</span>
+            <span className={`tiny ${mood === m ? '' : 'muted'}`} style={{ fontWeight: 600 }}>{label}{rec?.custom?.[m] ? ' · yours' : ''}</span>
           </button>
         ))}
       </div>

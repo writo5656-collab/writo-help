@@ -15,7 +15,7 @@ import { Link } from 'react-router-dom';
 import { Screen, Switch, Icon, useS, fmtDate, Wip } from '../components/ui';
 
 function Row({ title, sub, children }: { title: string; sub?: string; children: React.ReactNode }) {
-  return <div className="li"><div className="grow"><div style={{ fontWeight: 650 }}>{title}</div>{sub && <div className="small muted">{sub}</div>}</div>{children}</div>;
+  return <div className="li"><div className="grow"><div style={{ fontWeight: 500 }}>{title}</div>{sub && <div className="small muted">{sub}</div>}</div>{children}</div>;
 }
 
 export default function Settings() {
@@ -68,7 +68,7 @@ export default function Settings() {
         <Row title="Say kana as you type" sub="The in-app keyboard reads each letter aloud"><Switch on={s.speakKeys} onChange={v => set({ speakKeys: v })} label="Say kana as you type" /></Row>
         <Row title="Autoplay new sentences" sub="Hear each sentence when it first appears"><Switch on={s.autoplay} onChange={v => set({ autoplay: v })} label="Autoplay" /></Row>
         <div className="li" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 8 }}>
-          <div className="row between"><span style={{ fontWeight: 650 }}>Speech speed</span><span className="small muted num">{s.rate.toFixed(2)}×</span></div>
+          <div className="row between"><span style={{ fontWeight: 500 }}>Speech speed</span><span className="small muted num">{s.rate.toFixed(2)}×</span></div>
           <input type="range" min={0.5} max={1.3} step={0.05} value={s.rate} onChange={e => set({ rate: Number(e.target.value) })} aria-label="Speech speed" style={{ accentColor: 'var(--forest)', width: '100%', height: 32 }} />
           <button className="btn sm ghost" style={{ alignSelf: 'flex-start' }} onClick={() => speak('こんにちは。日本語を勉強しましょう。', { rate: s.rate })}><Icon n="sound" s={16} />Test the voice</button>
         </div>
@@ -88,7 +88,7 @@ export default function Settings() {
       </div>
       {nMsg && <p className="small" role="status" style={{ whiteSpace: 'pre-line' }}>{nMsg}</p>}
       {preview && daily && (
-        <section className="card flat list" style={{ padding: '2px 14px' }}>
+        <section className="card flat list" style={{ padding: '2px 16px' }}>
           {planReminders({ time: s.reminderTime, streak: daily.info.current, todayDone: daily.info.todayDone, freezes: daily.info.freezes }).slice(0, 14).map(p => (
             <div key={p.id} className="li" style={{ alignItems: 'flex-start' }}>
               <Portrait id={p.who} size={36} />

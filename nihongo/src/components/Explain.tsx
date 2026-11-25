@@ -65,7 +65,7 @@ export function Explain({ ex, ok, user, expected, teacher, onClose }: Props) {
             <div className={`ex-ans ${ok ? 'ok' : 'bad'}`}>
               <div><span className="tiny muted">Your answer</span><div lang="ja" className="jp">{user || '—'}</div></div>
               {!ok && <div><span className="tiny muted">Correct</span><div lang="ja" className="jp">{expected || parseFuri(t.f).jp}</div></div>}
-              <b className="small">{ok ? '✓ Right!' : '✗ Not quite'}</b>
+              <b className="small row" style={{ gap: 4 }}><Icon n={ok ? 'check' : 'x'} s={16} />{ok ? 'Right' : 'Not quite'}</b>
             </div>
             {t.notes.map((n, i) => <p key={i} className="small">{n}</p>)}
             <p className="tiny muted">Tap a piece above to see what each part means.</p>

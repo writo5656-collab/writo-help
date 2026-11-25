@@ -39,7 +39,7 @@ export function planReminders(o: { time: string; streak: number; todayDone: bool
       if (at.getTime() < now.getTime() + 60000) return;
       const nd = pick(sl.at, seed + k * 7);
       const who = CAST[nd.who];
-      out.push({ id: 300 + day * 4 + k, title: who ? `${who.name} 🌸` : 'Nihongo', body: nd.text(Math.max(0, n)), at, kind: sl.at, who: nd.who });
+      out.push({ id: 300 + day * 4 + k, title: who ? who.name : 'Nihongo', body: nd.text(Math.max(0, n)), at, kind: sl.at, who: nd.who });
     });
   }
   return out;
@@ -77,7 +77,7 @@ export async function testNotification(): Promise<string> {
   const perm = await LocalNotifications.requestPermissions();
   if (perm.display !== 'granted') return 'Notifications are blocked. Allow them in Android Settings → Apps → Nihongo → Notifications.';
   await ensureChannel();
-  await LocalNotifications.schedule({ notifications: [{ id: 399, channelId: CHANNEL, title: `${who?.name ?? 'Nihongo'} 🌸`, body: nd.text(7), schedule: { at: new Date(Date.now() + 5000) }, smallIcon: 'ic_stat_nihongo', largeIcon: 'ic_large_nihongo', iconColor: '#1F4D3A', extra: { go: '/plan' } }] });
+  await LocalNotifications.schedule({ notifications: [{ id: 399, channelId: CHANNEL, title: who?.name ?? 'Nihongo', body: nd.text(7), schedule: { at: new Date(Date.now() + 5000) }, smallIcon: 'ic_stat_nihongo', largeIcon: 'ic_large_nihongo', iconColor: '#1F4D3A', extra: { go: '/plan' } }] });
   return 'A test notification will arrive in about 5 seconds. You can lock your phone to see it.';
 }
 

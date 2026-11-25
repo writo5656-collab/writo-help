@@ -15,9 +15,9 @@ export default function Learn() {
     const next = plan?.lesson?.id === l.id;
     return (
       <Link to={`/lesson/${l.id}`} className="card row">
-        <span className={`tile ${p.done ? 'green' : ''}`}>{p.done ? <Icon n="check" /> : <span className="num" style={{ fontFamily: 'var(--ui)' }}>{n}</span>}</span>
+        {p.done ? <span className="tile" style={{ background: 'transparent' }}><span className="hanko" lang="ja" aria-label="Finished">済</span></span> : <span className="tile"><span className="num" style={{ fontFamily: 'var(--ui)' }}>{n}</span></span>}
         <div className="grow col gap-s">
-          <div className="row between gap-s"><h3 style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{l.title}</h3>{next && <span className="badge sakura">Suggested next</span>}</div>
+          <div className="row between gap-s"><h3 style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{l.title}</h3>{next && <span className="badge next">Suggested next</span>}</div>
           <span className="small muted jp" lang="ja">{l.jp}</span>
           <Bar pct={p.pct} />
         </div>

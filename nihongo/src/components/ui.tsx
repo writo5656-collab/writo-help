@@ -32,9 +32,9 @@ const P: Record<string, string> = {
   shuffle: 'M4 7h3.5c5 0 5.5 10 10.5 10h2M4 17h3.5c1.6 0 2.7-1 3.6-2.4M18 7h2M14.6 9.4C15.5 8 16.5 7 18 7M18 4.5 20.5 7 18 9.5M18 14.5l2.5 2.5-2.5 2.5',
   flame: 'M12 3.5c.6 3.2 4.5 4.8 4.5 9.5a4.5 4.5 0 0 1-9 0c0-1.8.8-3 1.6-3.8.3 1.3 1 2 1.6 2.2C10.4 9 10.6 6 12 3.5z',
   bell: 'M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 2h-15zM10 20.5a2 2 0 0 0 4 0',
-  calendar: 'M4.5 6.5h15v13h-15zM4.5 10.5h15M8.5 4v4M15.5 4v4', draw: 'M4 17c3-6 5 4 8-2s4 1 8-5', key: 'M4 7h16v10H4zM7.5 10.5h.01M11 10.5h.01M14.5 10.5h.01M8 14h8',
+  calendar: 'M4.5 6.5h15v13h-15zM4.5 10.5h15M8.5 4v4M15.5 4v4', snow: 'M12 3v18M4.2 7.5l15.6 9M4.2 16.5l15.6-9M9.5 4.5 12 7l2.5-2.5M9.5 19.5 12 17l2.5 2.5', draw: 'M4 17c3-6 5 4 8-2s4 1 8-5', key: 'M4 7h16v10H4zM7.5 10.5h.01M11 10.5h.01M14.5 10.5h.01M8 14h8',
 };
-export function Icon({ n, s = 22, w = 1.9 }: { n: string; s?: number; w?: number }) {
+export function Icon({ n, s = 20, w = 1.6 }: { n: string; s?: number; w?: number }) {
   return (
     <svg width={s} height={s} viewBox="0 0 24 24" fill={n === 'play' ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth={w} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <path d={P[n] ?? P.star} />
@@ -82,14 +82,14 @@ export function Ring({ pct, size = 68, stroke = 7, color = 'var(--forest-2)', ch
   return (
     <div className="ring" style={{ width: size, height: size }}>
       <svg width={size} height={size}>
-        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="#e9e2cf" strokeWidth={stroke} />
-        {pct > 0 && <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={color} strokeWidth={stroke} strokeLinecap="round" strokeDasharray={c} strokeDashoffset={c * (1 - Math.min(100, Math.max(0, pct)) / 100)} style={{ transition: 'stroke-dashoffset .6s ease' }} />}
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--raised)" strokeWidth={stroke} />
+        {pct > 0 && <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={color} strokeWidth={stroke} strokeLinecap="round" strokeDasharray={c} strokeDashoffset={c * (1 - Math.min(100, Math.max(0, pct)) / 100)} style={{ transition: 'stroke-dashoffset .5s cubic-bezier(.22, 1, .36, 1)' }} />}
       </svg>
       <div className="ring-in">{children}</div>
     </div>
   );
 }
-export const Bar = ({ pct }: { pct: number }) => <div className="bar" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100}><i style={{ width: `${Math.min(100, Math.max(0, pct))}%` }} /></div>;
+export const Bar = ({ pct }: { pct: number }) => <div className="bar" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100}><i style={{ transform: `scaleX(${Math.min(100, Math.max(0, pct)) / 100})` }} /></div>;
 
 export function Switch({ on, onChange, label }: { on: boolean; onChange: (v: boolean) => void; label: string }) {
   return <button role="switch" aria-checked={on} aria-label={label} className={`switch ${on ? 'on' : ''}`} onClick={() => onChange(!on)} />;

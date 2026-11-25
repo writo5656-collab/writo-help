@@ -142,7 +142,7 @@ export default function Session() {
     const pts = (grade === 'good' ? 5 : grade === 'hard' ? 3 : grade === 'retry' ? 1 : 0) * (ex.tag === 'challenge' && first ? 2 : 1);
     setScore(x => x + pts);
     if (pts > 0) setXpPop({ n: pts, k: Date.now() });
-    if (first) setCombo(c => { const n = o.ok ? c + 1 : 0; setBestCombo(b => Math.max(b, n)); if (n > 0 && n % 10 === 0) setTimeout(() => { sfx.complete(); celebrate.combo(n); setComboScreen(n); }, 900); else if (n > 0 && n % 5 === 0) { setTimeout(sfx.streak, 350); celebrate.combo(n); setBanner({ n, k: Date.now() }); } return n; });
+    if (first) setCombo(c => { const n = o.ok ? c + 1 : 0; setBestCombo(b => Math.max(b, n)); if (n > 0 && n % 10 === 0) setTimeout(() => { sfx.complete(); setComboScreen(n); }, 900); else if (n > 0 && n % 5 === 0) { setTimeout(sfx.streak, 350); setBanner({ n, k: Date.now() }); } return n; });
     if (!o.ok) saw.current.add(ex.key);
     await recordAnswer({ itemId: ex.itemId, kind: ex.kind, skill: ex.skill, grade, lessonId: ex.lessonId });
     if (!o.ok) {
@@ -196,7 +196,6 @@ export default function Session() {
       <header className="topbar">
         <button className="iconbtn soft" aria-label="Close session" onClick={() => nav(-1)}><Icon n="close" /></button>
         <div className="grow" style={{ position: 'relative' }}>
-          {combo >= 3 && <span key={combo} className="combo-tag">COMBO ×{combo}</span>}
           <Bar pct={(idx / queue.length) * 100} />
         </div>
         <span className="small muted num">{idx + 1}/{queue.length}</span>
@@ -207,13 +206,13 @@ export default function Session() {
           <div><b className="small">{CAST[toast.who]?.name.split(' ')[0]}</b><div lang="ja" className="jp">{toast.jp}</div><div className="tiny muted">{toast.en}</div></div>
         </div>
       )}
-      {banner && <div key={banner.k} className="combo-banner" lang="ja" aria-live="polite">{banner.n}問連続！🔥</div>}
+      {banner && <div key={banner.k} className="combo-banner" aria-live="polite"><span className="hanko sm" lang="ja">連</span><span><span lang="ja" className="jp">{banner.n}問連続</span> · {banner.n} in a row</span></div>}
       {comboScreen !== null && (
         <div className="celebrate" role="dialog" aria-label="Combo">
           <div className="card col" style={{ alignItems: 'center', gap: 12 }}>
             <Portrait id={castFor(ex.lessonId).guide} mood="happy" size={110} />
-            <h1 style={{ color: 'var(--forest-2)' }}>You're on a combo!</h1>
-            <p><b className="num">{comboScreen}</b> right answers in a row. Keep it up!</p>
+            <h1>{comboScreen} in a row</h1>
+            <p className="muted"><b className="num" style={{ color: 'var(--ink)', fontWeight: 500 }}>{comboScreen}</b> right answers without a mistake</p>
             <StatCards xp={score} combo={comboScreen} secs={secs} />
             <button className="btn" onClick={() => setComboScreen(null)}>Keep going</button>
           </div>
@@ -269,15 +268,16 @@ function Done({ m, tally, seconds, score, best, lessonId, part, plan }: { m: str
     <Screen>
       <div className="col center" style={{ alignItems: 'center', paddingTop: 24 }}>
         <Portrait id={castFor(lessonId).guide} mood="happy" size={110} />
-        <h1>{m === 'sunday' ? 'Sunday review complete' : part === '1' ? 'Part 1 complete!' : 'Session complete'}</h1>
-        <p className="muted" lang="ja">おつかれさまでした！</p>
+        <span className="hanko lg" lang="ja" aria-hidden="true" style={{ marginTop: -36, marginLeft: 88 }}>済</span>
+        <h1>{m === 'sunday' ? 'Sunday review complete' : part === '1' ? 'Part 1 complete' : 'Session complete'}</h1>
+        <p className="muted" lang="ja">おつかれさまでした</p>
       </div>
       <StatCards xp={score} combo={best} secs={seconds} acc={tally.length ? Math.round((right / tally.length) * 100) : 100} />
       {missed.length > 0 ? (
         <div className="card flat col gap-s">
           <h3>Saved to your Mistake Notebook</h3>
           <p className="small muted">These will return sooner in review{weak.length ? ` — mostly ${weak.join(', ').toLowerCase()}` : ''}. Mistakes are how the app learns what to show you.</p>
-          <ul className="small" style={{ margin: 0, paddingLeft: 18 }}>{missed.slice(0, 6).map((t, i) => <li key={i}>{t.prompt}</li>)}</ul>
+          <ul className="small" style={{ margin: 0, paddingLeft: 20 }}>{missed.slice(0, 6).map((t, i) => <li key={i}>{t.prompt}</li>)}</ul>
         </div>
       ) : <div className="card sage small">Everything right first time. These items will now wait longer before the next review.</div>}
       {m === 'sunday' && <Link className="btn ghost" to="/sunday">See your review report</Link>}
@@ -293,18 +293,18 @@ function Done({ m, tally, seconds, score, best, lessonId, part, plan }: { m: str
 
 /** Duolingo-style stat cards: XP, best combo, time, accuracy. */
 function StatCards({ xp, combo, secs, acc }: { xp: number; combo: number; secs: number; acc?: number }) {
-  const cards: [string, string, string, string][] = [
-    ['Total XP', String(xp), 'star', '#e9b82a'],
-    ['Combo', `×${combo}`, 'flame', '#2d9cdb'],
-    ['Time', `${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}`, 'clock', '#27ae8f'],
-    ...(acc !== undefined ? [['Accuracy', `${acc}%`, 'check', '#8e6fd1'] as [string, string, string, string]] : []),
+  const cards: [string, string][] = [
+    ['XP', String(xp)],
+    ['Best run', String(combo)],
+    ['Time', `${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}`],
+    ...(acc !== undefined ? [['First-try accuracy', `${acc}%`] as [string, string]] : []),
   ];
   return (
     <div className="statcards">
-      {cards.map(([label, v, icon, color], i) => (
-        <div key={label} className="sc" style={{ ['--sc' as string]: color, animationDelay: `${i * 0.12}s` }}>
+      {cards.map(([label, v], i) => (
+        <div key={label} className={`sc ${i === 0 ? 'key' : ''}`}>
           <span className="sc-h">{label}</span>
-          <span className="sc-b"><Icon n={icon} s={20} /><b className="num">{v}</b></span>
+          <span className="sc-b">{v}</span>
         </div>
       ))}
     </div>

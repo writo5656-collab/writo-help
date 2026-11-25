@@ -35,14 +35,14 @@ export default function Plan() {
   const opts = { due: plan.due, lessonId, part1Done: !!lessonId && (parts[lessonId] ?? []).includes(1), mic, mistakes };
   const cur = nextBlock(daily.blocks);
   const finished = daily.left === 0;
-  const msg = finished ? 'Today\'s plan is complete. Your streak is safe — anything more is a bonus!'
+  const msg = finished ? 'Today\'s plan is complete. Your streak is safe, and anything more is extra practice.'
     : !cur ? `All four blocks done — ${mmss(daily.left)} to go. Keep practising to finish the 25 minutes.`
     : daily.seconds < 60 ? `Ready? 25 minutes today with me, ${s.name || 'friend'}.` : `Nice pace. ${mmss(daily.left)} left today.`;
   return (
     <Screen back="/" title="Today's plan">
       <div className="card row" style={{ alignItems: 'center' }}>
         <PlanRing seconds={daily.seconds} size={104} />
-        <div className="grow col" style={{ gap: 6 }}>
+        <div className="grow col" style={{ gap: 8 }}>
           <span className="label">25-minute plan · {new Date().toLocaleDateString(undefined, { weekday: 'long' })}</span>
           <div className="row gap-s"><Portrait id={g.id} size={40} mood={finished ? 'happy' : 'teach'} /><span className="small"><b>{g.name.split(' ')[0]}:</b> {msg}</span></div>
           <span className="tiny muted">The timer only runs while you do the plan's activities below.</span>
@@ -50,13 +50,13 @@ export default function Plan() {
       </div>
       <StreakBadge current={daily.info.current} freezes={daily.info.freezes} atRisk={daily.info.atRisk} todayDone={daily.info.todayDone} />
       <WeekStrip week={daily.week} />
-      <p className="tiny muted">The streak counts a day once you have studied 25 minutes. Miss a day and a ❄ freeze covers it (3 max, one earned back every 7 days). With no freezes left, a missed day breaks the streak at midnight.</p>
+      <p className="tiny muted">The streak counts a day once you have studied 25 minutes. Miss a day and a freeze covers it (3 max, one earned back every 7 days). With no freezes left, a missed day breaks the streak at midnight.</p>
       <div className="col gap-s blocks">
         {BLOCKS.map((b, i) => {
           const done = daily.blocks.includes(b.id), isCur = b.id === cur;
           return (
             <Link key={b.id} to={blockRoute(b.id, opts)} className={`blk ${done ? 'done' : ''} ${isCur ? 'cur' : ''}`}>
-              <span className="n">{done ? <Icon n="check" s={18} /> : i + 1}</span>
+              <span className="n" lang={done ? 'ja' : undefined} aria-label={done ? 'Done' : undefined}>{done ? '済' : i + 1}</span>
               <span className="grow"><b style={{ display: 'block' }}>{b.title}</b><span className="small muted">{b.id === 'lesson' && plan.lesson ? `${plan.lesson.title} · Part ${opts.part1Done ? 2 : 1}` : b.sub}</span></span>
               <span className="badge plain">{b.min} min</span>
             </Link>

@@ -128,16 +128,16 @@ export default function AiCall({ id, mode, plan }: { id: string; mode: 'lesson' 
             <div className="jp" lang="ja">{reply.jp}</div>
             {reply.kana && reply.kana !== reply.jp && <div className="small" style={{ opacity: .75 }} lang="ja">{reply.kana}</div>}
             {en && <div className="small" style={{ marginTop: 4 }}>{reply.en}</div>}
-            <div className="row gap-s" style={{ marginTop: 6 }}>
+            <div className="row gap-s" style={{ marginTop: 8 }}>
               <button className="chip" style={{ background: 'rgba(255,255,255,.15)', color: '#fff', borderColor: 'transparent', minHeight: 32 }} onClick={() => speakSeq([{ text: reply.jp, who: id, rate: s.rate * 0.95 }])}><Icon n="sound" s={14} />Again</button>
               <button className="chip" style={{ background: 'rgba(255,255,255,.15)', color: '#fff', borderColor: 'transparent', minHeight: 32 }} onClick={() => speakSeq([{ text: reply.jp, who: id, rate: s.rate * 0.6 }])}><Icon n="slow" s={14} />Slow</button>
             </div>
-            {reply.correction?.better && <div className="small" style={{ marginTop: 8, color: '#ffd27a' }} lang="ja">✏️ {reply.correction.better} — {reply.correction.why}</div>}
+            {reply.correction?.better && <div className="small" style={{ marginTop: 8, color: '#f2d49b' }} lang="ja"><Icon n="pen" s={14} /> {reply.correction.better} — {reply.correction.why}</div>}
           </> : <span className="small" style={{ opacity: .7 }}>{err ? '' : `Calling ${c.name.split(' ')[0]}…`}</span>}
-          {(listening || live) && <div className="small" style={{ marginTop: 8 }} lang="ja">🎤 {live || '…'}</div>}
+          {(listening || live) && <div className="small row" style={{ marginTop: 8, gap: 8 }} lang="ja"><Icon n="mic" s={14} />{live || '…'}</div>}
           {!listening && !live && mine && <div className="small" style={{ marginTop: 8, opacity: .8 }} lang="ja">You: {mine}</div>}
-          {thinking && waitSecs >= 15 && <div className="small" style={{ marginTop: 6, opacity: .85 }}>Taking longer than usual… <button className="chip" style={{ minHeight: 28, marginLeft: 6 }} onClick={retry}>Retry</button></div>}
-          {err && <div className="small" style={{ marginTop: 6, color: '#ffb3a8' }}>{err} <button className="chip" style={{ minHeight: 28, marginLeft: 6 }} onClick={retry}>Retry</button></div>}
+          {thinking && waitSecs >= 15 && <div className="small" style={{ marginTop: 8, opacity: .85 }}>Taking longer than usual… <button className="chip" style={{ minHeight: 28, marginLeft: 8 }} onClick={retry}>Retry</button></div>}
+          {err && <div className="small" style={{ marginTop: 8, color: '#ffb3a8' }}>{err} <button className="chip" style={{ minHeight: 28, marginLeft: 8 }} onClick={retry}>Retry</button></div>}
         </div>
         {reply?.hint?.jp && !talking && (
           <button className="say-glow" onClick={() => void send(reply.hint!.jp)} aria-label="Send the sample answer">

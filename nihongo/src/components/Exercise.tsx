@@ -148,7 +148,7 @@ function Choice({ ex, locked, finish }: { ex: Extract<Ex, { t: 'choice' }>; lock
     <div className="col gap-l">
       <div className="col gap-s">
         <span className="label">{ex.prompt}</span>
-        {ex.context && <p style={{ fontWeight: 650 }} lang={ex.jp ? 'ja' : undefined} className={ex.jp ? 'muted jp' : ''}>{ex.context}</p>}
+        {ex.context && <p style={{ fontWeight: 500 }} lang={ex.jp ? 'ja' : undefined} className={ex.jp ? 'muted jp' : ''}>{ex.context}</p>}
         {ex.jp && (
           <div className="card flat row between">
             {(ex.skill === 'reading' || ex.skill === 'grammar') && ex.tag !== 'challenge' && /\s/.test(ex.jp.trim())
@@ -184,7 +184,7 @@ function Fill({ ex, locked, finish }: { ex: Extract<Ex, { t: 'fill' }>; locked: 
     <div className="col gap-l">
       <div className="col gap-s">
         <span className="label">Fill in the missing particle</span>
-        <p style={{ fontWeight: 650 }}>{ex.sent.en}</p>
+        <p style={{ fontWeight: 500 }}>{ex.sent.en}</p>
       </div>
       <div className="card flat furi jp-l" lang="ja" style={{ lineHeight: 2.3 }}>
         {p.chunks.map((c, i) => {
@@ -218,7 +218,7 @@ function Arrange({ ex, locked, finish }: { ex: Extract<Ex, { t: 'arrange' }>; lo
     <div className="col gap-l">
       <div className="col gap-s">
         <span className="label">Build the sentence</span>
-        <p style={{ fontWeight: 650, fontSize: '1.08rem' }}>{ex.sent.en}</p>
+        <p style={{ fontWeight: 500, fontSize: '1.08rem' }}>{ex.sent.en}</p>
       </div>
       <div className="tiles answer-line" aria-label="Your sentence">
         {order.map((i, k) => <button key={k} lang="ja" className="tilebtn" disabled={locked} onClick={() => setOrder(order.filter((_x, j) => j !== k))}>{tiles.find(t => t.i === i)!.jp}</button>)}
@@ -306,7 +306,7 @@ function Typing({ ex, locked, fb, onHint, finish }: { ex: Extract<Ex, { t: 'type
         <PaperInput inputRef={ref} value={value} onChange={setValue} romajiMode={romajiMode} disabled={locked} minRows={2} onEnter={check} noSystemKeyboard={appKb} autoFocus={appKb}
           placeholder={romajiMode ? 'Type romaji, e.g. mizu → みず' : 'Write your answer here…'} />
         <ReadingLine text={value} known={ex.t === 'word' ? undefined : t => toKanaUsing(t, f)} romaji={s.showRomaji} />
-        {fb && <div className="paper-line" style={{ justifyContent: 'flex-end', paddingBottom: 6 }}><span className={`stamp ${fb.ok ? 'ok' : ''}`} lang="ja">{fb.ok ? '正' : '惜'}</span></div>}
+        {fb && <div className="paper-line" style={{ justifyContent: 'flex-end', paddingBottom: 8 }}><span className={`stamp ${fb.ok ? 'ok' : ''}`} lang="ja">{fb.ok ? '正' : '惜'}</span></div>}
       </Paper>
 
       {hints > 0 && !locked && <div className="card amber note-tip"><Icon n="bulb" s={18} /><span lang="ja" className="jp">{hintText}</span></div>}
@@ -367,7 +367,7 @@ function Speak({ ex, locked, finish, skip }: { ex: Extract<Ex, { t: 'speak' }>; 
       }
       // Lenient on purpose: phone recognisers struggle with learners' Japanese.
       const ok = bestScore >= 0.7;
-      finish({ ok, heard: best, title: ok ? (bestScore >= 0.95 ? 'Perfect — clearly understood!' : 'Good — understood!') : 'Not quite — listen and try again', notes: [ok ? 'Recognition is a rough check, not a pronunciation score — keep listening to the model too.' : 'Tap the speaker, listen once (or slowly), then say it again. Green words were understood.'], model: ex.sent.f, say: ok ? [] : [p.jp] }, best, p.jp);
+      finish({ ok, heard: best, title: ok ? (bestScore >= 0.95 ? 'Clearly understood' : 'Understood') : 'Not quite — listen and try again', notes: [ok ? 'Recognition is a rough check, not a pronunciation score — keep listening to the model too.' : 'Tap the speaker, listen once (or slowly), then say it again. Green words were understood.'], model: ex.sent.f, say: ok ? [] : [p.jp] }, best, p.jp);
     } catch (e) { setListening(false); setErr((e as Error).message); }
   };
   const self = (ok: boolean) => finish({ ok, title: ok ? 'Noted — said comfortably' : 'Noted — this will come back for more practice', notes: ['Self-assessed, because speech recognition is not available on this device.'], model: ex.sent.f }, ok ? '(self-assessed: good)' : '(self-assessed: needs practice)', p.jp);
@@ -387,7 +387,7 @@ function Speak({ ex, locked, finish, skip }: { ex: Extract<Ex, { t: 'speak' }>; 
           </span>
         ))}
       </div>
-      {(listening || live) && <p className="small center" lang="ja">🎤 {live || 'listening…'}</p>}
+      {(listening || live) && <p className="small center row" style={{ justifyContent: 'center', gap: 8 }} lang="ja"><Icon n="mic" s={14} />{live || 'listening…'}</p>}
       {!locked && avail && (
         <div className="col center" style={{ alignItems: 'center' }}>
           <button className={`mic ${listening ? 'live' : ''}`} aria-label={listening ? 'Finish' : 'Tap to speak'} onClick={go}><Icon n="mic" s={34} /></button>
@@ -414,16 +414,13 @@ function similar(a: string, b: string): number {
   return 1 - m[a.length][b.length] / Math.max(a.length, b.length);
 }
 
-/** Full-screen motion graphics for an answer: petals and 正 for right, red flash and ✗ for wrong. */
+/** A seal pressed over the screen for an answer: a red hanko 正解 for right, an outlined 惜しい for wrong. */
 function Reaction({ ok }: { ok: boolean }) {
   const s = useS();
-  const petals = useMemo(() => Array.from({ length: 14 }, () => ({ x: `${(Math.random() - 0.5) * 340}px`, y: `${-120 - Math.random() * 260}px`, r: `${Math.random() * 540 - 270}deg`, d: `${Math.random() * 0.15}s`, c: ['#f2b8c6', '#f6d36b', '#9ed3b0', '#f7a8a0'][Math.floor(Math.random() * 4)] })), []);
   if (s.reducedMotion) return null;
   return (
     <div className={`react ${ok ? 'ok' : 'bad'}`} aria-hidden="true">
-      <div className="flash" />
-      <div className="stamp-big" lang="ja">{ok ? '正解！' : '惜しい！'}</div>
-      {ok && petals.map((p, i) => <i key={i} className="petal" style={{ ['--x' as string]: p.x, ['--y' as string]: p.y, ['--r' as string]: p.r, animationDelay: p.d, background: p.c }} />)}
+      <div className="stamp-big" lang="ja">{ok ? '正解' : '惜しい'}</div>
     </div>
   );
 }
@@ -437,7 +434,7 @@ function Chat({ ex, locked, finish }: { ex: Extract<Ex, { t: 'chat' }>; locked: 
     if (locked) return;
     setPicked(i);
     const ok = i === ex.a;
-    finish({ ok, title: ok ? 'Natural reply!' : 'A more natural reply:', notes: [ex.why], model: ex.options[ex.a], say: [parseFuri(ex.options[i]).jp] }, parseFuri(ex.options[i]).jp, parseFuri(ex.options[ex.a]).jp);
+    finish({ ok, title: ok ? 'Natural reply' : 'A more natural reply', notes: [ex.why], model: ex.options[ex.a], say: [parseFuri(ex.options[i]).jp] }, parseFuri(ex.options[i]).jp, parseFuri(ex.options[ex.a]).jp);
   };
   return (
     <div className="col gap-l">

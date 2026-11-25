@@ -90,7 +90,7 @@ function Intro({ l }: { l: L }) {
         <div className="today-hero">
           <Portrait id={g.id} size={96} shape="card" mood="happy" />
           <div className="grow col" style={{ gap: 4, minWidth: 0 }}>
-            <span className="label" style={{ color: 'var(--sage-2)' }}>Today with {g.name.split(' ')[0]} · {g.series}</span>
+            <span className="label">Today with {g.name.split(' ')[0]} · {g.series}</span>
             <div className="bubble-say">
               <TapSentence f={lc.intro[0]} size="m" />
               <span className="small" style={{ opacity: .85 }}>{lc.intro[1]}</span>
@@ -100,7 +100,7 @@ function Intro({ l }: { l: L }) {
       )}
       <div className="card sage col gap-s">
         <span className="label">Today you'll learn</span>
-        <p style={{ fontWeight: 650, margin: 0 }}>{l.goal}</p>
+        <p style={{ fontWeight: 500, margin: 0 }}>{l.goal}</p>
         <span className="jp-l jp" lang="ja" style={{ color: 'var(--forest)' }}>{l.jp}</span>
         <span className="tiny muted">Tap any Japanese word to hear it and see what it means. Pronunciation is written under every word.</span>
       </div>
@@ -142,7 +142,7 @@ function KanaCard({ ch, l }: { ch: string; l: L }) {
     <>
       <div className="card col center" style={{ alignItems: 'center', padding: '28px 16px' }}>
         <StrokeOrder ch={ch} size={190} />
-        <span style={{ fontSize: '1.6rem', fontWeight: 750, color: 'var(--forest)' }}>{kanaRomaji(ch)}</span>
+        <span style={{ fontSize: '1.6rem', fontWeight: 600, color: 'var(--forest)' }}>{kanaRomaji(ch)}</span>
         <button className="btn sm ghost" onClick={() => speak(ch, { rate: s.rate })}><Icon n="sound" s={18} />Hear it</button>
       </div>
       {words.length > 0 && <div className="card flat"><h3>Seen in</h3><div className="list mt">{words.map(w => <div key={w.jp} className="li"><div className="grow"><span className="jp jp-m" lang="ja" style={{ fontWeight: 600 }}>{w.jp}</span><span className="romaji"> {parseRomaji(w.kana)}</span><div className="small muted">{w.en}</div></div><SpeakBtn text={w.jp} /></div>)}</div></div>}
@@ -169,7 +169,7 @@ function SentCard({ s, l, n }: { s: Sent; l: L; n: number }) {
       <div className="card col">
         <span className="label">Sentence {n} of {l.sentences.length}</span>
         <TapSentence f={s.f} size="xl" />
-        <div className="card sage" style={{ padding: '10px 14px', fontWeight: 650 }}>{s.en}</div>
+        <div className="card sage" style={{ padding: '12px 16px', fontWeight: 500 }}>{s.en}</div>
         <div className="row between"><span className="small muted">Tap a word for its meaning · or listen</span><Audio f={s.f} autoplay /></div>
       </div>
       {words.length > 0 && <div className="card flat"><div className="row gap-s"><Icon n="book" s={18} /><h3>Vocabulary</h3></div><div className="col gap-s mt">{words.map(w => <div key={w.jp} className="small"><span className="jp" lang="ja" style={{ fontWeight: 600 }}>{w.jp}</span>{w.kana !== w.jp && <span className="muted jp" lang="ja">（{w.kana}）</span>} — {w.en}</div>)}</div></div>}
@@ -191,7 +191,7 @@ function SceneCard({ l }: { l: L }) {
       </div>
       <div className="card col gap-s">
         <div className="row between"><Furi f={it.f} className="jp-l" /><Audio f={it.f} compact /></div>
-        <div><span className="label">It means</span><p style={{ fontWeight: 650 }}>{it.en}</p></div>
+        <div><span className="label">It means</span><p style={{ fontWeight: 500 }}>{it.en}</p></div>
         <div><span className="label">What to do</span><p>{it.action}</p></div>
       </div>
     </>
@@ -208,7 +208,7 @@ function DialogueCard({ l }: { l: L }) {
       <div className="col">
         {l.dialogue!.map((d, i) => (
           <div key={i} className={`bubble light ${d.who === 'You' ? 'me' : 'them'}`}>
-            <div className="row between"><span className="tiny" style={{ opacity: .7, fontWeight: 700 }}>{d.who}</span><SpeakBtn text={parseFuri(d.f).jp} /></div>
+            <div className="row between"><span className="tiny" style={{ opacity: .7, fontWeight: 600 }}>{d.who}</span><SpeakBtn text={parseFuri(d.f).jp} /></div>
             <TapSentence f={d.f} size="m" />
             {show && <div className="small" style={{ opacity: .8 }}>{d.en}</div>}
           </div>
@@ -221,7 +221,7 @@ function DialogueCard({ l }: { l: L }) {
 
 function EndCard({ l }: { l: L }) {
   return (
-    <div className="card sage col center" style={{ alignItems: 'center', padding: '26px 16px' }}>
+    <div className="card sage col center" style={{ alignItems: 'center', padding: '28px 16px' }}>
       <span className="tile green"><Icon n="pen" /></span>
       <h2>Ready to practise</h2>
       <p className="small" style={{ maxWidth: 300 }}><b>Part 1 — Learn:</b> recognise, read the story, copy. <b>Part 2 — Use it:</b> build and write sentences yourself, listen, then a final challenge. Mistakes stay until you fix them.</p>

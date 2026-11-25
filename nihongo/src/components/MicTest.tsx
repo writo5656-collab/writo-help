@@ -18,12 +18,12 @@ export function MicTest() {
   return (
     <div className="card flat col gap-s" style={{ marginTop: 8 }}>
       <div className="row between">
-        <span style={{ fontWeight: 650 }}>Microphone test</span>
+        <span style={{ fontWeight: 500 }}>Microphone test</span>
         <button className={`btn sm ${state === 'listening' ? 'danger' : 'ghost'}`} onClick={() => void run()}><Icon n="mic" s={16} />{state === 'listening' ? 'Done' : 'Test the microphone'}</button>
       </div>
-      {state === 'listening' && <p className="small" lang="ja" style={{ margin: 0 }}>🎤 Say 「こんにちは」… {text}</p>}
-      {state === 'done' && <p className="small" style={{ margin: 0 }}>{text ? <>✓ Heard: <b lang="ja">{text}</b></> : 'Heard nothing. Speak a little louder, closer to the phone.'}</p>}
-      {state === 'error' && <p className="small" style={{ margin: 0, color: 'var(--bad)' }}>✗ {text}</p>}
+      {state === 'listening' && <p className="small row" lang="ja" style={{ margin: 0, gap: 8 }}><Icon n="mic" s={14} />Say 「こんにちは」 {text}</p>}
+      {state === 'done' && <p className="small" style={{ margin: 0 }}>{text ? <>Heard <b lang="ja" style={{ fontWeight: 500 }}>{text}</b></> : 'Heard nothing. Speak a little louder, closer to the phone.'}</p>}
+      {state === 'error' && <p className="small" style={{ margin: 0, color: 'var(--bad)' }}>{text}</p>}
       <p className="tiny muted" style={{ margin: 0 }}>Calls and speaking lessons use this. It needs the Google app's speech service with Japanese (日本語) added.</p>
     </div>
   );

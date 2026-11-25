@@ -23,8 +23,8 @@ export default function Practice() {
   return (
     <Screen title="Practice" tabs>
       <h2>Review</h2>
-      <Link to="/session?m=review" className="card green row">
-        <span className="tile" style={{ background: 'rgba(255,255,255,.14)', color: 'var(--cream)' }}><Icon n="retry" /></span>
+      <Link to="/session?m=review" className="card row">
+        <span className="tile"><Icon n="retry" /></span>
         <div className="grow"><h3>Spaced review</h3><p className="small muted">{plan?.due ? `${plan.due} item${plan.due === 1 ? '' : 's'} due — weakest first` : 'Nothing due right now'}</p></div><Icon n="next" />
       </Link>
       <div className="row">
@@ -35,10 +35,10 @@ export default function Practice() {
       <p className="small muted">Unlimited, any time. Drills use the lessons you have started.</p>
       <div className="card flat list" style={{ padding: '4px 16px' }}>
         {DRILLS.map(([type, icon, title, sub]) => (
-          <Link key={type} to={`/session?m=drill&type=${type}`} className="li"><span className="tile"><Icon n={icon} /></span><span className="grow"><span style={{ fontWeight: 700, display: 'block' }}>{title}</span><span className="small muted">{sub}</span></span><Icon n="next" s={18} /></Link>
+          <Link key={type} to={`/session?m=drill&type=${type}`} className="li"><span className="tile"><Icon n={icon} /></span><span className="grow"><span style={{ fontWeight: 600, display: 'block' }}>{title}</span><span className="small muted">{sub}</span></span><Icon n="next" s={18} /></Link>
         ))}
-        <Link to="/read-japan" className="li"><span className="tile sakura"><Icon n="eye" /></span><span className="grow"><span style={{ fontWeight: 700, display: 'block' }}>Read real Japan</span><span className="small muted">Real photos of signs and menus — read them out loud</span></span><Icon n="next" /></Link>
-        <Link to="/reading" className="li"><span className="tile"><Icon n="note" /></span><span className="grow"><span style={{ fontWeight: 700, display: 'block' }}>Reading comprehension</span><span className="small muted">Short real-world texts with questions</span></span><Icon n="next" s={18} /></Link>
+        <Link to="/read-japan" className="li"><span className="tile sakura"><Icon n="eye" /></span><span className="grow"><span style={{ fontWeight: 600, display: 'block' }}>Read real Japan</span><span className="small muted">Real photos of signs and menus — read them out loud</span></span><Icon n="next" /></Link>
+        <Link to="/reading" className="li"><span className="tile"><Icon n="note" /></span><span className="grow"><span style={{ fontWeight: 600, display: 'block' }}>Reading comprehension</span><span className="small muted">Short real-world texts with questions</span></span><Icon n="next" s={18} /></Link>
       </div>
     </Screen>
   );

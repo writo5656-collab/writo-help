@@ -10,7 +10,6 @@ import { listenOnce, stopListening } from '../services/stt';
 import { readingOf } from '../services/reading';
 import { sfx } from '../services/sfx';
 import { buzz } from '../services/haptics';
-import { celebrate } from '../services/fun';
 import { Icon, useS } from './ui';
 import { Portrait } from './Portrait';
 
@@ -67,7 +66,7 @@ export function PhotoAsk({ photo, who, mic, dark = false, onDone }: { photo: Rea
   }
 
   function right() {
-    sfx.correct(); buzz.ok(); celebrate.pop(0.5, 0.45);
+    sfx.correct(); buzz.ok();
     const t = pick(READ_THANKS); setLine(t); setPhase('right');
     void speakSeq([{ text: t.jp, who }]);
   }
@@ -92,12 +91,12 @@ export function PhotoAsk({ photo, who, mic, dark = false, onDone }: { photo: Rea
         <img src={photo.img} alt={`Photo: ${photo.en}`} className={zoom ? 'zoom' : ''} />
       </button>
       <p className="small" style={{ margin: 0 }}>Read <b>{photo.look}</b> out loud. <span className="tiny" style={{ opacity: .75 }}>(tap the photo to zoom)</span></p>
-      {(phase === 'listening' || live) && !solved && <p className="small" lang="ja" style={{ margin: 0 }}>🎤 {live || '…'}</p>}
+      {(phase === 'listening' || live) && !solved && <p className="small row" lang="ja" style={{ margin: 0, gap: 8 }}><Icon n="mic" s={14} />{live || '…'}</p>}
       {phase === 'wrong' && heard && <p className="small" style={{ margin: 0 }}>I heard: <span lang="ja">{heard}</span></p>}
       {(solved || (phase === 'wrong' && tries > 0)) && (
         <div className={`pa-answer ${phase === 'right' ? 'ok' : ''}`}>
           <div className="row between">
-            <span lang="ja" className="jp" style={{ fontSize: '1.3rem', fontWeight: 700 }}>{photo.read}</span>
+            <span lang="ja" className="jp" style={{ fontSize: '1.3rem', fontWeight: 600 }}>{photo.read}</span>
             <button className="iconbtn" aria-label="Hear it" onClick={() => speakSeq([{ text: photo.kana, rate: s.rate * 0.85 }])}><Icon n="sound" /></button>
           </div>
           <div className="small" lang="ja">{photo.shown ?? photo.kana} · {photo.romaji}</div>
@@ -107,7 +106,7 @@ export function PhotoAsk({ photo, who, mic, dark = false, onDone }: { photo: Rea
       <div className="row gap-s" style={{ flexWrap: 'wrap' }}>
         {!solved && mic && <button className={`btn ${phase === 'listening' ? 'danger' : ''}`} onClick={() => void listen()} disabled={phase === 'asking' || phase === 'checking'}><Icon n="mic" s={18} />{phase === 'listening' ? 'Done' : tries ? 'Try again' : 'Read it'}</button>}
         {!solved && <button className="btn line" onClick={show}>{mic ? 'Show me' : 'Show the reading'}</button>}
-        {!solved && !mic && <button className="btn line" onClick={right}>I read it ✓</button>}
+        {!solved && !mic && <button className="btn line" onClick={right}>I read it</button>}
         {solved && <button className="btn" onClick={() => onDone(phase === 'right' && firstOk.current)}>Continue<Icon n="next" s={18} /></button>}
       </div>
       <p className="tiny" style={{ opacity: .6, margin: 0 }}>Photo: {photo.credit.author} · {photo.credit.license} · Wikimedia Commons</p>
